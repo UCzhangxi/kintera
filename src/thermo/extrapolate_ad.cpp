@@ -1,5 +1,6 @@
 // C/C++
 #include <cmath>
+#include <limits>
 
 // kintera
 #include <kintera/constants.h>
@@ -198,6 +199,26 @@ void ThermoXImpl::extrapolate_dz(torch::Tensor temp, torch::Tensor pres,
   // using isothermal as an initial guess
   pres.set_(pres0 * exp(-grav * mmw * dz / (constants::Rgas * temp)));
 
+  // ACTIVE-SET CHATTER GUARD (2026-08-06). Each iteration re-solves the
+  // equilibrium, so at a level where a SECOND condensable is marginally
+  // saturated the active set flips between iterations; cloud_flux (hence
+  // entropy_step) and cp_mole then jump discontinuously and the residual cannot
+  // settle. Measured on the Ge Neptune column: exactly the 3 cells where CH4
+  // activates on top of an already-saturated H2S (P = 0.859/0.796/0.737 bar)
+  // fail, and raising max_iter 30 -> 400 makes it WORSE (9 -> 20 warnings) --
+  // the signature of oscillation, not of slow convergence.
+  //   * relax halves whenever a step INCREASES the residual, damping the
+  //   oscillation;
+  //   * the best iterate is kept and restored if the loop exits unconverged, so
+  //   a chattering
+  //     cell returns its closest state rather than whichever side it last
+  //     landed on.
+  // Both are inert while the residual decreases monotonically => every
+  // converging cell is bit-identical.
+  double relax = 1.0;
+  double best_resid = std::numeric_limits<double>::infinity();
+  torch::Tensor best_temp, best_pres;
+
   int iter = 0;
   while (iter++ < options->max_iter()) {
     xfrac.copy_(xfrac0);
@@ -244,9 +265,16 @@ void ThermoXImpl::extrapolate_dz(torch::Tensor temp, torch::Tensor pres,
       std::cout << "}" << std::endl;
     }
 
-    if ((entropy_step - entropy_mole).abs().max().item<double>() <
-        10 * options->ftol()) {
+    auto resid = (entropy_step - entropy_mole).abs().max().item<double>();
+    if (resid < 10 * options->ftol()) {
       break;
+    }
+    if (resid < best_resid) {
+      best_resid = resid;
+      best_temp = temp.clone();
+      best_pres = pres.clone();
+    } else {
+      relax *= 0.5;  // step made it worse: damp (active-set chatter)
     }
 
     auto pres1 = pres.clone();
@@ -257,8 +285,9 @@ void ThermoXImpl::extrapolate_dz(torch::Tensor temp, torch::Tensor pres,
     auto rho = compute("V->D", {conc});
     pres.set_(pres0 - 0.5 * (rho + rho0) * grav * dz);
     auto dlnp = pres.log() - pres1.log();
-    temp.set_(temp1 * (1. + (entropy_step - entropy_mole +
-                             xg * constants::Rgas * dlnp) /
+    temp.set_(temp1 * (1. + relax *
+                                (entropy_step - entropy_mole +
+                                 xg * constants::Rgas * dlnp) /
                                 cp_mole));
     conc = compute("TPX->V", {temp, pres, xfrac});
     if (verbose) {
@@ -272,8 +301,12 @@ void ThermoXImpl::extrapolate_dz(torch::Tensor temp, torch::Tensor pres,
   }
 
   if (iter >= options->max_iter()) {
+    if (best_temp.defined()) {  // restore the closest iterate, not the last one
+      temp.set_(best_temp);
+      pres.set_(best_pres);
+    }
     TORCH_WARN("extrapolate_ad does not converge after ", options->max_iter(),
-               " iterations.");
+               " iterations (best residual ", best_resid, ").");
   }
 }
 

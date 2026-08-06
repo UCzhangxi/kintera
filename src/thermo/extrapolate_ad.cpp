@@ -26,13 +26,31 @@ torch::Tensor ThermoXImpl::effective_cp(torch::Tensor temp, torch::Tensor pres,
 
   auto logsvp_ddT = LogSVPFunc::grad(temp);
 
+  // Row-equilibrate before the solve. The gain rows are scaled by 1/x_vapour,
+  // so a species that has largely rained out contributes a row of order 1e14
+  // next to the order-1e2 row that actually carries the latent heat: cond(gain)
+  // ~ x_j / x_k, and the row that carries ~100 % of cp_latent is the SMALL one.
+  // linalg_lstsq's rank tolerance is RELATIVE, so it discards exactly that
+  // direction -- measured on a CH4 + H2S column, cp_latent comes out EXACTLY
+  // zero in float32 once cond(gain) > ~1e7 (and a single active reaction
+  // sitting beside an inactive all-zero row already fails). Dividing each row,
+  // and the matching right-hand side, by that row's largest magnitude gives the
+  // identical solution in exact arithmetic with a condition number of order 1.
+  // Rows that are entirely zero (inactive reactions) keep a scale of 1 and stay
+  // zero.
+  auto row_scale = gain.abs().amax(-1, /*keepdim=*/true);
+  row_scale =
+      torch::where(row_scale > 0., row_scale, torch::ones_like(row_scale));
+  auto gain_eq = gain / row_scale;
+  auto rhs_eq = logsvp_ddT / row_scale.squeeze(-1);
+
   torch::Tensor rate_ddT;
 
   if (gain.device().is_cpu()) {
-    rate_ddT = std::get<0>(torch::linalg_lstsq(gain, logsvp_ddT));
+    rate_ddT = std::get<0>(torch::linalg_lstsq(gain_eq, rhs_eq));
   } else {
-    auto pinv = torch::linalg_pinv(gain, /*atol=*/1e-6);
-    rate_ddT = pinv.matmul(logsvp_ddT.unsqueeze(-1)).squeeze(-1);
+    auto pinv = torch::linalg_pinv(gain_eq, /*atol=*/1e-6);
+    rate_ddT = pinv.matmul(rhs_eq.unsqueeze(-1)).squeeze(-1);
   }
 
   auto enthalpy =

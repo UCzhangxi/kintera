@@ -279,7 +279,7 @@ DISPATCH_MACRO int equilibrate_tp(T* gain, T* diag, T* xfrac, T temp, T pres,
     for (int i = 0; i < nspecies; i++) xfrac[i] /= xsum;
   }
 
-  /*///////// Construct a gain matrix of active reactions ///////////
+  /////////// Construct a gain matrix of active reactions ///////////
   int first = 0;
   int last = nreaction;
   T xg = 0.0;
@@ -329,8 +329,6 @@ DISPATCH_MACRO int equilibrate_tp(T* gain, T* diag, T* xfrac, T temp, T pres,
     }
 
   mmdot(gain_cpy, weight, stoich_active, *nactive, nspecies, *nactive);
-  */
-  memcpy(gain_cpy, gain, nreaction * nreaction * sizeof(T));
   memset(gain, 0, nreaction * nreaction * sizeof(T));
 
   for (int k = 0; k < (*nactive); k++) {

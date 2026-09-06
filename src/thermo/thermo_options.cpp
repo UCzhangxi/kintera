@@ -46,7 +46,8 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
   // `dynamics/equation-of-state` block is deliberately NOT checked -- snapy
   // owns most of its keys and kintera must not reject them.
   static const std::vector<std::string> ref_state_keys = {
-      "Tref", "Pref", "use-nasa9-cp", "use-h2-cp", "h2-cp-mode"};
+      "Tref",         "Pref",      "use-nasa9-cp", "use-h2-dissociation",
+      "fused-h2diss", "use-h2-cp", "h2-cp-mode"};
   for (auto const& item : config["reference-state"]) {
     auto key = item.first.as<std::string>();
     TORCH_CHECK(std::find(ref_state_keys.begin(), ref_state_keys.end(), key) !=
@@ -81,6 +82,42 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
     thermo->use_nasa9_cp(config["reference-state"]["use-nasa9-cp"].as<bool>());
     if (thermo->verbose()) {
       std::cout << "[ThermoOptions] use_nasa9_cp = " << thermo->use_nasa9_cp()
+                << std::endl;
+    }
+  }
+
+  if (config["reference-state"]["use-h2-dissociation"]) {
+    thermo->use_h2_dissociation(
+        config["reference-state"]["use-h2-dissociation"].as<bool>());
+    if (thermo->use_h2_dissociation()) {
+      // The lumped H/He species is the FIRST species; take its H/He atom counts
+      // straight from its `composition`, so mu, cz and the latent heat all stay
+      // tied to one source of truth.
+      TORCH_CHECK(config["species"] && config["species"].size() > 0,
+                  "use-h2-dissociation needs a `species` block");
+      auto sp0 = config["species"][0];
+      double nH =
+          sp0["composition"]["H"] ? sp0["composition"]["H"].as<double>() : 0.;
+      double nHe =
+          sp0["composition"]["He"] ? sp0["composition"]["He"].as<double>() : 0.;
+      TORCH_CHECK(nH > 0., "use-h2-dissociation: species[0] `",
+                  sp0["name"].as<std::string>(),
+                  "` has no H in its composition");
+      thermo->h2_diss_id(0);
+      thermo->h2_diss_nH(nH);
+      thermo->h2_diss_nHe(nHe);
+      if (thermo->verbose()) {
+        std::cout << "[ThermoOptions] use_h2_dissociation = true (H2<->2H on "
+                     "species[0]: "
+                  << "nH = " << nH << ", nHe = " << nHe << ")" << std::endl;
+      }
+    }
+  }
+
+  if (config["reference-state"]["fused-h2diss"]) {
+    thermo->fused_h2diss(config["reference-state"]["fused-h2diss"].as<bool>());
+    if (thermo->verbose()) {
+      std::cout << "[ThermoOptions] fused_h2diss = " << thermo->fused_h2diss()
                 << std::endl;
     }
   }

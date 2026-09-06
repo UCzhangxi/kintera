@@ -84,6 +84,9 @@ struct ThermoOptionsImpl final : public SpeciesThermoImpl {
   ADD_ARG(bool, verbose) = false;
   ADD_ARG(bool, offset_zero) = false;
 
+  // NOTE: fused_h2diss (Design C) lives on SpeciesThermoImpl (species.hpp) so
+  // the eval_* hooks can see it; inherited here.
+
   ADD_ARG(NucleationOptions, nucleation) = nullptr;
 };
 using ThermoOptions = std::shared_ptr<ThermoOptionsImpl>;
@@ -140,6 +143,22 @@ class ThermoYImpl : public torch::nn::Cloneable<ThermoYImpl> {
 
   //! options with which this `ThermoY` was constructed
   ThermoOptions options;
+
+  //! fused-kernel warm-start seeds (Design C S5a follow-on): the previous
+  //! solve's converged T, flat, per instance (never static -- see the global
+  //! species-registry trap). Pure seeds: any content is corrected by the
+  //! per-cell Newton to ftol, so stale/mismatched values only cost iterations.
+  //!
+  //! ABI-NEUTRAL BY CONSTRUCTION: these live ONLY in the torch Module buffer
+  //! dict (register_buffer in reset()), never as data members, so
+  //! sizeof(ThermoYImpl) is IDENTICAL to upstream and a consumer built against
+  //! upstream kintera headers (the pin-venv snapy) needs NO rebuild -- the
+  //! fused branch ships as a cheap kintera-only iso. An earlier revision
+  //! declared them as members here; inserting mid-class shifted `options` and
+  //! sent the pin-venv snapy reading a garbage pointer (job 625612 NODE_FAIL,
+  //! 56 GB alloc in MeshBlock ctor), and even appended-last it changed sizeof.
+  //! Fetch them with named_buffers()["warm_vu"|"warm_pv"] -- once per solve
+  //! launch, OUTSIDE the per-cell loop, so the lookup is fully amortized.
 
   ThermoYImpl() : options(ThermoOptionsImpl::create()) {}
   explicit ThermoYImpl(const ThermoOptions& options_);
@@ -233,6 +252,18 @@ class ThermoYImpl : public torch::nn::Cloneable<ThermoYImpl> {
    */
   void _intEng_to_temp(torch::Tensor ivol, torch::Tensor intEng,
                        torch::Tensor& out) const;
+
+  //! \brief Fused per-cell scalar Newton for VU->T (same math as
+  //! _intEng_to_temp; one launch per solve, per-cell early exit). CPU only for
+  //! now (GPU deferred to S5). Preconditions per h2diss_fused_ok().
+  void _intEng_to_temp_fused(torch::Tensor ivol, torch::Tensor intEng,
+                             torch::Tensor& out) const;
+
+  //! \brief Fused per-cell scalar Newton for PV->T (same math as _pres_to_temp,
+  //! including the damped/subtracted Newton step). CPU only. Preconditions per
+  //! h2diss_fused_ok().
+  void _pres_to_temp_fused(torch::Tensor pres, torch::Tensor ivol,
+                           torch::Tensor& out) const;
 
   //! \brief calculate pressure (Pa)
   /*!

@@ -253,27 +253,15 @@ class ThermoYImpl : public torch::nn::Cloneable<ThermoYImpl> {
   void _intEng_to_temp(torch::Tensor ivol, torch::Tensor intEng,
                        torch::Tensor& out) const;
 
-  //! \brief Predicate for the fused scalar h2diss kernels. True only when the
-  //! flag is set AND the config is the single-lumped-gas-species case the
-  //! kernels assume: one gas species (ngas==1), no clouds, and h2diss active on
-  //! species[0]. In that case every per-species sum in the torch Newton loops
-  //! collapses to the one h2diss column, so the scalar per-cell solve is exact
-  //! (up to fp reordering + per-cell early exit). Any other config => torch.
-  bool _h2diss_fast_path() const {
-    return options->fused_h2diss() && options->use_h2_dissociation() &&
-           options->h2_diss_nH() > 0. && options->h2_diss_id() == 0 &&
-           options->vapor_ids().size() == 1 && options->cloud_ids().size() == 0;
-  }
-
   //! \brief Fused per-cell scalar Newton for VU->T (same math as
   //! _intEng_to_temp; one launch per solve, per-cell early exit). CPU only for
-  //! now (GPU deferred to S5). Preconditions per _h2diss_fast_path().
+  //! now (GPU deferred to S5). Preconditions per h2diss_fused_ok().
   void _intEng_to_temp_fused(torch::Tensor ivol, torch::Tensor intEng,
                              torch::Tensor& out) const;
 
   //! \brief Fused per-cell scalar Newton for PV->T (same math as _pres_to_temp,
   //! including the damped/subtracted Newton step). CPU only. Preconditions per
-  //! _h2diss_fast_path().
+  //! h2diss_fused_ok().
   void _pres_to_temp_fused(torch::Tensor pres, torch::Tensor ivol,
                            torch::Tensor& out) const;
 

@@ -365,7 +365,7 @@ void ThermoYImpl::_yfrac_to_ivol(torch::Tensor rho, torch::Tensor yfrac,
 
 void ThermoYImpl::_pres_to_temp(torch::Tensor pres, torch::Tensor ivol,
                                 torch::Tensor& out) const {
-  if (_h2diss_fast_path() && ivol.is_cpu()) {
+  if (h2diss_fused_ok(options, ivol, ivol)) {
     _pres_to_temp_fused(pres, ivol, out);
     return;
   }
@@ -424,7 +424,7 @@ void ThermoYImpl::_cv_vol(torch::Tensor ivol, torch::Tensor temp,
 
 void ThermoYImpl::_intEng_to_temp(torch::Tensor ivol, torch::Tensor intEng,
                                   torch::Tensor& out) const {
-  if (_h2diss_fast_path() && ivol.is_cpu()) {
+  if (h2diss_fused_ok(options, ivol, ivol)) {
     _intEng_to_temp_fused(ivol, intEng, out);
     return;
   }
@@ -465,7 +465,7 @@ void ThermoYImpl::_intEng_to_temp(torch::Tensor ivol, torch::Tensor intEng,
 void ThermoYImpl::_intEng_to_temp_fused(torch::Tensor ivol,
                                         torch::Tensor intEng,
                                         torch::Tensor& out) const {
-  // Fast path (guaranteed by _h2diss_fast_path): the ONLY gas species is the
+  // Fast path (guaranteed by h2diss_fused_ok): the ONLY gas species is the
   // lumped h2diss "dry" at index 0, no clouds -> the torch Newton's per-species
   // sums (u*conc).sum(-1) / (cv*conc).sum(-1) each collapse to that one column.
   // This is the SAME math as the torch _intEng_to_temp loop, re-expressed as
@@ -549,7 +549,7 @@ void ThermoYImpl::_intEng_to_temp_fused(torch::Tensor ivol,
 
 void ThermoYImpl::_pres_to_temp_fused(torch::Tensor pres, torch::Tensor ivol,
                                       torch::Tensor& out) const {
-  // Fast path (per _h2diss_fast_path): one gas species (the lumped h2diss
+  // Fast path (per h2diss_fused_ok): one gas species (the lumped h2diss
   // "dry"), no clouds -> the torch sums collapse to one column. Same math as
   // the torch _pres_to_temp loop, per cell: f(T) = T*cz*c - P/R, with the
   // DAMPED Newton step T -= f / ((cp_R - cv_R)*c). The step is SUBTRACTED: f

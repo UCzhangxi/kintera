@@ -215,10 +215,13 @@ inline std::pair<h2diss::Result, torch::Tensor> eval_h2diss(
 // face surface). The fast path runs the whole evaluation as ONE
 // at::parallel_for launch over cells via the oracle-gated scalar transcription
 // (h2_dissociation_scalar.hpp) and returns the requested field. Preconditions
-// mirror ThermoYImpl::_h2diss_fast_path: single lumped gas species at id 0, no
-// clouds, CPU, fp64, flag ON (default OFF -> torch chains stay the oracle).
-inline bool h2diss_fused_ok(SpeciesThermo const& op, torch::Tensor const& temp,
-                            torch::Tensor const& conc) {
+// are shared with ThermoYImpl's fused Newton kernels through this predicate:
+// single lumped gas species at id 0, no clouds, CPU, fp64, flag ON (default OFF
+// -> torch chains stay the oracle).
+}  // namespace
+
+bool h2diss_fused_ok(SpeciesThermo const& op, torch::Tensor const& temp,
+                     torch::Tensor const& conc) {
   // A registered czh() user function would compose a non-ideal Z with the
   // chemical Z (see eval_czh); the fast path assumes Z_nonideal == 1, so
   // REQUIRE czh unregistered rather than assume it.
@@ -230,6 +233,8 @@ inline bool h2diss_fused_ok(SpeciesThermo const& op, torch::Tensor const& temp,
          conc.size(-1) == 1 && temp.is_cpu() &&
          temp.scalar_type() == torch::kFloat64;
 }
+
+namespace {
 
 //! One launch -> (..., 5) = [e_R, cv_R, cp_R, cz, cz_ddC] per cell.
 torch::Tensor h2diss_pack_fused(torch::Tensor const& temp,
@@ -357,7 +362,7 @@ torch::Tensor eval_czh(torch::Tensor temp, torch::Tensor conc,
                        SpeciesThermo const& op) {
   if (h2diss_fused_ok(op, temp, conc)) {
     // Z_total = Z_chem * Z_nonideal; czh() is unregistered on this fast path
-    // (guarded by _h2diss_fast_path-class preconditions) => Z_nonideal == 1.
+    // (h2diss_fused_ok requires it unregistered) => Z_nonideal == 1.
     return h2diss_pack_fused(temp, conc, op).select(-1, 3).unsqueeze(-1);
   }
   auto cz = torch::zeros_like(conc);

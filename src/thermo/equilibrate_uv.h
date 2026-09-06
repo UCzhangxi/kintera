@@ -99,6 +99,7 @@ DISPATCH_MACRO int equilibrate_uv(
   T *intEng, *intEng_ddT, *logsvp, *logsvp_ddT, *weight, *rhs;
   T *stoich_active, *conc0;
   T* gain_cpy;
+  T* theta;
 
   if (work == nullptr) {
     intEng = (T*)malloc(nspecies * sizeof(T));
@@ -120,6 +121,9 @@ DISPATCH_MACRO int equilibrate_uv(
 
     // gain matrix copy
     gain_cpy = (T*)malloc(nreaction * nreaction * sizeof(T));
+
+    // per-species share of its own stock, used to build each reaction's scale
+    theta = (T*)malloc(nspecies * sizeof(T));
   } else {
     intEng = alloc_from<T>(work, nspecies);
     intEng_ddT = alloc_from<T>(work, nspecies);
@@ -130,6 +134,7 @@ DISPATCH_MACRO int equilibrate_uv(
     stoich_active = alloc_from<T>(work, nspecies * nreaction);
     conc0 = alloc_from<T>(work, nspecies);
     gain_cpy = alloc_from<T>(work, nreaction * nreaction);
+    theta = alloc_from<T>(work, nspecies);
   }
 
   memset(weight, 0, nreaction * nspecies * sizeof(T));
@@ -225,13 +230,15 @@ DISPATCH_MACRO int equilibrate_uv(
       }
     }
 
+    // (*nactive) sizes the gain scatter at exit; a converged solve has none
+    (*nactive) = first;
+
     if (first == 0) {
       // all reactions are in equilibrium, no need to adjust saturation
       break;
     }
 
     // form active stoichiometric and constraint matrix
-    (*nactive) = first;
     for (int i = 0; i < nspecies; i++)
       for (int k = 0; k < (*nactive); k++) {
         int j = reaction_set[k];
@@ -247,7 +254,9 @@ DISPATCH_MACRO int equilibrate_uv(
     // note that stoich_active is negated
 
     // solve constrained optimization problem (KKT)
-    int max_kkt_iter = *max_iter;
+    // The inner active-set solve needs its own bound: sharing max_iter with
+    // the outer Newton lets a small budget abort it and return state unchanged.
+    int max_kkt_iter = nspecies + 1 > *max_iter ? nspecies + 1 : *max_iter;
     err_code = leastsq_kkt(rhs, gain, stoich_active, conc, *nactive, *nactive,
                            nspecies, 0, &max_kkt_iter, -1.e-10, work);
     if (err_code != 0) break;
@@ -255,6 +264,38 @@ DISPATCH_MACRO int equilibrate_uv(
     // rate -> conc
     memcpy(conc0, conc, nspecies * sizeof(T));
     T lambda = 1.;  // scale
+    // Per-reaction extent limit (ISSUES S94). The KKT bound is only soft --
+    // populate_aug puts `reg` on the constraint diagonal -- and ONE scale per
+    // cell cannot say "this reaction has no reactant left, the others are
+    // fine": an absent condensate zeroes it and suspends the whole cell.
+    // Capping species i's draw at conc0_i/demand_i gives positivity, and any
+    // non-negative per-reaction scaling keeps the update in range(S), so
+    // elements still close. Do NOT credit production against demand (admits
+    // cancelling extents -> NaN); do NOT add a fraction-to-the-boundary factor
+    // (a condensate must REACH zero or its reaction never deactivates).
+    for (int i = 0; i < nspecies; i++) {
+      T demand = 0.;
+      for (int k = 0; k < (*nactive); k++) {
+        // stoich_active is negated: species i changes by -sa[i][k]*rhs[k]
+        T ck = -stoich_active[i * (*nactive) + k] * rhs[k];
+        if (ck < 0.) demand -= ck;
+      }
+      // conc0 is re-copied each iteration, so it is not clamped non-negative;
+      // a negative must give 0, not a scale that flips the step.
+      if (demand > conc0[i]) {
+        theta[i] = conc0[i] > 0. ? conc0[i] / demand : 0.;
+      } else {
+        theta[i] = 1.;
+      }
+    }
+    for (int k = 0; k < (*nactive); k++) {
+      T lam = 1.;
+      for (int i = 0; i < nspecies; i++) {
+        T ck = -stoich_active[i * (*nactive) + k] * rhs[k];
+        if (ck < 0. && theta[i] < lam) lam = theta[i];
+      }
+      rhs[k] *= lam;
+    }
     while (true) {
       bool good = true;
       for (int i = 0; i < nspecies; i++) {
@@ -305,11 +346,13 @@ DISPATCH_MACRO int equilibrate_uv(
   memcpy(gain_cpy, gain, nreaction * nreaction * sizeof(T));
   memset(gain, 0, nreaction * nreaction * sizeof(T));
 
+  // mmdot wrote gain as (*nactive) x (*nactive), so the copy's leading
+  // dimension is (*nactive), not nreaction (cf. equilibrate_tp, #105)
   for (int i = 0; i < (*nactive); i++) {
-    for (int j = 0; j < nreaction; j++) {
+    for (int j = 0; j < (*nactive); j++) {
       int k = reaction_set[i];
       int l = reaction_set[j];
-      gain[k * nreaction + l] = gain_cpy[i * nreaction + j];
+      gain[k * nreaction + l] = gain_cpy[i * (*nactive) + j];
     }
   }
 
@@ -326,6 +369,7 @@ DISPATCH_MACRO int equilibrate_uv(
     free(stoich_active);
     free(conc0);
     free(gain_cpy);
+    free(theta);
   }
 
   if (iter >= *max_iter) {

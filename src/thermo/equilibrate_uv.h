@@ -258,21 +258,14 @@ DISPATCH_MACRO int equilibrate_uv(
     // the outer Newton lets a small budget abort it and return state unchanged.
     int max_kkt_iter = nspecies + 1 > *max_iter ? nspecies + 1 : *max_iter;
     err_code = leastsq_kkt(rhs, gain, stoich_active, conc, *nactive, *nactive,
-                           nspecies, 0, &max_kkt_iter, -1.e-10, work);
+                           nspecies, 0, &max_kkt_iter, 0., work);
     if (err_code != 0) break;
 
     // rate -> conc
     memcpy(conc0, conc, nspecies * sizeof(T));
     T lambda = 1.;  // scale
-    // Per-reaction extent limit (ISSUES S94). The KKT bound is only soft --
-    // populate_aug puts `reg` on the constraint diagonal -- and ONE scale per
-    // cell cannot say "this reaction has no reactant left, the others are
-    // fine": an absent condensate zeroes it and suspends the whole cell.
-    // Capping species i's draw at conc0_i/demand_i gives positivity, and any
-    // non-negative per-reaction scaling keeps the update in range(S), so
-    // elements still close. Do NOT credit production against demand (admits
-    // cancelling extents -> NaN); do NOT add a fraction-to-the-boundary factor
-    // (a condensate must REACH zero or its reaction never deactivates).
+    // Per-reaction extent limit (ISSUES S94): clip each reaction to the stock
+    // of what it consumes. No production credit, no boundary factor.
     for (int i = 0; i < nspecies; i++) {
       T demand = 0.;
       for (int k = 0; k < (*nactive); k++) {

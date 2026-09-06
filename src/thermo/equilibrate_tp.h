@@ -248,7 +248,11 @@ DISPATCH_MACRO int equilibrate_tp(T* gain, T* diag, T* xfrac, T temp, T pres,
     // note that stoich_active is negated
 
     // solve constrained optimization problem (KKT)
-    int max_kkt_iter = *max_iter;
+    // Bound the inner active-set solve by the constraint count, not by the
+    // outer Newton budget: sharing one knob makes a small max_iter abort the
+    // KKT solve, after which equilibrate returns the state unchanged and
+    // silently.
+    int max_kkt_iter = nspecies + 1 > *max_iter ? nspecies + 1 : *max_iter;
     kkt_err = leastsq_kkt(rhs, gain, stoich_active, xfrac, *nactive, *nactive,
                           nspecies, 0, &max_kkt_iter, 0., work);
     if (kkt_err != 0) break;

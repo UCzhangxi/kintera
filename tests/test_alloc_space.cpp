@@ -57,6 +57,7 @@ void walk_equilibrate_uv(char*& work, int nspecies, int nreaction) {
   alloc_from<T>(work, nspecies * nreaction);   // stoich_active
   alloc_from<T>(work, nspecies);               // conc0
   alloc_from<T>(work, nreaction * nreaction);  // gain_cpy
+  alloc_from<T>(work, nspecies);               // theta
   walk_leastsq_kkt<T>(work, nreaction, nspecies);
 }
 

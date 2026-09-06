@@ -103,6 +103,7 @@ size_t equilibrate_uv_space(int nspecies, int nreaction) {
   bump(alignof(T), nspecies * nreaction * sizeof(T));   // stoich_active
   bump(alignof(T), nspecies * sizeof(T));               // conc0
   bump(alignof(T), nreaction * nreaction * sizeof(T));  // gain_cpy
+  bump(alignof(T), nspecies * sizeof(T));               // theta
   bytes += leastsq_kkt_space<T>(nreaction, nspecies);
   return static_cast<size_t>(align_up(bytes, alignof(T)));
 }

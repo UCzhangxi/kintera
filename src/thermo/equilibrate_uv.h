@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 
 // base
 #include <configure.h>
@@ -99,6 +100,7 @@ DISPATCH_MACRO int equilibrate_uv(
   T *intEng, *intEng_ddT, *logsvp, *logsvp_ddT, *weight, *rhs;
   T *stoich_active, *conc0;
   T* gain_cpy;
+  T* theta;
 
   if (work == nullptr) {
     intEng = (T*)malloc(nspecies * sizeof(T));
@@ -120,6 +122,9 @@ DISPATCH_MACRO int equilibrate_uv(
 
     // gain matrix copy
     gain_cpy = (T*)malloc(nreaction * nreaction * sizeof(T));
+
+    // per-species share of its own stock, used to build each reaction's scale
+    theta = (T*)malloc(nspecies * sizeof(T));
   } else {
     intEng = alloc_from<T>(work, nspecies);
     intEng_ddT = alloc_from<T>(work, nspecies);
@@ -130,6 +135,7 @@ DISPATCH_MACRO int equilibrate_uv(
     stoich_active = alloc_from<T>(work, nspecies * nreaction);
     conc0 = alloc_from<T>(work, nspecies);
     gain_cpy = alloc_from<T>(work, nreaction * nreaction);
+    theta = alloc_from<T>(work, nspecies);
   }
 
   memset(weight, 0, nreaction * nspecies * sizeof(T));
@@ -186,18 +192,33 @@ DISPATCH_MACRO int equilibrate_uv(
       int j = reaction_set[first];
       T log_conc_sum = 0.0;
       T prod = 1.0;
+      T nu_absent = 0.;  // stoichiometry of the reactants that are absent
+      T log_nu = 0.;
 
       // active set condition variables
       for (int i = 0; i < nspecies; i++) {
-        if (stoich[i * nreaction + j] < 0) {  // reactant
+        T nu = -stoich[i * nreaction + j];
+        if (nu > 0) {  // reactant
           if (conc[i] == 0.) {
-            log_conc_sum = -99;  // force to be in active set
+            nu_absent += nu;
+            log_nu += nu * log(nu);
           } else {
-            log_conc_sum += (-stoich[i * nreaction + j]) * log(conc[i]);
+            log_conc_sum += nu * log(conc[i]);
           }
-        } else if (stoich[i * nreaction + j] > 0) {  // product
+        } else if (nu < 0) {  // product
           prod *= conc[i];
         }
+      }
+
+      // Absent reactants are linearized at their saturation value nu*r*,
+      // restored from the product; rhs = nu_absent lands the step there.
+      T log_r = 0.;
+      if (nu_absent > 0.) {
+        log_r = (logsvp[j] - log_conc_sum - log_nu) / nu_absent;
+        // keep the weight 1/r* finite: it overflows float for a cold enough svp
+        T log_r_min = -0.5 * log(std::numeric_limits<T>::max());
+        if (log_r < log_r_min) log_r = log_r_min;
+        log_conc_sum = logsvp[j] - nu_absent;
       }
 
       // active set, weight matrix and rhs vector
@@ -206,13 +227,10 @@ DISPATCH_MACRO int equilibrate_uv(
         for (int i = 0; i < nspecies; i++) {
           weight[first * nspecies + i] =
               logsvp_ddT[j] * intEng[i] / heat_capacity;
-          if (stoich[i * nreaction + j] < 0) {
-            if (conc[i] == 0.) {
-              weight[first * nspecies + i] += 1.e5;
-            } else {
-              weight[first * nspecies + i] +=
-                  (-stoich[i * nreaction + j]) / conc[i];
-            }
+          T nu = -stoich[i * nreaction + j];
+          if (nu > 0) {
+            weight[first * nspecies + i] +=
+                conc[i] == 0. ? exp(-log_r) : nu / conc[i];
           }
         }
         rhs[first] = logsvp[j] - log_conc_sum;
@@ -225,13 +243,15 @@ DISPATCH_MACRO int equilibrate_uv(
       }
     }
 
+    // (*nactive) sizes the gain scatter at exit; a converged solve has none
+    (*nactive) = first;
+
     if (first == 0) {
       // all reactions are in equilibrium, no need to adjust saturation
       break;
     }
 
     // form active stoichiometric and constraint matrix
-    (*nactive) = first;
     for (int i = 0; i < nspecies; i++)
       for (int k = 0; k < (*nactive); k++) {
         int j = reaction_set[k];
@@ -247,14 +267,41 @@ DISPATCH_MACRO int equilibrate_uv(
     // note that stoich_active is negated
 
     // solve constrained optimization problem (KKT)
-    int max_kkt_iter = *max_iter;
+    // The inner active-set solve needs its own bound: sharing max_iter with
+    // the outer Newton lets a small budget abort it and return state unchanged.
+    int max_kkt_iter = nspecies + 1 > *max_iter ? nspecies + 1 : *max_iter;
     err_code = leastsq_kkt(rhs, gain, stoich_active, conc, *nactive, *nactive,
-                           nspecies, 0, &max_kkt_iter, -1.e-10, work);
+                           nspecies, 0, &max_kkt_iter, 0., work);
     if (err_code != 0) break;
 
     // rate -> conc
     memcpy(conc0, conc, nspecies * sizeof(T));
     T lambda = 1.;  // scale
+    // Per-reaction extent limit (ISSUES S94): clip each reaction to the stock
+    // of what it consumes. No production credit, no boundary factor.
+    for (int i = 0; i < nspecies; i++) {
+      T demand = 0.;
+      for (int k = 0; k < (*nactive); k++) {
+        // stoich_active is negated: species i changes by -sa[i][k]*rhs[k]
+        T ck = -stoich_active[i * (*nactive) + k] * rhs[k];
+        if (ck < 0.) demand -= ck;
+      }
+      // conc0 is re-copied each iteration, so it is not clamped non-negative;
+      // a negative must give 0, not a scale that flips the step.
+      if (demand > conc0[i]) {
+        theta[i] = conc0[i] > 0. ? conc0[i] / demand : 0.;
+      } else {
+        theta[i] = 1.;
+      }
+    }
+    for (int k = 0; k < (*nactive); k++) {
+      T lam = 1.;
+      for (int i = 0; i < nspecies; i++) {
+        T ck = -stoich_active[i * (*nactive) + k] * rhs[k];
+        if (ck < 0. && theta[i] < lam) lam = theta[i];
+      }
+      rhs[k] *= lam;
+    }
     while (true) {
       bool good = true;
       for (int i = 0; i < nspecies; i++) {
@@ -305,11 +352,13 @@ DISPATCH_MACRO int equilibrate_uv(
   memcpy(gain_cpy, gain, nreaction * nreaction * sizeof(T));
   memset(gain, 0, nreaction * nreaction * sizeof(T));
 
+  // mmdot wrote gain as (*nactive) x (*nactive), so the copy's leading
+  // dimension is (*nactive), not nreaction (cf. equilibrate_tp, #105)
   for (int i = 0; i < (*nactive); i++) {
-    for (int j = 0; j < nreaction; j++) {
+    for (int j = 0; j < (*nactive); j++) {
       int k = reaction_set[i];
       int l = reaction_set[j];
-      gain[k * nreaction + l] = gain_cpy[i * nreaction + j];
+      gain[k * nreaction + l] = gain_cpy[i * (*nactive) + j];
     }
   }
 
@@ -326,6 +375,7 @@ DISPATCH_MACRO int equilibrate_uv(
     free(stoich_active);
     free(conc0);
     free(gain_cpy);
+    free(theta);
   }
 
   if (iter >= *max_iter) {

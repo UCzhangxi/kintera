@@ -48,9 +48,10 @@ def _state(th, tmp_path):
     return rho, U, yfrac
 
 
-def _th(tmp_path):
+def _th(tmp_path, max_iter=None):
     p = tmp_path / "three_vapour.yaml"
-    p.write_text(YAML)
+    extra = "" if max_iter is None else "dynamics: {equation-of-state: {max-iter: %d}}\n" % max_iter
+    p.write_text(YAML + extra)
     return ThermoY(ThermoOptions.from_yaml(str(p)))
 
 
@@ -72,3 +73,17 @@ def test_gain_is_zero_when_nothing_is_active(tmp_path):
     gain = th.forward(rho, U, yfrac, True)[0]  # warm start: every reaction now in equilibrium
     assert float(gain.abs().max()) == 0.0, (
         "converged solve exported a non-empty gain: %s" % gain)
+
+
+def test_gain_is_supported_on_the_active_block_when_the_solve_exits_active(tmp_path):
+    # A converged solve exports an all-zero gain (nactive = 0 at exit), which satisfies the two
+    # cases above vacuously. One outer pass returns with the two supersaturated reactions still
+    # active, so the scatter must place a non-zero 2x2 block on them and nothing elsewhere.
+    th = _th(tmp_path, max_iter=1)
+    rho, U, yfrac = _state(th, tmp_path)
+    gain = th.forward(rho, U, yfrac, False)[0]
+    active = [i for i in range(3) if i != INACTIVE]
+    assert float(gain[active][:, active].abs().max()) > 0.0, (
+        "solve exited with reactions active but exported an empty gain: %s" % gain)
+    assert float(gain[INACTIVE, :].abs().max()) == 0.0, gain
+    assert float(gain[:, INACTIVE].abs().max()) == 0.0, gain

@@ -66,7 +66,9 @@ size_t leastsq_kkt_space(int n2, int n3) {
   bump(alignof(int), n3 * sizeof(int));       // ct_indx
   bump(alignof(int), size * sizeof(int));     // lu_indx
   bump(alignof(int), size * sizeof(int));     // skip_row
-  return bytes + ludcmp_space<T>(n2 + n3);
+  bump(alignof(T), ludcmp_space<T>(size));    // vv, aligned like alloc_from
+  // a multiple of alignof(T): callers stride GPU threads by this value
+  return static_cast<size_t>(align_up(bytes, alignof(T)));
 }
 
 template <typename T>
@@ -82,7 +84,8 @@ size_t equilibrate_tp_space(int nspecies, int nreaction) {
   bump(alignof(T), nreaction * sizeof(T));              // stoich_sum
   bump(alignof(T), nspecies * sizeof(T));               // xfrac0
   bump(alignof(T), nreaction * nreaction * sizeof(T));  // gain_cpy
-  return bytes + leastsq_kkt_space<T>(nreaction, nspecies);
+  bytes += leastsq_kkt_space<T>(nreaction, nspecies);
+  return static_cast<size_t>(align_up(bytes, alignof(T)));
 }
 
 template <typename T>
@@ -100,7 +103,8 @@ size_t equilibrate_uv_space(int nspecies, int nreaction) {
   bump(alignof(T), nspecies * nreaction * sizeof(T));   // stoich_active
   bump(alignof(T), nspecies * sizeof(T));               // conc0
   bump(alignof(T), nreaction * nreaction * sizeof(T));  // gain_cpy
-  return bytes + leastsq_kkt_space<T>(nreaction, nspecies);
+  bytes += leastsq_kkt_space<T>(nreaction, nspecies);
+  return static_cast<size_t>(align_up(bytes, alignof(T)));
 }
 
 }  // namespace kintera

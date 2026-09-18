@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 
 // base
 #include <configure.h>
@@ -324,7 +325,11 @@ DISPATCH_MACRO int leastsq_kkt(T* b, T const* a, T const* c, T const* d, int n1,
     T worst = 0.;
     for (int i = first; i < last; ++i) {
       int k = ct_indx[i];
+      T scale = fabs(d[k]);
+      for (int j = 0; j < n2; ++j) scale += fabs(C(k, j) * rhs[j]);
+      // a violation within the round-off of C.x is not a violation
       if (eval[k] - d[k] > worst &&
+          eval[k] - d[k] > 64 * std::numeric_limits<T>::epsilon() * scale &&
           independent_row(aug, c, ct_indx, first, k, n2)) {
         worst = eval[k] - d[k];
         best = i;

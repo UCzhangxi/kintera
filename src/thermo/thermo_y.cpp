@@ -344,6 +344,12 @@ torch::Tensor ThermoYImpl::forward(torch::Tensor rho, torch::Tensor intEng,
       options->intEng_R_extra(), options->ftol(), options->max_iter(),
       uv_solver);
 
+  auto nfail = (diag.value() < 0).sum().item<int64_t>();
+  if (nfail > 0) {
+    TORCH_WARN("ThermoYImpl::forward: saturation adjustment failed in ", nfail,
+               " cell(s); diag = -(100 * status + iterations)");
+  }
+
   ivol = conc / inv_mu;
   yfrac.copy_(compute("V->Y", {ivol}));
 

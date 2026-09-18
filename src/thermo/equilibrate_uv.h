@@ -254,7 +254,8 @@ DISPATCH_MACRO int equilibrate_uv_partition(
  * condition.
  *
  * \param[out] gain             WS gain matrix
- * \param[out] diag             diagnostic output
+ * \param[out] diag             iterations, or -(100 * status + iterations)
+ *                              when the return status is nonzero
  * \param[in,out] temp          in:initial temperature
  *                              out: adjusted temperature.
  * \param[in,out] conc          in:initial concentrations for each species
@@ -294,6 +295,7 @@ DISPATCH_MACRO int equilibrate_uv(
   // check positive temperature
   if (*temp <= 0) {
     printf("Error: Non-positive temperature = %g.\n", *temp);
+    diag[0] = -100.;
     return 1;  // error: non-positive temperature
   }
 
@@ -311,6 +313,7 @@ DISPATCH_MACRO int equilibrate_uv(
   // check dimensions
   if (nspecies <= 0 || nreaction <= 0) {
     printf("Error: nspecies and nreaction must be positive integers.\n");
+    diag[0] = -100.;
     return 1;  // error: invalid dimensions
   }
 
@@ -318,6 +321,7 @@ DISPATCH_MACRO int equilibrate_uv(
   for (int i = 0; i < nspecies; i++) {
     if (cv_const[i] < 0) {
       printf("Error: Negative heat capacity for species %d.\n", i);
+      diag[0] = -100.;
       return 1;  // error: negative heat capacity
     }
   }
@@ -369,6 +373,7 @@ DISPATCH_MACRO int equilibrate_uv(
 
   int iter = 0;
   int err_code = 0;
+  bool converged = false;
   while (iter++ < *max_iter) {
     /*printf("iteration %d: T = %g\n", iter, *temp);
     // print conc
@@ -477,6 +482,7 @@ DISPATCH_MACRO int equilibrate_uv(
 
     if (first == 0) {
       // all reactions are in equilibrium, no need to adjust saturation
+      converged = true;
       break;
     }
 
@@ -583,7 +589,7 @@ DISPATCH_MACRO int equilibrate_uv(
 
     if (*temp <= 0.) {
       printf("Error: Non-positive temperature after adjustment.\n");
-      err_code = 3;  // error: non-positive temperature after adjustment
+      err_code = 4;  // error: non-positive temperature after adjustment
       break;
     }
   }
@@ -602,8 +608,10 @@ DISPATCH_MACRO int equilibrate_uv(
     }
   }
 
-  // save number of iterations to diag
-  diag[0] = iter;
+  int n_iter = iter > *max_iter ? *max_iter : iter;
+  int status = err_code ? err_code : (converged ? 0 : 2 * 10);
+  // diag = iterations, or -(100 * status + iterations) on failure
+  diag[0] = status ? -(100. * status + n_iter) : n_iter;
 
   pfree<Backend>(intEng);
   pfree<Backend>(intEng_ddT);
@@ -617,14 +625,13 @@ DISPATCH_MACRO int equilibrate_uv(
   pfree<Backend>(theta);
   pool_rewind<Backend>(work, mark);
 
-  if (iter >= *max_iter) {
+  if (status == 2 * 10) {
     printf("[Warning] equilibrate_uv did not converge after %d iterations.\n",
            *max_iter);
-    return 2 * 10 + err_code;  // failure to converge
   } else {
-    *max_iter = iter;
-    return err_code;  // success or KKT error
+    *max_iter = n_iter;
   }
+  return status;
 }
 
 }  // namespace kintera

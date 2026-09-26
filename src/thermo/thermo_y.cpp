@@ -1,10 +1,20 @@
+// C/C++
+#include <algorithm>
+#include <atomic>
+#include <cmath>
+
+// torch
+#include <ATen/Parallel.h>  // at::parallel_for (fused kernels)
+
 // kintera
 #include <kintera/constants.h>
 
 #include <kintera/utils/check_resize.hpp>
 #include <kintera/utils/serialize.hpp>
 
+#include "../species.hpp"  // nasa9_coeffs_by_name (fused kernels)
 #include "eval_uhs.hpp"
+#include "h2_dissociation_scalar.hpp"  // fused per-cell scalar EOS
 #include "log_svp.hpp"
 #include "thermo.hpp"
 #include "thermo_dispatch.hpp"
@@ -58,6 +68,10 @@ void ThermoYImpl::reset() {
   }
   inv_mu =
       register_buffer("inv_mu", 1. / torch::tensor(mu_vec, torch::kFloat64));
+
+  // fused-kernel warm-start seeds (empty until the first fused solve)
+  register_buffer("warm_vu", torch::empty({0}, torch::kFloat64));
+  register_buffer("warm_pv", torch::empty({0}, torch::kFloat64));
 
   if (options->verbose()) {
     std::cout << "[ThermoY] species molecular weights (kg/mol): "
@@ -392,8 +406,51 @@ void ThermoYImpl::_yfrac_to_ivol(torch::Tensor rho, torch::Tensor yfrac,
   out.narrow(-1, 1, ny) = (rho.unsqueeze(-1) * yfrac.permute(vec));
 }
 
+namespace {
+//! Tensor form of h2diss_scalar::Bracket / bracketed_step (same rules, per
+//! cell).
+struct Bracket {
+  explicit Bracket(torch::Tensor const& T)
+      : lo(torch::zeros_like(T)),
+        hi(torch::full_like(T, INFINITY)),
+        dx(torch::full_like(T, INFINITY)),
+        dxold(torch::full_like(T, INFINITY)),
+        done(torch::zeros_like(T, T.options().dtype(torch::kBool))) {}
+  //! out <- Tn except in cells already converged to ftol, which are frozen
+  //! (the per-cell exit of the fused kernels; iterating a converged cell
+  //! would bisect on roundoff-level steps)
+  void step(torch::Tensor& out, torch::Tensor const& Tn, double ftol) {
+    auto Tnew = torch::where(done, out, Tn);
+    done = done | ((1. - out / Tnew).abs() < ftol);
+    out.set_(Tnew);
+  }
+  torch::Tensor lo, hi, dx, dxold, done;
+};
+
+torch::Tensor bracketed_step(torch::Tensor const& T, torch::Tensor const& g,
+                             torch::Tensor const& dgdT, Bracket& b) {
+  auto Tn = T + g / dgdT;
+  auto live = torch::isfinite(g) & (g != 0.);
+  b.lo = torch::where(live & (g > 0.), T, b.lo);
+  b.hi = torch::where(live & (g < 0.), T, b.hi);
+  auto closed = torch::isfinite(b.hi);
+  auto bad = ~((Tn >= b.lo) & (Tn <= b.hi)) |
+             (closed & (2. * (Tn - T).abs() > b.dxold));
+  auto bisect = torch::where(closed, 0.5 * (b.lo + b.hi), 2. * T);
+  auto Tout = torch::where(live & bad, bisect, Tn);
+  b.dxold = b.dx;
+  b.dx = torch::where(live, (Tout - T).abs(), b.dx);
+  return Tout;
+}
+}  // namespace
+
 void ThermoYImpl::_pres_to_temp(torch::Tensor pres, torch::Tensor ivol,
                                 torch::Tensor& out) const {
+  if (h2diss_fused_ok(options, ivol, ivol)) {
+    _pres_to_temp_fused(pres, ivol, out);
+    return;
+  }
+
   int ngas = options->vapor_ids().size();
 
   // kg/m^3 -> mol/m^3
@@ -401,6 +458,9 @@ void ThermoYImpl::_pres_to_temp(torch::Tensor pres, torch::Tensor ivol,
       (ivol * inv_mu).narrow(-1, 0, ngas).clamp_min(options->gas_floor());
 
   out.set_(pres / (conc_gas.sum(-1) * constants::Rgas));
+  // h2diss only, so that every other card keeps its iterates bit for bit
+  const bool guard = options->use_h2_dissociation();
+  Bracket br(guard ? out : out.new_empty({0}));  // no cost when off
   int iter = 0;
   while (iter++ < options->max_iter()) {
     auto cz = eval_czh(out, conc_gas, options);
@@ -416,7 +476,15 @@ void ThermoYImpl::_pres_to_temp(torch::Tensor pres, torch::Tensor ivol,
     // = P/(R*sum c) is already exact (func == 0) and the loop exits at once.
     // use_h2_dissociation is the first cz != 1 consumer and made PV->T diverge
     // (3900 -> 17000 K).
-    out -= func / ((cp_R - cv_R) * conc_gas).sum(-1);
+    if (guard) {
+      // exact f' per species from the Mayer relation, inside a bracket
+      auto czc = eval_czh_ddC(out, conc_gas, options);
+      auto dfdT =
+          (((cp_R - cv_R) * (cz + conc_gas * czc)).sqrt() * conc_gas).sum(-1);
+      br.step(out, bracketed_step(out, -func, dfdT, br), options->ftol());
+    } else {
+      out -= func / ((cp_R - cv_R) * conc_gas).sum(-1);
+    }
     if ((1. - temp_pre / out).abs().max().item<double>() < options->ftol()) {
       break;
     }
@@ -448,18 +516,37 @@ void ThermoYImpl::_cv_vol(torch::Tensor ivol, torch::Tensor temp,
 
 void ThermoYImpl::_intEng_to_temp(torch::Tensor ivol, torch::Tensor intEng,
                                   torch::Tensor& out) const {
+  if (h2diss_fused_ok(options, ivol, ivol)) {
+    _intEng_to_temp_fused(ivol, intEng, out);
+    return;
+  }
+
   // kg/m^3 -> mol/m^3
   auto u0_sum = (ivol * u0).sum(-1);
   auto cv0_sum = (ivol * cv0).sum(-1);
   auto conc = ivol * inv_mu;
 
   out.set_((intEng - u0_sum) / cv0_sum);
+  // h2diss only, so that every other card keeps its iterates bit for bit
+  const bool guard = options->use_h2_dissociation();
+  if (guard) {  // start inside the NASA-9 range (see _intEng_to_temp_fused)
+    out.set_(
+        torch::where(out <= 0., 300., out).clamp_max(h2diss_scalar::kTmax));
+  }
+  Bracket br(guard ? out : out.new_empty({0}));  // no cost when off
   int iter = 0;
   while (iter++ < options->max_iter()) {
     auto u = eval_intEng_R(out, conc, options) * constants::Rgas;
     auto cv = eval_cv_R(out, conc, options) * constants::Rgas;
     auto temp_pre = out.clone();
-    out += (intEng - (u * conc).sum(-1)) / (cv * conc).sum(-1);
+    if (guard) {
+      br.step(out,
+              bracketed_step(out, intEng - (u * conc).sum(-1),
+                             (cv * conc).sum(-1), br),
+              options->ftol());
+    } else {
+      out += (intEng - (u * conc).sum(-1)) / (cv * conc).sum(-1);
+    }
     if ((1. - temp_pre / out).abs().max().item<double>() < options->ftol()) {
       break;
     }
@@ -479,6 +566,179 @@ void ThermoYImpl::_intEng_to_temp(torch::Tensor ivol, torch::Tensor intEng,
     // data["intEng"] = intEng;
     // save_tensors(data, filename);
   }
+}
+
+void ThermoYImpl::_intEng_to_temp_fused(torch::Tensor ivol,
+                                        torch::Tensor intEng,
+                                        torch::Tensor& out) const {
+  // Fast path (guaranteed by h2diss_fused_ok): the ONLY gas species is the
+  // lumped h2diss "dry" at index 0, no clouds -> the torch Newton's per-species
+  // sums (u*conc).sum(-1) / (cv*conc).sum(-1) each collapse to that one column.
+  // This is the SAME math as the torch _intEng_to_temp loop, re-expressed as
+  // one scalar solve per cell: u_dry(T) = (uref0 + Tref*cref0 +
+  // e_R)*Rgas [J/mol], cv_dry(T) = cv_R*Rgas, solved for u_dry(T)*c == intEng.
+  const double nH = options->h2_diss_nH();
+  const double nHe = options->h2_diss_nHe();
+  const double uref0 = options->uref_R()[0];  // /R, T=0 ref (post offset_zero)
+  const double cref0 = options->cref_R()[0];  // /R
+  const double ftol = options->ftol();
+  const int max_iter = options->max_iter();
+  const double Rgas = constants::Rgas;
+  constexpr double kTref =
+      300.0;  // == h2diss kTref (energy-reference continuity)
+
+  // The SAME (2,3,9) coefficient block the torch path consumes, from the shared
+  // per-device cache. CPU tensor -> host data_ptr.
+  auto ab_t = h2diss_coeffs_cached(intEng);
+  const double* ab = ab_t.data_ptr<double>();
+
+  const double invmu0 = inv_mu[0].item<double>();  // mol/kg
+  const double u0_0 = u0[0].item<double>();        // J/kg  (const-cv baseline)
+  const double cv0_0 = cv0[0].item<double>();      // J/(kg K)
+
+  auto rho_t = ivol.select(-1, 0).contiguous();  // (...) kg/m^3
+  auto ie_t = intEng.contiguous();               // (...) J/m^3
+  TORCH_CHECK(out.is_contiguous() && out.scalar_type() == torch::kFloat64,
+              "_intEng_to_temp_fused: out must be contiguous float64");
+  const double* rho = rho_t.data_ptr<double>();
+  const double* eint = ie_t.data_ptr<double>();
+  double* T = out.data_ptr<double>();
+  const int64_t n = rho_t.numel();
+
+  // T0-reference hoist: s0.U/c is a model constant (all-H2 at 300 K; gated
+  // c-independent to ~1e-13 by the transcription test) -- compute ONCE per
+  // solve instead of re-speciating at kTref every Newton iteration of every
+  // cell (halves the per-iteration transcendental cost).
+  const double e0 = h2diss_scalar::e0_ref(nH, nHe, ab);
+
+  // warm start from the previous solve's T where it lay in the NASA-9 range
+  // (h2diss_scalar::seed_ok); other cells fall back to the const-cv guess.
+  auto warm_vu = named_buffers(
+      /*recurse=*/false)["warm_vu"];  // ABI: buffer dict, not a member
+  const double* warm =
+      (warm_vu.numel() == n) ? warm_vu.data_ptr<double>() : nullptr;
+
+  auto seed_t = torch::empty({n}, torch::kFloat64);
+  double* seed = seed_t.data_ptr<double>();
+  std::atomic<int64_t> nbad{0};
+  at::parallel_for(0, n, /*grain_size=*/512, [&](int64_t lo, int64_t hi) {
+    for (int64_t i = lo; i < hi; ++i) {
+      const double rho_i = rho[i];
+      const double c = rho_i * invmu0;  // mol/m^3 (dry conc)
+      const double e_tgt = eint[i];     // J/m^3
+      // const-cv cold guess, identical to the torch path
+      double Ti = (e_tgt - rho_i * u0_0) / (rho_i * cv0_0);
+      // start inside the NASA-9 range: log(T) needs T > 0, and the extrapolated
+      // U(T) is not monotone far above it
+      if (Ti <= 0.) Ti = kTref;
+      Ti = std::min(Ti, h2diss_scalar::kTmax);
+      if (warm && h2diss_scalar::seed_ok(warm[i])) Ti = warm[i];
+      h2diss_scalar::Bracket br;
+      bool ok = false;
+      for (int it = 0; it < max_iter; ++it) {
+        auto R = h2diss_scalar::eval(Ti, c, nH, nHe, ab, e0);
+        const double u = (uref0 + kTref * cref0 + R.e_R) * Rgas;  // J/mol
+        const double cv = R.cv_R * Rgas;                          // J/(mol K)
+        const double Tnew =
+            h2diss_scalar::bracketed_step(Ti, e_tgt - u * c, cv * c, br);
+        const double conv = std::fabs(1.0 - Ti / Tnew);
+        Ti = Tnew;
+        if (conv < ftol) {
+          ok = true;
+          break;
+        }
+      }
+      T[i] = Ti;
+      seed[i] = h2diss_scalar::seed_ok(Ti) ? Ti : NAN;
+      if (!ok) nbad.fetch_add(1, std::memory_order_relaxed);
+    }
+  });
+  if (nbad.load() > 0) {
+    TORCH_WARN("ThermoYImpl::_intEng_to_temp_fused: ", nbad.load(),
+               " cell(s) hit max_iter");
+  }
+  warm_vu.resize_({n});
+  warm_vu.copy_(seed_t);
+}
+
+void ThermoYImpl::_pres_to_temp_fused(torch::Tensor pres, torch::Tensor ivol,
+                                      torch::Tensor& out) const {
+  // Fast path (per h2diss_fused_ok): one gas species (the lumped h2diss
+  // "dry"), no clouds -> the torch sums collapse to one column. Same math as
+  // the torch _pres_to_temp loop, per cell: f(T) = T*cz*c - P/R, with the
+  // exact Newton step T -= f / f', f' = (cz + T dcz/dT)*c recovered from the
+  // Mayer relation cp-cv = (z+T z_T)^2/(z+c z_c), inside a bracket (see
+  // h2diss_scalar::bracketed_step). PV->T needs no energy reference.
+  const double nH = options->h2_diss_nH();
+  const double nHe = options->h2_diss_nHe();
+  const double gas_floor = options->gas_floor();
+  const double ftol = options->ftol();
+  const int max_iter = options->max_iter();
+  const double Rgas = constants::Rgas;
+
+  auto ab_t = h2diss_coeffs_cached(pres);
+  const double* ab = ab_t.data_ptr<double>();
+  const double invmu0 = inv_mu[0].item<double>();  // mol/kg
+
+  auto rho_t = ivol.select(-1, 0).contiguous();  // (...) kg/m^3
+  auto p_t = pres.contiguous();                  // (...) Pa
+  TORCH_CHECK(out.is_contiguous() && out.scalar_type() == torch::kFloat64,
+              "_pres_to_temp_fused: out must be contiguous float64");
+  const double* rho = rho_t.data_ptr<double>();
+  const double* pp = p_t.data_ptr<double>();
+  double* T = out.data_ptr<double>();
+  const int64_t n = rho_t.numel();
+
+  const double e0 = h2diss_scalar::e0_ref(nH, nHe, ab);  // T0 hoist (see VU->T)
+
+  // warm start (see _intEng_to_temp_fused): consecutive PV->T solves are the
+  // L/R face states of the same faces -- the previous answer is 1-2 Newton
+  // iterations away. Seeds outside h2diss_scalar::seed_ok are not used.
+  auto warm_pv = named_buffers(
+      /*recurse=*/false)["warm_pv"];  // ABI: buffer dict, not a member
+  const double* warm =
+      (warm_pv.numel() == n) ? warm_pv.data_ptr<double>() : nullptr;
+
+  auto seed_t = torch::empty({n}, torch::kFloat64);
+  double* seed = seed_t.data_ptr<double>();
+  std::atomic<int64_t> nbad{0};
+  at::parallel_for(0, n, /*grain_size=*/512, [&](int64_t lo, int64_t hi) {
+    for (int64_t i = lo; i < hi; ++i) {
+      const double c =
+          std::max(rho[i] * invmu0, gas_floor);  // mol/m^3 (dry gas conc)
+      const double P = pp[i];
+      // ideal-gas guess (exact when cz==1), capped like the VU->T cold guess
+      double Ti = std::min(P / (c * Rgas), h2diss_scalar::kTmax);
+      if (warm && h2diss_scalar::seed_ok(warm[i])) Ti = warm[i];
+      h2diss_scalar::Bracket br;
+      bool ok = false;
+      for (int it = 0; it < max_iter; ++it) {
+        auto R = h2diss_scalar::eval(Ti, c, nH, nHe, ab, e0);
+        const double func = Ti * R.cz * c - P / Rgas;
+        // exact f'/c = cz + T dcz/dT = sqrt((cp_R - cv_R)(cz + c dcz/dc)) by
+        // the Mayer relation; (cp_R - cv_R) alone over-damps the step and
+        // converges only linearly in the dissociating band
+        const double dfdT =
+            std::sqrt((R.cp_R - R.cv_R) * (R.cz + c * R.cz_ddC)) * c;
+        const double Tnew = h2diss_scalar::bracketed_step(Ti, -func, dfdT, br);
+        const double conv = std::fabs(1.0 - Ti / Tnew);
+        Ti = Tnew;
+        if (conv < ftol) {
+          ok = true;
+          break;
+        }
+      }
+      T[i] = Ti;
+      seed[i] = h2diss_scalar::seed_ok(Ti) ? Ti : NAN;
+      if (!ok) nbad.fetch_add(1, std::memory_order_relaxed);
+    }
+  });
+  if (nbad.load() > 0) {
+    TORCH_WARN("ThermoYImpl::_pres_to_temp_fused: ", nbad.load(),
+               " cell(s) hit max_iter");
+  }
+  warm_pv.resize_({n});
+  warm_pv.copy_(seed_t);
 }
 
 void ThermoYImpl::_temp_to_pres(torch::Tensor ivol, torch::Tensor temp,

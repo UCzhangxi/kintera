@@ -5,7 +5,7 @@ across the latent peak to T < 0 (NaN) in 503 of these 2400 cells and ended far f
 117 more; the damped PV->T step left up to 0.36% error after the default 10 iterations. Both
 solves are now a bracketed (rtsafe-style) Newton, PV->T with the exact f' from the Mayer relation.
 """
-import warnings
+import re
 
 import numpy as np
 import pytest
@@ -26,7 +26,7 @@ def thermo(tmp_path, extra):
 
 
 @pytest.mark.parametrize("extra", ["", ", fused-h2diss: true"])
-def test_inversions_converge_on_dissociating_grid(tmp_path, extra):
+def test_inversions_converge_on_dissociating_grid(tmp_path, capfd, extra):
     op = thermo(tmp_path, extra)  # default max-iter
     TT, CC = np.meshgrid(np.linspace(1100., 5500., 60), np.logspace(-2, 4, 40), indexing="ij")
     T = torch.tensor(TT.ravel())
@@ -34,11 +34,11 @@ def test_inversions_converge_on_dissociating_grid(tmp_path, extra):
     th = ThermoY(op)
     V = th.compute("DY->V", (rho, torch.zeros(0, T.numel())))
     U, P = th.compute("VT->U", (V, T)), th.compute("VT->P", (V, T))
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        T_vu = ThermoY(op).compute("VU->T", (V, U))  # fresh objects: no warm-start seeds
-        T_pv = ThermoY(op).compute("PV->T", (P, V))
-    assert not [x for x in w if "max" in str(x.message)], [str(x.message) for x in w]
+    capfd.readouterr()
+    T_vu = ThermoY(op).compute("VU->T", (V, U))  # fresh objects: no warm-start seeds
+    T_pv = ThermoY(op).compute("PV->T", (P, V))
+    log = capfd.readouterr().err  # TORCH_WARN goes to C++ stderr, not Python warnings
+    assert not re.search(r"max[ _]iter", log), log  # fused: "hit max_iter"; torch: "max iterations"
     for name, Ts in [("VU->T", T_vu), ("PV->T", T_pv)]:
         err = ((Ts - T).abs() / T).numpy()
         assert np.isfinite(err).all(), "%s: %d NaN" % (name, (~np.isfinite(err)).sum())

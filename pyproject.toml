@@ -85,3 +85,5 @@ include-package-data = false
 # release; tests/test_version_floor.py checks it is never ahead of the tags.
 fallback_version = "2.5.13"
 version_scheme = "scm_version_scheme:floored_guess_next_dev"
+# version tags only: archive/* tags on the same commits are not versions
+git_describe_command = "git describe --dirty --tags --long --match v*"

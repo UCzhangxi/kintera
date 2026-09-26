@@ -611,14 +611,15 @@ void ThermoYImpl::_intEng_to_temp_fused(torch::Tensor ivol,
   // cell (halves the per-iteration transcendental cost).
   const double e0 = h2diss_scalar::e0_ref(nH, nHe, ab);
 
-  // warm start from the previous solve's converged T (seed only: the per-cell
-  // Newton still iterates to ftol, so a stale seed costs iterations, never
-  // accuracy). Falls back per cell to the const-cv guess if the seed is bad.
+  // warm start from the previous solve's T where it lay in the NASA-9 range
+  // (h2diss_scalar::seed_ok); other cells fall back to the const-cv guess.
   auto warm_vu = named_buffers(
       /*recurse=*/false)["warm_vu"];  // ABI: buffer dict, not a member
   const double* warm =
       (warm_vu.numel() == n) ? warm_vu.data_ptr<double>() : nullptr;
 
+  auto seed_t = torch::empty({n}, torch::kFloat64);
+  double* seed = seed_t.data_ptr<double>();
   std::atomic<int64_t> nbad{0};
   at::parallel_for(0, n, /*grain_size=*/512, [&](int64_t lo, int64_t hi) {
     for (int64_t i = lo; i < hi; ++i) {
@@ -631,7 +632,7 @@ void ThermoYImpl::_intEng_to_temp_fused(torch::Tensor ivol,
       // U(T) is not monotone far above it
       if (Ti <= 0.) Ti = kTref;
       Ti = std::min(Ti, h2diss_scalar::kTmax);
-      if (warm && std::isfinite(warm[i]) && warm[i] > 0.) Ti = warm[i];
+      if (warm && h2diss_scalar::seed_ok(warm[i])) Ti = warm[i];
       h2diss_scalar::Bracket br;
       bool ok = false;
       for (int it = 0; it < max_iter; ++it) {
@@ -648,6 +649,7 @@ void ThermoYImpl::_intEng_to_temp_fused(torch::Tensor ivol,
         }
       }
       T[i] = Ti;
+      seed[i] = h2diss_scalar::seed_ok(Ti) ? Ti : NAN;
       if (!ok) nbad.fetch_add(1, std::memory_order_relaxed);
     }
   });
@@ -656,7 +658,7 @@ void ThermoYImpl::_intEng_to_temp_fused(torch::Tensor ivol,
                " cell(s) hit max_iter");
   }
   warm_vu.resize_({n});
-  warm_vu.copy_(out.reshape({n}));
+  warm_vu.copy_(seed_t);
 }
 
 void ThermoYImpl::_pres_to_temp_fused(torch::Tensor pres, torch::Tensor ivol,
@@ -691,20 +693,23 @@ void ThermoYImpl::_pres_to_temp_fused(torch::Tensor pres, torch::Tensor ivol,
 
   // warm start (see _intEng_to_temp_fused): consecutive PV->T solves are the
   // L/R face states of the same faces -- the previous answer is 1-2 Newton
-  // iterations away. Seed only; per-cell ftol exit guards accuracy.
+  // iterations away. Seeds outside h2diss_scalar::seed_ok are not used.
   auto warm_pv = named_buffers(
       /*recurse=*/false)["warm_pv"];  // ABI: buffer dict, not a member
   const double* warm =
       (warm_pv.numel() == n) ? warm_pv.data_ptr<double>() : nullptr;
 
+  auto seed_t = torch::empty({n}, torch::kFloat64);
+  double* seed = seed_t.data_ptr<double>();
   std::atomic<int64_t> nbad{0};
   at::parallel_for(0, n, /*grain_size=*/512, [&](int64_t lo, int64_t hi) {
     for (int64_t i = lo; i < hi; ++i) {
       const double c =
           std::max(rho[i] * invmu0, gas_floor);  // mol/m^3 (dry gas conc)
       const double P = pp[i];
-      double Ti = P / (c * Rgas);  // ideal-gas guess (exact when cz==1)
-      if (warm && std::isfinite(warm[i]) && warm[i] > 0.) Ti = warm[i];
+      // ideal-gas guess (exact when cz==1), capped like the VU->T cold guess
+      double Ti = std::min(P / (c * Rgas), h2diss_scalar::kTmax);
+      if (warm && h2diss_scalar::seed_ok(warm[i])) Ti = warm[i];
       h2diss_scalar::Bracket br;
       bool ok = false;
       for (int it = 0; it < max_iter; ++it) {
@@ -724,6 +729,7 @@ void ThermoYImpl::_pres_to_temp_fused(torch::Tensor pres, torch::Tensor ivol,
         }
       }
       T[i] = Ti;
+      seed[i] = h2diss_scalar::seed_ok(Ti) ? Ti : NAN;
       if (!ok) nbad.fetch_add(1, std::memory_order_relaxed);
     }
   });
@@ -732,7 +738,7 @@ void ThermoYImpl::_pres_to_temp_fused(torch::Tensor pres, torch::Tensor ivol,
                " cell(s) hit max_iter");
   }
   warm_pv.resize_({n});
-  warm_pv.copy_(out.reshape({n}));
+  warm_pv.copy_(seed_t);
 }
 
 void ThermoYImpl::_temp_to_pres(torch::Tensor ivol, torch::Tensor temp,

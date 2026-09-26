@@ -147,10 +147,10 @@ class ThermoYImpl : public torch::nn::Cloneable<ThermoYImpl> {
   ThermoOptions options;
   bool uv_partitionable = false;
 
-  //! fused-kernel warm-start seeds: the previous solve's converged T, flat,
-  //! per instance (never static: two ThermoY objects must not share seeds).
-  //! Pure seeds: any content is corrected by the per-cell Newton to ftol, so
-  //! stale/mismatched values only cost iterations.
+  //! fused-kernel warm-start seeds: the previous solve's T, flat, per instance
+  //! (never static: two ThermoY objects must not share seeds). NaN where it
+  //! lay outside the NASA-9 range; the kernels use only in-range seeds, since
+  //! a far-off seed can outlast max_iter (h2diss_scalar::seed_ok).
   //!
   //! ABI-NEUTRAL BY CONSTRUCTION: these live ONLY in the torch Module buffer
   //! dict (register_buffer in reset()), never as data members, so

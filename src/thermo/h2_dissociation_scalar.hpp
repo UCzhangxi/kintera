@@ -36,6 +36,15 @@ constexpr double kTref = 300.;  // energy reference [K]  (== h2diss::kTref)
 //! top of the NASA-9 fits; above ~3e4 K the extrapolated H enthalpy turns
 //! over and U(T) stops being monotone, so cold Newton guesses start below this
 constexpr double kTmax = 6000.;
+//! bottom of the NASA-9 fits
+constexpr double kTmin = 200.;
+
+//! A warm-start seed is used, and stored, only inside the fit range: a solve on
+//! a degenerate cell (rho = 0 gives T ~ 1e23 K) must not seed the next solve,
+//! where bisecting down from it outlasts max_iter. An unconverged in-range
+//! iterate is kept, so a cell that hit max_iter finishes on the next call.
+//! False for NaN.
+inline bool seed_ok(double T) { return T >= kTmin && T <= kTmax; }
 
 //! One species' NASA-9 coefficient row (9 doubles). The lnT overloads take a
 //! precomputed std::log(T) -- speciate() would otherwise evaluate the SAME

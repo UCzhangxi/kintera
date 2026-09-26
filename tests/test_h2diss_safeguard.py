@@ -53,3 +53,62 @@ def test_full_dissociation_does_not_overflow(tmp_path):
     V = th.compute("DY->V", (torch.full((3,), kintera.species_weights()[0]), torch.zeros(0, 3)))
     cz = th.compute("VT->P", (V, T)) / (8.31446 * T)
     np.testing.assert_allclose(cz.numpy(), NH + NHE, rtol=1e-6)
+
+
+@pytest.mark.parametrize("max_iter", [None, 30])
+def test_degenerate_cell_does_not_seed_the_next_solve(tmp_path, capfd, max_iter):
+    # A rho = 0 cell (c at the gas floor) converged to T ~ 1e23 K and was kept as the fused
+    # warm-start seed; the next PV->T of the same size then bisected down from it and returned
+    # ~6e14 K for a physical cell at that index, with only a max_iter warning. At max-iter 30
+    # the degenerate cell does converge, so only the seed range check stops it.
+    op = thermo(tmp_path, ", fused-h2diss: true")
+    if max_iter is not None:
+        op.max_iter(max_iter)
+    th = ThermoY(op)
+    T = torch.linspace(1100., 5500., 64)
+    rho = torch.full_like(T, 10.) * kintera.species_weights()[0]  # c = 10 mol/m^3
+    V = th.compute("DY->V", (rho, torch.zeros(0, T.numel())))
+    P = th.compute("VT->P", (V, T))
+    rho_bad = rho.clone()
+    rho_bad[::8] = 0.
+    th.compute("PV->T", (P, th.compute("DY->V", (rho_bad, torch.zeros(0, T.numel())))))
+    capfd.readouterr()  # the kernels' TORCH_WARN goes to C++ stderr, not Python warnings
+    T_pv = th.compute("PV->T", (P, V))
+    assert "hit max_iter" not in capfd.readouterr().err
+    np.testing.assert_allclose(T_pv.numpy(), T.numpy(), rtol=1e-9)
+
+
+@pytest.mark.parametrize("ab", ["PV->T", "VU->T"])
+def test_cold_cell_below_seed_range_still_converges(tmp_path, capfd, ab):
+    # warm seeds are kept only inside [kTmin, kTmax] = [200, 6000] K; a colder cell loses its
+    # seed and restarts from the cold guess every call, but must still return its own T
+    op = thermo(tmp_path, ", fused-h2diss: true")
+    th = ThermoY(op)
+    T = torch.tensor([150., 180., 250.])
+    rho = torch.full_like(T, 1.0) * kintera.species_weights()[0]
+    V = th.compute("DY->V", (rho, torch.zeros(0, T.numel())))
+    X = th.compute("VT->P", (V, T)) if ab == "PV->T" else th.compute("VT->U", (V, T))
+    args = (X, V) if ab == "PV->T" else (V, X)
+    capfd.readouterr()
+    for _ in range(3):
+        Ts = th.compute(ab, args)
+        np.testing.assert_allclose(Ts.numpy(), T.numpy(), rtol=1e-9)
+    assert "hit max_iter" not in capfd.readouterr().err
+
+
+def test_unconverged_cell_finishes_on_the_next_call(tmp_path, capfd):
+    # at the default max_iter, thin partly dissociated cells do not converge in one VU->T call;
+    # their in-range iterate is kept as the seed, so the next same-size call finishes them
+    op = thermo(tmp_path, ", fused-h2diss: true")
+    th = ThermoY(op)
+    TT, CC = np.meshgrid(np.linspace(1900., 2950., 22), np.logspace(-7, -2.2, 12), indexing="ij")
+    T = torch.tensor(TT.ravel())
+    rho = torch.tensor(CC.ravel()) * kintera.species_weights()[0]
+    V = th.compute("DY->V", (rho, torch.zeros(0, T.numel())))
+    U = th.compute("VT->U", (V, T))
+    err1 = ((th.compute("VU->T", (V, U)) - T).abs() / T).max().item()
+    assert err1 > 1e-9, "every cell converged on the first call: the test is vacuous"
+    capfd.readouterr()
+    T_vu = th.compute("VU->T", (V, U))
+    assert "hit max_iter" not in capfd.readouterr().err
+    np.testing.assert_allclose(T_vu.numpy(), T.numpy(), rtol=1e-9)

@@ -1,7 +1,49 @@
 # Notation {#sec-appa}
 
-The symbols used in the chapters, generated from the notation table.
+Use this appendix to look up a symbol's meaning and units before translating an equation into code. The notation
+index below separates the mathematical symbol from the implementation's identifier. Check the quantity's basis
+as well as its name: per mole, per kilogram and per volume describe different quantities.
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45
+sources: src/constants.h; src/thermo/thermo.hpp; src/thermo/thermo_x.cpp; src/thermo/thermo_y.cpp
+status: draft
+author: chengcli
+reviewer: none
+-->
+
+For the state variables already in the index, pressure $p$ has units of $\mathrm{Pa}$ and temperature $T$ has
+units of $\mathrm{K}$. These correspond to the arguments `pres` and `temp` documented by `ThermoXImpl::forward`
+({{< code src/thermo/thermo.hpp ThermoXImpl::forward >}}). The universal gas constant $\mathcal R$ has units of
+$\mathrm{J\,mol^{-1}\,K^{-1}}$ and is named `Rgas` in the constants namespace
+({{< code src/constants.h Rgas >}}). `ThermoXImpl::_xfrac_to_conc` uses `constants::Rgas` with `pres` and `temp`
+when forming its initial gas concentrations ({{< code src/thermo/thermo_x.cpp ThermoXImpl::_xfrac_to_conc >}}).
+These links identify the code quantities; they do not establish a correspondence for every symbol in the index.
+
+A dimensionless fraction still needs a mass or mole basis. The conversion `ThermoYImpl::_yfrac_to_xfrac`
+takes mass fractions in `yfrac` and produces mole fractions, using the inverse molar masses `inv_mu`
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::_yfrac_to_xfrac >}}). Do not treat those two representations as
+interchangeable merely because neither has a physical unit.
+
+Energy names also need a basis. `ThermoYImpl::_intEng_vol` converts species mass densities to molar
+concentrations, multiplies by species molar internal energies, and sums over species. Its output is internal
+energy per volume, in $\mathrm{J\,m^{-3}}$, rather than energy per mass
+({{< code src/thermo/thermo.hpp ThermoYImpl::_intEng_vol >}}). `ThermoXImpl::_enthalpy_vol` similarly sums
+concentration times molar enthalpy to obtain enthalpy per volume
+({{< code src/thermo/thermo.hpp ThermoXImpl::_enthalpy_vol >}}). These examples show why the unit and basis must
+accompany a symbol; they do not introduce new symbols for those quantities.
 
 ## The notation index {#sec-appa-index}
+
+Read "first used" as a navigation aid, not as a declaration of where a symbol is defined. Open the indicated
+section and check its definition before using it. A dash means the textual search found no matching use; it
+does not prove that the corresponding concept is absent. An empty units cell is unspecified, not dimensionless,
+and an empty code cell supplies no implementation mapping.
+
+::: {.callout-warning title="Limits"}
+Not provided: a complete symbol-to-code map or an audit of every first-use definition, because the index's
+unfilled cells and textual-use pointers do not supply that evidence. The code examples above are source readings,
+not runtime validation of thermodynamic results.
+:::
 
 {{< include appendices/_appa-notation.qmd >}}

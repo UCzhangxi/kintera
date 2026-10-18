@@ -1,8 +1,9 @@
-## Package version handling (`__version__`) {#sec-ch11-version}
+## Package version handling (`[tool.setuptools_scm]`) {#sec-ch11-version}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: python/__init__.py
+sources: pyproject.toml, scm_version_scheme.py, python/__init__.py, tests/test_version_floor.py,
+  tests/test_version_fallback.py
 status: draft
 author: Jiheng Hu
 reviewer: Xinyue (requested)
@@ -10,22 +11,24 @@ reviewer: Xinyue (requested)
 
 ### Summary
 
-The Python package reports its version from the installed package metadata, and falls back to `0.0.0` when no
-metadata is found ({{< code python/__init__.py >}}). How the build derives the version from git is a stub in this
-draft.
+The kintera version is not written in any source file. It is derived from git tags when the package is built, and
+installed as package metadata, which `kintera.__version__` then reports. A source tree without usable git
+metadata, such as a release tarball made by an old git, would otherwise report `0.0`. A downstream package that
+requires a minimum kintera version would then refuse it. A *release floor* removes that failure: such a tree
+reports at least the floor version recorded in the build configuration.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Report the installed kintera version as `kintera.__version__`.
+**Purpose.** Give every build a version that is never below its last release.
 
-**Data.** pending
+**Data.** Git tags `v<major>.<minor>.<patch>`; `fallback_version` in the build configuration.
 
-**Placement.** On import.
+**Placement.** At build or install time (setuptools_scm); read back on `import kintera`.
 
-**Activation.** Always.
+**Activation.** Always; `version_scheme` names the floored scheme.
 
-**Guarantee / limits.** pending
+**Guarantee / limits.** No usable tag gives at least the floor; a real tag gives its own version.
 
-**Evidence.** pending
+**Evidence.** `test_version_floor.py`, `test_version_fallback.py`; see the Tests layer.
 :::
 
 ### Derivation
@@ -34,17 +37,53 @@ No derivation: this scheme reads metadata.
 
 ### Numerical method
 
-No numerical method and no figure: this scheme reads metadata.
+No numerical method and no figure. `floored_guess_next_dev`
+({{< code scm_version_scheme.py floored_guess_next_dev >}}) decides the version in these steps:
+
+1. With no `fallback_version` configured, use setuptools_scm's `guess-next-dev` scheme.
+2. If the tag found is a real tag (its release is not the no-tag value `0.0`), or is at or above the floor, use
+   `guess-next-dev`. A tree whose newest reachable tag is below the floor keeps its own version.
+3. Otherwise (no usable tag) return the floor. When the version is exact and knows its commit, append the commit
+   as a local segment, `<floor>+g<commit>`, so the result stays apart from the release itself.
 
 ### Code
 
-pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| version scheme | {{< code scm_version_scheme.py floored_guess_next_dev >}} | `floored_guess_next_dev` | `version_scheme` |
+| floor and scheme | {{< code pyproject.toml >}} | `[tool.setuptools_scm]` | always |
+| runtime version | {{< code python/__init__.py >}} | `__version__` | on import |
+
+: Code map of version handling. {#tbl-ch11-version-code}
+
+The build configuration {{< code pyproject.toml >}} declares the version `dynamic`, sets
+`fallback_version = "2.5.13"`, and names the scheme as `scm_version_scheme:floored_guess_next_dev`, so the floor
+applies to `pip install`, `python -m build` and `python -m setuptools_scm` alike. Its comment says the floor is
+raised when a downstream minimum needs it, not at every release. At run time `__version__` is read from the
+installed metadata with `importlib.metadata.version("kintera")`, and is `0.0.0` when no metadata is found
+({{< code python/__init__.py >}}).
 
 ### Tests
 
-pending: `test_version_fallback.py` and `test_version_floor.py` are the registered tests; their assertions are not
-read yet.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_version_floor.py` | the floor is not newer than the newest `v*` tag | exact | version comparison |
+| `test_version_floor.py` | old-git and tagless archives report at least the floor, with the commit | exact | version comparison |
+| `test_version_floor.py` | a plain copy reports the floor; a tree tagged below it keeps its own version | exact | version comparison |
+| `test_version_fallback.py` | a `git archive` of the checkout reports at least the newest tag | exact | version comparison |
+
+: Tests of version handling. {#tbl-ch11-version-tests}
+
+The cases export the checkout with `git archive`, rewrite its `.git_archival.txt` into the form an old or tagless
+git leaves, and run `python -m setuptools_scm` on the tree ({{< code tests/test_version_floor.py scm_version >}}).
+Further cases cover a real `v0.0.0` tag and the checkout's own tags
+({{< code tests/test_version_floor.py test_clone_tagged_v0_0_0_reports_its_own_version >}},
+{{< code tests/test_version_floor.py test_this_checkout_is_versioned_from_its_own_tags >}}). The cases skip when
+setuptools_scm is not installed, when git fails, or (fallback test) when no release tag is reachable, as in a
+shallow clone without tags. This draft has not run them (missing evidence).
 
 ### Limits
 
-pending.
+- `kintera.__version__` reports `0.0.0` for an import from a tree that was never installed; the floor does not
+  apply there (read from {{< code python/__init__.py >}}; not tested).
+- The floor is maintained by hand; only the test that it is not ahead of the newest tag guards it.

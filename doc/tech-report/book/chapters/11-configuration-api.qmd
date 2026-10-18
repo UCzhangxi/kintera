@@ -15,8 +15,8 @@ The dependency map of the schemes (a figure) is not drawn yet.
 | @sec-ch11-yaml-reactions | `reactions` | see section | n/a | `test_kinetics_null_options.py` |
 | @sec-ch11-options | C++ `ADD_ARG` options | n/a | n/a | missing evidence |
 | @sec-ch11-python-api | Python module `kintera` | n/a | n/a | `test_kinetics_null_options.py` |
-| @sec-ch11-resources | `find_resource` | n/a | n/a | pending |
-| @sec-ch11-version | package version | n/a | n/a | `test_version_floor.py` |
+| @sec-ch11-resources | `find_resource` | n/a | n/a | missing evidence |
+| @sec-ch11-version | `fallback_version` | n/a | n/a | `test_version_floor.py` |
 
 : Schemes of this chapter. {#tbl-ch11-schemes}
 

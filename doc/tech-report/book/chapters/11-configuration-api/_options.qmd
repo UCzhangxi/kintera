@@ -62,6 +62,30 @@ $101325\,\mathrm{Pa}$), one sub-option per rate form (`arrhenius`, `coagulation`
 `lindemann_falloff`, `troe_falloff`, `sri_falloff`, `kb_falloff`, each default-constructed), and the flags
 `evolve_temperature`, `verbose` and `offset_zero` (all default `false`).
 
+The thermodynamics options `ThermoOptionsImpl` ({{< code src/thermo/thermo.hpp ThermoOptionsImpl >}}) derive from
+the same species struct and declare: `Tref` (default $300\,\mathrm{K}$), `Pref` (default $10^5\,\mathrm{Pa}$),
+`max_iter` (default 10), `ftol` (default $10^{-6}$), `gas_floor` (default $10^{-20}$), `verbose` and
+`offset_zero` (default `false`), the sub-option `nucleation`, and `uv_solver` (default `auto`). The defaults of
+`Tref` and `Pref` differ from those of `KineticsOptionsImpl`, so a file without `reference-state/Tref` gives the
+two option sets different reference temperatures. Whether any result depends on that difference is not tested
+(hypothesis). The flags `use_nasa9_cp` (default `false`), `use_h2_cp` (default `false`) and `h2_cp_mode`
+(default `equilibrium`) belong to the shared species struct `SpeciesThermoImpl`
+({{< code src/species.hpp SpeciesThermoImpl >}}). `ThermoOptionsImpl::from_yaml`
+({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}}) sets them from
+`reference-state`. It reads `h2-cp-mode` only when `use-h2-cp` is present, and accepts only `equilibrium` or
+`normal` there.
+
+The same reader registers species differently from the kinetics reader: the first species of the file is always
+a vapor; the vapors and clouds are taken from the `nucleation`, `coagulation` and `evaporation` entries; and every
+species with `phase: gas` is added as a vapor, every other declared phase as a cloud. A contradiction between the
+reactions and a declared phase is refused. For each nucleation reaction whose latent heat at `Tref` (the
+stoichiometric sum of `u0_R`) is not positive, it issues a warning.
+
+The extrapolation calls of `ThermoX` take a separate plain struct, `ExtrapOptions`
+({{< code src/thermo/thermo.hpp ExtrapOptions >}}), with `dlnp`, `dz`, `grav`, `ds_dlnp`, `ds_dz`, `verbose` and
+`rainout` (all zero or `false` by default); it is
+not read from YAML.
+
 The kinetics module `KineticsImpl` ({{< code src/kinetics/kinetics.hpp KineticsImpl >}}) exposes three calls:
 
 1. `forward(temp, pres, conc, extra)` ({{< code src/kinetics/kinetics.hpp KineticsImpl::forward >}}) takes
@@ -98,5 +122,5 @@ covers which field.
 - Editing an options field after its module is built is not reflected in the module's buffers until the module is
   reset. This is a hypothesis from reading `ArrheniusImpl::reset`
   ({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}}), which copies options into buffers; not tested.
-- The thermodynamics options and modules (`ThermoOptions`, `ThermoX`, `ThermoY`) are not yet described in this
-  section.
+- The thermodynamics modules `ThermoX` and `ThermoY` are described here only through their options; their calls
+  are listed in @sec-ch11-python-api.

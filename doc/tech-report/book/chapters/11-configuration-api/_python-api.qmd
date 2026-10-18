@@ -88,9 +88,14 @@ quoted in this draft.
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
 | `test_kinetics_null_options.py` | `KineticsOptions` with None sub-options builds | pending | not read yet |
-| `test_species_registry.py` | registry accessors after a second card | pending | not read yet |
+| `test_species_registry.py` | `SpeciesThermo.narrow_copy` and `accumulate` map ids by name, or refuse | exact (`torch.equal`) | the test |
 
 : Tests of the Python bindings. {#tbl-ch11-python-api-tests}
+
+The species-bridge cases are `test_same_card_species_bridge_keeps_exact_mapping`, the cross-card collision
+case, the one-sided-names case and the id fallback without names, all in
+{{< code tests/test_species_registry.py >}}; the refusals are matched by their `RuntimeError` message. They run on
+CPU only. This draft has not run them (missing evidence).
 
 The type stubs `kintera.pyi` are checked by a script that is not a `ctest` entry; that script has not been run
 for this draft.

@@ -53,8 +53,9 @@ No numerical method and no figure: the scheme is a parser. The order of operatio
 3. `ensure_species_initialized` ({{< code src/species.cpp ensure_species_initialized overload=2 >}}) refills the registry
    when it is empty or when the file's `species` block differs from the one loaded last.
 4. `init_species_from_yaml` ({{< code src/species.cpp init_species_from_yaml overload=2 >}}) clears the registry and reads
-   each species in order. On any failure it clears the registry again before rethrowing, so a bad file leaves
-   no partial registry behind.
+   each species in order. On any failure its `catch` block clears the registry again and rethrows, so the code
+   is written to leave no partial registry behind. No test asserts that the registry is empty after a failed
+   load; the tests check what happens on the next load instead (Tests layer).
 
 ### Code
 
@@ -112,20 +113,31 @@ species:
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_species_registry.py` | a second card refills the registry; a failed load leaves none | exact | registry contents |
+| `test_species_registry.py` | after card A, card B gives the molar masses and Y-to-X result of B alone | rtol $10^{-12}$, atol 0 | `assert_close` arguments in the test |
+| `test_species_registry.py` | a card loaded after the KINETICS-base reader gets its own species, molar masses and rates | rtol $10^{-12}$, atol 0 | `assert_close` arguments in the test |
+| `test_species_registry.py` | an invalid card is refused on each of three loads; an object built before keeps its result | `assert_close` defaults | none given in the test |
+| `test_species_registry.py` | a valid card loaded after a failed one matches that card alone | `assert_close` defaults for the dtype | none given in the test |
 | `test_kinetics_null_options.py` | options built from cards, including null sub-options | pending | not read yet |
 
 : Tests of the species and reference-state reader. {#tbl-ch11-yaml-input-tests}
 
-The test files are {{< code tests/test_species_registry.py >}} and {{< code tests/test_kinetics_null_options.py >}}.
-Their assertions have been listed by name only for this draft; their tolerances and a run record are missing
-evidence.
+The first two rows are `_second_card` ({{< code tests/test_species_registry.py _second_card >}}) and
+`_card_after_kinetics_base` ({{< code tests/test_species_registry.py _card_after_kinetics_base >}}); each compares
+with a fresh subprocess that loads only the second card. The third row is
+`test_repeated_invalid_species_load_stays_rejected`
+({{< code tests/test_species_registry.py test_repeated_invalid_species_load_stays_rejected >}}), with an invalid
+`phase` or a non-numeric `cv_R`. The fourth row is `test_valid_card_recovers_after_partial_species_failure`
+({{< code tests/test_species_registry.py test_valid_card_recovers_after_partial_species_failure >}}), which also
+interleaves a KINETICS-base load. The third and fourth rows run in float32 and float64, on CPU and, where CUDA is
+present, on CUDA. None of the four inspects the registry directly after a failed load. No run record is given
+here: this draft has not run the tests (missing evidence). The same file also checks the species bridge of
+`SpeciesThermo` (`narrow_copy`, `accumulate`), which @sec-ch11-python-api lists.
 
 ### Limits
 
 - The registry is process-wide (`species_names` and the other `species_*` vectors). A file loaded later with a
-  different species list replaces it for every options object built afterwards; not measured beyond the
-  registry tests above.
+  different species list replaces it for every options object built afterwards. The tests above check that
+  options and modules built earlier keep their own results; other uses of the registry are not measured.
 - A species absent from the NASA-9 table gets zero coefficients without a warning (read from
   `init_species_from_yaml`); what that does when `use-nasa9-cp` is on is not measured.
 - The NASA-9 mid temperature is fixed at $1000\,\mathrm{K}$ and cannot be set from input.

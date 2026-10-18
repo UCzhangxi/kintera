@@ -11,8 +11,8 @@ The dependency map of the schemes (a figure) is not drawn yet.
 
 | scheme | YAML key or option | default | order | main test |
 |---|---|---|---|---|
-| @sec-ch11-yaml-input | `species`, `reference-state` | see section | n/a | `test_species_registry.py` |
-| @sec-ch11-yaml-reactions | `reactions` | see section | n/a | `test_kinetics_null_options.py` |
+| @sec-ch11-yaml-input | `species`[^rg-cf75c2c1a4cc], `reference-state`[^rg-c14ba67fe94d] | see section | n/a | `test_species_registry.py` |
+| @sec-ch11-yaml-reactions | `reactions`[^rg-6e6f9ece1710] | see section | n/a | `test_kinetics_null_options.py` |
 | @sec-ch11-options | C++ `ADD_ARG` options | n/a | n/a | missing evidence |
 | @sec-ch11-python-api | Python module `kintera` | n/a | n/a | `test_kinetics_null_options.py` |
 | @sec-ch11-resources | `find_resource` | n/a | n/a | missing evidence |
@@ -31,3 +31,11 @@ The dependency map of the schemes (a figure) is not drawn yet.
 {{< include 11-configuration-api/_resources.qmd >}}
 
 {{< include 11-configuration-api/_version.qmd >}}
+
+<!-- reader glossary notes -->
+[^rg-cf75c2c1a4cc]: species — list of species maps; required; its order fixes the species index; read by `init_species_from_yaml`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L148-L155)
+
+[^rg-c14ba67fe94d]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+
+[^rg-6e6f9ece1710]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+<!-- end reader glossary notes -->

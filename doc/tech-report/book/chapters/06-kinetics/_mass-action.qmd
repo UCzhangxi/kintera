@@ -85,7 +85,7 @@ The figure of the evaluator order is not provided: the figure module is not writ
 
 : Code map of mass-action rates. {#tbl-ch06-mass-action-code}
 
-1. `from_yaml` reads `reference-state` (`Tref`, `Pref`) and then each reaction family from `reactions`; reactants
+1. `from_yaml` reads `reference-state`[^rg-1ffc2d860575] (`Tref`[^rg-782fd094d3ef], `Pref`[^rg-f6026102f8bb]) and then each reaction family from `reactions`; reactants
    and products are sorted into vapor and cloud species, vapors first.
 2. `reset` builds `stoich` (species by reaction, reversible reactions appended as negated columns), registers one
    evaluator per family, and builds `forward_orders`, in which an evaporation column has order one in its
@@ -112,3 +112,11 @@ Untested hypothesis: for reversible reactions the temperature derivative of the 
 one copied ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), without the
 temperature derivative of $K_{c,j}^{-1}$. It matters only with `evolve_temperature` on and reversible reactions; no
 test covers that combination.
+
+<!-- reader glossary notes -->
+[^rg-1ffc2d860575]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+
+[^rg-782fd094d3ef]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
+
+[^rg-f6026102f8bb]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
+<!-- end reader glossary notes -->

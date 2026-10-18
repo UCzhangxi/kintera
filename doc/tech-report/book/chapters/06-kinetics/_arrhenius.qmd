@@ -22,7 +22,7 @@ given.
 
 **Placement.** First evaluator of `Kinetics.forward`.
 
-**Activation.** `type: arrhenius`; keys `A`, `b`, `Ea_R`, `E4`, `A_ranges`, `T_ranges`, `b_ranges`, `Ea_R_ranges`.
+**Activation.** `type: arrhenius`; keys `A`[^rg-9b44b7a77056], `b`[^rg-b2b59650290c], `Ea_R`[^rg-3a030b87ff19], `E4`, `A_ranges`, `T_ranges`, `b_ranges`, `Ea_R_ranges`.
 
 **Guarantee / limits.** Exact; inactive bands are never evaluated.
 
@@ -70,14 +70,14 @@ The band-selection figure is not provided: the figure module is not written yet.
 | what | code link | symbol | switch |
 |---|---|---|---|
 | options | {{< code src/kinetics/arrhenius.hpp ArrheniusOptionsImpl >}} | `ArrheniusOptionsImpl` | `type: arrhenius` |
-| YAML reader | {{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant` |
+| YAML reader | {{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant`[^rg-fe9f62b85a4d] |
 | band tables | {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}} | `reset` | `A_ranges` |
 | rate constant | {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::forward >}} | `forward` | always |
 
 : Code map of Arrhenius rate constants. {#tbl-ch06-arrhenius-code}
 
 Setup checks a user can hit: `A_ranges` without `T_ranges`; band lists of different lengths; `T_ranges` not
-strictly increasing; a reaction with no `type` or no `rate-constant`.
+strictly increasing; a reaction with no `type`[^rg-36105a006e4f] or no `rate-constant`.
 
 The key `E4` is parsed into `E4_R` but `forward` does not use it (verified by reading `forward` at the pin).
 
@@ -98,3 +98,15 @@ The tolerances are read from the test files at the pin; the reason for each is m
 
 `E4` is accepted and ignored. The `Ea_R` default is 1 K. Both are verified findings; whether they are intended is
 an open question.
+
+<!-- reader glossary notes -->
+[^rg-9b44b7a77056]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
+
+[^rg-b2b59650290c]: b — exponent of the temperature ratio in the Arrhenius rate; default 0; stored in option `b`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L95)
+
+[^rg-3a030b87ff19]: Ea_R — activation energy divided by the gas constant, in K; default 1 K in the Arrhenius reader; stored in option `Ea_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L96)
+
+[^rg-fe9f62b85a4d]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
+
+[^rg-36105a006e4f]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
+<!-- end reader glossary notes -->

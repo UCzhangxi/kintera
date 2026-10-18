@@ -21,7 +21,7 @@ by how far the gas is below saturation. It is one-way: condensation is handled b
 
 **Placement.** Third evaluator of `Kinetics.forward`.
 
-**Activation.** `type: evaporation`, `form: diffusion` (the default); saturation from the `formula` keys.
+**Activation.** `type: evaporation`, `form: diffusion` (the default); saturation from the `formula`[^rg-19e58e80d2ac] keys.
 
 **Guarantee / limits.** $\eta \ge 0$: never condenses.
 
@@ -32,8 +32,8 @@ Local symbols: $D$, vapor diffusivity [$\mathrm{m^2\,s^{-1}}$]; $v_m$, molar vol
 [$\mathrm{m^3\,mol^{-1}}$]; $d$, particle diameter [m]; $c_p$, condensate concentration [$\mathrm{mol\,m^{-3}}$];
 $\eta$, saturation deficit [units of the product of gas concentrations]; $K$, saturation product.
 
-Defaults: `diff_c` $2 \times 10^{-5}\,\mathrm{m^2\,s^{-1}}$, `diff_T` 1.75, `diff_P` $-1$, `vm`
-$1.8 \times 10^{-5}\,\mathrm{m^3\,mol^{-1}}$, `diameter` $10^{-2}$ m, `Tref` 300 K, `Pref` $10^5$ Pa.
+Defaults: `diff_c`[^rg-9566c67f76e4] $2 \times 10^{-5}\,\mathrm{m^2\,s^{-1}}$, `diff_T`[^rg-df9ef2d0fa9b] 1.75, `diff_P`[^rg-f2f719bc8c3f] $-1$, `vm`[^rg-9bd52e785e80]
+$1.8 \times 10^{-5}\,\mathrm{m^3\,mol^{-1}}$, `diameter`[^rg-65e0a7a2ee26] $10^{-2}$ m, `Tref` 300 K, `Pref` $10^5$ Pa.
 
 ### Derivation
 
@@ -108,3 +108,17 @@ CUDA cases skip when no GPU is present.
 ### Limits
 
 The factor 12 and the default diameter of 1 cm are taken as given; their source is missing evidence.
+
+<!-- reader glossary notes -->
+[^rg-19e58e80d2ac]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)
+
+[^rg-9566c67f76e4]: diff_c — evaporation diffusivity at the reference state, mol-m-s units; default 2e-5; stored in option `diff_c`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L99)
+
+[^rg-df9ef2d0fa9b]: diff_T — exponent of the temperature ratio in the evaporation diffusivity; default 1.75; stored in option `diff_T`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L100)
+
+[^rg-f2f719bc8c3f]: diff_P — exponent of the pressure ratio in the evaporation diffusivity; default -1; stored in option `diff_P`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L101)
+
+[^rg-9bd52e785e80]: vm — volume factor of the evaporation rate coefficient; default 1.8e-5; stored in option `vm`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L102)
+
+[^rg-65e0a7a2ee26]: diameter — length whose square divides the evaporation rate coefficient; default 1e-2; stored in option `diameter`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L103)
+<!-- end reader glossary notes -->

@@ -24,7 +24,7 @@ this one relation.
 
 **Placement.** Inside `ThermoX.compute` and `ThermoY.compute`, and so inside every caller of them.
 
-**Activation.** Always. A per-species compressibility function (`czh`) is optional; without one $z_n = 1$.
+**Activation.** Always. $z_n = 1$ unless C++ code sets a compressibility function (`czh`); YAML and Python cannot.
 
 **Guarantee / limits.** Exact for $z_n = 1$; otherwise a Newton iteration to `ftol`.
 
@@ -136,3 +136,14 @@ float64, and on CUDA when a GPU is present. No test sets a compressibility funct
 Condensate volume is neglected: the gas occupies the whole volume. The second line of @eq-ch03-eos-conc divides by
 $x_0$, so a state whose first species has zero mole fraction gives non-finite condensate concentrations (verified
 by reading the formula; not run). The non-ideal branches are untested.
+
+The compressibility hooks are reachable from C++ only. No YAML key sets `czh` or `czh_ddC`; `populate_thermo`
+({{< code src/species.cpp populate_thermo >}}), run by every `ThermoX` and `ThermoY` constructor, pads them with
+empty names, and the Python bindings expose only `cref_R`, `uref_R` and `sref_R`
+of the species options (verified by reading both at the pin), so a YAML or Python user always has $z_n = 1$.
+Where a C++ caller does set $z_n \ne 1$, only the conversions of this section use it: the saturation conditions of
+@sec-ch04 keep the ideal-gas form, with the saturation constant converted by $\ln(\mathcal R T)$ in
+`equilibrate_uv` ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}) and partial pressures
+$p\, x_n / x_{\mathrm g}$ in `equilibrate_tp` ({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}). The same
+holds for the relative humidity (@sec-ch03-relative-humidity). A non-ideal state would then be adjusted to an
+ideal-gas saturation; that it would be inconsistent with this section's pressure is a hypothesis (not run).

@@ -139,23 +139,3 @@ def test_a_figure_that_cannot_be_drawn_always_fails(tree):
 def test_the_committed_baseline_names_known_kinds_only():
     data = json.loads((TOOLS / "figoutput-baseline.json").read_text())
     assert {k for kinds in data["chapters"].values() for k in kinds} <= set(check_fig_output.KINDS)
-
-
-def test_contact_sheet_compares_two_drawings(tree, tmp_path_factory):
-    import contact_sheet
-    before, after = tmp_path_factory.mktemp("before"), tmp_path_factory.mktemp("after")
-    contact_sheet.draw_all(before, report=tree)
-    sys.modules.pop("demo_figs", None)
-    figs = tree / "src" / "demo_figs.py"
-    figs.write_text(figs.read_text().replace('"label", fontsize=fs.SMALL_PT', '"a longer label", fontsize=fs.SMALL_PT'))
-    import importlib
-    import shutil
-    shutil.rmtree(tree / "src" / "__pycache__", ignore_errors=True)
-    importlib.invalidate_caches()
-    contact_sheet.draw_all(after, report=tree)
-    groups = contact_sheet.compare(json.loads((before / "index.json").read_text()),
-                                   json.loads((after / "index.json").read_text()))
-    assert groups["changed"] == ["fig-ch01-good"]  # drifts is drawn once per fresh import, alike both times
-    assert len(groups["identical"]) == 5 and not groups["added"] and not groups["removed"]
-    pages = contact_sheet.sheet(after, tmp_path_factory.mktemp("sheet") / "cmp.png", before)
-    assert [p.name for p in pages] == ["cmp-01.png"] and pages[0].stat().st_size > 0

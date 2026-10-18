@@ -1,0 +1,96 @@
+## Saturation adjustment at fixed temperature and pressure (`equilibrate_tp`) {#sec-ch04-equilibrate-tp}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/thermo/equilibrate_tp.h, src/thermo/thermo_x.cpp, src/thermo/thermo_options.cpp, src/utils/alloc.h
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+Given a temperature, a pressure and mole fractions, this solver moves vapour into condensate, or back, until the
+conditions of @sec-ch04-conditions hold. It works in mole fractions, one cell at a time, through `ThermoX`. Each
+outer iteration linearises the logarithmic saturation conditions of the reactions that are out of equilibrium. It
+solves a small least-squares problem for the reaction extents, keeping every mole fraction non-negative, and takes the
+step. It stops when no reaction is out of equilibrium or after `max-iter` iterations.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Satisfy @eq-ch04-conditions-saturation at given $T$ and $p$.
+
+**Data.** Mole fractions in and out; $T$ [K], $p$ [Pa]; per-cell diagnostics.
+
+**Placement.** `ThermoX` forward, per cell, on CPU or CUDA.
+
+**Activation.** Whenever the options list reactions; YAML `max-iter` (10) and `ftol` ($10^{-6}$).
+
+**Guarantee / limits.** Mole fractions stay non-negative; failures are reported, not raised.
+
+**Evidence.** See the Tests layer below.
+:::
+
+### Derivation
+
+TODO: the linearisation of the logarithmic conditions in the reaction extents, written out in full from
+`equilibrate_tp`, and the weight matrix it builds.
+
+### Numerical method
+
+`equilibrate_tp` ({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}) runs these steps in each cell:
+
+1. **Input checks.** A non-positive temperature or pressure, a negative gas mole fraction, no gas at all, or an empty
+   reaction list returns failure at once. A negative condensate amount is reset to zero with a printed warning.
+2. **Constants.** For every reaction it evaluates $\ln K_j(T) - (\sum_i \nu_{ij}) \ln p$ once, since $T$ and $p$ do not
+   change during the solve.
+3. **Active set.** It sorts the reactions into those out of equilibrium (@sec-ch04-conditions) and the rest. If none
+   is out of equilibrium, the cell is at equilibrium and the solve ends with success.
+4. **Linear step.** For the active reactions it builds a weight matrix, the derivative of each reaction's logarithmic
+   quotient with respect to the mole fractions, and a right side, the saturation deficit. The constrained
+   least-squares solver of @sec-ch04-active-set then gives the reaction extents. Its inner iterations are bounded by
+   the larger of the number of species plus one and `max-iter`.
+5. **Step limiting.** Each reaction's extent is scaled down so that no species it consumes goes negative.
+6. **Repeat** from step 3, up to `max-iter` outer iterations.
+
+The per-cell scratch arrays come from a workspace sized by `equilibrate_tp_space`
+({{< code src/utils/alloc.h equilibrate_tp_space >}}); on CUDA they live in shared memory, as @sec-ch12 explains.
+
+TODO: a figure of one outer iteration (active set, linear step, step limiting).
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| per-cell solver | {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}} | `equilibrate_tp` | always |
+| CPU driver | {{< code src/thermo/thermo_dispatch.cpp call_equilibrate_tp_cpu >}} | `call_equilibrate_tp_cpu` | CPU inputs |
+| caller | {{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}} | `ThermoXImpl::forward` | reactions present |
+| options | {{< code src/thermo/thermo_options.cpp >}} | `max-iter`, `ftol` | YAML `dynamics: equation-of-state:` |
+
+: Code map of saturation adjustment at fixed temperature and pressure. {#tbl-ch04-equilibrate-tp-code}
+
+The options are read from the YAML block `dynamics: equation-of-state:` with the keys `max-iter` (default 10) and
+`ftol` (default $10^{-6}$) ({{< code src/thermo/thermo_options.cpp >}}).
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_equilibrate_tp_max_iter.release` | success on the last allowed iteration; failure reported when not converged | exact status | the return code |
+| `test_cuda_workspace.py` | the solve on CUDA matches the CPU | TODO | TODO |
+
+: Tests of saturation adjustment at fixed temperature and pressure. {#tbl-ch04-equilibrate-tp-tests}
+
+The two cases `equilibrate_tp.converges_on_its_last_allowed_iteration` and
+`equilibrate_tp.returns_failure_when_it_does_not_converge` pass on a CPU build and a CUDA build.[^ch04-tp-run]
+
+[^ch04-tp-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_equilibrate_tp_max_iter.cpp`;
+run: `ctest --output-on-failure --timeout 1800` in `build/tests`, Release builds with `-DCUDA=OFF` and `-DCUDA=ON`;
+GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
+
+### Limits
+
+- The step is a linearisation, and convergence is not proven. A cell that does not converge within `max-iter` keeps
+  its last state and is reported as a failure (@sec-ch04-warm-start-failures).
+- The tolerance `logsvp_eps` is passed as a single-precision `float` even in a double-precision solve. The effect on a
+  tolerance tighter than about $10^{-7}$ is not measured.
+- TODO: convergence rate in iterations against the number of condensables; not measured.

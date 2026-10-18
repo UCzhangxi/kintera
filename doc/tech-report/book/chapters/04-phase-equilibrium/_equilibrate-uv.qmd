@@ -1,0 +1,76 @@
+## Saturation adjustment at fixed internal energy and volume (`uv-solver`) {#sec-ch04-equilibrate-uv}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/thermo/equilibrate_uv.h, src/thermo/thermo_y.cpp, src/thermo/thermo_options.cpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+A dynamical model knows each cell's density and internal energy, not its temperature. This solver finds the
+temperature and the gas-condensate split together, so that the conditions of @sec-ch04-conditions hold and the
+internal energy per volume is unchanged: latent heat released by condensation warms the cell. It runs through
+`ThermoY` in molar concentrations. Two methods are available. The general method uses the same active-set
+least-squares step as the fixed-temperature solver. The partition method is a shortcut for reaction sets in which
+every reaction has exactly one vapour and one condensate and no species appears in two reactions.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Satisfy @eq-ch04-conditions-saturation at fixed internal energy and volume.
+
+**Data.** Concentrations and internal energy per volume in; temperature and concentrations out.
+
+**Placement.** `ThermoY` forward, per cell, on CPU or CUDA.
+
+**Activation.** YAML `dynamics: equation-of-state: uv-solver:` `auto` (default), `kkt` or `partition`.
+
+**Guarantee / limits.** `partition` is refused for reaction sets that do not qualify.
+
+**Evidence.** See the Tests layer below.
+:::
+
+### Derivation
+
+TODO: the energy constraint, the saturation constants in concentration units and the temperature solve, written
+out from `equilibrate_uv` ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}).
+
+### Numerical method
+
+The method is chosen in `ThermoYImpl::forward` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}):
+
+1. A reaction set qualifies for the partition method when every reaction has exactly one vapour consumed and one
+   condensate produced, and no species appears in more than one reaction. The check is in `ThermoYImpl::reset`
+   ({{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}).
+2. `uv-solver: partition` on a set that does not qualify raises an error: "UV partition solver requires disjoint
+   vapor-cloud reactions".
+3. `uv-solver: auto` passes the choice to the per-cell solver when the set qualifies, and uses the general method
+   otherwise. `kkt` always uses the general method.
+
+TODO: the iteration of each method, its starting guess, its stopping rule and a figure.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| per-cell solver | {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}} | `equilibrate_uv` | always |
+| partition method | {{< code src/thermo/equilibrate_uv.h equilibrate_uv_partition >}} | `equilibrate_uv_partition` | `uv-solver` |
+| method choice | {{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}} | `ThermoYImpl::forward` | `uv-solver` |
+
+: Code map of saturation adjustment at fixed internal energy and volume. {#tbl-ch04-equilibrate-uv-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_equilibrate_uv_gain.py` | the gain matrix the solver returns | TODO | TODO |
+| `test_cuda_workspace.py` | the solve on CUDA matches the CPU | TODO | TODO |
+
+: Tests of saturation adjustment at fixed internal energy and volume. {#tbl-ch04-equilibrate-uv-tests}
+
+TODO: assertions, tolerances and runs; missing evidence.
+
+### Limits
+
+TODO: not yet written; not measured.

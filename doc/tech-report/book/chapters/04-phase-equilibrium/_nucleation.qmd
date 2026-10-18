@@ -1,0 +1,38 @@
+## Which reactions take part (nucleation reactions) {#sec-ch04-nucleation}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/thermo/nucleation.cpp, src/thermo/nucleation.hpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+Only the condensation reactions listed with `type: nucleation` in the YAML input take part in saturation adjustment.
+Each carries the formula of its saturation constant and an optional temperature range. The entry point is
+`NucleationOptionsImpl::from_yaml`
+({{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}}).
+
+TODO: the At a glance box and the remaining summary paragraphs.
+
+### Derivation
+
+TODO: not yet written.
+
+### Numerical method
+
+TODO: not yet written, with its figure.
+
+### Code
+
+TODO: the code table and the walk-through.
+
+### Tests
+
+TODO: the test table; missing evidence.
+
+### Limits
+
+TODO: not yet written; not measured.

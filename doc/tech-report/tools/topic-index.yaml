@@ -63,6 +63,13 @@ sections:
     - implicit time step: [backward Euler, evolve_implicit, Rosenbrock]
   sec-ch06-kinetics-base:
     - KINETICS-base reader
+  # Chapter 14. Coupling to snapy and paddle
+  sec-ch14-thermo:
+    - coupling, equation of state: [snapy equation of state]
+  sec-ch14-saturation:
+    - coupling, saturation adjustment: [failed cells]
+  sec-ch14-kinetics:
+    - coupling, kinetics: [operator splitting, evolve_kinetics, run_hydro]
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd

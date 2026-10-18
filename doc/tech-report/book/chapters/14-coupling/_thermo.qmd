@@ -1,0 +1,71 @@
+## Thermodynamics as the equation of state of snapy (thermodynamics card) {#sec-ch14-thermo}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70
+sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp, src/thermo/thermo_x.cpp, src/thermo/eval_uhs.cpp, src/species.cpp; snapy src/eos/
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+snapy's moist equations of state do not carry their own thermodynamics: they hold a kintera `ThermoY` module and
+call it to convert between density, internal energy, pressure and temperature, and to evaluate heat capacities.
+This section lists those calls and the state each one receives. Its content rests on source reading only.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Conversions of @sec-ch03 called by snapy's equation of state.
+
+**Data.** Density [$\mathrm{kg\,m^{-3}}$], mass fractions [-], internal energy [$\mathrm{J\,m^{-3}}$], $T$ [K], $p$ [Pa].
+
+**Placement.** Every primitive/conserved conversion in snapy's moist equations of state.
+
+**Activation.** The thermodynamics card of the snapy input; always on for a moist equation of state.
+
+**Guarantee / limits.** Species order of `ThermoY` options: vapors, then clouds; dry species first in the state.
+
+**Evidence.** No kintera test; see the Tests layer.
+:::
+
+### Derivation
+
+No derivation: this section maps call sites. The thermodynamic functions themselves are derived in @sec-ch03.
+
+### Numerical method
+
+snapy's moist equation of state creates its module with `ThermoYImpl::create` ([`snapy moist_mixture.cpp:20`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L20)), and converts with `compute` and string keys such as `DY->V`, `VU->T`, `VT->P`, and
+calls the free functions `eval_cv_R`, `eval_cp_R`, `eval_czh` and `eval_czh_ddC` for heat capacities and
+compressibility terms ([`snapy moist_mixture.cpp:245-262`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L245-L262)). Before it reads species names and molar masses, the equation of state calls
+`populate_thermo` ({{< code src/species.cpp populate_thermo >}}, [`snapy equation_of_state.cpp:128`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/equation_of_state.cpp#L128)), so that it uses the copy of the species
+table held by its own options rather than kintera's process-wide table. Output diagnostics call
+`relative_humidity` ({{< code src/thermo/relative_humidity.cpp relative_humidity >}}, [`snapy load_diag_output_data.cpp:113`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/output/load_diag_output_data.cpp#L113)).
+
+The figure of the call graph is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| conversions | {{< code src/thermo/thermo_y.cpp ThermoYImpl::compute >}} | `ThermoYImpl::compute` | always |
+| heat capacity | {{< code src/thermo/eval_uhs.cpp eval_cv_R >}} | `eval_cv_R` | always |
+| species table | {{< code src/species.cpp populate_thermo >}} | `populate_thermo` | always |
+| snapy caller | [`snapy moist_mixture.cpp:245-262`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L245-L262) | `eval_cv_R` | moist equation of state |
+| snapy caller | [`snapy equation_of_state.cpp:128`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/equation_of_state.cpp#L128) | `populate_thermo` | moist equation of state |
+
+: Code map of the thermodynamic coupling. {#tbl-ch14-thermo-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none in kintera | missing evidence | n/a | n/a |
+
+: Tests of the thermodynamic coupling. {#tbl-ch14-thermo-tests}
+
+The kintera side of each call is tested in @sec-ch03; snapy's own tests of its equations of state are not
+listed here yet.
+
+### Limits
+
+Not drafted beyond the species-order convention in the box.

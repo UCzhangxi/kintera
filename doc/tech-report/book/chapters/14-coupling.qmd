@@ -12,7 +12,7 @@ The dependency map of the schemes is not provided: the figure module is not writ
 |---|---|---|---|---|
 | @sec-ch14-thermo | the thermodynamics card | always | exact | none in kintera |
 | @sec-ch14-saturation | the thermodynamics card | always | n/a | none in kintera |
-| @sec-ch14-kinetics | `reactions` | driver | first | none in kintera |
+| @sec-ch14-kinetics | `reactions`[^rg-ef7fafdef84f] | driver | first | none in kintera |
 
 : Schemes of the coupling chapter. {#tbl-ch14-schemes}
 
@@ -21,3 +21,7 @@ The dependency map of the schemes is not provided: the figure module is not writ
 {{< include 14-coupling/_saturation.qmd >}}
 
 {{< include 14-coupling/_kinetics.qmd >}}
+
+<!-- reader glossary notes -->
+[^rg-ef7fafdef84f]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+<!-- end reader glossary notes -->

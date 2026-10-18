@@ -1,7 +1,7 @@
 # Kinetics {#sec-ch06}
 
 This chapter describes how kintera turns a list of reactions into species tendencies and how it advances them in
-time. A reaction network is read from the `reactions` block of a YAML file into one options object per rate form.
+time. A reaction network is read from the `reactions`[^rg-2ecb7d642407] block of a YAML file into one options object per rate form.
 The `Kinetics` module evaluates a rate constant for every reaction, multiplies it by the mass-action product of the
 reactant concentrations, and returns the reaction rates with their derivatives with respect to concentration. From
 these the caller builds the reaction-space Jacobian and takes one linearly implicit (backward Euler) step. The
@@ -46,3 +46,7 @@ evaluated pointwise is exact. {#tbl-ch06-schemes}
 {{< include 06-kinetics/_implicit.qmd >}}
 
 {{< include 06-kinetics/_kinetics-base.qmd >}}
+
+<!-- reader glossary notes -->
+[^rg-2ecb7d642407]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+<!-- end reader glossary notes -->

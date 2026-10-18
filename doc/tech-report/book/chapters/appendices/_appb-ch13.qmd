@@ -2,13 +2,13 @@
 
 ## Tests and validation (@sec-ch13) {.unnumbered}
 
-| scheme | equation | derivation | code | check | source |
-|---------------|---------|-------------------------------|--------------------|-----------------|--------|
-| @sec-ch13-suite | none | No derivation: this scheme is the organisation of the tests. |  | none | n/a |
-| @sec-ch13-results | none | No derivation: this scheme records measurements. |  | none | n/a |
-| @sec-ch13-device-coverage | none | No derivation: this scheme is an inventory. |  | none | n/a |
-| @sec-ch13-kinetics-base | none | No derivation: the tests compare parsed values with the counts and numbers written in the input files. |  | none | n/a |
-| @sec-ch13-vulcan | none | No derivation: the comparison is scoped out (Limits). |  | none | n/a |
-| @sec-ch13-examples | none | No derivation: this scheme records whether scripts run. |  | none | n/a |
+| scheme | equation | derivation | code and check | source |
+|---------------|---------|-------------------------------|-------------------------------------|--------|
+| @sec-ch13-suite | none | No derivation: this scheme is the organisation of the tests. | code: ; check: none | n/a |
+| @sec-ch13-results | none | No derivation: this scheme records measurements. | code: ; check: none | n/a |
+| @sec-ch13-device-coverage | none | No derivation: this scheme is an inventory. | code: ; check: none | n/a |
+| @sec-ch13-kinetics-base | none | No derivation: the tests compare parsed values with the counts and numbers written in the input files. | code: ; check: none | n/a |
+| @sec-ch13-vulcan | none | No derivation: the comparison is scoped out (Limits). | code: ; check: none | n/a |
+| @sec-ch13-examples | none | No derivation: this scheme records whether scripts run. | code: ; check: none | n/a |
 
 : Derivations of @sec-ch13. {#tbl-appb-ch13}

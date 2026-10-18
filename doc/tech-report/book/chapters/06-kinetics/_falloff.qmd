@@ -1,0 +1,64 @@
+## Three-body and fall-off rate constants (`type: three-body` and fall-off types) {#sec-ch06-falloff}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/three_body.hpp, src/kinetics/lindemann_falloff.hpp, src/kinetics/troe_falloff.hpp, src/kinetics/sri_falloff.hpp, src/kinetics/kb_falloff.hpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Pressure-dependent reactions need a rate constant that depends on the concentration of a third body. kintera
+provides the three-body form and the Lindemann, Troe, SRI and KB fall-off forms, each as its own evaluator. This
+section is a skeleton: only the code map is filled in.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Rate constants that depend on the third-body concentration; equations not drafted.
+
+**Data.** $T$ [K], $c$ [$\mathrm{mol\,m^{-3}}$], third-body efficiencies.
+
+**Placement.** Evaluators four to eight of `Kinetics.forward`, registered only when they have reactions.
+
+**Activation.** The reaction `type` keys of each form; KB fall-off only through `from_kinetics_base`.
+
+**Guarantee / limits.** Not drafted.
+
+**Evidence.** See the Tests layer.
+:::
+
+### Derivation
+
+Not drafted: the derivations of the five forms are still to be written.
+
+### Numerical method
+
+Not drafted.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| three-body | {{< code src/kinetics/three_body.hpp ThreeBodyImpl >}} | `ThreeBodyImpl` | three-body type |
+| Lindemann | {{< code src/kinetics/lindemann_falloff.hpp LindemannFalloffImpl >}} | `LindemannFalloffImpl` | Lindemann type |
+| Troe | {{< code src/kinetics/troe_falloff.hpp TroeFalloffImpl >}} | `TroeFalloffImpl` | Troe type |
+| SRI | {{< code src/kinetics/sri_falloff.hpp SRIFalloffImpl >}} | `SRIFalloffImpl` | SRI type |
+| KB | {{< code src/kinetics/kb_falloff.hpp KBFalloffImpl >}} | `KBFalloffImpl` | `from_kinetics_base` |
+
+: Code map of three-body and fall-off rate constants. {#tbl-ch06-falloff-code}
+
+The exact YAML `type` strings of each form are still to be read from the readers.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_falloff` | forward and Jacobian of each form | missing evidence | not yet read |
+| `test_rate_constant_ddC.py` | $\partial k/\partial c$ is per reaction | $10^{-6}$ rel. | finite difference |
+
+: Tests of three-body and fall-off rate constants. {#tbl-ch06-falloff-tests}
+
+### Limits
+
+Not drafted.

@@ -1,0 +1,65 @@
+## Reading KINETICS-base reaction networks (`from_kinetics_base`) {#sec-ch06-kinetics-base}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/kinetics_options.cpp, src/photochem/kinetics_base_reader.hpp, python/kinetics_base/__init__.py
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Besides its own YAML format, kintera reads reaction networks in the input format of the KINETICS-base
+photochemical model and maps them onto the options of this chapter. This section is a skeleton: only the entry
+points are filled in.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Build `KineticsOptions` from a KINETICS-base master input and photolysis catalog.
+
+**Data.** File paths in; a `KineticsOptions` object out.
+
+**Placement.** Setup only, before a `Kinetics` module is built.
+
+**Activation.** API call `KineticsOptions.from_kinetics_base` or `from_kinetics_base_pun`.
+
+**Guarantee / limits.** Not drafted.
+
+**Evidence.** See the Tests layer.
+:::
+
+### Derivation
+
+No derivation: this is an input reader. The mapping of each KINETICS-base rate code to a rate form is still to be
+written.
+
+### Numerical method
+
+Not drafted.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| C++ entry | {{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::from_kinetics_base >}} | `from_kinetics_base` | API |
+| reader | {{< code src/photochem/kinetics_base_reader.hpp >}} | `kinetics_options_from_kinetics_base` | API |
+| Python binding | {{< code python/csrc/pykinetics.cpp bind_kinetics >}} | `bind_kinetics` | API |
+
+: Code map of the KINETICS-base reader. {#tbl-ch06-kinetics-base-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_kinetics_base` | load with and without cross sections; forward | missing evidence | not yet read |
+| `test_kinetics_base.py` | Titan network against reference | missing evidence | skips without external files |
+| `test_kinetics_base_units.py` | unit conversion | missing evidence | not yet read |
+
+: Tests of the KINETICS-base reader. {#tbl-ch06-kinetics-base-tests}
+
+Four cases of `test_kinetics_base.py` skip at the pin because they need KINETICS-base files that are not in the
+repository.
+
+### Limits
+
+Not drafted. The ownership of this reader between this chapter and @sec-ch07 is an open question.

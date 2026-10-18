@@ -1,0 +1,92 @@
+## Reaction-space Jacobian (`evolve_temperature`) {#sec-ch06-jacobian}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/kinetics.hpp, src/kinetics/kinetics.cpp, src/kinetics/jacobian_kinetics.hpp, src/kinetics/jacobian_mass_action.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+An implicit step needs the derivative of every reaction rate with respect to every species concentration. kintera
+returns it in reaction space, one row per reaction, so that the caller multiplies it by the stoichiometric matrix.
+It combines the derivative of the mass-action product with the derivative of the rate constant that autograd
+returned in @sec-ch06-mass-action, and, when temperature evolves, a term for the heating by reaction.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $J_{jk} = \partial r_j / \partial c_k$, @eq-ch06-jacobian-entry.
+
+**Data.** $T$, $c$, volumetric heat capacity, rates, $\partial k/\partial c$, optional $\partial k/\partial T$ and rate constants.
+
+**Placement.** After `forward_with_rate_constants`, before `evolve_implicit`.
+
+**Activation.** Always called by the driver; the temperature term only with `evolve_temperature`.
+
+**Guarantee / limits.** Needs explicit rate constants where a condensate is zero.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $J_{jk}$, entry of the reaction-space Jacobian [$\mathrm{s^{-1}}$]; $C_V$, volumetric heat capacity
+[$\mathrm{J\,m^{-3}\,K^{-1}}$]; $u_k$, molar internal energy of species $k$ [$\mathrm{J\,mol^{-1}}$].
+
+### Derivation
+
+Differentiating @eq-ch06-mass-action-rate at fixed $T$,
+
+$$
+J_{jk} = \prod_i c_i^{\nu_{ij}}\, \frac{\partial k_j}{\partial c_k} + \nu_{kj}\, \frac{r_j}{c_k} .
+$$ {#eq-ch06-jacobian-entry}
+
+For an evaporation column the product is the condensate concentration $c_p$ alone, so the second term is
+$k_j\, \partial c_p / \partial c_k$. When `evolve_temperature` is set, the temperature responds to the reaction
+heating at fixed volume, and the chain rule adds
+
+$$
+J_{jk} \leftarrow J_{jk} - \prod_i c_i^{\nu_{ij}}\, \frac{\partial k_j}{\partial T}\, \frac{u_k}{C_V} .
+$$
+
+@eq-ch06-jacobian-entry is computed in `jacobian` ({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}).
+The derivation of the temperature term from the energy equation is not drafted yet.
+
+### Numerical method
+
+`jacobian` uses the same concentration floor as the rates. It never forms $r_j/c_k$ for an order that is zero, so
+trace and zero concentrations do not overflow in the backward pass. Where the condensate of an evaporation column is
+zero, $r_j / c_p$ is undefined; the caller then passes the raw rate constants returned by
+`forward_with_rate_constants`, and `jacobian` refuses the call without them.
+
+The figure of the Jacobian's sparsity is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| declaration | {{< code src/kinetics/kinetics.hpp KineticsImpl >}} | `KineticsImpl::jacobian` | always |
+| Jacobian | {{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}} | `jacobian` | `evolve_temperature` |
+| rate constants | {{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}} | `forward_with_rate_constants` | always |
+| unused helper | {{< code src/kinetics/jacobian_mass_action.cpp KineticsImpl::_jacobian_mass_action >}} | `_jacobian_mass_action` | never called |
+
+: Code map of the Jacobian. {#tbl-ch06-jacobian-code}
+
+Hypothesis from reading the sources, not proven: `_jacobian_mass_action` has no caller, and the free functions
+declared in {{< code src/kinetics/jacobian_kinetics.hpp >}} (`jacobian_mass_action`, `jacobian_evaporation`) have no
+definition at the pin.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_evaporation_general.py` | zero-condensate Jacobian with explicit rate constants | $10^{-300}$ abs. | not yet derived |
+| `test_evaporation_general.py` | temperature feedback in the fixed-energy Jacobian | missing evidence | not yet read |
+| `test_falloff` | three-body and fall-off Jacobians | missing evidence | not yet read |
+| `test_rate_constant_ddC.py` | $\partial k/\partial c$ is per reaction | $10^{-6}$ rel. | finite difference |
+
+: Tests of the Jacobian. {#tbl-ch06-jacobian-tests}
+
+### Limits
+
+Open question: the drivers of @sec-ch14 pass a volumetric heat capacity at constant pressure as $C_V$; the term
+above is written for constant volume. It matters only with `evolve_temperature` on. Not tested.

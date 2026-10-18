@@ -1,3 +1,48 @@
 # Kinetics {#sec-ch06}
 
-pending
+This chapter describes how kintera turns a list of reactions into species tendencies and how it advances them in
+time. A reaction network is read from the `reactions` block of a YAML file into one options object per rate form.
+The `Kinetics` module evaluates a rate constant for every reaction, multiplies it by the mass-action product of the
+reactant concentrations, and returns the reaction rates with their derivatives with respect to concentration. From
+these the caller builds the reaction-space Jacobian and takes one linearly implicit (backward Euler) step. The
+thermodynamic state that feeds the rates comes from @sec-ch03; the linear solve shares its kernels with
+@sec-ch10; the CUDA path of the step is part of @sec-ch12; the drivers that call this sequence
+from a dynamical core are the subject of @sec-ch14.
+
+The dependency map of the schemes is not provided: the figure module is not written yet.
+
+| scheme | YAML key or option | default | order | main test |
+|---|---|---|---|---|
+| @sec-ch06-mass-action | `reactions` | always | exact | `test_kinetics` |
+| @sec-ch06-arrhenius | `type: arrhenius` | none | exact | `test_multirange_arrhenius.py` |
+| @sec-ch06-pressure-switch | `p-threshold`, `factor` | off | exact | `test_coagulation_pressure_switch.py` |
+| @sec-ch06-falloff | `type: three-body` and fall-off | none | exact | `test_falloff` |
+| @sec-ch06-evaporation | `type: evaporation` | `form: diffusion` | exact | `test_evaporation_extent.py` |
+| @sec-ch06-kessler | `form: kessler`, `k3` | off | exact | `test_evaporation_kessler.py` |
+| @sec-ch06-coagulation | `type: coagulation` | none | exact | `test_coagulation_pressure_switch.py` |
+| @sec-ch06-jacobian | `evolve_temperature` | off | exact | `test_evaporation_general.py` |
+| @sec-ch06-implicit | `evolve_implicit` (API) | caller | first | `test_kinetics` |
+| @sec-ch06-kinetics-base | `from_kinetics_base` (API) | caller | n/a | `test_kinetics_base` |
+
+: Schemes of the kinetics chapter. "Order" is the order in time of the scheme's discretization; a rate form
+evaluated pointwise is exact. {#tbl-ch06-schemes}
+
+{{< include 06-kinetics/_mass-action.qmd >}}
+
+{{< include 06-kinetics/_arrhenius.qmd >}}
+
+{{< include 06-kinetics/_pressure-switch.qmd >}}
+
+{{< include 06-kinetics/_falloff.qmd >}}
+
+{{< include 06-kinetics/_evaporation.qmd >}}
+
+{{< include 06-kinetics/_kessler.qmd >}}
+
+{{< include 06-kinetics/_coagulation.qmd >}}
+
+{{< include 06-kinetics/_jacobian.qmd >}}
+
+{{< include 06-kinetics/_implicit.qmd >}}
+
+{{< include 06-kinetics/_kinetics-base.qmd >}}

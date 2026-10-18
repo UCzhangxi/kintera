@@ -1,0 +1,100 @@
+## Arrhenius rate constants and their temperature bands (`type: arrhenius`) {#sec-ch06-arrhenius}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/arrhenius.hpp, src/kinetics/arrhenius.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Most gas-phase reactions take their rate constant from the modified Arrhenius law: a pre-exponential factor, a power
+of temperature and an activation term. kintera also accepts several temperature bands per reaction, each with its
+own parameters, so that tabulated rate data with different fits in different temperature ranges can be used as
+given.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $k = A (T/T_{\mathrm{ref}})^{b} \exp(-E_a/T)$ per band, @eq-ch06-arrhenius-rate.
+
+**Data.** $T$ [K] in; $k$ in mol, m, s units out; YAML $A$ in molecule, cm, s units.
+
+**Placement.** First evaluator of `Kinetics.forward`.
+
+**Activation.** `type: arrhenius`; keys `A`, `b`, `Ea_R`, `E4`, `A_ranges`, `T_ranges`, `b_ranges`, `Ea_R_ranges`.
+
+**Guarantee / limits.** Exact; inactive bands are never evaluated.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $A$, pre-exponential factor (units set by the reaction order); $b$, temperature exponent [-];
+$E_a$, activation temperature [K] (the YAML key `Ea_R`, an energy divided by $\mathcal R$); $T_{\mathrm{ref}}$,
+reference temperature [K] (default 300 K).
+
+Defaults when a key is omitted: `A` is 1, `b` is 0, `Ea_R` is 1 K, `E4` is 0. The `Ea_R` default of 1 K, not 0, is a
+verified finding: options read from a card with no `Ea_R` report `Ea_R() == [1.0]`, so the rate constant carries a
+factor $\exp(-1/T)$, about 0.99 at 100 K. Whether this default is intended is an open question.
+
+### Derivation
+
+Within one temperature band the rate constant is
+
+$$
+k_j(T) = A_j \left(\frac{T}{T_{\mathrm{ref}}}\right)^{b_j} \exp\!\left(-\frac{E_{a,j}}{T}\right) .
+$$ {#eq-ch06-arrhenius-rate}
+
+The YAML value of $A$ is given in molecule, cm, s units. For a reaction whose reactant coefficients sum to $n$,
+$A$ carries $\mathrm{molecule}^{1-n}\,\mathrm{cm}^{-3(1-n)}\,\mathrm{s}^{-1}$, and the reader converts it to mol, m, s
+units before it is stored. @eq-ch06-arrhenius-rate is computed in `forward`
+({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::forward >}}); the unit conversion happens in `from_yaml`
+({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}}).
+
+With bands, band $r$ of reaction $j$ covers $[T_{r-1}, T_r)$; the first band extends to 0 K and the last to
+$+\infty$, so every temperature falls in exactly one band. The full derivation of the unit factor is not drafted
+yet.
+
+### Numerical method
+
+`reset` ({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}}) pads the band tables to a common number of
+bands; padded slots have $A = 0$ and an empty window. With one band, `forward` evaluates
+@eq-ch06-arrhenius-rate directly. With several, it first selects the active band's $A$, $b$ and $E_a$ by a mask
+on $T$ and only then evaluates the exponential, so an inactive band far outside its range cannot overflow. The
+result is passed through the pressure switch of @sec-ch06-pressure-switch.
+
+The band-selection figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/kinetics/arrhenius.hpp ArrheniusOptionsImpl >}} | `ArrheniusOptionsImpl` | `type: arrhenius` |
+| YAML reader | {{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant` |
+| band tables | {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}} | `reset` | `A_ranges` |
+| rate constant | {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::forward >}} | `forward` | always |
+
+: Code map of Arrhenius rate constants. {#tbl-ch06-arrhenius-code}
+
+Setup checks a user can hit: `A_ranges` without `T_ranges`; band lists of different lengths; `T_ranges` not
+strictly increasing; a reaction with no `type` or no `rate-constant`.
+
+The key `E4` is parsed into `E4_R` but `forward` does not use it (verified by reading `forward` at the pin).
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_multirange_arrhenius.py` | single band matches the closed form | $10^{-12}$ rel. | not yet derived |
+| `test_multirange_arrhenius_yaml.py` | YAML bands equal the Python API | $10^{-13}$ rel. | not yet derived |
+| `test_multirange_arrhenius_yaml.py` | inactive overflow stays out of $k$ | $2 \times 10^{-6}$ rel. | not yet derived |
+
+: Tests of Arrhenius rate constants. {#tbl-ch06-arrhenius-tests}
+
+The tolerances are read from the test files at the pin; the reason for each is missing evidence. No test covers the
+`Ea_R` default or `E4`.
+
+### Limits
+
+`E4` is accepted and ignored. The `Ea_R` default is 1 K. Both are verified findings; whether they are intended is
+an open question.

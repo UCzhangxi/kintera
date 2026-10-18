@@ -1,0 +1,103 @@
+## Kessler-form evaporation of precipitation (`form: kessler`) {#sec-ch06-kessler}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/evaporation.hpp, src/kinetics/evaporation.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Bulk microphysics schemes in the style of Kessler evaporate precipitation at a rate proportional to the amount of
+precipitation and to the subsaturation, both in mole fractions. The `kessler` form replaces the diffusion coefficient
+of @sec-ch06-evaporation by $k_3 / n$, which makes kintera's concentration-based rate equal to that mole-fraction
+law.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\mathrm{d}x_v/\mathrm{d}t = k_3\, x_p\, (x_{\mathrm{sat}} - x_v)^+$, @eq-ch06-kessler-rate.
+
+**Data.** $T$ [K], $p$ [Pa], $c$ [$\mathrm{mol\,m^{-3}}$]; $k_3$ [$\mathrm{s^{-1}}$] per reaction.
+
+**Placement.** Inside the evaporation evaluator.
+
+**Activation.** `form: kessler` with `k3`; default `form: diffusion`.
+
+**Guarantee / limits.** One condensate to one gas, both coefficient 1.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $k_3$, evaporation coefficient [$\mathrm{s^{-1}}$]; $n$, total molar concentration of gas and
+condensates [$\mathrm{mol\,m^{-3}}$]; $x = c/n$, mole fraction [-]; $x_p$, $x_v$, mole fractions of the
+precipitation and its vapor.
+
+### Derivation
+
+kintera sets
+
+$$
+\begin{aligned}
+n &= \frac{p}{\mathcal R T} + \sum_{\mathrm{condensed}\ i} c_i,\\
+\kappa &= \frac{k_3}{n}.
+\end{aligned}
+$$ {#eq-ch06-kessler-kappa}
+
+@eq-ch06-kessler-kappa is computed in `forward` ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}).
+With $r = \kappa\, c_p\, (c_{\mathrm{sat}} - c_v)^+$ and $c = n x$ this gives
+
+$$
+r = \frac{k_3}{n}\, n x_p\, n (x_{\mathrm{sat}} - x_v)^+ = n\, k_3\, x_p\, (x_{\mathrm{sat}} - x_v)^+ ,
+$$
+
+and dividing by $n$, which a closed cell of fixed volume conserves for one-to-one evaporation,
+
+$$
+\frac{\mathrm{d} x_v}{\mathrm{d} t} = k_3\, x_p\, (x_{\mathrm{sat}} - x_v)^+ .
+$$ {#eq-ch06-kessler-rate}
+
+@eq-ch06-kessler-rate is not evaluated by the code: it is the law that the rate of
+{{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}} reproduces, exact under the stated closed-cell
+assumption.
+
+### Numerical method
+
+`forward` computes $n$ per cell from $p$, $T$ and the condensed columns selected by the gas mask, and overwrites
+$\kappa$ in the Kessler columns with $k_3 / n$. The mass-action factor and the deficit are those of
+@sec-ch06-evaporation. Because $n$ depends on the condensate concentrations, the Jacobian of @sec-ch06-jacobian
+carries the derivative of $1/n$ through autograd.
+
+The figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/kinetics/evaporation.hpp EvaporationOptionsImpl >}} | `form`, `k3` | `form: kessler` |
+| YAML reader | {{< code src/kinetics/evaporation.cpp EvaporationOptionsImpl::from_yaml >}} | `from_yaml` | `k3` |
+| setup checks | {{< code src/kinetics/evaporation.cpp EvaporationImpl::reset >}} | `reset` | `form` |
+| rate | {{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}} | `forward` | `form: kessler` |
+
+: Code map of Kessler-form evaporation. {#tbl-ch06-kessler-code}
+
+Refused: an unknown `form`; `form: kessler` without `k3`; `k3` not finite or negative; `k3` without
+`form: kessler`; any of `diff_c`, `diff_T`, `diff_P`, `vm`, `diameter` with `form: kessler`; a Kessler reaction
+with two products; a direct call without `gas_mask`.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_evaporation_kessler.py` | RK4 box matches the closed-form Riccati solution | $10^{-10}$ rel. | not yet derived |
+| `test_evaporation_kessler.py` | rate is $k_3 c_p$ deficit over $n$ | missing evidence | not yet read |
+| `test_evaporation_kessler.py` | Jacobian includes $\partial n / \partial c$ | missing evidence | not yet read |
+| `test_evaporation_kessler.py` | bad inputs raise | exact | error messages |
+
+: Tests of Kessler-form evaporation. {#tbl-ch06-kessler-tests}
+
+The box test covers sub- and supersaturated states and a state with no precipitation; CPU only.
+
+### Limits
+
+Only one-to-one reactions. The closed-form agreement assumes fixed $T$ and volume.

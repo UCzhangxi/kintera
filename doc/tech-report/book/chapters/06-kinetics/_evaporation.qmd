@@ -1,0 +1,110 @@
+## Evaporation of condensates by diffusion (`type: evaporation`) {#sec-ch06-evaporation}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/evaporation.hpp, src/kinetics/evaporation.cpp, src/kinetics/evaporation_extent.cpp, src/thermo/nucleation.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+An evaporation reaction turns one condensed species into gases at a rate set by vapor diffusion to the particles and
+by how far the gas is below saturation. It is one-way: condensation is handled by the phase equilibrium of
+@sec-ch04, and evaporation only lets condensate that sits in subsaturated air return to the gas.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $r = \kappa\, c_p\, \eta$ with $\kappa = 12 D v_m / d^2$, @eq-ch06-evaporation-kappa.
+
+**Data.** $T$ [K], $p$ [Pa], $c$ [$\mathrm{mol\,m^{-3}}$] in; $r$ [$\mathrm{mol\,m^{-3}\,s^{-1}}$] out.
+
+**Placement.** Third evaluator of `Kinetics.forward`.
+
+**Activation.** `type: evaporation`, `form: diffusion` (the default); saturation from the `formula` keys.
+
+**Guarantee / limits.** $\eta \ge 0$: never condenses.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $D$, vapor diffusivity [$\mathrm{m^2\,s^{-1}}$]; $v_m$, molar volume of the condensate
+[$\mathrm{m^3\,mol^{-1}}$]; $d$, particle diameter [m]; $c_p$, condensate concentration [$\mathrm{mol\,m^{-3}}$];
+$\eta$, saturation deficit [units of the product of gas concentrations]; $K$, saturation product.
+
+Defaults: `diff_c` $2 \times 10^{-5}\,\mathrm{m^2\,s^{-1}}$, `diff_T` 1.75, `diff_P` $-1$, `vm`
+$1.8 \times 10^{-5}\,\mathrm{m^3\,mol^{-1}}$, `diameter` $10^{-2}$ m, `Tref` 300 K, `Pref` $10^5$ Pa.
+
+### Derivation
+
+The diffusivity scales as
+
+$$
+D = D_0 \left(\frac{T}{T_{\mathrm{ref}}}\right)^{a_T} \left(\frac{p}{p_{\mathrm{ref}}}\right)^{a_p},
+$$
+
+with $D_0$, $a_T$, $a_p$ the YAML keys `diff_c`, `diff_T`, `diff_P`. The rate coefficient and the rate are
+
+$$
+\begin{aligned}
+\kappa &= \frac{12\, D\, v_m}{d^2},\\
+r &= \kappa\, c_p\, \eta .
+\end{aligned}
+$$ {#eq-ch06-evaporation-kappa}
+
+For one gas product, $\eta = \max(K - c_v, 0)$, with $K$ the saturation concentration from the vapor-pressure
+formula of @sec-ch02 divided by $\mathcal R T$. For two gas products the code replaces the deficit by the extent $x$
+that brings the products to equilibrium, $(c_1 + x)(c_2 + x) = K$. Other stoichiometries use the general surface
+extent of `EvaporationExtent`. @eq-ch06-evaporation-kappa is computed in `forward`
+({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}); the factor $c_p$ is applied in
+`forward_with_rate_constants` ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
+The origin of the factor 12 is not drafted yet.
+
+### Numerical method
+
+The two-product extent is the positive root of a quadratic, written as
+$x = 2(K - c_1 c_2) / (c_1 + c_2 + \sqrt{(c_1 - c_2)^2 + 4K})$ so that no difference of large terms occurs. Columns
+that are already supersaturated, including an infinite product, have their concentrations zeroed before the
+extent is formed, so no infinity reaches the gradient. The general extent is an autograd function with an implicit
+first derivative ({{< code src/kinetics/evaporation_extent.cpp EvaporationExtent::forward >}}).
+
+The figure of $\eta$ against $c_v$ is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/kinetics/evaporation.hpp EvaporationOptionsImpl >}} | `EvaporationOptionsImpl` | `type: evaporation` |
+| YAML reader | {{< code src/kinetics/evaporation.cpp EvaporationOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant` |
+| setup checks | {{< code src/kinetics/evaporation.cpp EvaporationImpl::reset >}} | `reset` | always |
+| rate | {{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}} | `forward` | always |
+| general extent | {{< code src/kinetics/evaporation_extent.cpp EvaporationExtent::forward >}} | `EvaporationExtent` | general stoichiometry |
+
+: Code map of evaporation. {#tbl-ch06-evaporation-code}
+
+Refused at setup: a reversible reaction; a coefficient that is not finite and positive; custom `orders`; more or
+fewer than one condensed reactant, or a condensed reactant with a coefficient other than 1; a condensate as a
+product; a mixed-reactant reaction without explicit phases.
+
+`minT` and `maxT` are stored twice per evaporation reaction: once by `NucleationOptionsImpl::from_yaml`
+({{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}}), which the evaporation reader calls, and
+again by `EvaporationOptionsImpl::from_yaml`. Verified: one reaction gives `minT == [0.0, 0.0]`. No reader of these
+two lists was found in the kinetics sources, so the duplicate has no known effect.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_evaporation_extent.py` | two-product rate is the extent | $10^{-10}$ rel. | not yet derived |
+| `test_evaporation_extent.py` | rate derivative vs finite difference | $10^{-6}$ rel. | finite-difference step |
+| `test_evaporation_general.py` | rate and Jacobian on CPU and CUDA agree | $10^{-12}$ abs. | not yet derived |
+| `test_evaporation_inputs.py` | default diffusivity exponents | exact | structural |
+
+: Tests of evaporation. {#tbl-ch06-evaporation-tests}
+
+`test_evaporation_general.py` also checks atom conservation of an implicit step and convergence with the time step.
+CUDA cases skip when no GPU is present.
+
+### Limits
+
+The factor 12 and the default diameter of 1 cm are taken as given; their source is missing evidence.

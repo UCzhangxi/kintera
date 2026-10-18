@@ -1,0 +1,67 @@
+## Coagulation of cloud into precipitation (`type: coagulation`) {#sec-ch06-coagulation}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/coagulation.hpp, src/kinetics/coagulation.cpp, src/kinetics/kinetics.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Coagulation converts one condensed species into another, typically cloud into precipitation (autoconversion). It
+uses the Arrhenius rate form of @sec-ch06-arrhenius, including its bands and its pressure switch, but every species
+it names is registered as a cloud species rather than a vapor.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** First-order conversion $r = k\, c_{\mathrm{cloud}}$ with $k$ from @eq-ch06-arrhenius-rate.
+
+**Data.** As @sec-ch06-arrhenius; reactants and products are condensed species.
+
+**Placement.** Second evaluator of `Kinetics.forward`.
+
+**Activation.** `type: coagulation`; the keys of `type: arrhenius`.
+
+**Guarantee / limits.** Conserves moles of condensate for one-to-one reactions.
+
+**Evidence.** See the Tests layer.
+:::
+
+The options class derives from the Arrhenius options and changes only the reaction type it reads.
+
+### Derivation
+
+The rate is @eq-ch06-mass-action-rate with $k_j$ from @eq-ch06-arrhenius-rate; for $\mathrm{A(s)} \to
+\mathrm{A(s,p)}$ it is $r = k\, c_{\mathrm{A(s)}}$. A closed box at fixed $p$ then has
+$x_c(t) = x_{c0}\, e^{-k t}$, the closed form the test integrates against. No other derivation is needed.
+
+### Numerical method
+
+`reset` ({{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}}) registers the coagulation options with the
+Arrhenius evaluator; nothing else differs from @sec-ch06-arrhenius.
+
+The figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/kinetics/coagulation.hpp CoagulationOptionsImpl >}} | `CoagulationOptionsImpl` | `type: coagulation` |
+| YAML reader | {{< code src/kinetics/coagulation.cpp CoagulationOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant` |
+| species phase | {{< code src/kinetics/coagulation.cpp add_to_vapor_cloud >}} | `add_to_vapor_cloud` | always |
+
+: Code map of coagulation. {#tbl-ch06-coagulation-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_coagulation_pressure_switch.py` | RK4 box matches $x_{c0} e^{-kt}$ | $10^{-10}$ rel. | not yet derived |
+| `test_coagulation_pressure_switch.py` | no switch by default | exact | structural |
+
+: Tests of coagulation. {#tbl-ch06-coagulation-tests}
+
+### Limits
+
+No test of a coagulation reaction with more than one reactant. Not measured.

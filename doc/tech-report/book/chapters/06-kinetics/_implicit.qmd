@@ -1,0 +1,84 @@
+## Linearly implicit time step (`evolve_implicit`) {#sec-ch06-implicit}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/evolve_implicit.hpp, src/kinetics/evolve_implicit_impl.h, src/kinetics/evolve_implicit_dispatch.cpp, src/kinetics/evolve_implicit_dispatch.cu, python/csrc/kintera.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Chemistry and cloud conversion are stiff, so kintera advances them with one linearly implicit backward Euler step:
+it linearizes the tendency about the current state and solves one small linear system per cell. A two-stage
+Rosenbrock variant with an error estimate is also provided.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $(\mathsf I/\Delta t - S J)\,\delta = S r$, @eq-ch06-implicit-system.
+
+**Data.** Rates, $S$, $J$ and $\Delta t$ [s] in; $\delta$ [$\mathrm{mol\,m^{-3}}$] per cell out.
+
+**Placement.** Called by the driver after `jacobian`.
+
+**Activation.** API call `evolve_implicit`; `evolve_ros2` and `ros2_k1` for the Rosenbrock variant.
+
+**Guarantee / limits.** First order in time; one linearization per step.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\delta$, concentration change over the step [$\mathrm{mol\,m^{-3}}$]; $\Delta t$, time step [s].
+
+### Derivation
+
+Backward Euler for @eq-ch06-mass-action-tendency is $c^{n+1} = c^n + \Delta t\, S r(c^{n+1})$. Linearizing
+$r(c^{n+1}) \approx r(c^n) + J \delta$ with $\delta = c^{n+1} - c^n$ gives
+
+$$
+\left(\frac{\mathsf I}{\Delta t} - S J\right) \delta = S\, r(c^n) .
+$$ {#eq-ch06-implicit-system}
+
+@eq-ch06-implicit-system is assembled and solved in `evolve_implicit_cell`
+({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}). It is first order in $\Delta t$; the
+linearization adds an error of second order in $\delta$.
+
+### Numerical method
+
+`evolve_implicit` ({{< code src/kinetics/evolve_implicit_dispatch.cpp evolve_implicit >}}) iterates over cells with
+a tensor iterator and calls the per-cell kernel on the CPU or on CUDA. Each cell forms $S J$ and $S r$, solves by LU
+with partial pivoting, and falls back to the minimum-norm least-squares solution through the pseudo-inverse when the
+matrix is singular. The kernels are those of @sec-ch10. The Rosenbrock variant in
+{{< code src/kinetics/evolve_implicit.hpp evolve_ros2 >}} uses $\gamma = 1 + 1/\sqrt2$ and two least-squares solves.
+
+The figure of one step is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| entry point | {{< code src/kinetics/evolve_implicit_dispatch.cpp evolve_implicit >}} | `evolve_implicit` | API |
+| CPU loop | {{< code src/kinetics/evolve_implicit_dispatch.cpp call_evolve_implicit_cpu >}} | `call_evolve_implicit_cpu` | CPU tensors |
+| CUDA loop | {{< code src/kinetics/evolve_implicit_dispatch.cu call_evolve_implicit_cuda >}} | `call_evolve_implicit_cuda` | CUDA tensors |
+| per-cell solve | {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}} | `evolve_implicit_cell` | always |
+| Rosenbrock | {{< code src/kinetics/evolve_implicit.hpp evolve_ros2 >}} | `evolve_ros2` | API |
+
+: Code map of the implicit step. {#tbl-ch06-implicit-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_kinetics` | batched solve and singular fallback | $10^{-12}$ | not yet derived |
+| `test_kinetics` | `DeviceTest.evolve_implicit` runs | none | smoke test, no assertion |
+| `test_evaporation_extent.py` | the step does not pass equilibrium | missing evidence | not yet read |
+| `test_evaporation_general.py` | atoms conserved; converges with $\Delta t$ | $10^{-15}$ abs. | not yet derived |
+
+: Tests of the implicit step. {#tbl-ch06-implicit-tests}
+
+`DeviceTest.evolve_implicit` prints its result and asserts nothing; the CPU and CUDA instantiations both pass.
+
+### Limits
+
+No registered test calls the Rosenbrock variant; it is called by the comparison script
+{{< code tests/vulcan/chapman/run_comparison.py >}}, which ctest does not run. Its accuracy is not measured.

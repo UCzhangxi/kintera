@@ -1,0 +1,85 @@
+## Pressure switch on Arrhenius-form rates (`p-threshold`, `factor`) {#sec-ch06-pressure-switch}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/arrhenius.hpp, src/kinetics/arrhenius.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Some cloud microphysics parameterizations change a conversion rate below a given pressure. The pressure switch
+multiplies an Arrhenius-form rate constant by a constant factor wherever the pressure is strictly below a
+threshold. It applies to every rate form that uses the Arrhenius evaluator, including coagulation
+(@sec-ch06-coagulation).
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $k \leftarrow f\,k$ where $p < p_{\mathrm{th}}$, @eq-ch06-pressure-switch-factor.
+
+**Data.** $p$ [Pa] in; $p_{\mathrm{th}}$ [Pa] and $f$ [-] per reaction.
+
+**Placement.** Last step of the Arrhenius evaluator.
+
+**Activation.** Keys `p-threshold` and `factor` under `rate-constant`, given together; default off.
+
+**Guarantee / limits.** Strict inequality; discontinuous in $p$ at the threshold.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $p_{\mathrm{th}}$, threshold pressure [Pa]; $f$, switch factor [-].
+
+A reaction without the keys has $p_{\mathrm{th}} = 0$ and $f = 1$, so the switch is neutral for it.
+
+### Derivation
+
+$$
+k_j \leftarrow
+\begin{cases}
+f_j\, k_j, & p < p_{\mathrm{th},j},\\
+k_j, & p \ge p_{\mathrm{th},j}.
+\end{cases}
+$$ {#eq-ch06-pressure-switch-factor}
+
+@eq-ch06-pressure-switch-factor is computed in `switch_pressure`
+({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::switch_pressure >}}). It is exact. The derivative of $k_j$ with
+respect to $p$ is not formed; $p$ is not a state variable of the Jacobian (@sec-ch06-jacobian).
+
+### Numerical method
+
+A `torch.where` on $p < p_{\mathrm{th}}$ selects $f k$ or $k$, element by element. The threshold and factor are
+plain tensors, not module buffers, and are moved to the rate's device and dtype at each call.
+
+The figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/kinetics/arrhenius.hpp ArrheniusOptionsImpl >}} | `p_threshold`, `p_factor` | `p-threshold`, `factor` |
+| YAML reader | {{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}} | `from_yaml` | `p-threshold` |
+| switch | {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::switch_pressure >}} | `switch_pressure` | `p-threshold` |
+
+: Code map of the pressure switch. {#tbl-ch06-pressure-switch-code}
+
+Refused at setup: one key without the other; `p-threshold` not finite or not positive; `factor` not finite or
+negative.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_coagulation_pressure_switch.py` | RK4 box matches $x_c(t) = x_{c0} e^{-k t}$ near $p_{\mathrm{th}}$ | $10^{-10}$ rel. | not yet derived |
+| `test_coagulation_pressure_switch.py` | switch is strict at $p = p_{\mathrm{th}}$ | $10^{-15}$ rel. | round-off of one product |
+| `test_coagulation_pressure_switch.py` | bad inputs raise | exact | error messages |
+
+: Tests of the pressure switch. {#tbl-ch06-pressure-switch-tests}
+
+The box test runs at $p_{\mathrm{th}}$ and one unit in the last place on either side. Tests run on CPU only.
+
+### Limits
+
+The switch is a step in $p$; a state that crosses the threshold during an implicit step sees the rate of the
+starting pressure. Not measured.

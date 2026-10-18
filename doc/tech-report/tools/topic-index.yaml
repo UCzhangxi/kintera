@@ -41,3 +41,30 @@ sections:
     - symbols, reserved letters
   sec-appa-index:
     - notation index: [symbol table]
+  # Chapter 6. Kinetics
+  sec-ch06-mass-action:
+    - reaction rate, mass action: [law of mass action]
+    - stoichiometric matrix
+  sec-ch06-arrhenius:
+    - Arrhenius rate constant: [Ea_R, temperature bands]
+  sec-ch06-pressure-switch:
+    - pressure switch: [p-threshold]
+  sec-ch06-falloff:
+    - fall-off rate constant: [three-body reaction, Troe, Lindemann, SRI]
+  sec-ch06-evaporation:
+    - evaporation, diffusion form: [saturation deficit]
+  sec-ch06-kessler:
+    - evaporation, Kessler form: [k3]
+  sec-ch06-coagulation:
+    - coagulation: [autoconversion]
+  sec-ch06-jacobian:
+    - Jacobian, reaction space
+  sec-ch06-implicit:
+    - implicit time step: [backward Euler, evolve_implicit, Rosenbrock]
+  sec-ch06-kinetics-base:
+    - KINETICS-base reader
+
+unlabeled:
+  - file: chapters/appendices/_appb-ch*.qmd
+    heading: "*"
+    covered-by: sec-appb

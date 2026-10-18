@@ -1,3 +1,33 @@
 # Equation of state and thermodynamic functions {#sec-ch03}
 
-pending
+This chapter describes how kintera relates temperature, pressure, density and composition, and how it computes
+the internal energy, enthalpy, entropy and heat capacity of a mixture of gases and condensates. Every other part
+of the library that needs a thermodynamic state reads it through the functions described here: the saturation
+adjustment of @sec-ch04, the kinetics of @sec-ch06 and the coupling of @sec-ch14.
+
+| scheme | YAML key or option | default | order | main test |
+|---|---|---|---|---|
+| @sec-ch03-eos | `compute` (API) | always | exact | `test_thermo` |
+| @sec-ch03-species-functions | `cv_R`, `u0_R`, `s0_R` | per species | exact | `test_thermo` |
+| @sec-ch03-reference-state | `reference-state` | 300 K, 1 bar | exact | `test_reference_state_keys.py` |
+| @sec-ch03-thermo-y | `ThermoY` (API) | caller | exact | `test_thermo` |
+| @sec-ch03-thermo-x | `ThermoX` (API) | caller | exact | `test_thermo` |
+| @sec-ch03-relative-humidity | `relative_humidity` (API) | caller | exact | none |
+| @sec-ch03-adiabat | `extrapolate_dlnp`, `extrapolate_dz` (API) | caller | first | `test_jupiter_tp_adiabat.py` |
+
+: Schemes of the thermodynamics chapter. "Order" is the order of the scheme's discretization; a function
+evaluated pointwise is exact. {#tbl-ch03-schemes}
+
+{{< include 03-thermodynamics/_eos.qmd >}}
+
+{{< include 03-thermodynamics/_species-functions.qmd >}}
+
+{{< include 03-thermodynamics/_reference-state.qmd >}}
+
+{{< include 03-thermodynamics/_thermo-y.qmd >}}
+
+{{< include 03-thermodynamics/_thermo-x.qmd >}}
+
+{{< include 03-thermodynamics/_relative-humidity.qmd >}}
+
+{{< include 03-thermodynamics/_adiabat.qmd >}}

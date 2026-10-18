@@ -63,31 +63,34 @@ TODO: a figure of the coverage matrix (feature by device).
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_evaporation_kessler.py` | Kessler-form evaporation against its closed form in a box, CPU only | TODO | TODO |
-| `test_coagulation_pressure_switch.py` | switched rate against its closed form across the threshold, CPU only | TODO | TODO |
-| `test_evaporation_general.py` | evaporation rate and Jacobian, CUDA against CPU | TODO | TODO |
+| `test_evaporation_kessler.py` | Kessler-form evaporation against its closed form in a box, CPU only | `rel=1e-10` | not stated in the test |
+| `test_coagulation_pressure_switch.py` | switched rate against its closed form across the threshold, CPU only | `rel=1e-10` | not stated in the test |
+| `test_evaporation_general.py` | evaporation rate and Jacobian, CUDA against CPU | `rtol=2e-10` (double), `3e-5` (single), `atol=1e-12` | not stated in the test |
 
 : Device coverage of selected tests. {#tbl-ch13-device-coverage-tests}
 
 Neither `test_evaporation_kessler.py` nor `test_coagulation_pressure_switch.py` names a device, so both run on CPU
-only, on every build. Both pass on the CPU and the CUDA builds of @sec-ch13-results. A separate run outside the
-suite fed their two reaction sets through the kinetics step on both devices. The rates, the Jacobian and the
-implicit step agreed between CPU and CUDA to below $10^{-15}$ relative, that is, at round-off in double
-precision.[^ch13-coverage-probe] The run and its table are in @sec-ch12, in the device dispatch section.
+only, on every build. Both pass on the CPU and the CUDA builds of @sec-ch13-results. No committed test or check
+compares these two features between CPU and CUDA. One run outside the suite did feed their two reaction sets through
+the kinetics step on both devices and found agreement at round-off. It is an **unreproduced measurement**: its script
+is case-specific and is not part of kintera or of this report, so a reader cannot re-run it from what is committed.
+It is recorded only as a pointer to the gap, not as evidence of CUDA correctness.[^ch13-coverage-probe]
 
-[^ch13-coverage-grep]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `grep -l "cuda" test*.py` in `tests/`,
+[^ch13-coverage-grep]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `grep -l "cuda" test*.py` in
+`tests/`,
 which lists the 14 files; GNU grep.]
 
 [^ch13-coverage-probe]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML inputs of
 `tests/test_evaporation_kessler.py` and `tests/test_coagulation_pressure_switch.py`, 64 cells; run: `python -P
-gpu_probe.py`, CPU and CUDA, double; CUDA 12.6.85, torch 2.10.0+cu126, Python 3.11.13; missing evidence: the script
-is not yet a committed check of this report.]
+gpu_probe.py`, a case-specific script that is not committed, CPU and CUDA, double; CUDA 12.6.85, torch 2.10.0+cu126,
+Python 3.11.13; unreproduced measurement: largest relative CPU-CUDA difference of rates, Jacobian and implicit step
+below $10^{-15}$.]
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
 - **No suite test checks the Kessler form or the pressure switch on CUDA.** A CUDA-only regression in either would
-  pass the suite. Adding a CUDA case to each file closes the gap.
+  pass the suite. The reproducible fix is a CUDA case in each of the two test files, which does not exist at the pin.
 :::
 
 - The inventory counts a file as CUDA-covering if it names the device anywhere. Which assertions inside it run on

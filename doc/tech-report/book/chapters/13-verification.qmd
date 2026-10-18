@@ -22,9 +22,9 @@ the device coverage; the comparison cases and the examples sit beside the suite)
 | @sec-ch13-suite | `ctest`, `pytest` | all registered | all |
 | @sec-ch13-results | build type, devices | CPU build | all |
 | @sec-ch13-device-coverage | device of the inputs | CPU | `test_cuda_workspace.py` |
-| @sec-ch13-kinetics-base | external data present | skipped | `test_kinetics_base.py` |
-| @sec-ch13-vulcan | none | not registered | missing evidence |
-| @sec-ch13-examples | none | not registered | missing evidence |
+| @sec-ch13-kinetics-base | external paths for the Titan cases | in-tree cases run | `test_kinetics_base.py` |
+| @sec-ch13-vulcan | none | not runnable from the repository | scoped out |
+| @sec-ch13-examples | none | not registered | run by hand: 7 of 9 |
 
 : Schemes of this chapter. {#tbl-ch13-schemes}
 

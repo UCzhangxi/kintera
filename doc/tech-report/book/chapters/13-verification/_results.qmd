@@ -10,21 +10,22 @@ reviewer:
 
 ### Summary
 
-This section records what the whole suite gives at the code pin on two builds of the same source: one without CUDA
-and one with CUDA. Each count comes with the command that produced it. Every failure and skip is explained by the
-environment of the run, not by the code under test. A reader who runs the suite can use these numbers to tell an
-environment problem from a real regression.
+This section records what the whole suite gives at the code pin. The reference result is the project's own
+continuous integration, which installs every test dependency and passes all 49 `ctest` entries on Linux and macOS,
+on CPU. A CUDA build has no such reference, because the integration runners have no GPU, so the CUDA counts here come
+from a recorded run on one GPU host. That host run also shows how one entry fails when a test dependency is missing,
+so a reader can tell such an environment failure from a real regression.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Measured pass, fail and skip counts of the suite at the pin.
+**Purpose.** Pass, fail and skip counts of the suite at the pin.
 
-**Data.** `ctest` and `pytest` summaries for a CPU build and a CUDA build.
+**Data.** The project integration (49 of 49, CPU); a recorded CPU and CUDA host run.
 
 **Placement.** After the build and install; see @sec-ch13-suite.
 
 **Activation.** `cmake -B build -DCUDA=OFF` or `-DCUDA=ON`; the build itself is described in @sec-ch12.
 
-**Guarantee / limits.** No failure comes from the code under test; one `ctest` entry fails for an environmental reason.
+**Guarantee / limits.** 49 of 49 with all test dependencies; missing ones fail one entry.
 
 **Evidence.** See the Tests layer below.
 :::
@@ -35,8 +36,13 @@ No derivation: this scheme records measurements.
 
 ### Numerical method
 
-No numerical method. Both builds were Release builds of the pin, installed into a private directory with
-`pip install . --no-build-isolation --no-deps --target <dir>`. Each was then tested in two ways:
+No numerical method. The reference run is the integration workflow {{< code .github/workflows/ci.yml >}}. It
+installs `pytest` and `setuptools-scm` with the other Python dependencies, builds and installs kintera, and runs
+`ctest --output-on-failure` in the build's test directory, on a Linux and a macOS runner.
+
+The host runs used two Release builds of the pin, one with `-DCUDA=OFF` and one with `-DCUDA=ON`, installed into a
+private directory with `pip install . --no-build-isolation --no-deps --target <dir>`. That host's Python environment
+had no `setuptools-scm`, and its file system refuses symbolic links. Each build was tested in two ways:
 
 1. a serial `ctest` run in `build/tests`, with the test inputs copied into that directory (@sec-ch13-suite, Limits);
 2. one `pytest` run over the whole `tests/` directory from the source tree, against the installed build.
@@ -60,12 +66,17 @@ TODO: a figure of the counts per build (passed, skipped, failed).
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| all 49 entries, CPU build | the suite passes | exact counts | the `ctest` summary |
-| all 49 entries, CUDA build | the suite passes | exact counts | the `ctest` summary |
+| all 49 entries, integration (Linux, macOS) | the suite passes | exact counts | the `ctest` summary |
+| all 49 entries, host CPU and CUDA builds | the suite passes | exact counts | the `ctest` summary |
 
 : Suite runs at the pin. {#tbl-ch13-results-tests}
 
-On the CPU build, serial `ctest` passes 48 of 49 entries. `pytest` over `tests/` gives 412 passed, 174 skipped and
+The reference result: the project integration at the pin passes 49 of 49 `ctest` entries on both its Linux and its
+macOS runner, including `test_version_floor.py` and `test_version_fallback.py`, with `setuptools-scm`
+10.3.4 installed.[^ch13-results-ci]
+
+The host runs reproduce everything except the version tests, for the environmental reasons given below. On the host
+CPU build, serial `ctest` passes 48 of 49 entries. `pytest` over `tests/` gives 412 passed, 174 skipped and
 0 failed.[^ch13-results-cpu] Almost all of the 174 skips are CUDA cases with no GPU visible. The others are:
 
 - 4 cases of `test_atm2d.py`, which need the CUDA sparse solver;
@@ -77,7 +88,8 @@ failed.[^ch13-results-cuda] The 6 skips are the 4 external-data cases of `test_k
 modules. The C++ programs pass with 105 CUDA instances and 105 CPU instances passing and none failing; the device
 dispatch behind those instances is described in @sec-ch12.
 
-The one failing `ctest` entry on both builds is `test_version_floor.py`, and its cause is the environment. The
+The one failing `ctest` entry on both host builds is `test_version_floor.py`. It fails because the host lacks a test
+dependency that the integration installs; it is not a defect of the code. The
 module calls `pytest.importorskip("setuptools_scm")` at import, before any test is defined
 ({{< code tests/test_version_floor.py >}}). Without that package, `pytest` collects no test, reports `1 skipped`, and
 exits with code 5, "no tests collected". `ctest` counts any non-zero exit as a failure. The sibling
@@ -87,6 +99,13 @@ exits with code 5, "no tests collected". `ctest` counts any non-zero exit as a f
 collected and skipped, `pytest` exits 0, and that entry passes.[^ch13-results-exit5] With `setuptools_scm` present,
 the version tests run. On a file system that refuses symbolic links they then fail for another environmental reason:
 `tar -x` cannot recreate the repository's symbolic links in the test's archive.[^ch13-results-tar]
+
+[^ch13-results-ci]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/`; run: `ctest
+--output-on-failure` in the workflow `.github/workflows/ci.yml`, jobs `build-and-test (ubuntu-latest)` and
+`build-and-test (macOS-latest)`, run 38915167085 of chengcli/kintera, read with `gh run view 38915167085 -R
+chengcli/kintera --log`, which prints `100% tests passed, 0 tests failed out of 49` for the Linux job and `100% tests
+passed out of 49` for the macOS job; CPU; Python 3.11, torch 2.10.0, numpy 2.4.6, pytest 9.1.1, setuptools-scm
+10.3.4.]
 
 [^ch13-results-cpu]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/`; run: `ctest
 --output-on-failure --timeout 1800` in `build/tests`, then `python -m pytest tests -p no:cacheprovider -rfEs -q`,
@@ -111,8 +130,8 @@ every one a `tar -x` "Cannot create symlink" error; Python 3.11.13, pytest 9.1.1
 
 ### Limits
 
-- The counts are for one host type (compute capability 6.1 GPUs, CUDA 12.6) and one set of library versions. Other
-  hosts have not been measured here.
-- The version tests have not been run on a file system that allows symbolic links, with `setuptools_scm` present.
-  Their real result is missing evidence.
+- The CUDA counts are for one host type (compute capability 6.1 GPUs, CUDA 12.6) and one set of library versions.
+  No integration run covers CUDA.
+- A host without `setuptools-scm`, or with a file system that refuses symbolic links, fails the version tests: 48 of
+  49 is the expected `ctest` result there, not a regression.
 - TODO: run times per entry; not measured.

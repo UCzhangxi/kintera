@@ -1,8 +1,8 @@
-## Example scripts as quick-start runs (`examples/`, not registered with `ctest`) {#sec-ch13-examples}
+## Example scripts as quick-start runs (`examples/`) {#sec-ch13-examples}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: examples/, tests/CMakeLists.txt
+sources: examples/, tests/CMakeLists.txt, python/csrc/pykinetics.cpp, python/csrc/pythermo.cpp, python/kintera.pyi
 status: draft
 author: gitlinffff
 reviewer:
@@ -10,29 +10,82 @@ reviewer:
 
 ### Summary
 
-The scripts in `examples/` (Earth, Jupiter, the Chapman cycle, chemical equilibrium with NASA polynomials, sodium
-sulfide evaporation and two plots of the two-dimensional solver) are not registered with `ctest`:
-{{< code tests/CMakeLists.txt >}} registers only files under `tests/`. They are the quick-start runs of the
-overview chapter (@sec-ch01), and nothing checks that they still run.
+The scripts in `examples/` are the quick-start runs of the overview chapter (@sec-ch01). They cover Earth and
+Jupiter thermodynamics, a Jupiter adiabat, the Chapman cycle, chemical equilibrium with NASA polynomials, sodium
+sulfide evaporation and two steady solutions of the two-dimensional solver. No `ctest` entry runs them, so nothing in
+the suite checks that they still work. This section records one run of every script at the pin: seven finish, and
+two stop with an error because they call the Python interface in a way the bindings do not accept.
 
-TODO: the At a glance box.
+::: {.callout-note title="At a glance"}
+**Purpose.** Whether each example script runs at the pin.
+
+**Data.** Exit status and last output line of each script, on the CPU build.
+
+**Placement.** By hand, after installing kintera; not part of `ctest`.
+
+**Activation.** `python <script>` in `examples/`.
+
+**Guarantee / limits.** 7 of 9 run; the Chapman-cycle and dry-Earth examples fail.
+
+**Evidence.** See the Tests layer below.
+:::
 
 ### Derivation
 
-TODO: not yet written.
+No derivation: this scheme records whether scripts run. Their physics is derived in the chapters they illustrate.
 
 ### Numerical method
 
-TODO: not yet written, with its figure.
+No numerical method. Each script was run once with the CPU build, no GPU visible and a non-interactive plotting
+backend, from a copy of `examples/`. A run counts as passing when the script exits with status 0. The file
+`examples/test_type_hints.py` is a type-hint demonstration that skips itself when imported, so it is not counted.
+
+TODO: a figure of the examples and the chapters they illustrate.
 
 ### Code
 
-TODO: the code table and the walk-through.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| Chapman-cycle example | {{< code examples/example_chapman_cycle.py run_chapman_cycle >}} | `run_chapman_cycle` | none |
+| dry-Earth example | {{< code examples/example_earth_dry.py >}} | top-level script | none |
+| Arrhenius binding | {{< code python/csrc/pykinetics.cpp >}} | `Arrhenius.forward` | always |
+| thermodynamics bindings | {{< code python/csrc/pythermo.cpp >}} | `ThermoX.extrapolate_dz` | always |
+
+: Code map of the example runs and the two failures. {#tbl-ch13-examples-code}
 
 ### Tests
 
-TODO: run each example at the pin and record its outcome; missing evidence.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none (by hand) | each example exits with status 0 | exact | the exit status |
+
+: Example runs at the pin. {#tbl-ch13-examples-tests}
+
+Seven scripts exit with status 0: `example_earth.py`, `example_jupiter.py`, `example_jupiter_adiabat.py`,
+`example_na2s_evaporation.py`, `equilibrium_nasa9.py`, `plot_atm2d_steady_advection_diffusion.py` and
+`plot_atm2d_steady_diffusion_dirichlet_2d.py`. `example_jupiter.py` exits 0 but prints
+`equilibrate_tp did not converge after 15 iterations.` along the way. Two scripts fail:[^ch13-examples-run]
+
+- `example_chapman_cycle.py` stops in `run_chapman_cycle`
+  ({{< code examples/example_chapman_cycle.py run_chapman_cycle >}}) with `TypeError: forward(): incompatible
+  function arguments`. It calls `arrhenius.forward(temp, pres, conc)` with three arguments, while the binding of
+  `Arrhenius.forward` ({{< code python/csrc/pykinetics.cpp >}}) requires a fourth, the mapping `other`, with no
+  default.
+- `example_earth_dry.py` ({{< code examples/example_earth_dry.py >}}) stops with
+  `AttributeError: 'ThermoX' object has no attribute 'extrapolate_ad'`. The bindings
+  ({{< code python/csrc/pythermo.cpp >}}) expose `extrapolate_dlnp` and `extrapolate_dz` on `ThermoX`, while the type
+  stub {{< code python/kintera.pyi >}} still declares `extrapolate_ad`.
+
+[^ch13-examples-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: a copy of `examples/`; run:
+`python <script>` for each script, with `CUDA_VISIBLE_DEVICES=""` and `MPLBACKEND=Agg`, CPU build with
+`-DCUDA=OFF`; Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, matplotlib 3.11.2.]
 
 ### Limits
 
-TODO: not yet written; not measured.
+::: {.callout-warning title="Limits"}
+- **Two quick-start examples fail at the pin**, as listed above, and the suite does not notice: no `ctest` entry
+  runs `examples/`. Registering each example as a `ctest` entry would catch such breakage.
+:::
+
+- The examples were run once, on CPU only, and only their exit status is checked; their printed numbers are not
+  compared with any reference.

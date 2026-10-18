@@ -94,6 +94,19 @@ sections:
     - device function tables
   sec-ch12-sparse-solver:
     - sparse solver, GPU
+  # Chapter 13. Tests and validation
+  sec-ch13-suite:
+    - test suite: [ctest, pytest, GoogleTest]
+  sec-ch13-results:
+    - test results, CPU and CUDA builds: [test counts]
+  sec-ch13-device-coverage:
+    - test coverage by device: [CPU-only tests]
+  sec-ch13-kinetics-base:
+    - KINETICS-base comparison
+  sec-ch13-vulcan:
+    - VULCAN comparison, scoped out
+  sec-ch13-examples:
+    - example scripts
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd
@@ -101,4 +114,7 @@ unlabeled:
     covered-by: sec-appb
   - file: chapters/appendices/_appb-ch12.qmd
     heading: GPU execution (@sec-ch12)
+    covered-by: sec-appb
+  - file: chapters/appendices/_appb-ch13.qmd
+    heading: Tests and validation (@sec-ch13)
     covered-by: sec-appb

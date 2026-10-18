@@ -1,0 +1,84 @@
+## Warm starts and failure reporting (`warm_start`, `take_saturation_adjustment_failures`) {#sec-ch04-warm-start-failures}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/thermo/thermo_x.cpp, src/thermo/thermo_y.cpp, src/thermo/equilibrate_tp.h
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+A model calls saturation adjustment in every cell at every step, and the set of condensates present changes slowly.
+A *warm start* reuses the previous call's active set, the list of reactions that were out of equilibrium, as the
+first guess. A cell whose solve fails is not an error that stops the run. The solver keeps the cell's last state,
+writes a negative code into the cell's diagnostic, and counts the failure, so the caller can decide what to do,
+for example retry the step with a smaller time step.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Reuse the last active set; report failed cells without stopping.
+
+**Data.** Per-cell active set and count; per-cell diagnostic; a failure count.
+
+**Placement.** `ThermoX` and `ThermoY` forward.
+
+**Activation.** `warm_start=True` on `ThermoX` forward (default off); reporting always on.
+
+**Guarantee / limits.** A warm start is used only on the same shape and device.
+
+**Evidence.** See the Tests layer below.
+:::
+
+### Derivation
+
+No derivation: this scheme is bookkeeping around the solvers.
+
+### Numerical method
+
+**Warm start.** `ThermoXImpl::forward` ({{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}}) keeps the active
+set and its size from the last call. It reuses them only when the caller asks for a warm start and both arrays exist
+with the shape of the current temperature tensor, on the same device. Otherwise it starts every cell from the full
+reaction list with no reaction active.
+
+**Diagnostic code.** At the end of each cell, `equilibrate_tp`
+({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}) writes $n$, the number of outer iterations, on success.
+After iterating without success it writes $-(100\,s + n)$, with status $s = 20$ for no convergence within
+`max-iter`, or the inner solver's code when the least-squares step fails. When the input checks reject the cell
+before any iteration, the diagnostic keeps its initial value $-100$.
+
+**Failure count.** `ThermoYImpl::forward` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}) counts the
+cells with a negative diagnostic and adds them to a running total kept on the cells' device. On the CPU it also
+prints a warning with the count. On CUDA it does not synchronise, and the caller reads and resets the total with
+`take_saturation_adjustment_failures`
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}}).
+
+TODO: a figure of the warm-start reuse rule and the diagnostic codes.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| warm-start reuse rule | {{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}} | `ThermoXImpl::forward` | `warm_start` |
+| diagnostic code | {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}} | `equilibrate_tp` | always |
+| failure count | {{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}} | `ThermoYImpl::take_saturation_adjustment_failures` | always |
+
+: Code map of warm starts and failure reporting. {#tbl-ch04-warm-start-failures-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_saturation_failure_reported.py` | an unadjusted cell is reported; the count survives inference mode and is not shared by clones | exact | counts |
+| `test_warm_start_shape.py` | a warm start on a new shape, and after a device move, starts cold | exact | shapes |
+| `test_thermo_x_warm_start_shape.py` | the same rule for `ThermoX` | exact | shapes |
+
+: Tests of warm starts and failure reporting. {#tbl-ch04-warm-start-failures-tests}
+
+TODO: the runs of these tests at the pin, on CPU and CUDA, with their provenance.
+
+### Limits
+
+- A failed cell keeps the state of its last iteration, or its input state if it was rejected before iterating.
+  Nothing in kintera retries it; the caller must read the diagnostic or the count and act.
+- TODO: how often warm starts change the iteration count; not measured.

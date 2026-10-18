@@ -1,3 +1,45 @@
 # Phase equilibrium of multiple condensables {#sec-ch04}
 
-pending
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h, src/thermo/thermo_x.cpp, src/thermo/thermo_y.cpp,
+  src/thermo/thermo_options.cpp, src/thermo/nucleation.cpp, src/math/leastsq_kkt.h
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+A parcel of a planetary atmosphere can hold several vapours at once, each of which may condense: water, ammonia,
+hydrogen sulfide, and the solid ammonium hydrosulfide that forms from two of them. *Saturation adjustment* moves
+vapour into condensate, or back, until every condensation reaction is either at equilibrium or has no condensate
+left. This chapter states those conditions and explains how kintera solves them at fixed temperature and pressure,
+at fixed internal energy and volume, how it decides which condensates are present, and how it reports a cell where
+the solve fails. The separate chemical-equilibrium solver, which balances reactions through equilibrium constants
+from NASA polynomials, is the subject of @sec-ch05.
+
+TODO (structure draft): a dependency-map figure of the six schemes (the conditions feed both solvers; both solvers
+use the active-set least-squares step; warm starts and failure reporting wrap both; nucleation switches choose which
+reactions take part).
+
+| scheme | option | default | main test |
+|---|---|---|---|
+| @sec-ch04-conditions | none | always | `test_saturation_adjustment_nh4sh.py` |
+| @sec-ch04-equilibrate-tp | `max-iter`, `ftol` | 10, $10^{-6}$ | `test_equilibrate_tp_max_iter` |
+| @sec-ch04-equilibrate-uv | `uv-solver` | `auto` | `test_equilibrate_uv_gain.py` |
+| @sec-ch04-active-set | none | always | missing evidence |
+| @sec-ch04-warm-start-failures | `warm_start` argument | off | `test_saturation_failure_reported.py` |
+| @sec-ch04-nucleation | nucleation reactions | from YAML | `test_thermo_default_nucleation.py` |
+
+: Schemes of this chapter. {#tbl-ch04-schemes}
+
+{{< include 04-phase-equilibrium/_conditions.qmd >}}
+
+{{< include 04-phase-equilibrium/_equilibrate-tp.qmd >}}
+
+{{< include 04-phase-equilibrium/_equilibrate-uv.qmd >}}
+
+{{< include 04-phase-equilibrium/_active-set.qmd >}}
+
+{{< include 04-phase-equilibrium/_warm-start-failures.qmd >}}
+
+{{< include 04-phase-equilibrium/_nucleation.qmd >}}

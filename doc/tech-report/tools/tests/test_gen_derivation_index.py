@@ -6,6 +6,8 @@ Run from the report directory: `python3 -m pytest tools/tests`.
 import sys
 from pathlib import Path
 
+import pytest
+
 TOOLS = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(TOOLS))
 
@@ -187,3 +189,47 @@ def test_empty_derivation_retains_relocated_opening_statement(tmp_path):
     schemes = g.scan_file(path, 'sec-ch02')
     row = g.scheme_rows(schemes[1], {}, tmp_path)[0]
     assert row.statement == 'No physical derivation applies.'
+
+
+@pytest.mark.parametrize("chapter_count", [0, 1, 4, 14])
+@pytest.mark.parametrize("scheme_copies", [1, 5])
+def test_detail_width_stays_within_rule_as_book_grows(tmp_path, chapter_count, scheme_copies):
+    """Growing the inventory must not consume another width-baseline allowance."""
+    import check_tables as tables
+
+    book = tmp_path / "book"
+    (book / "chapters").mkdir(parents=True)
+    src = tmp_path / "src" / "kintera_report"
+    for n in range(1, chapter_count + 1):
+        ch = f"ch{n:02}"
+        schemes = []
+        for copy in range(scheme_copies):
+            scheme = SCHEME.replace("ch02", ch)
+            for name in ("gas", "dispatch"):
+                scheme = scheme.replace(f"{ch}-{name}", f"{ch}-{name}{copy}")
+            schemes.append(scheme)
+        (book / "chapters" / f"{n:02}-fixture.qmd").write_text(
+            f"# Fixture {n} {{#sec-{ch}}}\n\n" + "\n".join(schemes))
+        checks = src / ch / "checks"
+        checks.mkdir(parents=True)
+        (checks / "gas_check.py").write_text("")
+
+    chapters = g.collect(book, {}, src)
+    files, values = g.outputs(chapters)
+    assert len(chapters) == chapter_count
+    assert values["equations"] == str(2 * chapter_count * scheme_copies)
+    # Keep the pre-existing summary exception, not a new allowance per chapter.
+    assert tables.load_baseline()["appb"]["columns"] == 1
+    findings = [finding for text in files.values() for finding in tables.scan_text(text)]
+    assert [f for f in findings if f[1] == "columns"] == [
+        f for f in tables.scan_text(files[g.PARENT]) if f[1] == "columns"]
+    for label, _, rows in chapters:
+        detail = files[g.chapter_file(label)]
+        assert not tables.scan_text(detail)
+        assert len(rows) == 3 * scheme_copies
+        assert f"{{#tbl-appb-{label[4:]}}}" in detail
+        for row in rows:
+            assert f"@{row.scheme}" in detail
+            assert (f"@{row.equation}" if row.equation else "none") in detail
+            for value in (g._clean(row.statement), row.code, row.check, row.source):
+                assert value in detail

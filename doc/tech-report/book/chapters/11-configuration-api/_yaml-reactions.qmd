@@ -11,8 +11,8 @@ reviewer: Xinyue (requested)
 
 ### Summary
 
-The `reactions` block is a YAML list; each entry is one reaction with an `equation`, a `type` and a
-`rate-constant` map. Each rate form has its own reader, and each reader walks the whole list and keeps only the
+The `reactions` block is a YAML list; each entry is one reaction with an `equation`[^rg-afaaf9f9a559], a `type`[^rg-6776b325d30c] and a
+`rate-constant`[^rg-9c4eb07a0324] map. Each rate form has its own reader, and each reader walks the whole list and keeps only the
 entries whose `type` matches its own name. This section lists the types, the keys each reader takes, and the value
 each key gets when it is left out. The rate laws themselves are @sec-ch06's subject.
 
@@ -36,7 +36,7 @@ claims is skipped without a message.
 ### Derivation
 
 No derivation: this scheme parses input. Unit conversion of the pre-exponential factor is the one computation:
-`A` is read in the unit system molecule, cm, s and converted to mol, m, s, with the exponent set by the sum of
+`A`[^rg-83dbb9c03884] is read in the unit system molecule, cm, s and converted to mol, m, s, with the exponent set by the sum of
 the reactant stoichiometric coefficients ({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}}).
 The conversion itself is not re-derived in this draft.
 
@@ -70,14 +70,24 @@ into the options.
 
 : Code map of the reaction readers. {#tbl-ch11-yaml-reactions-code}
 
+#### Keys shared by every entry
+
+The `reactions` is the top-level list of reactions, one map per reaction. In each entry, the `equation` is
+the reaction as a string: reactants and products with their coefficients, separated by `=>` for an irreversible
+reaction or by `<=>` or `=` for a reversible one, parsed by the constructor `Reaction::Reaction`
+({{< code src/reaction.cpp Reaction::Reaction >}}). The `type` is the name of the rate form; each reader
+keeps only the entries whose `type` equals its own name (`arrhenius`, `coagulation`, `evaporation`,
+`nucleation`, `three-body`, `falloff`). The `rate-constant` is the map of rate parameters of one entry; the
+Arrhenius, coagulation and nucleation readers refuse an entry without it.
+
 #### Arrhenius and coagulation
 
 `ArrheniusOptionsImpl::from_yaml` ({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}})
 requires `equation` and `rate-constant` and reads, inside `rate-constant`:
 
 - `A`: default $1$ when absent, in internal units; when present it is converted as stated in the Derivation layer.
-- `b`: default $0$.
-- `Ea_R` [K]: default $1$, not $0$. A reaction written without `Ea_R` therefore gets the factor
+- `b`[^rg-ca1f12bca869]: default $0$.
+- `Ea_R`[^rg-737b0df4fe4d] [K]: default $1$, not $0$. A reaction written without `Ea_R` therefore gets the factor
   $\exp(-1\,\mathrm{K}/T)$, not $1$. The key `Ea` is not read by this reader.
 - `E4`: default $0$, stored as `E4_R`. `ArrheniusImpl::reset`
   ({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}}) registers it as a buffer, but
@@ -89,6 +99,13 @@ requires `equation` and `rate-constant` and reads, inside `rate-constant`:
   length; each defaults to zeros, not to the single-range `b` and `Ea_R`).
 
 Coagulation entries are read by the same function under the name `coagulation`.
+
+In words: the `A` is the pre-exponential factor of the rate constant, given in molecule, cm and s units. The
+`b` is the exponent of the temperature ratio to the reference temperature of the Arrhenius options. That
+reference temperature defaults to $300\,\mathrm{K}$ ({{< code src/kinetics/arrhenius.hpp ArrheniusOptionsImpl >}}),
+and no code at the pin copies `reference-state/Tref` into it (read from the code; not tested). The `Ea_R` is
+the activation energy divided by $\mathcal R$, an activation temperature in K, which enters as $\exp(-E/T)$ with
+$E$ the value of `Ea_R` ({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::forward >}}).
 
 #### Fall-off and three-body
 
@@ -105,16 +122,30 @@ as kelvin), and with neither key the activation temperature is $0$.
 #### Nucleation and evaporation
 
 `NucleationOptionsImpl::from_yaml` ({{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}})
-requires `formula` (the saturation vapour pressure function) and reads `minT` (default $0\,\mathrm{K}$) and
+requires `formula`[^rg-ff3554e68ad5] (the saturation vapour pressure function) and reads `minT` (default $0\,\mathrm{K}$) and
 `maxT` (default $10^4\,\mathrm{K}$). `EvaporationOptionsImpl::from_yaml`
 ({{< code src/kinetics/evaporation.cpp EvaporationOptionsImpl::from_yaml >}}) first calls the nucleation reader on
 the same list, then reads, per evaporation entry:
 
 - `form`: `diffusion` (default) or `kessler`; anything else is refused.
 - `k3`: required for `kessler`, refused otherwise; finite and $\ge 0$.
-- `diff_c` (default $2\times10^{-5}$), `diff_T` (default $1.75$), `diff_P` (default $-1$), `vm` (default
-  $1.8\times10^{-5}$), `diameter` (default $10^{-2}$); with `form: kessler` each of these is refused.
+- `diff_c`[^rg-2008f344a3f3] (default $2\times10^{-5}$), `diff_T`[^rg-39119e181f65] (default $1.75$), `diff_P`[^rg-63217c232661] (default $-1$), `vm`[^rg-725cb5a35e18] (default
+  $1.8\times10^{-5}$), `diameter`[^rg-08b6fdac6d32] (default $10^{-2}$); with `form: kessler` each of these is refused.
 - `minT` and `maxT` again, with the same defaults.
+
+The `formula` is the name of the saturation vapour pressure function of a nucleation or evaporation entry,
+required by `NucleationOptionsImpl::from_yaml`. In the default `diffusion` form, `EvaporationImpl::forward`
+({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}) builds a diffusivity as `diff_c` times the
+temperature ratio to the power `diff_T` times the pressure ratio to the power `diff_P`, and a rate coefficient as
+12 times that diffusivity times `vm`, divided by the square of `diameter`. Thus: the `diff_c` is the diffusivity
+at the reference temperature and pressure of the evaporation options; the `diff_T` is the exponent of the
+temperature ratio; the `diff_P` is the exponent of the pressure ratio; the `vm` is the volume factor of
+that coefficient; the `diameter` is the length whose square divides it. The reader states the
+unit system mol, m, s. The reference temperature and pressure used here are the evaporation options' own, with
+defaults $300\,\mathrm{K}$ and $10^5\,\mathrm{Pa}$ ({{< code src/kinetics/evaporation.hpp EvaporationOptionsImpl >}});
+no code at the pin sets them from `reference-state` (read from the code; not tested). That `vm` is the molar
+volume of the condensate and `diameter` the particle diameter is a hypothesis from the defaults and the form of
+the coefficient; the source does not name them.
 
 Because the nucleation reader has already pushed `minT` and `maxT` for each evaporation entry, the evaporation
 options end with two entries per reaction in `minT` and in `maxT`, while `reactions` has one. No code at the pin
@@ -175,3 +206,29 @@ By hand, KB fall-off options are set through the `kb_falloff` field of `Kinetics
 The older reader `parse_reactions_yaml` ({{< code src/utils/parse_yaml.cpp parse_reactions_yaml overload=1 >}}) defaults
 `type` to `arrhenius` and prints a message for `three-body` and `falloff` instead of building them; its C++ test
 is not registered in `ctest`. Which callers still use it is not checked in this draft.
+
+<!-- reader glossary notes -->
+[^rg-afaaf9f9a559]: equation — reaction string; => irreversible, <=> or = reversible; required; parsed by `Reaction`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L64-L68)
+
+[^rg-6776b325d30c]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
+
+[^rg-9c4eb07a0324]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
+
+[^rg-83dbb9c03884]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
+
+[^rg-ca1f12bca869]: b — exponent of the temperature ratio in the Arrhenius rate; default 0; stored in option `b`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L95)
+
+[^rg-737b0df4fe4d]: Ea_R — activation energy divided by the gas constant, in K; default 1 K in the Arrhenius reader; stored in option `Ea_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L96)
+
+[^rg-ff3554e68ad5]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)
+
+[^rg-2008f344a3f3]: diff_c — evaporation diffusivity at the reference state, mol-m-s units; default 2e-5; stored in option `diff_c`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L99)
+
+[^rg-39119e181f65]: diff_T — exponent of the temperature ratio in the evaporation diffusivity; default 1.75; stored in option `diff_T`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L100)
+
+[^rg-63217c232661]: diff_P — exponent of the pressure ratio in the evaporation diffusivity; default -1; stored in option `diff_P`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L101)
+
+[^rg-725cb5a35e18]: vm — volume factor of the evaporation rate coefficient; default 1.8e-5; stored in option `vm`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L102)
+
+[^rg-08b6fdac6d32]: diameter — length whose square divides the evaporation rate coefficient; default 1e-2; stored in option `diameter`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L103)
+<!-- end reader glossary notes -->

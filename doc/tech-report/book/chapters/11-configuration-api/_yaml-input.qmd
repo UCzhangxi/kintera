@@ -18,7 +18,7 @@ index that every later tensor dimension refers to.
 ::: {.callout-note title="At a glance"}
 **Purpose.** Fill the process-wide species registry and the reference state from YAML.
 
-**Data.** Species name, phase, composition, `cv_R`, `u0_R`, `s0_R`; `Tref` [K], `Pref` [Pa].
+**Data.** Species name, phase, composition, `cv_R`[^rg-82d1ff5a6255], `u0_R`[^rg-111953f81818], `s0_R`; `Tref`[^rg-798daee4aacf] [K], `Pref`[^rg-fde49814f26d] [Pa].
 
 **Placement.** Runs first, inside `ThermoOptions.from_yaml` and `KineticsOptions.from_yaml`.
 
@@ -69,14 +69,17 @@ No numerical method and no figure: the scheme is a parser. The order of operatio
 
 : Code map of the species and reference-state reader. {#tbl-ch11-yaml-input-code}
 
-Per species, `init_species_from_yaml` ({{< code src/species.cpp init_species_from_yaml overload=2 >}}) reads these keys:
+The top level of the file holds two blocks read here. The `species` is the list of species, each a map;
+the list is required, and its order fixes the species index. The `reference-state` is the map of reference
+constants, checked by `check_reference_state` ({{< code src/species.cpp check_reference_state >}}).
 
-- `name` (required): the species name, the key every other block uses.
-- `phase` (optional, default empty): one of `gas`, `liquid`, `solid`, or empty; any other value is refused.
-- `composition` (required map of element to count): the molar mass is computed from it.
-- `cv_R` (default $5/2$): the reference heat capacity divided by $\mathcal R$, stored as `species_cref_R`.
-- `u0_R` (default $0$): the reference internal energy divided by $\mathcal R$ [K].
-- `s0_R` (default $0$): the reference entropy divided by $\mathcal R$.
+Per species, `init_species_from_yaml` ({{< code src/species.cpp init_species_from_yaml overload=2 >}}) reads these
+keys. The `name`[^rg-8435ed329db5] is the species name, required, and the name every other block uses. The `phase` is an
+optional string, one of `gas`, `liquid` or `solid`; it defaults to empty, and any other value is refused. The
+`composition`[^rg-7a0300e02901] is a map from element symbol to count, from which the molar mass is computed. The `cv_R`
+(default $5/2$) is the reference heat capacity at constant volume divided by $\mathcal R$, stored as
+`species_cref_R`. The `u0_R` (default $0$) is the reference internal energy divided by $\mathcal R$, in K.
+The `s0_R` (default $0$) is the reference entropy divided by $\mathcal R$.
 
 The NASA-9 coefficients are not given in the YAML file. `init_species_from_yaml` looks each species name up in the
 NASA-9 table that `get_nasa9_db` loads, and stores the low- and high-range coefficients when the name is found, or
@@ -85,8 +88,8 @@ read from input. Whether these coefficients are used is set by `reference-state/
 `ThermoOptionsImpl::from_yaml` ({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}}) reads;
 its effect is @sec-ch03's subject.
 
-`reference-state` holds `Tref` [K] and `Pref` [Pa]. When a key is absent the options keep their defaults; for the
-kinetics options these are `Tref` $= 298.15\,\mathrm{K}$ and `Pref` $= 101325\,\mathrm{Pa}$
+Inside `reference-state`, the `Tref` is the reference temperature in K. The `Pref` is the reference pressure in
+Pa. When a key is absent the options keep their defaults; for the kinetics options these are `Tref` $= 298.15\,\mathrm{K}$ and `Pref` $= 101325\,\mathrm{Pa}$
 ({{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}). The thermodynamics reader also reads the block
 `dynamics/equation-of-state` with `max-iter` (default 10), `ftol` (default $10^{-6}$) and `uv-solver` (default
 `auto`; `kkt` and `partition` are the other accepted values, anything else is refused).
@@ -141,3 +144,17 @@ here: this draft has not run the tests (missing evidence). The same file also ch
 - A species absent from the NASA-9 table gets zero coefficients without a warning (read from
   `init_species_from_yaml`); what that does when `use-nasa9-cp` is on is not measured.
 - The NASA-9 mid temperature is fixed at $1000\,\mathrm{K}$ and cannot be set from input.
+
+<!-- reader glossary notes -->
+[^rg-82d1ff5a6255]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)
+
+[^rg-111953f81818]: u0_R — reference internal energy divided by the gas constant, in K; default 0; stored in `species_uref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L178-L182)
+
+[^rg-798daee4aacf]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
+
+[^rg-fde49814f26d]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
+
+[^rg-8435ed329db5]: name — species name, the key every other block uses; required; stored in `species_names`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L156)
+
+[^rg-7a0300e02901]: composition — map from element symbol to count; the molar mass is computed from it; passed to `molar_mass`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L165-L170)
+<!-- end reader glossary notes -->

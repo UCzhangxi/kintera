@@ -1,3 +1,41 @@
 # Tests and validation {#sec-ch13}
 
-pending
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: tests/CMakeLists.txt, cmake/macros/macro_setup_test.cmake, tests/device_testing.hpp, tests/vulcan/,
+  tests/kinetics_base/, examples/
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+This chapter explains how kintera's tests are organised, how to run them, what a run at the code pin gives on a CPU
+build and on a CUDA build, which code paths the suite exercises on one device only, and what the validation cases
+compare against. Appendix C (@sec-appc) lists every `ctest` entry; this chapter explains how those entries come to
+exist and how to read their results.
+
+TODO (structure draft): a dependency-map figure of the six schemes (the suite layout feeds the measured results and
+the device coverage; the comparison cases and the examples sit beside the suite).
+
+| scheme | option | default | main test |
+|---|---|---|---|
+| @sec-ch13-suite | `ctest`, `pytest` | all registered | all |
+| @sec-ch13-results | build type, devices | CPU build | all |
+| @sec-ch13-device-coverage | device of the inputs | CPU | `test_cuda_workspace.py` |
+| @sec-ch13-kinetics-base | external data present | skipped | `test_kinetics_base.py` |
+| @sec-ch13-vulcan | none | not registered | missing evidence |
+| @sec-ch13-examples | none | not registered | missing evidence |
+
+: Schemes of this chapter. {#tbl-ch13-schemes}
+
+{{< include 13-verification/_suite.qmd >}}
+
+{{< include 13-verification/_results.qmd >}}
+
+{{< include 13-verification/_device-coverage.qmd >}}
+
+{{< include 13-verification/_kinetics-base.qmd >}}
+
+{{< include 13-verification/_vulcan.qmd >}}
+
+{{< include 13-verification/_examples.qmd >}}

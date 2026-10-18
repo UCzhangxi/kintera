@@ -1,0 +1,118 @@
+## Results of the suite on a CPU build and a CUDA build (`-DCUDA`) {#sec-ch13-results}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: tests/CMakeLists.txt, tests/test_version_floor.py, tests/test_version_fallback.py, tests/test_kinetics_base.py
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+This section records what the whole suite gives at the code pin on two builds of the same source: one without CUDA
+and one with CUDA. Each count comes with the command that produced it. Every failure and skip is explained by the
+environment of the run, not by the code under test. A reader who runs the suite can use these numbers to tell an
+environment problem from a real regression.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Measured pass, fail and skip counts of the suite at the pin.
+
+**Data.** `ctest` and `pytest` summaries for a CPU build and a CUDA build.
+
+**Placement.** After the build and install; see @sec-ch13-suite.
+
+**Activation.** `cmake -B build -DCUDA=OFF` or `-DCUDA=ON`; the build itself is described in @sec-ch12.
+
+**Guarantee / limits.** No failure comes from the code under test; one `ctest` entry fails for an environmental reason.
+
+**Evidence.** See the Tests layer below.
+:::
+
+### Derivation
+
+No derivation: this scheme records measurements.
+
+### Numerical method
+
+No numerical method. Both builds were Release builds of the pin, installed into a private directory with
+`pip install . --no-build-isolation --no-deps --target <dir>`. Each was then tested in two ways:
+
+1. a serial `ctest` run in `build/tests`, with the test inputs copied into that directory (@sec-ch13-suite, Limits);
+2. one `pytest` run over the whole `tests/` directory from the source tree, against the installed build.
+
+The CPU build was tested with no GPU visible, so its CUDA cases skip instead of failing on a build without CUDA
+kernels.
+
+TODO: a figure of the counts per build (passed, skipped, failed).
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| module-level skip | {{< code tests/test_version_floor.py >}} | `pytest.importorskip` at import | `setuptools_scm` absent |
+| test-level skip | {{< code tests/test_version_fallback.py test_archive_version_is_not_older_than_the_newest_release >}} | `test_archive_version_is_not_older_than_the_newest_release` | `setuptools_scm` absent |
+| external-data skip | {{< code tests/test_kinetics_base.py _external_titan_paths >}} | `_external_titan_paths` | external files absent |
+
+: Code map of the skips and the environmental failure. {#tbl-ch13-results-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| all 49 entries, CPU build | the suite passes | exact counts | the `ctest` summary |
+| all 49 entries, CUDA build | the suite passes | exact counts | the `ctest` summary |
+
+: Suite runs at the pin. {#tbl-ch13-results-tests}
+
+On the CPU build, serial `ctest` passes 48 of 49 entries. `pytest` over `tests/` gives 412 passed, 174 skipped and
+0 failed.[^ch13-results-cpu] Almost all of the 174 skips are CUDA cases with no GPU visible. The others are:
+
+- 4 cases of `test_atm2d.py`, which need the CUDA sparse solver;
+- 4 cases of `test_kinetics_base.py`, which need external data (@sec-ch13-kinetics-base);
+- the module `test_version_floor.py`.
+
+On the CUDA build, serial `ctest` passes 48 of 49 entries. `pytest` gives 584 passed, 6 skipped and 0
+failed.[^ch13-results-cuda] The 6 skips are the 4 external-data cases of `test_kinetics_base.py` and the two version
+modules. The C++ programs pass with 105 CUDA instances and 105 CPU instances passing and none failing; the device
+dispatch behind those instances is described in @sec-ch12.
+
+The one failing `ctest` entry on both builds is `test_version_floor.py`, and its cause is the environment. The
+module calls `pytest.importorskip("setuptools_scm")` at import, before any test is defined
+({{< code tests/test_version_floor.py >}}). Without that package, `pytest` collects no test, reports `1 skipped`, and
+exits with code 5, "no tests collected". `ctest` counts any non-zero exit as a failure. The sibling
+`test_version_fallback.py` makes the same check inside its test function
+`test_archive_version_is_not_older_than_the_newest_release`
+({{< code tests/test_version_fallback.py test_archive_version_is_not_older_than_the_newest_release >}}). The test is
+collected and skipped, `pytest` exits 0, and that entry passes.[^ch13-results-exit5] With `setuptools_scm` present,
+the version tests run. On a file system that refuses symbolic links they then fail for another environmental reason:
+`tar -x` cannot recreate the repository's symbolic links in the test's archive.[^ch13-results-tar]
+
+[^ch13-results-cpu]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/`; run: `ctest
+--output-on-failure --timeout 1800` in `build/tests`, then `python -m pytest tests -p no:cacheprovider -rfEs -q`,
+both with `CUDA_VISIBLE_DEVICES=""`, CPU, double and single as each test chooses; Release build with `-DCUDA=OFF`,
+GCC 11.5.0, CMake 3.31.8, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, pytest 9.1.1.]
+
+[^ch13-results-cuda]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/`; run: `ctest
+--output-on-failure --timeout 1800` in `build/tests`, `python -m pytest tests -p no:cacheprovider -rfEs -q`, and
+`ctest -V -R '\.release'` for the per-instance C++ counts, two compute capability 6.1 GPUs visible; Release build
+with `-DCUDA=ON`, CUDA 12.6.85, GCC 11.5.0, CMake 3.31.8, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, pytest
+9.1.1. 48 C++ instances per device skip: fixture placeholders and single-precision skips, the same on both devices.]
+
+[^ch13-results-exit5]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck:
+`tests/test_version_floor.py`; run: `pytest tests/test_version_floor.py -q -p no:cacheprovider` without
+`setuptools_scm`, which prints `1 skipped` and returns exit code 5; pytest 9.1.1, Python 3.11.13.]
+
+[^ch13-results-tar]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_version_floor.py`,
+`tests/test_version_fallback.py`; run: `python -m pytest tests/test_version_floor.py tests/test_version_fallback.py
+-p no:cacheprovider -q -rfE` with `setuptools_scm` importable, on a file system without symbolic links: 1 failed, 2
+passed, 6 errors,
+every one a `tar -x` "Cannot create symlink" error; Python 3.11.13, pytest 9.1.1.]
+
+### Limits
+
+- The counts are for one host type (compute capability 6.1 GPUs, CUDA 12.6) and one set of library versions. Other
+  hosts have not been measured here.
+- The version tests have not been run on a file system that allows symbolic links, with `setuptools_scm` present.
+  Their real result is missing evidence.
+- TODO: run times per entry; not measured.

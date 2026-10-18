@@ -2,13 +2,13 @@
 
 ## GPU execution (@sec-ch12) {.unnumbered}
 
-| scheme | equation | derivation | code | check | source |
-|---------------|---------|-------------------------------|--------------------|-----------------|--------|
-| @sec-ch12-build | none | No derivation: this scheme is a build configuration. |  | none | n/a |
-| @sec-ch12-dispatch | @eq-ch12-dispatch-implicit | For the implicit kinetics step that function solves | {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}} | none | re-derived |
-| @sec-ch12-kernels | @eq-ch12-kernels-threads | The launcher `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) picks the block size from the scratch size of one cell: | {{< code src/loops.cuh gpu_mem_kernel >}} | none | re-derived |
-| @sec-ch12-kernels | @eq-ch12-kernels-implicit-bytes | Every allocation is rounded up to a multiple of 8 bytes, so in double precision (8 bytes per entry) | {{< code src/loops.cuh gpu_mem_kernel >}} | none | re-derived |
-| @sec-ch12-device-functions | none | TODO: not yet written. |  | none | n/a |
-| @sec-ch12-sparse-solver | none | TODO: not yet written. |  | none | n/a |
+| scheme | equation | derivation | code and check | source |
+|---------------|---------|-------------------------------|-------------------------------------|--------|
+| @sec-ch12-build | none | No derivation: this scheme is a build configuration. | code: ; check: none | n/a |
+| @sec-ch12-dispatch | @eq-ch12-dispatch-implicit | For the implicit kinetics step that function solves | code: {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}; check: none | re-derived |
+| @sec-ch12-kernels | @eq-ch12-kernels-threads | The launcher `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) picks the block size from the scratch size of one cell: | code: {{< code src/loops.cuh gpu_mem_kernel >}}; check: none | re-derived |
+| @sec-ch12-kernels | @eq-ch12-kernels-implicit-bytes | Every allocation is rounded up to a multiple of 8 bytes, so in double precision (8 bytes per entry) | code: {{< code src/loops.cuh gpu_mem_kernel >}}; check: none | re-derived |
+| @sec-ch12-device-functions | none | TODO: not yet written. | code: ; check: none | n/a |
+| @sec-ch12-sparse-solver | none | TODO: not yet written. | code: ; check: none | n/a |
 
 : Derivations of @sec-ch12. {#tbl-appb-ch12}

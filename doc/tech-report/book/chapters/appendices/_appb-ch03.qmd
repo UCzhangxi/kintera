@@ -4,12 +4,21 @@
 
 | scheme | equation | derivation | code and check | source |
 |---------------|---------|-------------------------------|-------------------------------------|--------|
-| @sec-ch03-eos | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch03-species-functions | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch03-reference-state | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch03-thermo-y | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch03-thermo-x | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch03-relative-humidity | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch03-adiabat | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
+| @sec-ch03-eos | @eq-ch03-eos-pressure | Summing the partial pressures $p_n = z_n c_n \mathcal R T$ over the gases gives | code: {{< code src/thermo/thermo_y.cpp ThermoYImpl::_temp_to_pres >}}; check: none | re-derived |
+| @sec-ch03-eos | @eq-ch03-eos-conc | So each gas and each condensate has the concentration | code: {{< code src/thermo/thermo_x.cpp ThermoXImpl::_xfrac_to_conc >}}; check: none | re-derived |
+| @sec-ch03-species-functions | @eq-ch03-species-functions-u | **Internal energy and heat capacities.** With a constant heat-capacity coefficient, the molar internal energy that equals $\mathcal R u^{\star}_n$ at $T_\star$ is | code: {{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}; check: none | re-derived |
+| @sec-ch03-species-functions | @eq-ch03-species-functions-h | **Enthalpy.** For a gas the code writes $h_n = u_n + z_n \mathcal R T$, and for a condensate $h_m = \mathcal R [u^{\star}_m + c^{\star}_m (T - T_\star)] + \mathcal R\, \zeta_m(T)$: | code: {{< code src/thermo/eval_uhs.cpp eval_enthalpy_R >}}; check: none | re-derived |
+| @sec-ch03-species-functions | @eq-ch03-species-functions-sgas | **Gas entropy.** For an ideal gas with constant $c_p$, integrating $\mathrm d s = c_p\, \mathrm d T / T - \mathcal R\, \mathrm d p_n / p_n$ from $(T_\star, p_\star)$ to $(T, p_n)$ with the partial pressure $p_n = x^{\mathrm g}_n p$ gives | code: {{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=1 >}}; check: none | re-derived |
+| @sec-ch03-species-functions | @eq-ch03-species-functions-scond | Substituting and dividing by $\mathcal R T$: | code: {{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=2 >}}; check: none | re-derived |
+| @sec-ch03-reference-state | @eq-ch03-reference-state-latent | Using @eq-ch03-species-functions-u without the extra functions: | code: {{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}}; check: none | re-derived |
+| @sec-ch03-thermo-y | @eq-ch03-thermo-y-xfrac | Multiply numerator and denominator by $\mu_0$ and write the $k = 0$ term out: | code: {{< code src/thermo/thermo_y.cpp ThermoYImpl::_yfrac_to_xfrac >}}; check: none | re-derived |
+| @sec-ch03-thermo-y | @eq-ch03-thermo-y-totals | **Mixture totals.** Each total is a concentration-weighted sum of the per-species functions of @sec-ch03-species-functions: | code: {{< code src/thermo/thermo.hpp ThermoYImpl::_intEng_vol >}}; check: none | re-derived |
+| @sec-ch03-thermo-y | @eq-ch03-thermo-y-newton | Since $\mathrm d U/\mathrm d T = C_V$, Newton's method is | code: {{< code src/thermo/thermo_y.cpp ThermoYImpl::_intEng_to_temp >}}; check: none | re-derived |
+| @sec-ch03-thermo-x | @eq-ch03-thermo-x-totals | **Mixture totals.** As in @sec-ch03-thermo-y, each total is a concentration-weighted sum: | code: {{< code src/thermo/thermo.hpp ThermoXImpl::_cp_vol >}}; check: none | re-derived |
+| @sec-ch03-thermo-x | @eq-ch03-thermo-x-entropy-newton | A Newton step on $S(T) = S_{\mathrm{given}}$ is therefore | code: {{< code src/thermo/thermo_x.cpp ThermoXImpl::_entropy_to_temp >}}; check: none | re-derived |
+| @sec-ch03-relative-humidity | @eq-ch03-relative-humidity-rh | The ratio of the actual product to $K_r$ is | code: {{< code src/thermo/relative_humidity.cpp relative_humidity >}}; check: none | re-derived |
+| @sec-ch03-adiabat | @eq-ch03-adiabat-cpeff | Saturation is kept: each active reaction's log quotient follows its log saturation constant, so with $\mathsf G$ the derivative of the log quotients with respect to the extents, | code: {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::effective_cp >}}; check: none | re-derived |
+| @sec-ch03-adiabat | @eq-ch03-adiabat-target | A reversible step keeps $\bar s$; a user-supplied rate adds a prescribed change: | code: {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}}; check: none | re-derived |
+| @sec-ch03-adiabat | @eq-ch03-adiabat-hydrostatic | **Hydrostatic step in $z$.** For a step $\Delta z$, the pressure follows the trapezoidal rule of $\mathrm d p / \mathrm d z = -\rho g$: | code: {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dz >}}; check: none | re-derived |
 
 : Derivations of @sec-ch03. {#tbl-appb-ch03}

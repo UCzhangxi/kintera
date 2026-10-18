@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo
+sources: src/thermo/relative_humidity.cpp, src/thermo/relative_humidity.hpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,87 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+The relative humidity says how close a parcel is to saturation: 1 on the saturation curve, below 1 when a
+condensate would evaporate, above 1 when vapour is supersaturated. kintera defines it per condensation reaction,
+not per species, so that a reaction with two gaseous reactants (ammonium hydrosulfide from ammonia and hydrogen
+sulfide) has one well-defined value. It is a diagnostic: nothing else in the library calls it.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\mathrm{RH}_r$, the reactant partial-pressure product over the saturation constant,
+@eq-ch03-relative-humidity-rh.
+
+**Data.** $T$ [K], $c_n$ [mol m$^{-3}$], the stoichiometry matrix, the reactions' options; one value per reaction
+[-].
+
+**Placement.** A free function, called by the user after `TPX->V` or after saturation adjustment.
+
+**Activation.** API: `relative_humidity(temp, conc, stoich, op, ngas=-1)`.
+
+**Guarantee / limits.** Exact for ideal gases; no compressibility correction.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\mathrm{RH}_r$, relative humidity of reaction $r$ [-]; $a_{nr}$, the exponent of species $n$ in
+reaction $r$ [-]. $\nu_{nr}$ and $K_r$ are those of @sec-ch03-species-functions; $c_n$ and $N_{\mathrm g}$ those of
+@sec-ch03-eos.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+For ideal gases the partial pressure is $p_n = c_n \mathcal R T$. The saturation constant $K_r$ of
+@sec-ch03-species-functions is the value that the product of reactant partial pressures, each raised to its
+stoichiometric magnitude, takes on the saturation curve. The ratio of the actual product to $K_r$ is
+
+$$
+\begin{aligned}
+\mathrm{RH}_r &= \frac{\prod_n p_n^{a_{nr}}}{K_r(T)}
+= \frac{\prod_n c_n^{a_{nr}}\, (\mathcal R T)^{\sum_n a_{nr}}}{K_r(T)} \\
+&= \prod_n c_n^{a_{nr}} \exp\!\left(-\ln K_r(T) + \sum_n a_{nr} \ln(\mathcal R T)\right) .
+\end{aligned}
+$$ {#eq-ch03-relative-humidity-rh}
+
+The exponent $a_{nr}$ depends on the argument `ngas`. With the default `ngas = -1`, $a_{nr} = \max(-\nu_{nr}, 0)$
+for every species: every reactant counts. With `ngas` $\ge 0$, $a_{nr} = -\nu_{nr}$ for the first `ngas` species
+and 0 for the rest: only gases count, and a gas product enters with a negative exponent. @eq-ch03-relative-humidity-rh
+is computed in `relative_humidity` ({{< code src/thermo/relative_humidity.cpp relative_humidity >}}).
+
+For a single-vapour reaction $\mathrm{RH}_r = p_n / p_{\mathrm{sat}}(T)$, the usual definition. For
+NH$_3$ + H$_2$S $\to$ NH$_4$SH it is $p_{\mathrm{NH_3}}\, p_{\mathrm{H_2S}} / K(T)$, with $K$ in Pa$^2$.
 
 ### Numerical method
 
-Pending.
+One pointwise evaluation per cell and reaction: the log-saturation functions are evaluated at $T$, the product is
+formed over the species dimension, and the result is divided by the exponential. There is no iteration.
+
+The relative-humidity figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| relative humidity | {{< code src/thermo/relative_humidity.cpp relative_humidity >}} | `relative_humidity` | `ngas` |
+| declaration | {{< code src/thermo/relative_humidity.hpp >}} | file | API |
+
+: Code map of the relative humidity. {#tbl-ch03-relative-humidity-code}
+
+Setup checks a user can hit: when a reaction has a gaseous product, `ngas` must be given ("relative_humidity
+requires ngas for gaseous reaction products"); `ngas` must lie between $-1$ and the number of species.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo.release` (`DeviceTest.relative_humidity`) | after saturation adjustment, min RH $\le 1$ and max RH $\ge 0$ | bound | physical range |
+| `test_reaction_equilibrium.py` | a gas product requires `ngas`; doubling that product's concentration halves RH | `assert_close` defaults | PyTorch defaults |
+| `test_inline_svp.py` | after adjustment $\lvert \mathrm{RH} - 1 \rvert$ in cloudy cells, RH $< 1$ in clear cells | $10^{-8}$ | not yet derived |
+
+: Tests of the relative humidity. {#tbl-ch03-relative-humidity-tests}
+
+The tolerances and assertions are read from the test files at the pin. The `DeviceTest` bound is weak: it does not
+check that RH equals 1 where condensate is present. A direct check of @eq-ch03-relative-humidity-rh against a hand
+value is missing evidence.
 
 ### Limits
 
-Pending.
+Ideal gas only: the code carries a to-do for a non-ideal correction, and a set compressibility function is ignored
+here. The default `ngas = -1` counts condensate reactants, if a reaction has any, as if they were gases.

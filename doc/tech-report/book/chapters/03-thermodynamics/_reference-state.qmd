@@ -1,8 +1,8 @@
-## Reference state and latent heat (`Tref`, `Pref`, `u0_R`) {#sec-ch03-reference-state}
+## Reference state and latent heat (`reference-state`) {#sec-ch03-reference-state}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo
+sources: src/thermo/thermo_options.cpp, src/thermo/thermo_y.cpp, src/thermo/thermo_x.cpp, src/species.cpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,122 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Energies and entropies are only defined up to a constant, and what matters physically is their difference between
+species: the latent heat of a phase change is the difference of the vapour and condensate energies. kintera fixes
+the constants by a reference temperature and pressure, given in the YAML block `reference-state`, and by one energy
+and one entropy per species at that state. When the thermodynamics module is built, the offsets are moved once to
+$T = 0$ (energy) and to $T = 1$ K, $p = 1$ Pa (entropy), so the functions of @sec-ch03-species-functions need no
+reference values at run time.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Fix the energy and entropy constants; the latent heat at $T_\star$ is @eq-ch03-reference-state-latent.
+
+**Data.** `Tref` [K], `Pref` [Pa]; per species `cv_R` [-], `u0_R` [K], `s0_R` [-].
+
+**Placement.** Read by `ThermoOptions.from_yaml`; offsets moved in `ThermoY.reset` and `ThermoX.reset`.
+
+**Activation.** The block `reference-state` must be present for `from_yaml` to build options; defaults 300 K,
+$10^5$ Pa.
+
+**Guarantee / limits.** Exact shift of constants; a warning when a latent heat at $T_\star$ is not positive.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $L_r$, latent heat of reaction $r$ at constant volume [J mol$^{-1}$]. $T_\star$, $p_\star$,
+$c^{\star}_n$, $u^{\star}_n$, $s^{\star}_n$ and $\nu_{nr}$ are those of @sec-ch03-species-functions.
+
+Species defaults when a key is omitted: `cv_R` is $5/2$, `u0_R` is 0 and `s0_R` is 0, for gases and condensates
+alike (read by `init_species_from_yaml`). The block also carries the switches `use-nasa9-cp`, `use-h2-cp` and
+`h2-cp-mode` of @sec-ch03-species-functions.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+**Energy offset.** @eq-ch03-species-functions-u is $u_n/\mathcal R = u^{\star}_n + c^{\star}_n (T - T_\star)$ plus
+the extra function. Collecting the constant terms,
+
+$$
+\frac{u_n}{\mathcal R} = \left(u^{\star}_n - c^{\star}_n T_\star\right) + c^{\star}_n T ,
+$$
+
+so the code replaces `u0_R` by $u^{\star}_n - c^{\star}_n T_\star$, the energy over $\mathcal R$ extrapolated to
+$T = 0$ along the constant heat capacity.
+
+**Entropy offset.** Likewise the gas entropy @eq-ch03-species-functions-sgas collects into
+
+$$
+\frac{s_n}{\mathcal R} = \left(s^{\star}_n - \frac{c_{p,n}}{\mathcal R}\ln T_\star + \ln p_\star\right)
++ \frac{c_{p,n}}{\mathcal R}\ln T - \ln p - \ln x^{\mathrm g}_n ,
+$$
+
+with $T$ in K and $p$ in Pa. The code replaces `s0_R` of each gas by the bracket, using
+$\max(T_\star, 1)$ and $\max(p_\star, 1)$, and sets `s0_R` of each condensate to 0 (its entropy comes from
+@eq-ch03-species-functions-scond). Both shifts are done once per options object: a flag `offset_zero` records that
+they are done, so a second module built from the same options does not shift again.
+
+**Latent heat.** For reaction $r$, the internal energy released per unit extent is
+$L_r = -\sum_n \nu_{nr} u_n$. Using @eq-ch03-species-functions-u without the extra functions:
+
+$$
+\begin{aligned}
+\frac{L_r(T)}{\mathcal R} &= -\sum_n \nu_{nr} u^{\star}_n - (T - T_\star) \sum_n \nu_{nr} c^{\star}_n , \\
+\frac{L_r(T_\star)}{\mathcal R} &= -\sum_n \nu_{nr} u^{\star}_n .
+\end{aligned}
+$$ {#eq-ch03-reference-state-latent}
+
+The first line is Kirchhoff's law at constant volume: the latent heat changes linearly with temperature at the rate
+of the heat-capacity difference across the reaction. Condensation releases energy when $L_r(T_\star) > 0$. The
+second line is checked in `from_yaml`
+({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}}), which sums `u0_R` over the
+reactants minus the products and warns when the result is not positive. Since a condensate's default `u0_R` is 0,
+a condensation reaction whose condensate omits `u0_R` gets $L_r(T_\star) = \mathcal R\, u^{\star}_{\mathrm{vapour}}$,
+which is zero for a vapour that also omits it.
 
 ### Numerical method
 
-Pending.
+No numerical method: the offsets are shifted once, in `reset`
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}, {{< code src/thermo/thermo_x.cpp ThermoXImpl::reset >}}),
+and the latent-heat check runs once per reaction when the options are read. The reference temperature is also
+the starting guess of the entropy inversion `PXS->T` (@sec-ch03-thermo-x).
+
+The reference-state figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| key check | {{< code src/species.cpp check_reference_state >}} | `check_reference_state` | `reference-state` |
+| species defaults | {{< code src/species.cpp init_species_from_yaml overload=2 >}} | `init_species_from_yaml` | `cv_R`, `u0_R`, `s0_R` |
+| options reader, latent-heat check | {{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}} | `from_yaml` | `Tref`, `Pref` |
+| options and defaults | {{< code src/thermo/thermo.hpp ThermoOptionsImpl >}} | `ThermoOptionsImpl` | `Tref`, `Pref` |
+| offset shift (mass basis) | {{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}} | `reset` | `offset_zero` |
+| offset shift (mole basis) | {{< code src/thermo/thermo_x.cpp ThermoXImpl::reset >}} | `reset` | `offset_zero` |
+
+: Code map of the reference state. {#tbl-ch03-reference-state-code}
+
+Setup checks and warnings a user can hit: an unknown key in `reference-state` is refused with a suggested spelling;
+a block that is a list or a scalar is refused; an empty block keeps the defaults; `h2-cp-mode` other than
+`equilibrium` or `normal` is refused; a file without `reference-state` makes `from_yaml` return no options; a
+non-positive latent heat at $T_\star$ gives the warning "condensation absorbs energy".
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_reference_state_keys.py` | a misspelt key is refused with a suggestion | exact | string match |
+| `test_reference_state_keys.py` | every valid key is accepted; `Tref` reads back 300 | exact | equality |
+| `test_reference_state_keys.py` | a list or scalar block is refused; an empty block keeps defaults | exact | equality |
+
+: Tests of the reference state. {#tbl-ch03-reference-state-tests}
+
+`tests/test_latent_heat_sign.py` asserts the latent-heat warning for an endothermic card and its absence for a
+physical one, but it is not registered with ctest at the pin (it is absent from the ctest index of Appendix C), so
+CI does not run it. No test checks the offset shifts against @eq-ch03-reference-state-latent; that is missing
+evidence.
 
 ### Limits
 
-Pending.
+The latent-heat check uses $u^{\star}$ only, so it ignores the NASA-9 and H$_2$ options. Those options reference
+their internal energy to 300 K, a fixed constant, not to `Tref`; with `Tref` other than 300 K, a NASA-9 species'
+energy at $T_\star$ is not $\mathcal R u^{\star}_n$ (verified by reading `eval_intEng_R`; the size of the effect is
+not measured).

@@ -1,5 +1,49 @@
 # Task map {#sec-appg}
 
-Tasks a reader wants to do with kintera, each with the section that answers it, generated from `tools/reader-tasks.md` by `tools/gen_reader_tasks.py`.
+Use this map to look for a task phrased as "How do I ...?", rather than a topic name. A task entry should lead
+to the section that supplies the answer or state why the answer is not provided. Read the status and the
+destination together: a link alone does not establish that the task is documented completely.
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45
+sources: src/utils/find_resource.cpp
+status: draft
+author: chengcli
+reviewer: none
+-->
+
+The status describes the book's answer to the particular task. It is not a test result or a statement that
+every related operation works in every configuration.
+
+| status | how to interpret it |
+|---|---|
+| answered | Read the answering section for the documented task and its conditions. |
+| partly documented | Read the available answer and the stated missing part before using it. |
+| undocumented | The book does not supply the required answer; this does not imply unsupported code. |
+| unsupported by the code | The requested operation is identified as unsupported; read the reason and its scope. |
+| outside scope | The task lies outside the book's stated scope, independently of implementation support. |
+
+: Reading the task-status labels. {#tbl-appg-status-guide}
+
+For an entry with a destination, follow the answering section rather than stopping at a chapter overview.
+Check that the section describes the inputs, options, expected output and failure conditions needed for your
+task. For a partly documented entry, do not fill the missing steps by assuming that a nearby example covers
+them. For an entry marked "not provided", read the reason; absence of a book answer is different from a
+documented limitation of the code.
+
+For example, when searching resource directories, `find_resource` returns the first candidate it can open
+for reading and throws if no candidate can be opened ({{< code src/utils/find_resource.cpp find_resource >}}).
+That source fact alone is not a complete answer to how a user should configure resource lookup. An answering
+section must supply the relevant setup and conditions as well. This example is source reading, not an executed
+resource-lookup test or a task classified as answered.
+
+The generated summary below currently contains no task entries. Its empty categories do not mean that all
+tasks have been answered, that no tasks are possible, or that the code has no unsupported operations.
+
+::: {.callout-warning title="Limits"}
+Not provided: task-specific answering destinations and evidence-backed task classifications, because the
+curated task list is empty. The status guide explains how to read future entries; it does not substitute for
+their answers or for a reader lookup test.
+:::
 
 {{< include appendices/_appg-reader-tasks.qmd >}}

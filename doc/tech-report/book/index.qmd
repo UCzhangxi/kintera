@@ -1,0 +1,6 @@
+# Preface {.unnumbered}
+
+pending
+
+Code is cited by file and symbol, resolved at one pinned commit of
+[`chengcli/kintera`](https://github.com/chengcli/kintera). That commit is recorded in `doc/tech-report/code_pin.yml`.

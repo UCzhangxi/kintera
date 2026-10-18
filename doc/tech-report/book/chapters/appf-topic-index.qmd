@@ -1,0 +1,5 @@
+# Topic index {#sec-appf}
+
+Topics in a reader's words, each pointing to the section that answers it, generated from `tools/topic-index.yaml` by `tools/gen_topic_index.py`.
+
+{{< include appendices/_appf-topic-index.qmd >}}

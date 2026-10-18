@@ -1,0 +1,3 @@
+Good: `ArrheniusImpl::forward` ([`arrhenius.cpp:279-306`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L279-L306)).
+Bad sha: `ArrheniusImpl::forward` ([`arrhenius.cpp:279-306`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c46/src/kinetics/arrhenius.cpp#L279-L306)).
+Out of range: `ArrheniusImpl::forward` ([`arrhenius.cpp:310-320`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L310-L320)).

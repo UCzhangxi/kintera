@@ -1,0 +1,7 @@
+Past the end: [`arrhenius.cpp:314-317`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L314-L317).
+No such file: [`nope.cpp:1`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/nope.cpp#L1).
+Not pinned: [`arrhenius.cpp:1`](https://github.com/chengcli/kintera/blob/main/src/kinetics/arrhenius.cpp#L1).
+Short sha in a URL: [`arrhenius.cpp:1`](https://github.com/chengcli/kintera/blob/0d9f67f/src/kinetics/arrhenius.cpp#L1).
+Link text and anchor disagree: [`arrhenius.cpp:2-5`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L2-L6).
+Unknown sha: [`arrhenius.cpp:1`](https://github.com/chengcli/kintera/blob/0000000000000000000000000000000000000000/src/kinetics/arrhenius.cpp#L1).
+Notation in a .qmd: `src/kinetics/arrhenius.cpp:1@0d9f67f97d841147e23283d2dcdab302238d2c45`.

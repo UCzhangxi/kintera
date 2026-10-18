@@ -1,0 +1,3 @@
+# Equation of state and thermodynamic functions {#sec-ch03}
+
+pending

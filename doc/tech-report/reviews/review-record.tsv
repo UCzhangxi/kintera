@@ -1,0 +1,3 @@
+# Review record (tools/ratchet_gate.py, README "Ratchet gate"): one line per review or re-stamp, newest last, tab-separated.
+# Write entries with: python3 tools/ratchet_gate.py record review|restamp <file> --reviewer R [--author A] [--note N]
+file	kind	reviewer	author	pin	sha256	date	note

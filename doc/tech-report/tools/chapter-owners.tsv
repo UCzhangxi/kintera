@@ -1,0 +1,25 @@
+# The single owner of each chapter (the lock: one rewrite owner per chapter) and the owner its ratchet counts are
+# charged to in the per-owner burn-down table (tools/ratchet_gate.py). The owner is a GitHub handle, or `unassigned`
+# while the editor has not given the chapter to anyone; claiming a chapter replaces `unassigned` with the handle.
+chapter	owner
+preface	unassigned
+ch01	unassigned
+ch02	unassigned
+ch03	unassigned
+ch04	unassigned
+ch05	unassigned
+ch06	unassigned
+ch07	unassigned
+ch08	unassigned
+ch09	unassigned
+ch10	unassigned
+ch11	unassigned
+ch12	unassigned
+ch13	unassigned
+ch14	unassigned
+appa	unassigned
+appb	unassigned
+appc	unassigned
+appf	unassigned
+appg	unassigned
+apph	unassigned

@@ -1,0 +1,43 @@
+# Topic index data (Appendix F, written by tools/gen_topic_index.py before every render).
+#
+# `sections` maps every labelled `##` section of the book to the words a reader would look it up by. Each item
+# is a term, or a one-key map `term: [aliases]`. A term that several sections share becomes one index line with
+# a reference to each; "term, qualifier" sorts under the term. An alias prints as "alias, see term".
+# Use the reader's words (the newcomer question bank), not code symbols; a key or symbol may be an alias.
+# A chapter or appendix with no `##` sections of its own (the test index) may be listed under its `#` label.
+#
+# `unlabeled` lists the `##` headings that carry no label, so cannot be indexed, with the label that covers
+# them. `.unlisted` part dividers need no row. tools/tests/test_topic_index.py fails when a section has no
+# item, when a label here does not exist in the book, or when an unlabeled heading is not listed.
+#
+# The scaffold's labelled `##` sections are Appendix A's notation index and its symbol groups (the group titles of
+# NOTATION.md).
+
+sections:
+  # Appendix A. Notation
+  sec-appa-1:
+    - symbols, coordinates and grids
+  sec-appa-2:
+    - symbols, state, thermodynamics and species
+  sec-appa-2a:
+    - symbols, species thermodynamics, phase change and reactions
+  sec-appa-3:
+    - symbols, fluxes and transport
+  sec-appa-4:
+    - symbols, operators and averages
+  sec-appa-5:
+    - symbols, gravity and potential energy
+  sec-appa-6:
+    - symbols, reference states
+  sec-appa-7:
+    - symbols, time integration and the implicit solver
+  sec-appa-8:
+    - symbols, diffusion
+  sec-appa-8a:
+    - symbols, radiation and photochemistry
+  sec-appa-9:
+    - symbols, diagnostics and errors
+  sec-appa-10:
+    - symbols, reserved letters
+  sec-appa-index:
+    - notation index: [symbol table]

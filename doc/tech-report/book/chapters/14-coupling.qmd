@@ -1,0 +1,3 @@
+# Coupling to snapy and paddle {#sec-ch14}
+
+pending

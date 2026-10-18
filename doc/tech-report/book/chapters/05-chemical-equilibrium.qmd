@@ -1,0 +1,3 @@
+# Multiphase chemical equilibrium {#sec-ch05}
+
+pending

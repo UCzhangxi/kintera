@@ -1,0 +1,12 @@
+# Task map data (the bank lookup behind Appendix G, checked by tools/gen_task_map.py and the render gate).
+#
+# One record per question of the newcomer question bank: the question, its status, and either `dest`, the label of
+# the section that answers it best, or `not_provided`, why the book does not answer it.
+# status: answered | partly documented | undocumented | unsupported by the code | outside scope
+# `missing` says what a partly documented answer lacks. `best_section_unlabeled` names a best section that carries
+# no label (dest is then its labelled parent); `lookup_grade` is the evidence of the lookup test. `bank_ids` is the
+# range every bank question falls in (such as Q-001..Q-095): tools/tests/test_task_map.py fails when an id of the
+# range is missing or repeated, when a status is not one of the five, or when a dest is not a label of the book.
+# Records are a list of maps under `tasks:`, one `- id: Q-001` item each. Until the bank exists the map is empty.
+bank_ids: ''
+tasks: []

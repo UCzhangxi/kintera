@@ -1,0 +1,6 @@
+A note reference, STYLE 3.2: `docs/kinetics_api.md@0d9f67f97d841147e23283d2dcdab302238d2c45` §1.
+The same with a short sha: `docs/kinetics_api.md@0d9f67f` §1.
+A script with an output label: `docs/build_reaction_report.py@0d9f67f97d841147e23283d2dcdab302238d2c45`, output label `[C6]`.
+A note that is not at that sha: `docs/no-such-note.md@0d9f67f97d841147e23283d2dcdab302238d2c45` §1.
+Code is not a note: `src/kinetics/arrhenius.cpp@0d9f67f97d841147e23283d2dcdab302238d2c45`.
+A note with lines is the code-citation notation: `docs/kinetics_api.md:10-20@0d9f67f97d841147e23283d2dcdab302238d2c45`.

@@ -1,0 +1,5 @@
+# Glossary {#sec-apph}
+
+Acronyms, YAML keys, named concepts and symbols, each with its defining section, generated from `tools/reader-glossary.json` by `tools/gen_glossary_appendix.py`.
+
+{{< include appendices/_apph-glossary.qmd >}}

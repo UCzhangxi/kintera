@@ -1,0 +1,4 @@
+The headers start with `algorithm` ([`arrhenius.cpp:1-14`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L1-L14)).
+One line, with the last directory in the link text: `add_to_vapor_cloud` ([`kinetics/arrhenius.cpp:20`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L20)).
+The last line of the file closes `namespace kintera` ([`arrhenius.cpp:316`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L316)).
+A commit is cited as kintera@0d9f67f97d841147e23283d2dcdab302238d2c45.

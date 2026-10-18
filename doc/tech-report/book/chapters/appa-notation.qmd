@@ -1,0 +1,7 @@
+# Notation {#sec-appa}
+
+The symbols used in the chapters, generated from the notation table.
+
+## The notation index {#sec-appa-index}
+
+{{< include appendices/_appa-notation.qmd >}}

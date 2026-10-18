@@ -1,0 +1,11 @@
+The rate is `ArrheniusImpl::forward` ([`arrhenius.cpp:279-280`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L279-L280)).
+The rate is `ArrheniusImpl::forward` ([`arrhenius.cpp:20-39`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L20-L39)), but those lines are the vapor-cloud helper.
+The helper is defined in [`arrhenius.cpp:20-39`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L20-L39).
+A qualified name with its call: `kintera::add_to_vapor_cloud()` ([`arrhenius.cpp:20`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L20)).
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| the helper | [`arrhenius.cpp:20-39`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L20-L39) | `add_to_vapor_cloud` | none |
+| the rate | [`arrhenius.cpp:20-39`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L20-L39) | `ArrheniusImpl::forward` | none |
+
+Two links in one sentence: `add_to_vapor_cloud` is at [`arrhenius.cpp:20-39`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L20-L39) and the rate at [`arrhenius.cpp:279-280`](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L279-L280).

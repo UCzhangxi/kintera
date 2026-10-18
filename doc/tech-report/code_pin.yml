@@ -1,0 +1,4 @@
+# The kintera commit at which every `{{< code >}}` citation of the book is resolved (tools/code_anchors.py;
+# README, "Citing code"). Move it only with `python3 tools/code_anchors.py bump <sha>`.
+repo: chengcli/kintera
+sha: 0d9f67f97d841147e23283d2dcdab302238d2c45

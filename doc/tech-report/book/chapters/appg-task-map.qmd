@@ -1,0 +1,5 @@
+# Task map {#sec-appg}
+
+Tasks a reader wants to do with kintera, each with the section that answers it, generated from `tools/reader-tasks.md` by `tools/gen_reader_tasks.py`.
+
+{{< include appendices/_appg-reader-tasks.qmd >}}

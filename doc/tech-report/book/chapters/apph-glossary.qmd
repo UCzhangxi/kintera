@@ -1,5 +1,30 @@
 # Glossary {#sec-apph}
 
-Acronyms, YAML keys, named concepts and symbols, each with its defining section, generated from `tools/reader-glossary.json` by `tools/gen_glossary_appendix.py`.
+This glossary collects acronyms, YAML keys, named concepts and symbols, with
+links to their defining sections. Open the linked section for the assumptions
+and scope needed to interpret a term. A reachable link alone does not establish
+the completeness or accuracy of that explanation.
+
+Acronyms expand shortened names. YAML keys identify input spellings; accepted
+values and defaults belong with their input contracts. Named concepts link to
+defining sections rather than carrying a separate short definition here.
+Symbols pair meanings with destinations; @sec-appa supplies conventions and
+units. First textual use is not necessarily a definition.
+
+Acronym, key and symbol meanings also supply chapter-first-use notes; named
+concepts link directly to their defining sections. The short note identifies
+the term but does not replace the definition's assumptions and scope.
+
+An entry marked **not defined here** records an absent definition explicitly.
+Its usage link locates a place where the term occurs; it is not an alternative
+definition. If no chapter uses the entry, the glossary says so. Neither absence
+from this glossary nor that marker establishes that the corresponding feature
+is unsupported by the code.
+
+**Not provided:** term-specific meanings and definition destinations. The
+current glossary contains no entries in any of its four groups. The headings
+below are a lookup structure, not evidence that all terms used in the book have
+been identified or defined. In particular, no glossary-based coverage of YAML
+keys, acronyms, concepts or symbols is claimed.
 
 {{< include appendices/_apph-glossary.qmd >}}

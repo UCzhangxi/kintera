@@ -1,0 +1,114 @@
+## Reaction rates by mass action (`reactions`) {#sec-ch06-mass-action}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/kinetics.hpp, src/kinetics/kinetics.cpp, src/kinetics/kinetics_options.cpp, python/csrc/pykinetics.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+The kinetics module turns a list of reactions into one rate per reaction. Each rate is a rate constant times the
+product of the reactant concentrations raised to their stoichiometric coefficients. The species tendency is the
+stoichiometric matrix times the vector of rates. Every other scheme of this chapter supplies either a rate constant
+or a replacement for the mass-action product.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Reaction rates $r_j = k_j \prod_i c_i^{\nu_{ij}}$, @eq-ch06-mass-action-rate.
+
+**Data.** Temperature [K], pressure [Pa], molar concentrations [$\mathrm{mol\,m^{-3}}$] in, rates [$\mathrm{mol\,m^{-3}\,s^{-1}}$] out.
+
+**Placement.** `Kinetics.forward`, called by the driver once per step.
+
+**Activation.** The `reactions` block of the YAML file; always on when it is present.
+
+**Guarantee / limits.** Pointwise and exact for the given rate constants; concentrations floored at $10^{-300}$.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $c_i$, molar concentration of species $i$ [$\mathrm{mol\,m^{-3}}$]; $k_j$, rate constant of reaction
+$j$ (units set by the reaction order); $\nu_{ij} \ge 0$, forward order of species $i$ in reaction $j$ [-];
+$S_{ij}$, net stoichiometric coefficient of species $i$ in reaction $j$ [-] (products positive, reactants
+negative); $r_j$, rate of reaction $j$ [$\mathrm{mol\,m^{-3}\,s^{-1}}$].
+
+The scheme is always on. Reversible reactions are split into a forward and a reverse column; the reverse rate
+constant is the forward one divided by the equilibrium constant from the NASA-9 data of @sec-ch02.
+
+### Derivation
+
+For an elementary reaction $j$ the law of mass action gives
+
+$$
+r_j = k_j(T, p) \prod_i c_i^{\nu_{ij}} .
+$$ {#eq-ch06-mass-action-rate}
+
+@eq-ch06-mass-action-rate is computed in `forward_with_rate_constants`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}). Summed over reactions, the
+species tendency is
+
+$$
+\frac{\mathrm{d} c_i}{\mathrm{d} t} = \sum_j S_{ij}\, r_j .
+$$ {#eq-ch06-mass-action-tendency}
+
+@eq-ch06-mass-action-tendency is formed by the caller, for example as `stoich @ rate`, with $S$ the `stoich` buffer
+built in `reset` ({{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}}). Both are exact given $k_j$; the only
+modification is the concentration floor described under Numerical method.
+
+For a reversible reaction the reverse rate is $k_j K_{c,j}^{-1} \prod_i c_i^{\nu'_{ij}}$, with $\nu'_{ij}$ the
+product coefficients and $K_{c,j}$ the concentration equilibrium constant. The derivation of $K_{c,j}$ from the
+Gibbs energies is not drafted yet.
+
+### Numerical method
+
+The rate constants of all reaction forms are evaluated first, one evaluator module per form, in the fixed order
+Arrhenius, coagulation, evaporation, three-body, Lindemann, Troe, SRI, KB fall-off. Each evaluator runs under
+autograd on a copy of the concentrations, so its derivative $\partial k_j / \partial c_i$ comes back with the rate
+constant (and $\partial k_j / \partial T$ when `evolve_temperature` is set). Concentrations are floored at
+$10^{-300}$ ($10^{-30}$ in single precision) before the power, so that $0^0$ and $r_j / c_i$ stay finite. Evaporation
+columns replace the product by the condensate concentration alone (@sec-ch06-evaporation). A finite entry of the
+optional input `kf_override` replaces the computed rate constant and zeroes its concentration derivative.
+
+The figure of the evaluator order is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}} | `KineticsOptionsImpl` | `reactions` |
+| YAML reader | {{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::from_yaml overload=2 >}} | `from_yaml` | `reactions` |
+| stoichiometry, evaluators | {{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}} | `reset` | always |
+| rates | {{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}} | `forward_with_rate_constants` | always |
+| Python binding | {{< code python/csrc/pykinetics.cpp bind_kinetics >}} | `bind_kinetics` | always |
+
+: Code map of mass-action rates. {#tbl-ch06-mass-action-code}
+
+1. `from_yaml` reads `reference-state` (`Tref`, `Pref`) and then each reaction family from `reactions`; reactants
+   and products are sorted into vapor and cloud species, vapors first.
+2. `reset` builds `stoich` (species by reaction, reversible reactions appended as negated columns), registers one
+   evaluator per family, and builds `forward_orders`, in which an evaporation column has order one in its
+   condensate and zero in its gases.
+3. `forward_with_rate_constants` returns the rates, $\partial k / \partial c$, the optional $\partial k / \partial
+   T$, and the raw rate constants; `forward` returns the first three.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_kinetics` | `DeviceTest.forward` runs on CPU and CUDA | none | smoke test |
+| `test_chapman_cycle` | Arrhenius rates and Jacobian agree | missing evidence | not yet read |
+| `test_kinetics_null_options.py` | a family set to `None` has no reactions | exact | structural |
+
+: Tests of mass-action rates. {#tbl-ch06-mass-action-tests}
+
+The tolerances of the Chapman-cycle tests are missing evidence: they have not been read for this draft. CPU and
+CUDA instantiations of `test_kinetics` exist; run records are not attached yet.
+
+### Limits
+
+Untested hypothesis: for reversible reactions the temperature derivative of the reverse rate constant is the forward
+one copied ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), without the
+temperature derivative of $K_{c,j}^{-1}$. It matters only with `evolve_temperature` on and reversible reactions; no
+test covers that combination.

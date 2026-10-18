@@ -1,5 +1,43 @@
 # Topic index {#sec-appf}
 
-Topics in a reader's words, each pointing to the section that answers it, generated from `tools/topic-index.yaml` by `tools/gen_topic_index.py`.
+Use this alphabetical index when you know a topic but not where the book discusses it. An entry gives the
+destination's title and a section reference or link. Read that destination to decide whether it answers your
+question; an index hit alone is not evidence that the topic is fully explained.
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45
+sources: src/diffusion/diffusion.cpp
+status: draft
+author: chengcli
+reviewer: none
+-->
+
+To follow an entry:
+
+1. Look for the topic in alphabetical order, including any qualifier after a comma. A qualifier narrows what
+   the entry covers: "symbols, diffusion" concerns notation, rather than every question about diffusion.
+2. If the entry says "see", continue to the named index term. For example, "symbol table" redirects to
+   "notation index"; it does not name a second destination.
+3. Follow the destination reference or link, then read the section itself. If an entry lists several
+   destinations, use their titles to distinguish their scope rather than assuming each answers the same question.
+4. Check whether the destination supplies the definition, assumptions or procedure you need. A heading with
+   no explanation does not establish an answer, even when its link resolves.
+
+The entries below currently lead to the notation index and its subject groups. Those groups organise symbols;
+their titles do not promise a derivation or an implementation guide. In particular, "symbols, diffusion" is a
+notation destination. The source does contain `diffusion_tendency`, which calls `diffusion_coefficients`
+({{< code src/diffusion/diffusion.cpp diffusion_tendency >}}). This source fact does not turn a notation-group
+entry into an explanation of the diffusion method.
+
+Absence from this index is also not evidence that the code lacks a feature. Keep the questions separate:
+whether an entry exists, whether its destination answers the question, and whether the implementation supports
+the requested operation. A source citation can establish a code fact without establishing that a book route is
+complete. The code example above is source reading, not runtime validation.
+
+::: {.callout-warning title="Limits"}
+Not provided: comprehensive topic coverage or verified answers for every indexed heading, because the current
+entries point to the notation index and its subject groups. Missing mechanism-specific entries and incomplete
+destinations remain gaps in the book's navigation and content; they are not declarations of unsupported code.
+:::
 
 {{< include appendices/_appf-topic-index.qmd >}}

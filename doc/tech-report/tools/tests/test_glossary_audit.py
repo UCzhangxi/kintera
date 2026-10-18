@@ -60,3 +60,32 @@ def test_symbol_must_be_in_notation(tmp_path):
     root = report(tmp_path, [dict(kind='symbol', term='$q_{\\mathrm{none}}$', notation_group='1')])
     with pytest.raises(ValueError, match='absent from Appendix A'):
         g.glossary_entries(root)
+
+
+@pytest.mark.parametrize('key', ['name', 'equation'])
+def test_yaml_list_key_requires_definition(tmp_path, key):
+    root = report(tmp_path, [], f'```yaml\n- {key}: example\n```\n')
+    with pytest.raises(ValueError, match=f"YAML key '{key}'"):
+        g.glossary_outputs(root)
+
+
+@pytest.mark.parametrize('composition', ['{Ar: 1, H: 2, N: 1, O: 1}', '\n    Ar: 1\n    H: 2\n    N: 1\n    O: 1'])
+def test_yaml_composition_labels_are_data_in_both_consumers(tmp_path, composition):
+    import glossary_registry as registry
+    keys = ['name', 'composition', 'rate-constant', 'A', 'b', 'Ea_R', 'O']
+    entries = [dict(kind='key', term=k, meaning='configuration field') for k in keys]
+    example = f'- name: test\n  composition: {composition}\n  rate-constant: {{A: 1, b: 0, Ea_R: 10}}\n'
+    root = report(tmp_path, entries, f'```yaml\n{example}```\n')
+    outputs, uses, _ = g.glossary_outputs(root)
+    assert uses == 6
+    assert example in outputs[root / 'book/chapters/01-a.qmd']
+    _, found = registry.prose_uses(root)
+    assert set(found) == {('key', key) for key in keys if key != 'O'}
+
+
+@pytest.mark.parametrize('key', ['A', 'b', 'Ea_R', 'O'])
+def test_yaml_flow_configuration_keys_still_require_definitions(tmp_path, key):
+    root = report(tmp_path, [dict(kind='key', term='rate-constant', meaning='rate parameters')],
+                  f'```yaml\nrate-constant: {{{key}: 1}}\n```\n')
+    with pytest.raises(ValueError, match=f"YAML key '{key}'"):
+        g.glossary_outputs(root)

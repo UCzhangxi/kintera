@@ -105,6 +105,7 @@ def prose_uses(report):
         text = reference._GLOSS_REF.sub('', reference._GLOSS_KEYS.sub('', reference._GLOSS_NOTES.sub('', raw)))
         section = None
         fence = comment = display = generated = yaml_fence = False
+        yaml_lines = []
         for line in text.splitlines():
             stripped = line.lstrip()
             if not fence:
@@ -122,16 +123,17 @@ def prose_uses(report):
                     comment = False
                 continue
             if stripped.startswith('```'):
+                if fence and yaml_fence:
+                    for key in reference.yaml_keys('\n'.join(yaml_lines)):
+                        if ('key', key) in lookup:
+                            uses.setdefault(('key', key), []).append((chapter, section))
+                yaml_lines = []
                 yaml_fence = not fence and stripped.strip() in ('```yaml', '```yml')
                 fence = not fence
                 continue
             if fence:
                 if yaml_fence:
-                    source = line.split(' #', 1)[0]
-                    if not source.lstrip().startswith('#'):
-                        for key in re.findall(r'(?:^\s*|[{,] *)([\w-]+):', source):
-                            if ('key', key) in lookup:
-                                uses.setdefault(('key', key), []).append((chapter, section))
+                    yaml_lines.append(line)
                 continue
             if stripped.startswith('$$'):
                 if line.count('$$') % 2:

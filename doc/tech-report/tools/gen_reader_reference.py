@@ -23,6 +23,35 @@ _GLOSS_KEYS = re.compile(r'^<!-- reader glossary keys -->.*\n', re.M)
 _GLOSS_REF = re.compile(r'\[\^rg-[a-f0-9]{12}\]')
 
 
+def yaml_keys(source):
+    """Yield configuration fields, excluding the element-to-count composition map.
+
+    Compose nodes instead of loading values so YAML's scalar coercion cannot
+    change key spelling. Traversal handles block/flow maps and list items alike.
+    """
+    import yaml
+
+    def walk(node, ancestors=frozenset()):
+        if id(node) in ancestors:  # recursive aliases are not additional fields
+            return
+        ancestors = ancestors | {id(node)}
+        if isinstance(node, yaml.MappingNode):
+            for key, value in node.value:
+                if isinstance(key, yaml.ScalarNode):
+                    yield key.value
+                    if key.value != 'composition':
+                        yield from walk(value, ancestors)
+        elif isinstance(node, yaml.SequenceNode):
+            for value in node.value:
+                yield from walk(value, ancestors)
+
+    try:
+        for document in yaml.compose_all(source):
+            yield from walk(document)
+    except yaml.YAMLError as exc:
+        raise ValueError(f'invalid YAML example: {exc}') from exc
+
+
 def glossary_entries(report):
     """One inventory; symbol meanings are resolved against Appendix A's source."""
     import gen_notation_index as notation
@@ -140,18 +169,17 @@ def glossary_outputs(report):
             if stripped.startswith('```'):
                 if not fence and stripped.strip() in ('```yaml', '```yml'):
                     keys = []
+                    fragment = []
                     for future in input_lines[line_index + 1:]:
                         if future.lstrip().startswith('```'):
                             break
-                        source = future.split(' #', 1)[0]
-                        if source.lstrip().startswith('#'):
-                            continue
-                        for key in re.findall(r'(?:^\s*|[{,] *)([\w-]+):', source):
-                            identity = ('key', key)
-                            if identity not in lookup:
-                                raise ValueError(f'{rel}: YAML key {key!r} has no glossary definition')
-                            if identity not in used:
-                                keys.append(token.sub(replace, '`' + key + '`'))
+                        fragment.append(future)
+                    for key in yaml_keys(''.join(fragment)):
+                        identity = ('key', key)
+                        if identity not in lookup:
+                            raise ValueError(f'{rel}: YAML key {key!r} has no glossary definition')
+                        if identity not in used:
+                            keys.append(token.sub(replace, '`' + key + '`'))
                     if keys:
                         lines.append('<!-- reader glossary keys -->Keys in this fragment: ' + ', '.join(keys) + '.\n')
                 fence = not fence

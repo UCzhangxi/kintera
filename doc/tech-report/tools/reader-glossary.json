@@ -1,4 +1,152 @@
 {
   "version": 1,
-  "entries": []
+  "entries": [
+    {
+      "kind": "key",
+      "term": "reference-state",
+      "meaning": "map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`",
+      "section": "sec-ch11-yaml-input",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246"
+    },
+    {
+      "kind": "key",
+      "term": "Tref",
+      "meaning": "reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`",
+      "section": "sec-ch11-yaml-input",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41"
+    },
+    {
+      "kind": "key",
+      "term": "Pref",
+      "meaning": "reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`",
+      "section": "sec-ch11-yaml-input",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52"
+    },
+    {
+      "kind": "key",
+      "term": "species",
+      "meaning": "list of species maps; required; its order fixes the species index; read by `init_species_from_yaml`",
+      "section": "sec-ch11-yaml-input",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L148-L155"
+    },
+    {
+      "kind": "key",
+      "term": "name",
+      "meaning": "species name, the key every other block uses; required; stored in `species_names`",
+      "section": "sec-ch11-yaml-input",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L156"
+    },
+    {
+      "kind": "key",
+      "term": "composition",
+      "meaning": "map from element symbol to count; the molar mass is computed from it; passed to `molar_mass`",
+      "section": "sec-ch11-yaml-input",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L165-L170"
+    },
+    {
+      "kind": "key",
+      "term": "cv_R",
+      "meaning": "reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`",
+      "section": "sec-ch11-yaml-input",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176"
+    },
+    {
+      "kind": "key",
+      "term": "u0_R",
+      "meaning": "reference internal energy divided by the gas constant, in K; default 0; stored in `species_uref_R`",
+      "section": "sec-ch11-yaml-input",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L178-L182"
+    },
+    {
+      "kind": "key",
+      "term": "reactions",
+      "meaning": "top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69"
+    },
+    {
+      "kind": "key",
+      "term": "equation",
+      "meaning": "reaction string; => irreversible, <=> or = reversible; required; parsed by `Reaction`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L64-L68"
+    },
+    {
+      "kind": "key",
+      "term": "type",
+      "meaning": "name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62"
+    },
+    {
+      "kind": "key",
+      "term": "rate-constant",
+      "meaning": "map of the rate parameters of one reaction entry; read as `rxn_node[\"rate-constant\"]`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79"
+    },
+    {
+      "kind": "key",
+      "term": "formula",
+      "meaning": "name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72"
+    },
+    {
+      "kind": "key",
+      "term": "A",
+      "meaning": "Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93"
+    },
+    {
+      "kind": "key",
+      "term": "b",
+      "meaning": "exponent of the temperature ratio in the Arrhenius rate; default 0; stored in option `b`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L95"
+    },
+    {
+      "kind": "key",
+      "term": "Ea_R",
+      "meaning": "activation energy divided by the gas constant, in K; default 1 K in the Arrhenius reader; stored in option `Ea_R`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L96"
+    },
+    {
+      "kind": "key",
+      "term": "diff_c",
+      "meaning": "evaporation diffusivity at the reference state, mol-m-s units; default 2e-5; stored in option `diff_c`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L99"
+    },
+    {
+      "kind": "key",
+      "term": "diff_T",
+      "meaning": "exponent of the temperature ratio in the evaporation diffusivity; default 1.75; stored in option `diff_T`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L100"
+    },
+    {
+      "kind": "key",
+      "term": "diff_P",
+      "meaning": "exponent of the pressure ratio in the evaporation diffusivity; default -1; stored in option `diff_P`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L101"
+    },
+    {
+      "kind": "key",
+      "term": "vm",
+      "meaning": "volume factor of the evaporation rate coefficient; default 1.8e-5; stored in option `vm`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L102"
+    },
+    {
+      "kind": "key",
+      "term": "diameter",
+      "meaning": "length whose square divides the evaporation rate coefficient; default 1e-2; stored in option `diameter`",
+      "section": "sec-ch11-yaml-reactions",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L103"
+    }
+  ]
 }

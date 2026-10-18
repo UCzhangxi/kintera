@@ -70,6 +70,19 @@ sections:
     - coupling, saturation adjustment: [failed cells]
   sec-ch14-kinetics:
     - coupling, kinetics: [operator splitting, evolve_kinetics, run_hydro]
+  # Chapter 11. YAML configuration and the Python/C++ API
+  sec-ch11-yaml-input:
+    - YAML input file: [species list, reference state, configuration file]
+  sec-ch11-yaml-reactions:
+    - reaction list, YAML: [rate-parameter keys, reaction types, rate defaults]
+  sec-ch11-options:
+    - options objects, C++: [ADD_ARG, ThermoOptions, KineticsOptions]
+  sec-ch11-python-api:
+    - Python bindings: [pybind11, Python API]
+  sec-ch11-resources:
+    - resource lookup: [data files, search path, find_resource]
+  sec-ch11-version:
+    - package version: [version number, release floor]
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd

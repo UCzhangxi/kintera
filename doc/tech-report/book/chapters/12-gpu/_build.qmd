@@ -1,0 +1,79 @@
+## Building the CUDA library (`-DCUDA=ON`) {#sec-ch12-build}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: CMakeLists.txt, src/CMakeLists.txt, setup.py
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+kintera compiles its CUDA kernels only when the CMake option `CUDA` is on. With the option off, the library holds
+CPU kernels alone, and a call on CUDA tensors stops at the dispatch step (@sec-ch12-dispatch). With the option on,
+CMake compiles every `.cu` file into a separate CUDA library for a fixed list of GPU architectures. The list depends
+on the version of the CUDA compiler.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Compile the CUDA kernels for a list of GPU architectures.
+
+**Data.** CMake option `CUDA`; the architecture list `CMAKE_CUDA_ARCHITECTURES`.
+
+**Placement.** Configure time, before any run.
+
+**Activation.** `cmake -B build -DCUDA=ON`; default off.
+
+**Guarantee / limits.** Only the architectures in the list run the compiled kernels.
+
+**Evidence.** See the Tests layer below.
+:::
+
+### Derivation
+
+No derivation: this scheme is a build configuration.
+
+### Numerical method
+
+No numerical method. The architecture list is chosen as follows, all in {{< code CMakeLists.txt >}}:
+
+1. Start from compute capabilities 6.0, 6.1, 7.0, 7.5, 8.0, 8.6 and 8.9.
+2. With a CUDA compiler of version 13.0 or later, drop 6.0, 6.1 and 7.0, which that compiler no longer supports.
+3. With version 12.0 or later, add 9.0. With version 12.8 or later, add 12.0.
+4. Without a detected compiler version, fall back to the CUDA version torch was built with, for steps 2 and 3.
+
+TODO: a figure of the build products (CPU library, CUDA library, Python extension) and which calls each serves.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| CUDA option and architecture list | {{< code CMakeLists.txt >}} | `CMAKE_CUDA_ARCHITECTURES` | `-DCUDA=ON` |
+| CUDA library target | {{< code src/CMakeLists.txt >}} | the CUDA library target | `-DCUDA=ON` |
+| Python build linking the CUDA library | {{< code setup.py >}} | `has_kintera_cuda_library` | CUDA library present |
+
+: Code map of the CUDA build. {#tbl-ch12-build-code}
+
+TODO: walk-through of `src/CMakeLists.txt` and of how `setup.py` detects and links the CUDA library.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none | the generated code covers compute capability 6.1 | exact | an object-file listing, not a test |
+
+: Tests of the CUDA build. {#tbl-ch12-build-tests}
+
+A CUDA build with CUDA compiler 12.6 generates device code for compute capabilities 6.0, 6.1, 7.0, 7.5, 8.0, 8.6,
+8.9 and 9.0, as the rules above give for that compiler version.[^ch12-build-arch] No ctest entry checks the list.
+
+[^ch12-build-arch]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `cmake -B build
+-DCMAKE_BUILD_TYPE=Release -DCUDA=ON`, `cmake --build build --parallel 6`, then `cuobjdump --list-elf
+build/lib/libkintera_cuda_release.so`, which lists `sm_60 sm_61 sm_70 sm_75 sm_80 sm_86 sm_89 sm_90`; nvcc 12.6.85,
+GCC 11.5.0, CMake 3.31.8, torch 2.10.0+cu126, Python 3.11.13.]
+
+### Limits
+
+- A GPU whose compute capability is not in the list cannot run the compiled kernels. Not measured.
+- The README's quick start gives no CUDA command; the option is found only in {{< code CMakeLists.txt >}}.
+- TODO: build times and the effect of `-DCUDA=ON` on the Python package; missing evidence.

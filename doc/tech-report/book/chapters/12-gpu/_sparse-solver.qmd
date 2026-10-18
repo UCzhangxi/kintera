@@ -1,0 +1,37 @@
+## CUDA sparse linear solver (`cuda_csr_solve_cusolver`) {#sec-ch12-sparse-solver}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/sparse_solver.cu, src/math/sparse_solver.hpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+The two-dimensional atmosphere solver needs large sparse linear solves, which kintera hands to the cuSOLVER library on
+CUDA devices through a cached solver context per device. The entry point is `cuda_csr_solve_cusolver`
+({{< code src/math/sparse_solver.cu cuda_csr_solve_cusolver >}}).
+
+TODO: the At a glance box and the remaining summary paragraphs.
+
+### Derivation
+
+TODO: not yet written.
+
+### Numerical method
+
+TODO: not yet written, with its figure.
+
+### Code
+
+TODO: the code table and the walk-through.
+
+### Tests
+
+TODO: the test table; missing evidence.
+
+### Limits
+
+TODO: not yet written; not measured.

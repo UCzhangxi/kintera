@@ -83,8 +83,22 @@ sections:
     - resource lookup: [data files, search path, find_resource]
   sec-ch11-version:
     - package version: [version number, release floor]
+  # Chapter 12. GPU execution
+  sec-ch12-build:
+    - CUDA build: [CUDA option, GPU architectures]
+  sec-ch12-dispatch:
+    - device dispatch: [CPU or GPU, dispatch stub]
+  sec-ch12-kernels:
+    - GPU kernels: [shared memory, workspace per thread]
+  sec-ch12-device-functions:
+    - device function tables
+  sec-ch12-sparse-solver:
+    - sparse solver, GPU
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd
     heading: "*"
+    covered-by: sec-appb
+  - file: chapters/appendices/_appb-ch12.qmd
+    heading: GPU execution (@sec-ch12)
     covered-by: sec-appb

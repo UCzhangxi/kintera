@@ -14,6 +14,12 @@
 
 **coagulation**: Coagulation of cloud into precipitation, @sec-ch06-coagulation.
 
+**coupling, equation of state**: Thermodynamics as the equation of state of snapy (thermodynamics card), @sec-ch14-thermo.
+
+**coupling, kinetics**: Kinetics after the dynamics step, @sec-ch14-kinetics.
+
+**coupling, saturation adjustment**: Saturation adjustment inside a snapy stage (thermodynamics card), @sec-ch14-saturation.
+
 ## E {.unnumbered .unlisted}
 
 *Ea_R*, see **Arrhenius rate constant**.
@@ -24,7 +30,11 @@
 
 *evolve_implicit*, see **implicit time step**.
 
+*evolve_kinetics*, see **coupling, kinetics**.
+
 ## F {.unnumbered .unlisted}
+
+*failed cells*, see **coupling, saturation adjustment**.
 
 **fall-off rate constant**: Three-body and fall-off rate constants, @sec-ch06-falloff.
 
@@ -52,6 +62,10 @@
 
 **notation index**: The notation index, @sec-appa-index.
 
+## O {.unnumbered .unlisted}
+
+*operator splitting*, see **coupling, kinetics**.
+
 ## P {.unnumbered .unlisted}
 
 *p-threshold*, see **pressure switch**.
@@ -64,9 +78,13 @@
 
 *Rosenbrock*, see **implicit time step**.
 
+*run_hydro*, see **coupling, kinetics**.
+
 ## S {.unnumbered .unlisted}
 
 *saturation deficit*, see **evaporation, diffusion form**.
+
+*snapy equation of state*, see **coupling, equation of state**.
 
 *SRI*, see **fall-off rate constant**.
 

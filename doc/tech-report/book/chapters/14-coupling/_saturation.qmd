@@ -1,0 +1,68 @@
+## Saturation adjustment inside a snapy stage (thermodynamics card) {#sec-ch14-saturation}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70
+sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp; snapy src/mesh/meshblock.cpp
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+After each stage of its time integrator, snapy brings condensable species back to phase equilibrium by calling
+kintera's saturation adjustment at fixed density and internal energy. It then asks kintera how many cells failed
+to converge, and redoes the step with a smaller time step if any did. Content from source reading only.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Phase equilibrium of @sec-ch04 at fixed density and internal energy, in place on the mass fractions.
+
+**Data.** Density [$\mathrm{kg\,m^{-3}}$], internal energy [$\mathrm{J\,m^{-3}}$], mass fractions [-] (updated).
+
+**Placement.** End of every snapy stage; failure count read by snapy's redo check.
+
+**Activation.** Always, for a moist equation of state; warm start on.
+
+**Guarantee / limits.** Failed cells are counted, not raised.
+
+**Evidence.** No kintera test of the call site; see the Tests layer.
+:::
+
+### Derivation
+
+No derivation: the adjustment is derived in @sec-ch04.
+
+### Numerical method
+
+snapy computes the total density and the internal energy from its conserved state, forms the mass fractions, and
+calls `ThermoY.forward` with `warm_start` true on the interior cells ([`snapy meshblock.cpp:829-837`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L829-L837)). The call updates the mass fractions
+in place ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}). snapy's redo check reads
+`take_saturation_adjustment_failures` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}},
+[`snapy meshblock.cpp:1272-1275`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1272-L1275)), which returns and resets the number of failed cells.
+
+The figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| adjustment | {{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}} | `ThermoYImpl::forward` | always |
+| failure count | {{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}} | `take_saturation_adjustment_failures` | always |
+| snapy caller | [`snapy meshblock.cpp:829-837`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L829-L837) | `ThermoYImpl` | always |
+| snapy redo check | [`snapy meshblock.cpp:1272-1275`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1272-L1275) | `take_saturation_adjustment_failures` | always |
+
+: Code map of saturation adjustment in a stage. {#tbl-ch14-saturation-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_saturation_failure_reported.py` | an unadjusted cell is counted | exact | count |
+
+: Tests of saturation adjustment in a stage. {#tbl-ch14-saturation-tests}
+
+The kintera test covers the count, not snapy's use of it.
+
+### Limits
+
+Not drafted.

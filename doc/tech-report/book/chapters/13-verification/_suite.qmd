@@ -1,0 +1,92 @@
+## How the test suite is organised and run (`ctest`) {#sec-ch13-suite}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: tests/CMakeLists.txt, cmake/macros/macro_setup_test.cmake, tests/device_testing.hpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+kintera has two kinds of tests: C++ programs written with GoogleTest, and Python test files run by `pytest`. CMake
+registers both with `ctest`, so one `ctest` command in the build's test directory runs everything. A C++ test that
+takes a device runs on CPU and CUDA, in single and double precision. Its CUDA instances skip when no GPU is
+available.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** One `ctest` run covers the C++ and the Python tests.
+
+**Data.** 49 `ctest` entries at the pin: 16 C++ programs, one grouped Python entry and 32 single-file Python entries.
+
+**Placement.** After the build: `ctest` in `build/tests`.
+
+**Activation.** Always registered; a C++ file is built only if `tests/CMakeLists.txt` names it.
+
+**Guarantee / limits.** Seven C++ test files in the tree are not built (Limits).
+
+**Evidence.** See the Tests layer below.
+:::
+
+### Derivation
+
+No derivation: this scheme is the organisation of the tests.
+
+### Numerical method
+
+No numerical method. The registration in {{< code tests/CMakeLists.txt >}} works in three steps:
+
+1. Each C++ test named by the `setup_test` macro ({{< code cmake/macros/macro_setup_test.cmake >}}) becomes one
+   executable `<name>.release`, linked with GoogleTest's `main` and, in a CUDA build, with the CUDA library. It is
+   registered as one `ctest` entry of the same name.
+2. Eight Python files whose native calls already run in child processes are run together by one entry,
+   `test_python_subprocess`, so they share one `pytest` start-up.
+3. Every other `tests/test*.py` file becomes its own entry, named after the file, which runs `pytest <file>` from
+   the source directory.
+
+The C++ tests that take a device derive from `DeviceTest` ({{< code tests/device_testing.hpp DeviceTest >}}). The
+default instantiation runs each such test four times: CPU and CUDA, each in single and double precision. The fixture
+skips the CUDA instances when `torch::cuda::is_available()` is false.
+
+TODO: a figure of the registration (source files to executables and `ctest` entries).
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| test registration | {{< code tests/CMakeLists.txt >}} | `setup_test`, `test_python_subprocess` | always |
+| C++ test target | {{< code cmake/macros/macro_setup_test.cmake >}} | `setup_test` | always |
+| device fixture | {{< code tests/device_testing.hpp DeviceTest >}} | `DeviceTest` | device available |
+
+: Code map of the test suite. {#tbl-ch13-suite-code}
+
+At configure time, `tests/CMakeLists.txt` links every `*.inp`, `*.dat` and `*.yaml` file of `tests/` into
+`build/tests` with `ln -sf`, because the C++ tests read their inputs from there.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| all 49 entries | the registration itself | exact count | `ctest -N` |
+
+: Tests of the suite layout. {#tbl-ch13-suite-tests}
+
+`ctest -N` in the build's test directory lists 49 entries at the pin.[^ch13-suite-count] The tree holds 23 C++ test
+files and 40 Python test files: 16 C++ programs are built, 8 Python files run in the grouped entry and 32 run as
+single-file entries.
+
+[^ch13-suite-count]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `ctest -N` in `build/tests` of a
+Release build, which prints `Total Tests: 49`; CMake 3.31.8. The file counts are from `ls tests/test*.cpp` and
+`ls tests/test*.py`.]
+
+### Limits
+
+- **Seven C++ test files are not built.** `tests/CMakeLists.txt` names no target for `test_ammonium_hydrosulfide.cpp`,
+  `test_convective_adjustment.cpp`, `test_earth_thermo.cpp`, `test_jup_thermo.cpp`, `test_moist_adiabat.cpp`,
+  `test_kinetics_rates.cpp` or `test_yaml_parse.cpp`. The last two appear only in commented-out lines. Their
+  assertions do not run.
+- **Inputs are linked, not copied.** On a file system that refuses symbolic links, the inputs are absent from
+  `build/tests`, and the C++ tests that read them are expected to fail on a missing file. That failure was not
+  measured at the pin: the runs of @sec-ch13-results copied the inputs by hand first.
+- TODO: test run times; not measured.

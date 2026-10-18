@@ -1,0 +1,46 @@
+## Comparison with KINETICS-base inputs (`test_kinetics_base`) {#sec-ch13-kinetics-base}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: tests/test_kinetics_base.cpp, tests/test_kinetics_base.py, tests/kinetics_base/, tests/CMakeLists.txt
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+kintera can read a reaction network in the input format of the KINETICS photochemistry code. Two `ctest` entries
+check this reader on small inputs kept in the tree: the C++ program `test_kinetics_base` and the Python file
+`test_kinetics_base.py`. A third group of cases runs a full Titan comparison against files that are not in the
+tree. When those files are absent, the cases skip through `_external_titan_paths`
+({{< code tests/test_kinetics_base.py _external_titan_paths >}}).
+
+TODO: the At a glance box, and what each comparison asserts.
+
+### Derivation
+
+TODO: not yet written.
+
+### Numerical method
+
+TODO: not yet written, with its figure.
+
+### Code
+
+TODO: the code table and the walk-through, including the input files `tests/CMakeLists.txt` copies into
+`build/tests/kinetics_base/data`.
+
+### Tests
+
+TODO: the test table. Measured so far: on both builds of @sec-ch13-results, the 4 external-data cases of
+`test_kinetics_base.py` skip, with the message `missing external KINETICS-base file`, and the rest of the file and
+the C++ program pass.[^ch13-kb-skip]
+
+[^ch13-kb-skip]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_kinetics_base.py`; run:
+`python -m pytest tests -p no:cacheprovider -rfEs -q`, CPU and CUDA builds; Python 3.11.13, torch 2.10.0+cu126,
+pytest 9.1.1.]
+
+### Limits
+
+- The full Titan comparison needs files outside the tree, so it has not been run here; missing evidence.

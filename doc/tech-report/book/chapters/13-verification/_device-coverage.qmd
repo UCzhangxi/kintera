@@ -1,0 +1,96 @@
+## What the suite covers on CPU only (device coverage) {#sec-ch13-device-coverage}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: tests/device_testing.hpp, tests/test_evaporation_kessler.py, tests/test_coagulation_pressure_switch.py,
+  tests/test_evaporation_general.py, tests/test_cuda_workspace.py
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+A passing CUDA build does not mean every feature was exercised on the GPU. The C++ tests built on the device fixture
+run on both devices. A Python test runs on CUDA only when it moves its tensors there, and most Python test files do
+not. This section names the files that test on both devices, the files that test on CPU only, and two kinetics
+features that the suite checks on the CPU alone: the Kessler-form evaporation and the pressure switch.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Which assertions also run on CUDA, and which run on CPU only.
+
+**Data.** The test files and the device each one uses.
+
+**Placement.** Read after @sec-ch13-results.
+
+**Activation.** A Python test runs on CUDA only if it moves its tensors there.
+
+**Guarantee / limits.** 14 of 40 Python test files use CUDA; Kessler evaporation and the pressure switch are CPU-only.
+
+**Evidence.** See the Tests layer below.
+:::
+
+### Derivation
+
+No derivation: this scheme is an inventory.
+
+### Numerical method
+
+No numerical method. The inventory is built in two steps:
+
+1. Every C++ test built on `DeviceTest` ({{< code tests/device_testing.hpp DeviceTest >}}) runs on CPU and CUDA
+   (@sec-ch13-suite).
+2. A Python test file counts as covering CUDA when it names the CUDA device. Of the 40 Python test files, 14 do:
+   `test_atm2d.py`, `test_cuda_workspace.py`, `test_evaporation_general.py`, `test_kinetics_base_units.py`,
+   `test_kinetics_null_options.py`, `test_reaction_equilibrium.py`, `test_saturation_failure_reported.py`,
+   `test_species_registry.py`, `test_thermo_default_nucleation.py`, `test_thermo_none_nucleation.py`,
+   `test_thermo_none_nucleation_after_reset.py`, `test_thermo_x_warm_start_shape.py`,
+   `test_thermo_y_none_nucleation.py` and `test_warm_start_shape.py`.[^ch13-coverage-grep]
+
+TODO: a figure of the coverage matrix (feature by device).
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| CPU and CUDA rate and Jacobian | {{< code tests/test_evaporation_general.py test_cpu_cuda_rate_and_jacobian_agree >}} | `test_cpu_cuda_rate_and_jacobian_agree` | CUDA available |
+| Kessler-form evaporation, CPU | {{< code tests/test_evaporation_kessler.py test_box_matches_kessler_closed_form >}} | `test_box_matches_kessler_closed_form` | always |
+| pressure switch, CPU | {{< code tests/test_coagulation_pressure_switch.py test_box_matches_switched_closed_form >}} | `test_box_matches_switched_closed_form` | always |
+
+: Code map of device coverage. {#tbl-ch13-device-coverage-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_evaporation_kessler.py` | Kessler-form evaporation against its closed form in a box, CPU only | TODO | TODO |
+| `test_coagulation_pressure_switch.py` | switched rate against its closed form across the threshold, CPU only | TODO | TODO |
+| `test_evaporation_general.py` | evaporation rate and Jacobian, CUDA against CPU | TODO | TODO |
+
+: Device coverage of selected tests. {#tbl-ch13-device-coverage-tests}
+
+Neither `test_evaporation_kessler.py` nor `test_coagulation_pressure_switch.py` names a device, so both run on CPU
+only, on every build. Both pass on the CPU and the CUDA builds of @sec-ch13-results. A separate run outside the
+suite fed their two reaction sets through the kinetics step on both devices. The rates, the Jacobian and the
+implicit step agreed between CPU and CUDA to below $10^{-15}$ relative, that is, at round-off in double
+precision.[^ch13-coverage-probe] The run and its table are in @sec-ch12, in the device dispatch section.
+
+[^ch13-coverage-grep]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `grep -l "cuda" test*.py` in `tests/`,
+which lists the 14 files; GNU grep.]
+
+[^ch13-coverage-probe]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML inputs of
+`tests/test_evaporation_kessler.py` and `tests/test_coagulation_pressure_switch.py`, 64 cells; run: `python -P
+gpu_probe.py`, CPU and CUDA, double; CUDA 12.6.85, torch 2.10.0+cu126, Python 3.11.13; missing evidence: the script
+is not yet a committed check of this report.]
+
+### Limits
+
+::: {.callout-warning title="Limits"}
+- **No suite test checks the Kessler form or the pressure switch on CUDA.** A CUDA-only regression in either would
+  pass the suite. Adding a CUDA case to each file closes the gap.
+:::
+
+- The inventory counts a file as CUDA-covering if it names the device anywhere. Which assertions inside it run on
+  CUDA is not tabulated yet. TODO.
+- 26 of 40 Python test files name no CUDA device. Which of their features also run on CUDA through another test is
+  not tabulated. TODO.

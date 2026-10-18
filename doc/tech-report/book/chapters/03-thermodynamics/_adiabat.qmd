@@ -49,7 +49,8 @@ those of @sec-ch03-species-functions.
 **Effective heat capacity.** Hold $p$ fixed and let $T$ change by $\mathrm d T$ in a saturated parcel. The frozen
 part of the enthalpy change per mole of mixture is $\bar c_p\, \mathrm d T$ with $\bar c_p = \sum_n x_n c_{p,n}$.
 The reaction extents change too, by $\mathrm d \xi_r$, releasing $-\Delta h_r\, \mathrm d \xi_r$. Saturation is
-kept: each active reaction's log quotient follows its log saturation constant, so with $\mathsf G$ the derivative of
+kept: each active reaction's log quotient, formed from the gas mole fractions $x_n / x_{\mathrm g}$ with sums over
+gases only (@sec-ch04), follows its log saturation constant at fixed $p$, so with $\mathsf G$ the derivative of
 the log quotients with respect to the extents,
 
 $$

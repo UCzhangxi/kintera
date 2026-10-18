@@ -49,7 +49,8 @@ $$
 \frac{u_n(T)}{\mathcal R} = u^{\star}_n + c^{\star}_n (T - T_\star) + e_n(T) ,
 $$ {#eq-ch03-species-functions-u}
 
-where $e_n(T)$ is an optional per-species extra function (zero when none is set). @eq-ch03-species-functions-u is
+where $e_n(T)$ is an optional per-species extra function, zero unless C++ code registers one: no YAML key fills
+an extra-function slot, `populate_thermo` pads them with empty names and the Python bindings do not expose them (verified by reading at the pin). @eq-ch03-species-functions-u is
 computed in `eval_intEng_R` ({{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}), with the constant
 $u^{\star}_n - c^{\star}_n T_\star$ stored once as the offset at $T = 0$ (@sec-ch03-reference-state). Its
 temperature derivative is the heat capacity at constant volume,

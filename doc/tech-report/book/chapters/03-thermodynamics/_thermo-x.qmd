@@ -129,5 +129,9 @@ CPU in float32 and float64 and on CUDA when a GPU is present. `TV->cp` and `TV->
 ### Limits
 
 `PXS->T` uses the frozen heat capacity as its slope, which is a hypothesis for slow convergence in saturated
-parcels (not measured). It mutates its mole-fraction argument. The file written on non-convergence lands in the
+parcels (not measured). It mutates its mole-fraction argument. Each of its iterations runs the saturation adjustment of @sec-ch04 with the
+same `max-iter`; a cell that the adjustment leaves unconverged gives `PXS->T` a composition off saturation, and
+`ThermoX.forward` keeps no failure count (verified by reading `ThermoXImpl::forward`,
+{{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}}). No test measures how often that happens at the default
+`max-iter` of 10. The file written on non-convergence lands in the
 working directory of the caller.

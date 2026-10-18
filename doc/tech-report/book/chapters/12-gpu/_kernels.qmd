@@ -1,0 +1,137 @@
+## CUDA element loops and per-thread workspaces (`gpu_mem_kernel`) {#sec-ch12-kernels}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/loops.cuh, src/utils/alloc.h, src/kinetics/evolve_implicit_impl.h,
+src/kinetics/evolve_implicit_dispatch.cu,
+  src/thermo/thermo_dispatch.cu
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+kintera's CUDA kernels give each grid cell one GPU thread. That thread runs the whole per-cell solver: a small
+dense linear solve, or an active-set iteration. Such a solver needs scratch arrays whose size depends on the number
+of species and reactions. Each thread therefore gets its own slice of the block's shared memory, sized before the
+launch. The block shrinks when the slices of a full block do not fit the device's shared-memory limit. The launch
+fails when one slice alone does not fit.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Run a per-cell solver as one CUDA thread per cell, with scratch in shared memory.
+
+**Data.** Per-cell inputs and outputs through a tensor iterator; scratch bytes per thread.
+
+**Placement.** The CUDA driver of each dispatch stub (@sec-ch12-dispatch).
+
+**Activation.** Always, on CUDA inputs.
+
+**Guarantee / limits.** At most 32 threads per block; the scratch of one cell must fit the per-block limit.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Local symbols: $n_{\mathrm{s}}$ the number of species, $b$ the scratch bytes of one cell, $M$ the device's largest
+per-block dynamic shared memory [bytes] and $N_{\mathrm{thr}}$ the threads per block.
+
+### Derivation
+
+The launcher `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) picks the block size from the scratch size
+of one cell:
+
+$$
+N_{\mathrm{thr}} = \min\left(32,\ \max\left(1,\ \left\lfloor M / b \right\rfloor\right)\right)
+$$ {#eq-ch12-kernels-threads}
+
+and it stops with an error when $N_{\mathrm{thr}}\,b > M$, which happens exactly when $b > M$.
+@eq-ch12-kernels-threads is computed in `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}), with $M$
+from `get_max_dynamic_shared_memory` ({{< code src/loops.cuh get_max_dynamic_shared_memory >}}). That function takes
+the larger of the ordinary per-block limit and the opt-in limit the device reports.
+
+For the implicit kinetics step, `evolve_implicit_space`
+({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}) counts four $n_{\mathrm{s}}\times
+n_{\mathrm{s}}$ matrices and six vectors of length $n_{\mathrm{s}}$. Two of the matrices and two of the vectors come
+from the pseudo-inverse fallback, `psolve_space` ({{< code src/utils/alloc.h psolve_space >}}). Every allocation is
+rounded up to a multiple of 8 bytes, so in double precision (8 bytes per entry)
+
+$$
+\begin{aligned}
+b &= 4 \cdot 8\,n_{\mathrm{s}}^2 + 6 \cdot 8\,n_{\mathrm{s}} \\
+  &= 32\,n_{\mathrm{s}}^2 + 48\,n_{\mathrm{s}} .
+\end{aligned}
+$$ {#eq-ch12-kernels-implicit-bytes}
+
+On a device with $M = 49152$ bytes, @eq-ch12-kernels-threads and @eq-ch12-kernels-implicit-bytes give
+$N_{\mathrm{thr}} = 32$ for $n_{\mathrm{s}} \le 6$, because $32 \cdot 36 + 48 \cdot 6 = 1440 \le 49152/32 = 1536$
+while $n_{\mathrm{s}} = 7$ gives 1904. They give a launch error for $n_{\mathrm{s}} \ge 39$, because
+$32 \cdot 39^2 + 48 \cdot 39 = 50544 > 49152$ while $n_{\mathrm{s}} = 38$ gives 48032. These numbers are arithmetic
+on the code; they have not been run (Limits).
+
+### Numerical method
+
+Each thread of `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) works as follows:
+
+1. It computes the offsets of its cell's inputs and outputs from the tensor iterator.
+2. It takes the slice of shared memory at `threadIdx.x` times the per-cell scratch size.
+3. It calls the per-cell function with that slice. The per-cell function allocates its arrays from the slice with
+   the bump allocator `pmalloc` ({{< code src/utils/alloc.h pmalloc >}}), and it releases them all at once by
+   resetting the pointer with `pool_rewind` ({{< code src/utils/alloc.h pool_rewind >}}).
+
+When a full block needs more than the ordinary per-block limit, the launcher raises the kernel's dynamic
+shared-memory attribute once per device before the first launch.
+
+TODO: a figure of one block, its threads and their shared-memory slices.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| launcher with per-thread scratch | {{< code src/loops.cuh gpu_mem_kernel >}} | `gpu_mem_kernel` | CUDA inputs |
+| per-block shared-memory limit | {{< code src/loops.cuh get_max_dynamic_shared_memory >}} | `get_max_dynamic_shared_memory` | always |
+| bump allocator | {{< code src/utils/alloc.h pmalloc >}} | `pmalloc` | always |
+| scratch size, implicit step | {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}} | `evolve_implicit_space` | always |
+| per-cell implicit step | {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}} | `evolve_implicit_cell` | always |
+
+: Code map of the CUDA element loops. {#tbl-ch12-kernels-code}
+
+TODO: the walk-through for the saturation-adjustment kernels (`call_equilibrate_tp_cuda`,
+{{< code src/thermo/thermo_dispatch.cu call_equilibrate_tp_cuda >}}) and their scratch sizes.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_cuda_workspace.py` | TP and UV saturation adjustment with shared-memory scratch, CUDA against CPU | TODO | TODO |
+| `test_alloc_space` | scratch sizes of the per-cell solvers | TODO | TODO |
+| `test_kinetics` | the implicit step on CUDA | TODO | TODO |
+
+: Tests of the CUDA element loops. {#tbl-ch12-kernels-tests}
+
+All three pass in a CUDA build on a compute capability 6.1 GPU.[^ch12-kernels-run] On that GPU the per-block limit
+$M$ is 49152 bytes, and the opt-in limit is the same, so @eq-ch12-kernels-threads applies with
+$M = 49152$.[^ch12-kernels-smem] No test covers a species count large enough to shrink the block or to reach the
+launch error.
+
+[^ch12-kernels-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `ctest --timeout 1800
+--output-on-failure`, serial, in `build/tests` of a `-DCUDA=ON` Release build, two compute capability 6.1 GPUs; CUDA
+12.6.85,
+GCC 11.5.0, torch 2.10.0+cu126, Python 3.11.13.]
+
+[^ch12-kernels-smem]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none; run: `python -c "import
+torch; p =
+torch.cuda.get_device_properties(0); print(p.shared_memory_per_block, p.shared_memory_per_block_optin)"` and the
+same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python 3.11.13.]
+
+### Limits
+
+::: {.callout-warning title="Limits"}
+- **Large species counts on small shared memory (hypothesis, not measured).** By
+  @eq-ch12-kernels-implicit-bytes, the implicit step on a 49152-byte device runs fewer than 32 threads per block for
+  more than 6 species and cannot launch for 39 species or more, in double precision. Neither the slowdown nor the
+  launch error has been run.
+:::
+
+- The comment in `gpu_mem_kernel` names a 64 KiB limit for one GPU generation. The limit is read from the device
+  at run time, and 49152 bytes is measured on compute capability 6.1.
+- TODO: the scratch formulas of the saturation-adjustment solvers, and the same bounds for them.

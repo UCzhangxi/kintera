@@ -1,3 +1,39 @@
 # GPU execution {#sec-ch12}
 
-pending
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/loops.cuh, src/utils/alloc.h, src/kinetics/evolve_implicit_dispatch.cpp,
+  src/kinetics/evolve_implicit_dispatch.cu, src/thermo/thermo_dispatch.cu, CMakeLists.txt, tests/device_testing.hpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+Every kintera call that does heavy work runs on the device of its input tensors. The same function call computes on
+the CPU when the tensors live in host memory and on an NVIDIA GPU when they live in CUDA memory. This chapter
+explains how one call reaches the right code, how the CUDA kernels lay out their work, how much memory each GPU
+thread needs, how to build the CUDA library, and how far CPU and CUDA results agree.
+
+TODO (structure draft): a dependency-map figure of the five schemes (build enables the CUDA kernels; dispatch
+selects them; the element loops and their workspaces run them; the device function tables and the sparse solver are
+CUDA back ends of other chapters' schemes).
+
+| scheme | option | default | main test |
+|---|---|---|---|
+| @sec-ch12-build | `-DCUDA=ON` | off | `test_cuda_workspace.py` |
+| @sec-ch12-dispatch | device of the inputs | CPU | `test_kinetics` |
+| @sec-ch12-kernels | always on CUDA | on CUDA | `test_cuda_workspace.py` |
+| @sec-ch12-device-functions | always on CUDA | on CUDA | missing evidence |
+| @sec-ch12-sparse-solver | always on CUDA | on CUDA | `test_atm2d.py` |
+
+: Schemes of this chapter. {#tbl-ch12-schemes}
+
+{{< include 12-gpu/_build.qmd >}}
+
+{{< include 12-gpu/_dispatch.qmd >}}
+
+{{< include 12-gpu/_kernels.qmd >}}
+
+{{< include 12-gpu/_device-functions.qmd >}}
+
+{{< include 12-gpu/_sparse-solver.qmd >}}

@@ -1,0 +1,165 @@
+## Device dispatch: one call, CPU or CUDA (`DispatchStub`) {#sec-ch12-dispatch}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/evolve_implicit_dispatch.hpp, src/kinetics/evolve_implicit_dispatch.cpp,
+  src/kinetics/evolve_implicit_dispatch.cu, src/thermo/thermo_dispatch.hpp, src/thermo/thermo_dispatch.cpp,
+  src/thermo/thermo_dispatch.cu, src/equilibrium/equilibrium_dispatch.cpp, src/equilibrium/equilibrium_dispatch.cu,
+  src/utils/utils_dispatch.cpp, tests/device_testing.hpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+A kintera solver is written once as a per-cell function, and two thin drivers run it: one loops over cells on the
+CPU, the other launches a CUDA kernel. The choice between them is made at run time from the device of the input
+tensors, through torch's dispatch-stub mechanism. The user never selects a device by option. Moving the module and
+its inputs to a CUDA device selects the CUDA driver.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Route one solver call to its CPU or CUDA driver by the inputs' device.
+
+**Data.** Input and output tensors of the solver; all on one device.
+
+**Placement.** Inside each solver call, after its inputs are packed into a tensor iterator.
+
+**Activation.** Always; the device of the inputs decides. Default CPU.
+
+**Guarantee / limits.** Same per-cell arithmetic on both devices; see the Tests layer.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Local symbols: $\mathsf S$ the stoichiometric matrix (species by reactions), $\mathsf J$ the reaction-space
+Jacobian (reactions by species), $\mathbf r$ the reaction rates [$\mathrm{mol\,m^{-3}\,s^{-1}}$], $\Delta t$ the
+time step [s] and $\delta\mathbf c$ the concentration change [$\mathrm{mol\,m^{-3}}$].
+
+### Derivation
+
+No derivation: dispatch does not change the equations. Each driver evaluates the same per-cell function. For the
+implicit kinetics step that function solves
+
+$$
+\left(\frac{1}{\Delta t}\,\mathsf I - \mathsf S\,\mathsf J\right)\delta\mathbf c = \mathsf S\,\mathbf r
+$$ {#eq-ch12-dispatch-implicit}
+
+in every cell. @eq-ch12-dispatch-implicit is computed in `evolve_implicit_cell`
+({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}); the step itself is derived in the
+kinetics chapter.
+
+### Numerical method
+
+Each solver follows the same four steps:
+
+1. The public function packs its per-cell inputs and outputs into a torch tensor iterator, for example
+   `evolve_implicit` ({{< code src/kinetics/evolve_implicit_dispatch.cpp evolve_implicit >}}).
+2. It calls the dispatch stub with the device type of its tensors. The stub is declared once per solver, for example
+   in {{< code src/kinetics/evolve_implicit_dispatch.hpp >}}.
+3. The stub holds one function per device type. The CPU driver is registered in the `.cpp` file, for example
+   `call_evolve_implicit_cpu` ({{< code src/kinetics/evolve_implicit_dispatch.cpp call_evolve_implicit_cpu >}}).
+   The CUDA driver is registered in the `.cu` file, for example `call_evolve_implicit_cuda`
+   ({{< code src/kinetics/evolve_implicit_dispatch.cu call_evolve_implicit_cuda >}}).
+4. The CPU driver loops over cells with a host scratch buffer per chunk of cells. The CUDA driver launches one
+   thread per cell with a scratch buffer in shared memory (@sec-ch12-kernels).
+
+TODO: a figure of the call path (public function, tensor iterator, stub, CPU or CUDA driver, per-cell function).
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| implicit step, public entry | {{< code src/kinetics/evolve_implicit_dispatch.cpp evolve_implicit >}} | `evolve_implicit` | always |
+| implicit step, CPU driver | {{< code src/kinetics/evolve_implicit_dispatch.cpp call_evolve_implicit_cpu >}} | `call_evolve_implicit_cpu` | CPU inputs |
+| implicit step, CUDA driver | {{< code src/kinetics/evolve_implicit_dispatch.cu call_evolve_implicit_cuda >}} | `call_evolve_implicit_cuda` | CUDA inputs |
+| saturation adjustment, CUDA drivers | {{< code src/thermo/thermo_dispatch.cu call_equilibrate_tp_cuda >}} | `call_equilibrate_tp_cuda` | CUDA inputs |
+| device test fixture | {{< code tests/device_testing.hpp DeviceTest >}} | `DeviceTest` | always |
+
+: Code map of device dispatch. {#tbl-ch12-dispatch-code}
+
+The same pattern carries the stubs `call_equilibrate_tp`, `call_equilibrate_uv` and `call_logsvp_inline`
+({{< code src/thermo/thermo_dispatch.cpp >}}), `call_equilibrium`
+({{< code src/equilibrium/equilibrium_dispatch.cpp >}})
+and `call_func1` to `call_func3` ({{< code src/utils/utils_dispatch.cpp >}}).
+
+TODO: the full walk-through, one numbered step per stub, with the checks each public entry makes on its inputs.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_kinetics` | the implicit step runs on CPU and CUDA | TODO | TODO |
+| `test_cuda_workspace.py` | TP and UV saturation adjustment, CUDA against CPU | TODO | TODO |
+| `test_evaporation_general.py` | evaporation rate and Jacobian, CUDA against CPU | TODO | TODO |
+
+: Tests of device dispatch. {#tbl-ch12-dispatch-tests}
+
+Every C++ test built on `DeviceTest` ({{< code tests/device_testing.hpp DeviceTest >}}) runs four times, on CPU and
+CUDA in single and double precision, and skips the CUDA instances when no GPU is present. In a CUDA build on a
+compute capability 6.1 GPU, the 16 C++ test programs pass with 105 CUDA instances and 105 CPU instances passing and
+none failing.[^ch12-dispatch-gtest] The Python suite gives 584 passed and 6 skipped on the CUDA build, and 412 passed
+and 174 skipped on the CPU build with no GPU visible. All skips have causes other than the code under test: CUDA
+cases without a GPU, external data files that are absent, and a missing build tool.[^ch12-dispatch-pytest]
+
+The cases that test one code path on both devices compare a single function. A separate run compared the whole
+kinetics step on both devices for two reaction sets: a Kessler-form evaporation set and a pressure-switched
+coagulation set. Each ran in 64 cells in double precision. For each quantity the measure is the largest CPU-CUDA
+difference divided by the largest CPU value. For the Kessler-form set it is $8.6\times10^{-18}$ for the rates,
+$6.9\times10^{-17}$ for the Jacobian and $5.4\times10^{-16}$ for the implicit step @eq-ch12-dispatch-implicit. For
+the pressure-switched set it is $1.5\times10^{-16}$, $2.2\times10^{-16}$ and $8.0\times10^{-16}$. All six are below
+$10^{-15}$, that is, at round-off in double precision.[^ch12-dispatch-agree]
+
+These cases are not part of the test suite: both reaction sets are tested on the CPU only.
+
+[^ch12-dispatch-gtest]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the 16 gtest programs;
+run: `ctest -V -R '\.release'` in `build/tests` of a `-DCUDA=ON` Release build, which selects the 16 gtest programs;
+48 instances per device are
+skipped, all fixture placeholders or single-precision skips that mirror the CPU ones; CUDA 12.6.85, GCC 11.5.0,
+torch 2.10.0+cu126.]
+
+[^ch12-dispatch-pytest]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `python -m pytest tests -p
+no:cacheprovider -rfEs -q`
+from the source tree against the installed build; CUDA build with two compute capability 6.1 GPUs visible; CPU build
+with `CUDA_VISIBLE_DEVICES=""`; Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, pytest 9.1.1. Skips on the CUDA
+build: 4 cases of `test_kinetics_base.py` need an external data file, and the 2 version-test modules need
+`setuptools_scm`. Serial `ctest` gives 48 of 49 passing on both builds; the failing entry is
+`test_version_floor.py`, whose module skips without `setuptools_scm`, which ctest counts as a failure.]
+
+[^ch12-dispatch-agree]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML inputs of
+`tests/test_evaporation_kessler.py` and `tests/test_coagulation_pressure_switch.py`, 64 cells, temperature 80 K to
+120 K, pressure from $10^{3.5}$ to $10^{4.5}$ Pa, random concentrations; run: `python -P gpu_probe.py`, a script that
+calls `Kinetics.forward_with_rate_constants`, `Kinetics.jacobian` and `evolve_implicit` with $\Delta t =
+10\,\mathrm{s}$ on
+each device, double precision, and prints the largest difference over the largest CPU value; CUDA 12.6.85, torch
+2.10.0+cu126, Python 3.11.13; missing evidence: the script is not yet committed as a check of this report.]
+
+### Limits
+
+::: {.callout-warning title="Limits"}
+- **CUDA inputs to a CPU-only build stop.** The stub has no CUDA entry, and the call raises
+  `DispatchStub: missing kernel for cuda`.[^ch12-dispatch-missing]
+- **The stoichiometric matrix of the implicit step is not checked.** `evolve_implicit` passes `stoich` to the driver
+  as a raw pointer, outside the tensor iterator, so its device and shape are never compared with the other inputs.
+  On a CUDA run, a `stoich` left in host memory causes `CUDA error: an illegal memory access was encountered`. The
+  error leaves the process's CUDA context unusable. A `stoich` with fewer reaction columns than the rates is
+  accepted silently, on CPU and on CUDA. A `stoich` of another precision raises a clear type
+  error.[^ch12-dispatch-stoich]
+:::
+
+TODO: list, per stub, which inputs stay outside the tensor iterator. The saturation-adjustment drivers also read
+`stoich` through a raw pointer (`call_equilibrate_tp_cuda`,
+{{< code src/thermo/thermo_dispatch.cu call_equilibrate_tp_cuda >}}); whether a mismatched device fails there in the
+same way is not measured.
+
+[^ch12-dispatch-missing]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML input of
+`tests/test_coagulation_pressure_switch.py`; run: `python -P ei_case.py cuda ok` against a `-DCUDA=OFF` build, which
+calls `evolve_implicit` on CUDA tensors;
+torch 2.10.0+cu126, Python 3.11.13.]
+
+[^ch12-dispatch-stoich]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML input of
+`tests/test_coagulation_pressure_switch.py`, 64 cells; run: `python -P ei_case.py cuda cpu`, `python -P ei_case.py
+cuda float32`
+and `python -P ei_case.py cuda narrow`, each in its own process; the script calls `evolve_implicit` with rates and
+Jacobian on CUDA and `stoich` on the CPU, as single precision, or with one reaction column of two; CUDA 12.6.85, torch
+2.10.0+cu126, Python 3.11.13.]

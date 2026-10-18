@@ -1,0 +1,38 @@
+## Device function tables for user functions (`get_device_func1`) {#sec-ch12-device-functions}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/func_table.cpp, src/func_table.cu, src/utils/user_funcs.hpp, src/utils/user_funcs.cu,
+src/utils/utils_dispatch.cpp, src/utils/utils_dispatch.cu
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+A CUDA kernel cannot call a host function pointer, so kintera keeps a second table of the same named functions
+(saturation vapor pressure fits and other user functions) compiled for the device, and looks names up in it before a
+launch. The entry point is `get_device_func1` ({{< code src/utils/user_funcs.hpp get_device_func1 >}}).
+
+TODO: the At a glance box and the remaining summary paragraphs.
+
+### Derivation
+
+TODO: not yet written.
+
+### Numerical method
+
+TODO: not yet written, with its figure.
+
+### Code
+
+TODO: the code table and the walk-through.
+
+### Tests
+
+TODO: the test table; missing evidence.
+
+### Limits
+
+TODO: not yet written; not measured.

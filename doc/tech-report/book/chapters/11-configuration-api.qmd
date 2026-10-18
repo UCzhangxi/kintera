@@ -1,3 +1,33 @@
 # YAML configuration and the Python/C++ API {#sec-ch11}
 
-pending
+This chapter describes how a user tells kintera what to compute. A kintera run is configured by one YAML file
+that lists the species, the reference state and the reactions; the file is read into C++ options objects, and
+those objects build the thermodynamics and kinetics modules of @sec-ch03 and @sec-ch06. The same options objects
+and modules are exposed to Python through pybind11, so a Python driver and a C++ driver see one interface. The
+chapter covers the YAML input format, the reaction and rate-parameter keys with their defaults, the C++ options
+objects, the Python bindings, resource lookup and version handling.
+
+The dependency map of the schemes (a figure) is not drawn yet.
+
+| scheme | YAML key or option | default | order | main test |
+|---|---|---|---|---|
+| @sec-ch11-yaml-input | `species`, `reference-state` | see section | n/a | `test_species_registry.py` |
+| @sec-ch11-yaml-reactions | `reactions` | see section | n/a | `test_kinetics_null_options.py` |
+| @sec-ch11-options | C++ `ADD_ARG` options | n/a | n/a | missing evidence |
+| @sec-ch11-python-api | Python module `kintera` | n/a | n/a | `test_kinetics_null_options.py` |
+| @sec-ch11-resources | `find_resource` | n/a | n/a | pending |
+| @sec-ch11-version | package version | n/a | n/a | `test_version_floor.py` |
+
+: Schemes of this chapter. {#tbl-ch11-schemes}
+
+{{< include 11-configuration-api/_yaml-input.qmd >}}
+
+{{< include 11-configuration-api/_yaml-reactions.qmd >}}
+
+{{< include 11-configuration-api/_options.qmd >}}
+
+{{< include 11-configuration-api/_python-api.qmd >}}
+
+{{< include 11-configuration-api/_resources.qmd >}}
+
+{{< include 11-configuration-api/_version.qmd >}}

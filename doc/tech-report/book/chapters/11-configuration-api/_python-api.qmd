@@ -1,0 +1,102 @@
+## The Python bindings (module `kintera`) {#sec-ch11-python-api}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: python/csrc/kintera.cpp, python/csrc/pyoptions.hpp, python/csrc/pykinetics.cpp, python/csrc/pythermo.cpp,
+  python/__init__.py
+status: draft
+author: Jiheng Hu
+reviewer: Xinyue (requested)
+-->
+
+### Summary
+
+The Python package `kintera` is a pybind11 extension built over the C++ options and modules of
+@sec-ch11-options. Options classes keep the C++ names and the C++ getter and setter pairs; modules are bound as
+`torch` modules, so they move between devices and dtypes like any `torch.nn.Module`. A Python driver therefore
+builds the same objects as a C++ driver, from the same YAML file.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Expose the options, modules and free functions of kintera to Python.
+
+**Data.** `torch` tensors in, `torch` tensors out; shapes as in @sec-ch11-options.
+
+**Placement.** Imported once; `import kintera` also registers the packaged data directory.
+
+**Activation.** Always.
+
+**Guarantee / limits.** Binding signatures follow the C++ ones; see the Code layer.
+
+**Evidence.** See the Tests layer.
+:::
+
+A typical call sequence is `KineticsOptions.from_yaml(file)`, then `Kinetics(options)`, then `forward` or
+`forward_with_rate_constants`, then `jacobian`, then `evolve_implicit`.
+
+### Derivation
+
+No derivation: this scheme is an interface.
+
+### Numerical method
+
+No numerical method and no figure: this scheme is an interface.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| module entry | {{< code python/csrc/kintera.cpp >}} | `PYBIND11_MODULE` | always |
+| binding macros | {{< code python/csrc/pyoptions.hpp >}} | `ADD_OPTION` | always |
+| kinetics bindings | {{< code python/csrc/pykinetics.cpp bind_kinetics >}} | `bind_kinetics` | always |
+| thermo bindings | {{< code python/csrc/pythermo.cpp bind_thermo >}} | `bind_thermo` | always |
+
+: Code map of the Python bindings. {#tbl-ch11-python-api-code}
+
+The binding is built in these steps:
+
+1. The module entry ({{< code python/csrc/kintera.cpp >}}) defines the free functions `atomic_mass`,
+   `molar_mass`, `molar_masses`, `molar_masses_from_yaml` and `nasa9_gibbs_rt`, the classes `SpeciesThermo` and
+   `Reaction`, and the KINETICS reader types, then calls `bind_thermo`, `bind_constants`, `bind_kinetics`,
+   `bind_photolysis`, `bind_diffusion`, `bind_sparse_solver` and `bind_equilibrium`.
+2. The same file defines the registry accessors (`species_names`, `set_species_names`, and the same pair for
+   weights, `cref_R`, `uref_R` and `sref_R`), the resource functions `set_search_paths`, `get_search_paths`,
+   `add_resource_directory` and `find_resource`, and the solvers `evolve_implicit`, `evolve_ros2` and `ros2_k1`.
+3. `ADD_OPTION(T, struct, name)` ({{< code python/csrc/pyoptions.hpp >}}) binds the `ADD_ARG` getter and setter
+   of one field under one Python name, with reference return policy. `ADD_KINTERA_MODULE` in the same file binds
+   a module with a default constructor, a constructor from options, the read-only `options`, `module(name)`,
+   `buffer(name)` and `forward`.
+4. `bind_kinetics` ({{< code python/csrc/pykinetics.cpp bind_kinetics >}}) binds one options class per rate form
+   and the `KineticsOptions` class, with the static constructors `from_yaml(filename, verbose=False)`,
+   `from_kinetics_base(...)` and `from_kinetics_base_pun(...)`, and the `Kinetics` module. `Kinetics.forward`
+   and `Kinetics.forward_with_rate_constants` release the GIL; `forward_nogil` is a second name for the same
+   call. `Kinetics.jacobian` takes `temp`, `conc`, `cvol`, `rate`, `rc_ddC`, and the optional `rc_ddT` and
+   `rate_constants`.
+5. `bind_thermo` ({{< code python/csrc/pythermo.cpp bind_thermo >}}) binds `NucleationOptions`, `ThermoOptions`
+   (with `from_yaml`, `Tref`, `Pref`, `nucleation`, `max_iter`, `ftol` and `uv_solver`) and two modules:
+   `ThermoY.forward(rho, intEng, yfrac, warm_start=False, diag=None)` and
+   `ThermoX.forward(temp, pres, xfrac, warm_start=False, diag=None)`. `ThermoX` adds `effective_cp`,
+   `extrapolate_dlnp` and `extrapolate_dz`; `ThermoY` adds `take_saturation_adjustment_failures`. Both add
+   `compute(ab, args)`.
+6. On import, the Python package adds its own `data` directory to the resource search path
+   (`_add_packaged_resource_directory`, {{< code python/__init__.py _add_packaged_resource_directory >}}).
+
+A Python use of the kinetics bindings, from the test {{< code tests/test_kinetics_null_options.py >}}, is not
+quoted in this draft.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_kinetics_null_options.py` | `KineticsOptions` with None sub-options builds | pending | not read yet |
+| `test_species_registry.py` | registry accessors after a second card | pending | not read yet |
+
+: Tests of the Python bindings. {#tbl-ch11-python-api-tests}
+
+The type stubs `kintera.pyi` are checked by a script that is not a `ctest` entry; that script has not been run
+for this draft.
+
+### Limits
+
+- `ThermoX.extrapolate_dlnp` and `extrapolate_dz` are lambdas in the binding that build `ExtrapOptions`; their
+  options are not reachable from YAML. Read from {{< code python/csrc/pythermo.cpp bind_thermo >}}.
+- The stub file and the bindings are kept in step by hand; whether they agree at the pin is not checked here.

@@ -1,0 +1,50 @@
+## Package version handling (`__version__`) {#sec-ch11-version}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: python/__init__.py
+status: draft
+author: Jiheng Hu
+reviewer: Xinyue (requested)
+-->
+
+### Summary
+
+The Python package reports its version from the installed package metadata, and falls back to `0.0.0` when no
+metadata is found ({{< code python/__init__.py >}}). How the build derives the version from git is a stub in this
+draft.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Report the installed kintera version as `kintera.__version__`.
+
+**Data.** pending
+
+**Placement.** On import.
+
+**Activation.** Always.
+
+**Guarantee / limits.** pending
+
+**Evidence.** pending
+:::
+
+### Derivation
+
+No derivation: this scheme reads metadata.
+
+### Numerical method
+
+No numerical method and no figure: this scheme reads metadata.
+
+### Code
+
+pending.
+
+### Tests
+
+pending: `test_version_fallback.py` and `test_version_floor.py` are the registered tests; their assertions are not
+read yet.
+
+### Limits
+
+pending.

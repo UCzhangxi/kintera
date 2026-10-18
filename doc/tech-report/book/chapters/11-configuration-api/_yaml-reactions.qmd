@@ -1,0 +1,170 @@
+## The reaction list and its rate-parameter keys (`reactions`) {#sec-ch11-yaml-reactions}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/kinetics/kinetics_options.cpp, src/kinetics/arrhenius.cpp, src/kinetics/lindemann_falloff.cpp,
+  src/kinetics/evaporation.cpp, src/thermo/nucleation.cpp, src/utils/parse_yaml.cpp, tests/earth.yaml
+status: draft
+author: Jiheng Hu
+reviewer: Xinyue (requested)
+-->
+
+### Summary
+
+The `reactions` block is a YAML list; each entry is one reaction with an `equation`, a `type` and a
+`rate-constant` map. Each rate form has its own reader, and each reader walks the whole list and keeps only the
+entries whose `type` matches its own name. This section lists the types, the keys each reader takes, and the value
+each key gets when it is left out. The rate laws themselves are @sec-ch06's subject.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Turn the `reactions` list into one options object per rate form.
+
+**Data.** `equation`, `type`, `rate-constant` keys; units as stated per key.
+
+**Placement.** Inside `KineticsOptionsImpl::from_yaml`, after the species registry is filled.
+
+**Activation.** Present `reactions` key; without it the options carry no reactions.
+
+**Guarantee / limits.** Several keys default silently; see Limits.
+
+**Evidence.** See the Tests layer.
+:::
+
+Every entry needs a `type`: the Arrhenius and nucleation readers refuse an entry without one. A type no reader
+claims is skipped without a message.
+
+### Derivation
+
+No derivation: this scheme parses input. Unit conversion of the pre-exponential factor is the one computation:
+`A` is read in the unit system molecule, cm, s and converted to mol, m, s, with the exponent set by the sum of
+the reactant stoichiometric coefficients ({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}}).
+The conversion itself is not re-derived in this draft.
+
+### Numerical method
+
+No numerical method and no figure: the scheme is a parser. `KineticsOptionsImpl::from_yaml`
+({{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::from_yaml overload=2 >}}) calls the readers in this order,
+each on the whole list:
+
+1. Arrhenius (`type: arrhenius`);
+2. coagulation (`type: coagulation`), which reuses the Arrhenius reader;
+3. evaporation (`type: evaporation`);
+4. three-body (`type: three-body`);
+5. Lindemann fall-off (`type: falloff` with neither a `Troe` nor an `SRI` key);
+6. Troe fall-off (`type: falloff` with `Troe`);
+7. SRI fall-off (`type: falloff` with `SRI`).
+
+It then registers every species the reactions name as a vapor or a cloud, refuses a vapor the `species` list does
+not hold, sorts both id lists, and copies each registered species' reference constants and NASA-9 coefficients
+into the options.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| kinetics reader | {{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::from_yaml overload=2 >}} | `from_yaml` | `reactions` |
+| Arrhenius keys | {{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}} | `from_yaml` | `arrhenius` |
+| fall-off keys | {{< code src/kinetics/lindemann_falloff.cpp parse_arrhenius_params >}} | `parse_arrhenius_params` | `falloff` |
+| nucleation keys | {{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}} | `from_yaml` | `nucleation` |
+| evaporation keys | {{< code src/kinetics/evaporation.cpp EvaporationOptionsImpl::from_yaml >}} | `from_yaml` | `evaporation` |
+
+: Code map of the reaction readers. {#tbl-ch11-yaml-reactions-code}
+
+#### Arrhenius and coagulation
+
+`ArrheniusOptionsImpl::from_yaml` ({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}})
+requires `equation` and `rate-constant` and reads, inside `rate-constant`:
+
+- `A`: default $1$ when absent, in internal units; when present it is converted as stated in the Derivation layer.
+- `b`: default $0$.
+- `Ea_R` [K]: default $1$, not $0$. A reaction written without `Ea_R` therefore gets the factor
+  $\exp(-1\,\mathrm{K}/T)$, not $1$. The key `Ea` is not read by this reader.
+- `E4`: default $0$, stored as `E4_R`. `ArrheniusImpl::reset`
+  ({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}}) registers it as a buffer, but
+  `ArrheniusImpl::forward` ({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::forward >}}) never reads it: the
+  value is parsed and has no effect on the rate.
+- `p-threshold` [Pa] and `factor`: both or neither; `p-threshold` must be finite and $> 0$, `factor` finite and
+  $\ge 0$.
+- `A_ranges` with `T_ranges` (same length, required together), and optionally `b_ranges` and `Ea_R_ranges` (same
+  length; each defaults to zeros, not to the single-range `b` and `Ea_R`).
+
+Coagulation entries are read by the same function under the name `coagulation`.
+
+#### Fall-off and three-body
+
+The three fall-off readers take `low-P-rate-constant` and `high-P-rate-constant`, both required, an optional
+`efficiencies` map, and the `Troe` or `SRI` map that selects the form. The three-body reader takes one
+`rate-constant` map and an optional `efficiencies` map. Each rate map is read by a file-local
+`parse_arrhenius_params`; the fall-off one is `parse_arrhenius_params`
+({{< code src/kinetics/lindemann_falloff.cpp parse_arrhenius_params >}}), and the three-body reader carries a copy
+with the same rules ({{< code src/kinetics/three_body.cpp parse_arrhenius_params >}}). Their defaults differ from
+the Arrhenius reader: `Ea_R` is used when present, else `Ea` is read as a number followed by an optional unit word (a word
+containing `cal` divides by $1.987$, `kJ` multiplies by $1000/8.314$, `J` divides by $8.314$, no word is taken
+as kelvin), and with neither key the activation temperature is $0$.
+
+#### Nucleation and evaporation
+
+`NucleationOptionsImpl::from_yaml` ({{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}})
+requires `formula` (the saturation vapour pressure function) and reads `minT` (default $0\,\mathrm{K}$) and
+`maxT` (default $10^4\,\mathrm{K}$). `EvaporationOptionsImpl::from_yaml`
+({{< code src/kinetics/evaporation.cpp EvaporationOptionsImpl::from_yaml >}}) first calls the nucleation reader on
+the same list, then reads, per evaporation entry:
+
+- `form`: `diffusion` (default) or `kessler`; anything else is refused.
+- `k3`: required for `kessler`, refused otherwise; finite and $\ge 0$.
+- `diff_c` (default $2\times10^{-5}$), `diff_T` (default $1.75$), `diff_P` (default $-1$), `vm` (default
+  $1.8\times10^{-5}$), `diameter` (default $10^{-2}$); with `form: kessler` each of these is refused.
+- `minT` and `maxT` again, with the same defaults.
+
+Because the nucleation reader has already pushed `minT` and `maxT` for each evaporation entry, the evaporation
+options end with two entries per reaction in `minT` and in `maxT`, while `reactions` has one. No code at the pin
+reads `minT()` or `maxT()` outside the two readers and the options' `report`, so this is read from the code as
+having no effect on rates; that is a hypothesis, not tested.
+
+The reactions block of the test card {{< code tests/earth.yaml >}}:
+
+```yaml
+reactions:
+  - equation: H2O <=> H2O(l)
+    type: nucleation
+    rate-constant: {formula: h2o_ideal}
+
+  - equation: H2O(l) => H2O(l,p)
+    type: coagulation
+    rate-constant: {A: 0.01, b: 0, Ea_R: 0.}
+
+  - equation: H2O(l,p) => H2O
+    type: evaporation
+    rate-constant: {formula: h2o_ideal, diff_c: 0.2e-4, diff_T: 1.75, diff_P: -1., vm: 18.e-6, diameter: 1.0e-4}
+```
+
+The coagulation entry sets `Ea_R: 0.` explicitly; left out, it would be $1\,\mathrm{K}$.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_kinetics_null_options.py` | sub-options set to None build no reactions | pending | not read yet |
+| none | `Ea_R` default, `E4` unused, `minT`/`maxT` length | missing evidence | no test at the pin |
+
+: Tests of the reaction readers. {#tbl-ch11-yaml-reactions-tests}
+
+The three reader behaviours above are read from the code only. No test at the pin asserts them, and this draft
+has not run one.
+
+### Limits
+
+::: {.callout-warning title="Limits"}
+- `Ea_R` defaults to $1\,\mathrm{K}$ in the Arrhenius and coagulation readers, and to $0$ in the fall-off and
+  three-body readers.
+- `E4` is accepted and stored but does not enter the Arrhenius rate.
+- Evaporation entries store `minT` and `maxT` twice per reaction.
+- The Arrhenius reader ignores `Ea`; the fall-off and three-body readers accept it.
+- `type: kb-falloff` has no YAML reader at the pin; KB fall-off options are filled only by the KINETICS reader
+  of @sec-ch06.
+- A `type` no reader claims is dropped without a message.
+:::
+
+The older reader `parse_reactions_yaml` ({{< code src/utils/parse_yaml.cpp parse_reactions_yaml overload=1 >}}) defaults
+`type` to `arrhenius` and prints a message for `three-body` and `falloff` instead of building them; its C++ test
+is not registered in `ctest`. Which callers still use it is not checked in this draft.

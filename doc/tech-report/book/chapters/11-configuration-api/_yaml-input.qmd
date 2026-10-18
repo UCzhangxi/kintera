@@ -1,0 +1,131 @@
+## The YAML input file: species and reference state (`species`, `reference-state`) {#sec-ch11-yaml-input}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/species.cpp, src/kinetics/kinetics_options.cpp, src/thermo/thermo_options.cpp, tests/earth.yaml
+status: draft
+author: Jiheng Hu
+reviewer: Xinyue (requested)
+-->
+
+### Summary
+
+kintera reads its configuration from one YAML file. The file names every species once, with its elemental
+composition and reference thermodynamic constants, and gives the reference temperature and pressure. Both the
+thermodynamics options and the kinetics options are built from the same file, so the species list is the shared
+index that every later tensor dimension refers to.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Fill the process-wide species registry and the reference state from YAML.
+
+**Data.** Species name, phase, composition, `cv_R`, `u0_R`, `s0_R`; `Tref` [K], `Pref` [Pa].
+
+**Placement.** Runs first, inside `ThermoOptions.from_yaml` and `KineticsOptions.from_yaml`.
+
+**Activation.** Always; `species` is required, `reference-state` must be present.
+
+**Guarantee / limits.** Unknown `reference-state` keys are refused with a suggestion.
+
+**Evidence.** See the Tests layer.
+:::
+
+The top-level keys that kintera itself reads are `reference-state`, `species`, `reactions` and, for the
+thermodynamics options only, `dynamics`. A file may carry other keys for other programs (the test card
+{{< code tests/earth.yaml >}} also has `geometry`, `boundary-condition`, `integration`, `forcing`,
+`sedimentation` and `problem`, which the snapy side reads); the kintera readers below do not look at them.
+
+### Derivation
+
+No derivation: this scheme parses input and stores it. Molar masses are computed from the composition map by
+`molar_mass`; the molar-mass rule itself belongs to @sec-ch02.
+
+### Numerical method
+
+No numerical method and no figure: the scheme is a parser. The order of operations is:
+
+1. `KineticsOptionsImpl::from_yaml` ({{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::from_yaml overload=2 >}})
+   returns a null options object when the file has no `reference-state` key at all. The thermodynamics reader
+   `ThermoOptionsImpl::from_yaml` ({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}}) does
+   the same.
+2. `check_reference_state` ({{< code src/species.cpp check_reference_state >}}) accepts an empty block, requires a
+   map otherwise, and refuses any key outside `Tref`, `Pref`, `use-nasa9-cp`, `use-h2-cp` and `h2-cp-mode`,
+   naming the closest allowed key.
+3. `ensure_species_initialized` ({{< code src/species.cpp ensure_species_initialized overload=2 >}}) refills the registry
+   when it is empty or when the file's `species` block differs from the one loaded last.
+4. `init_species_from_yaml` ({{< code src/species.cpp init_species_from_yaml overload=2 >}}) clears the registry and reads
+   each species in order. On any failure it clears the registry again before rethrowing, so a bad file leaves
+   no partial registry behind.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| species reader | {{< code src/species.cpp init_species_from_yaml overload=2 >}} | `init_species_from_yaml` | `species` |
+| registry refresh | {{< code src/species.cpp ensure_species_initialized overload=2 >}} | `ensure_species_initialized` | always |
+| key check | {{< code src/species.cpp check_reference_state >}} | `check_reference_state` | `reference-state` |
+| kinetics entry | {{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::from_yaml overload=2 >}} | `from_yaml` | always |
+| thermo entry | {{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}} | `from_yaml` | always |
+
+: Code map of the species and reference-state reader. {#tbl-ch11-yaml-input-code}
+
+Per species, `init_species_from_yaml` ({{< code src/species.cpp init_species_from_yaml overload=2 >}}) reads these keys:
+
+- `name` (required): the species name, the key every other block uses.
+- `phase` (optional, default empty): one of `gas`, `liquid`, `solid`, or empty; any other value is refused.
+- `composition` (required map of element to count): the molar mass is computed from it.
+- `cv_R` (default $5/2$): the reference heat capacity divided by $\mathcal R$, stored as `species_cref_R`.
+- `u0_R` (default $0$): the reference internal energy divided by $\mathcal R$ [K].
+- `s0_R` (default $0$): the reference entropy divided by $\mathcal R$.
+
+The NASA-9 coefficients are not given in the YAML file. `init_species_from_yaml` looks each species name up in the
+NASA-9 table that `get_nasa9_db` loads, and stores the low- and high-range coefficients when the name is found, or
+nine zeros each when it is not. The mid temperature is set to $1000\,\mathrm{K}$ for every species; it is not
+read from input. Whether these coefficients are used is set by `reference-state/use-nasa9-cp`, which
+`ThermoOptionsImpl::from_yaml` ({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}}) reads;
+its effect is @sec-ch03's subject.
+
+`reference-state` holds `Tref` [K] and `Pref` [Pa]. When a key is absent the options keep their defaults; for the
+kinetics options these are `Tref` $= 298.15\,\mathrm{K}$ and `Pref` $= 101325\,\mathrm{Pa}$
+({{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}). The thermodynamics reader also reads the block
+`dynamics/equation-of-state` with `max-iter` (default 10), `ftol` (default $10^{-6}$) and `uv-solver` (default
+`auto`; `kkt` and `partition` are the other accepted values, anything else is refused).
+
+A minimal species block, from the test card {{< code tests/earth.yaml >}}:
+
+```yaml
+reference-state:
+  Tref: 0.
+  Pref: 1.e5
+
+species:
+  - name: dry
+    composition: {O: 0.42, N: 1.56, Ar: 0.01}
+    cv_R: 2.5
+
+  - name: H2O
+    composition: {H: 2, O: 1}
+    cv_R: 2.5
+    u0_R: 0.
+```
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_species_registry.py` | a second card refills the registry; a failed load leaves none | exact | registry contents |
+| `test_kinetics_null_options.py` | options built from cards, including null sub-options | pending | not read yet |
+
+: Tests of the species and reference-state reader. {#tbl-ch11-yaml-input-tests}
+
+The test files are {{< code tests/test_species_registry.py >}} and {{< code tests/test_kinetics_null_options.py >}}.
+Their assertions have been listed by name only for this draft; their tolerances and a run record are missing
+evidence.
+
+### Limits
+
+- The registry is process-wide (`species_names` and the other `species_*` vectors). A file loaded later with a
+  different species list replaces it for every options object built afterwards; not measured beyond the
+  registry tests above.
+- A species absent from the NASA-9 table gets zero coefficients without a warning (read from
+  `init_species_from_yaml`); what that does when `use-nasa9-cp` is on is not measured.
+- The NASA-9 mid temperature is fixed at $1000\,\mathrm{K}$ and cannot be set from input.

@@ -14,6 +14,7 @@ it. The report is a Quarto book of 14 chapters and appendices A to F (OUTLINE.md
   two-dimensional atmosphere solver, 10 Numerical solvers, 11 YAML configuration and the Python/C++ API, 12 GPU
   execution, 13 Tests and validation, 14 Coupling to snapy and paddle; appendices A notation, B derivation index,
   C test index, D topic index, E task map, F glossary.
+- `READING.md`: the reading list for chapters 2-5, pairing published sources with the kintera code they explain.
 - `AUTHOR-CHECKLIST.md`: the gates to run before opening a chapter PR, with the command for each and what it must
   say, and what belongs in the PR body.
 - `REVIEW-RECORD.md`: the template a reviewer fills when a review is requested (head/tree/base shas with read

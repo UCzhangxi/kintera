@@ -58,5 +58,6 @@ python3 tools/ratchet_gate.py update   # only if your chapter's counts changed
 - kintera code at the pin in `code_pin.yml`, through `{{< code <path> <symbol> >}}` or a STYLE 10.6 link, and
   code of the other repositories STYLE 3.1 allows, at a pinned sha.
 - Published literature, through the bibliography (STYLE 10.8).
+- For chapters 2-5, start from `READING.md`: published sources with DOIs, each paired with the code it explains.
 - Nothing else: no unpublished notes, no private correspondence, no private material of any kind. If a claim
   needs a source that is not public, leave the claim out and say so in the PR body.

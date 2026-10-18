@@ -1,8 +1,8 @@
-## Mole-fraction state and its mixture totals (`ThermoX`) (`ThermoX.compute`) {#sec-ch03-thermo-x}
+## Mole-fraction state and its mixture totals (`ThermoX`) {#sec-ch03-thermo-x}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo
+sources: src/thermo/thermo.hpp, src/thermo/thermo_x.cpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,124 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Column models, adiabat construction and most offline analysis describe a parcel by temperature, pressure and mole
+fractions, $(T, p, x)$. `ThermoX` works on that state. It converts mole fractions to concentrations and mass
+fractions, computes density, heat capacity at constant pressure, enthalpy and entropy per unit volume, and inverts
+the entropy for temperature at fixed pressure. Its `forward` method, the saturation adjustment at fixed temperature
+and pressure, is the subject of @sec-ch04.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Conversions of the $(T, p, x)$ state; the mixture totals @eq-ch03-thermo-x-totals.
+
+**Data.** $T$ [K], $p$ [Pa], $x_n$ [-] for all species; concentrations $c_n$ [mol m$^{-3}$].
+
+**Placement.** Used by adiabat construction (@sec-ch03-adiabat) and by callers working in $(T, p, x)$.
+
+**Activation.** API: `ThermoX(options)`, then `compute("<from>-><to>", [...])`.
+
+**Guarantee / limits.** Exact except `TPX->V` with $z_n \ne 1$ and `PXS->T`, iterations to `ftol`.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $C_p$, heat capacity at constant pressure per unit volume [J m$^{-3}$ K$^{-1}$]; $H$, enthalpy per
+unit volume [J m$^{-3}$]; $S$, entropy per unit volume [J m$^{-3}$ K$^{-1}$]. $\rho$, $\mu_n$ and $y_n$ are those
+of @sec-ch03-thermo-y; $c_n$, $x_n$ and $N_{\mathrm g}$ those of @sec-ch03-eos.
+
+The `compute` keys are named by inputs and output: `V` is the vector of concentrations $c_n$ here (not partial
+densities as in `ThermoY`), `D` the density, `X` the mole fractions, `Y` the mass fractions.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+**Mass fractions and density.** From $\rho_n = \mu_n c_n = \mu_n x_n c$,
+
+$$
+\begin{aligned}
+y_n &= \frac{x_n \mu_n}{\sum_k x_k \mu_k}, \quad n \ge 1, \\
+\rho &= \sum_n c_n \mu_n .
+\end{aligned}
+$$
+
+`X->Y` computes the first line in `_xfrac_to_yfrac`; `V->D` the second in `_conc_to_dens`. Concentrations come
+from @eq-ch03-eos-conc (`TPX->V`).
+
+**Mixture totals.** As in @sec-ch03-thermo-y, each total is a concentration-weighted sum:
+
+$$
+\begin{aligned}
+C_p &= \sum_n c_n c_{p,n}(T), \\
+H &= \sum_n c_n h_n(T), \\
+S &= \sum_n c_n s_n(T, p) .
+\end{aligned}
+$$ {#eq-ch03-thermo-x-totals}
+
+The lines are computed in `_cp_vol` ({{< code src/thermo/thermo.hpp ThermoXImpl::_cp_vol >}}), `_enthalpy_vol`
+({{< code src/thermo/thermo.hpp ThermoXImpl::_enthalpy_vol >}}) and `_entropy_vol`
+({{< code src/thermo/thermo.hpp ThermoXImpl::_entropy_vol >}}). `THS->G` returns the Gibbs energy $H - T S$.
+
+**Temperature from entropy at fixed pressure.** At fixed $p$ and fixed composition,
+$\partial S / \partial T = C_p / T$. A Newton step on $S(T) = S_{\mathrm{given}}$ is therefore
+
+$$
+T \leftarrow T \left(1 + \frac{S_{\mathrm{given}} - S(T)}{C_p(T)}\right) ,
+$$ {#eq-ch03-thermo-x-entropy-newton}
+
+computed in `_entropy_to_temp` ({{< code src/thermo/thermo_x.cpp ThermoXImpl::_entropy_to_temp >}}). After each
+step the code calls `forward`, the saturation adjustment at the new $(T, p)$, which changes the composition in place.
+The slope $C_p$ is the frozen one of @eq-ch03-thermo-x-totals: it omits the latent heat of the condensation that
+`forward` adds or removes, so in a saturated parcel the step is not the exact Newton step of the equilibrated
+$S(T)$ (the effective heat capacity of @sec-ch03-adiabat is that slope).
 
 ### Numerical method
 
-Pending.
+Every conversion is pointwise. `PXS->T` starts from $T = T_\star$ (`Tref`) in every cell and iterates
+@eq-ch03-thermo-x-entropy-newton until $\max \lvert 1 - T_{\mathrm{old}}/T_{\mathrm{new}} \rvert$ is below `ftol` or `max_iter`
+iterations are spent. Each iteration converts $x$ to $c$, evaluates $C_p$ and $S$, and runs one saturation
+adjustment. `TPX->V` iterates only when a compressibility function is set (@sec-ch03-eos).
+
+Tensor layout: mole fractions and concentrations are `(..., 1 + ny)` with the species last; mass fractions are
+`(ny, ...)`, as in `ThermoY`.
+
+The `ThermoX` figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| module | {{< code src/thermo/thermo.hpp ThermoXImpl >}} | `ThermoXImpl` | API |
+| dispatch of conversions | {{< code src/thermo/thermo_x.cpp ThermoXImpl::compute >}} | `compute` | key string |
+| `X->Y` | {{< code src/thermo/thermo_x.cpp ThermoXImpl::_xfrac_to_yfrac >}} | `_xfrac_to_yfrac` | always |
+| `V->D` | {{< code src/thermo/thermo.hpp ThermoXImpl::_conc_to_dens >}} | `_conc_to_dens` | always |
+| `TPX->V` | {{< code src/thermo/thermo_x.cpp ThermoXImpl::_xfrac_to_conc >}} | `_xfrac_to_conc` | `czh` |
+| `TV->cp` | {{< code src/thermo/thermo.hpp ThermoXImpl::_cp_vol >}} | `_cp_vol` | always |
+| `TV->H` | {{< code src/thermo/thermo.hpp ThermoXImpl::_enthalpy_vol >}} | `_enthalpy_vol` | always |
+| `TPV->S` | {{< code src/thermo/thermo.hpp ThermoXImpl::_entropy_vol >}} | `_entropy_vol` | always |
+| `PXS->T` | {{< code src/thermo/thermo_x.cpp ThermoXImpl::_entropy_to_temp >}} | `_entropy_to_temp` | `ftol`, `max-iter` |
+
+: Code map of `ThermoX`. {#tbl-ch03-thermo-x-code}
+
+Setup checks and warnings a user can hit: `X->Y` refuses an input whose species count is not the module's; an
+unknown key is refused; `PXS->T` and `TPX->V` warn when `max_iter` is reached. On that warning both also write
+their inputs to a file `thermo_x_entropy_to_temp_<time>.pt` or `thermo_x_xfrac_to_conc_<time>.pt` in the working
+directory (verified by reading `_entropy_to_temp` and `_xfrac_to_conc` at the pin). `PXS->T` overwrites the mole
+fractions it is given with the equilibrated ones.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo.release` (`DeviceTest.thermo_x`) | `TPV->S` then `PXS->T` returns $T$ | $10^{-4}$ rel. and abs. | not yet derived |
+| `test_thermo.release` (`DeviceTest.thermo_x`) | `V->D` equals concentration times molar mass, summed | $10^{-4}$ rel. and abs. | not yet derived |
+| `test_thermo.release` (`DeviceTest.thermo_xy`) | `X->Y` then `Y->X` returns $x$ | $10^{-4}$ rel. and abs. | not yet derived |
+
+: Tests of `ThermoX`. {#tbl-ch03-thermo-x-tests}
+
+The tolerances are read from `tests/test_thermo.cpp` at the pin; their reason is missing evidence. The cases run on
+CPU in float32 and float64 and on CUDA when a GPU is present. `TV->cp` and `TV->H` are computed in
+`DeviceTest.thermo_x` but not asserted.
 
 ### Limits
 
-Pending.
+`PXS->T` uses the frozen heat capacity as its slope, which is a hypothesis for slow convergence in saturated
+parcels (not measured). It mutates its mole-fraction argument. The file written on non-convergence lands in the
+working directory of the caller.

@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo
+sources: src/thermo/eval_uhs.cpp, src/thermo/eval_uhs.hpp, src/thermo/thermo_prop.hpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,177 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Every mixture total of this chapter is a sum over species of a concentration times a molar function of temperature:
+a heat capacity, an internal energy, an enthalpy or an entropy. This section gives those per-species functions.
+Gases and condensates differ in three places: a gas has $c_p = c_v + \mathcal R$ and a condensate $c_p = c_v$; a
+gas's enthalpy adds $z \mathcal R T$ to its internal energy; and a condensate's entropy is not read from data but
+computed from the condition that each condensation reaction is in equilibrium on its saturation curve.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Molar $c_v$, $c_p$, $u$, $h$, $s$ per species, @eq-ch03-species-functions-u to
+@eq-ch03-species-functions-scond.
+
+**Data.** $T$ [K], $p$ [Pa], $c_n$ [mol m$^{-3}$] in; each function divided by $\mathcal R$ out.
+
+**Placement.** Called by every `compute` conversion that returns an energy, an entropy or a heat capacity.
+
+**Activation.** Always. Optional per-species extra functions; `use-nasa9-cp` and `use-h2-cp` replace $c_v$, $c_p$
+and $u$ for the species they cover.
+
+**Guarantee / limits.** Exact (pointwise closed forms, one small linear solve for condensate entropy).
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $c^{\star}_n$, constant heat-capacity coefficient of species $n$, the YAML key `cv_R` [-];
+$u^{\star}_n$, internal energy of species $n$ at the reference temperature $T_\star$ over $\mathcal R$, the YAML key
+`u0_R` [K]; $s^{\star}_n$, entropy of gas $n$ at $T_\star$ and $p_\star$ over $\mathcal R$, the YAML key `s0_R`
+[-]; $c_{v,n}$, $c_{p,n}$ [J mol$^{-1}$ K$^{-1}$], $u_n$, $h_n$ [J mol$^{-1}$], $s_n$ [J mol$^{-1}$ K$^{-1}$],
+the molar functions; $\nu_{nr}$, stoichiometric coefficient of species $n$ in reaction $r$, negative for a
+reactant [-]; $K_r$, saturation constant of reaction $r$ in Pa units; $T_\star$, $p_\star$, reference temperature
+[K] and pressure [Pa] of @sec-ch03-reference-state. $c_n$, $z_n$ and $N_{\mathrm g}$ are those of @sec-ch03-eos.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+**Internal energy and heat capacities.** With a constant heat-capacity coefficient, the molar internal energy that
+equals $\mathcal R u^{\star}_n$ at $T_\star$ is
+
+$$
+\frac{u_n(T)}{\mathcal R} = u^{\star}_n + c^{\star}_n (T - T_\star) + e_n(T) ,
+$$ {#eq-ch03-species-functions-u}
+
+where $e_n(T)$ is an optional per-species extra function (zero when none is set). @eq-ch03-species-functions-u is
+computed in `eval_intEng_R` ({{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}), with the constant
+$u^{\star}_n - c^{\star}_n T_\star$ stored once as the offset at $T = 0$ (@sec-ch03-reference-state). Its
+temperature derivative is the heat capacity at constant volume,
+
+$$
+\frac{c_{v,n}}{\mathcal R} = c^{\star}_n + \frac{\mathrm d e_n}{\mathrm d T} ,
+$$
+
+computed in `eval_cv_R` ({{< code src/thermo/eval_uhs.cpp eval_cv_R >}}), which calls the derivative of the extra
+function under the name of the function with `_ddT` appended. For an ideal gas, $h = u + \mathcal R T$ gives
+$c_p = c_v + \mathcal R$; a condensate has $c_p = c_v$. `eval_cp_R`
+({{< code src/thermo/eval_uhs.cpp eval_cp_R >}}) adds 1 to $c^{\star}_n$ for the gases only, plus a separate
+optional extra function for $c_p$.
+
+**Enthalpy.** For a gas the code writes $h_n = u_n + z_n \mathcal R T$, and for a condensate
+$h_m = \mathcal R [u^{\star}_m + c^{\star}_m (T - T_\star)] + \mathcal R\, \zeta_m(T)$:
+
+$$
+\begin{aligned}
+\frac{h_n}{\mathcal R} &= \frac{u_n}{\mathcal R} + z_n T, \quad n < N_{\mathrm g}, \\
+\frac{h_m}{\mathcal R} &= u^{\star}_m + c^{\star}_m (T - T_\star) + \zeta_m(T), \quad m \ge N_{\mathrm g} .
+\end{aligned}
+$$ {#eq-ch03-species-functions-h}
+
+Here $\zeta_m$ is the condensate entry of the same `czh` function slot that holds $z_n$ for a gas; it is zero
+unless set, so by default a condensate's enthalpy equals its internal energy (no $p v$ work for a phase of zero
+volume). @eq-ch03-species-functions-h is computed in `eval_enthalpy_R`
+({{< code src/thermo/eval_uhs.cpp eval_enthalpy_R >}}). The condensate line does not include the extra function
+$e_m$ of @eq-ch03-species-functions-u (verified by reading `eval_enthalpy_R` at the pin).
+
+**Gas entropy.** For an ideal gas with constant $c_p$, integrating $\mathrm d s = c_p\, \mathrm d T / T -
+\mathcal R\, \mathrm d p_n / p_n$ from $(T_\star, p_\star)$ to $(T, p_n)$ with the partial pressure $p_n = x^{\mathrm
+g}_n p$ gives
+
+$$
+\begin{aligned}
+\frac{s_n}{\mathcal R} &= s^{\star}_n + \frac{c_{p,n}}{\mathcal R} \ln \frac{T}{T_\star} - \ln \frac{p}{p_\star}
+- \ln x^{\mathrm g}_n + \sigma_n(T, p) , \\
+x^{\mathrm g}_n &= \frac{c_n}{\sum_{k<N_{\mathrm g}} c_k} ,
+\end{aligned}
+$$ {#eq-ch03-species-functions-sgas}
+
+where $x^{\mathrm g}_n$ is the mole fraction among gases only and $\sigma_n$ an optional extra function. The code
+stores $s^{\star}_n - (c^{\star}_n + 1)\ln T_\star + \ln p_\star$ once and adds $(c^{\star}_n + 1) \ln T - \ln p$
+with $T$ in K and $p$ in Pa. @eq-ch03-species-functions-sgas is computed in `eval_entropy_R`
+({{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=1 >}}). $x^{\mathrm g}_n$ is clamped at $10^{-300}$ before
+the logarithm.
+
+**Condensate entropy.** A condensation reaction $r$ is in equilibrium when its Gibbs energy change vanishes:
+
+$$
+\sum_n \nu_{nr} \left( h_n - T s_n \right) = 0 .
+$$
+
+Split the gas entropy into its pressure-free part $\tilde s_n$ and the partial-pressure term,
+$s_n = \tilde s_n - \mathcal R \ln p_n$. At saturation the product of the reactant partial pressures is the
+saturation constant, $\sum_{n<N_{\mathrm g}} (-\nu_{nr}) \ln p_n = \ln K_r(T)$, with $p_n$ in Pa. Substituting and
+dividing by $\mathcal R T$:
+
+$$
+\begin{aligned}
+0 &= \sum_n \frac{\nu_{nr} h_n}{\mathcal R T} - \sum_{n<N_{\mathrm g}} \frac{\nu_{nr} \tilde s_n}{\mathcal R}
++ \sum_{n<N_{\mathrm g}} \nu_{nr} \ln p_n - \sum_{m \ge N_{\mathrm g}} \frac{\nu_{mr} s_m}{\mathcal R} , \\
+\sum_{m \ge N_{\mathrm g}} \nu_{mr} \frac{s_m}{\mathcal R} &= \sum_n \frac{\nu_{nr} h_n}{\mathcal R T}
+- \sum_{n<N_{\mathrm g}} \nu_{nr} \frac{\tilde s_n}{\mathcal R} - \ln K_r(T) .
+\end{aligned}
+$$ {#eq-ch03-species-functions-scond}
+
+One row per reaction gives a linear system for the condensate entropies; the matrix is the condensate block of
+$\nu_{nr}$, transposed. @eq-ch03-species-functions-scond is solved in the second `eval_entropy_R`
+({{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=2 >}}) with a Moore-Penrose pseudo-inverse, so a
+condensate that appears in no reaction gets zero entropy, and more reactions than condensates are solved in the
+least-squares sense. The data key `s0_R` of a condensate is not used.
+
+All five functions are exact closed forms; the only numerical step is the pseudo-inverse, exact up to round-off for
+a full-rank block. The executable check is not written yet.
 
 ### Numerical method
 
-Pending.
+Each function is evaluated pointwise over a tensor of cells, with the species as the last dimension. The optional
+extra functions are dispatched per species through a tensor iterator (`call_func2`, `call_func3`), on CPU or CUDA.
+The pseudo-inverse of the condensate block is formed once per call from the stoichiometry matrix and broadcast over
+the cells.
+
+The species-function figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| $c_v$ | {{< code src/thermo/eval_uhs.cpp eval_cv_R >}} | `eval_cv_R` | `cv_R`, `use-nasa9-cp`, `use-h2-cp` |
+| $c_p$ | {{< code src/thermo/eval_uhs.cpp eval_cp_R >}} | `eval_cp_R` | `cv_R`, `use-nasa9-cp`, `use-h2-cp` |
+| $u$ | {{< code src/thermo/eval_uhs.cpp eval_intEng_R >}} | `eval_intEng_R` | `u0_R`, `cv_R` |
+| $h$ | {{< code src/thermo/eval_uhs.cpp eval_enthalpy_R >}} | `eval_enthalpy_R` | `u0_R`, `cv_R` |
+| gas $s$ only | {{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=1 >}} | `eval_entropy_R` | `s0_R` |
+| gas and condensate $s$ | {{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=2 >}} | `eval_entropy_R` | reactions |
+| NASA-9 polynomials | {{< code src/thermo/eval_uhs.cpp eval_nasa9 >}} | `eval_nasa9` | `use-nasa9-cp` |
+| rigid-rotor H$_2$ | {{< code src/thermo/eval_uhs.cpp eval_h2cp >}} | `eval_h2cp` | `use-h2-cp`, `h2-cp-mode` |
+
+: Code map of the per-species functions. {#tbl-ch03-species-functions-code}
+
+Walk-through. (1) `eval_intEng_R` adds the offset, $c^{\star}_n T$ and the extra function, then, when enabled,
+replaces the entries of the NASA-9 species and of H$_2$. (2) `eval_cv_R` and `eval_cp_R` do the same for the heat
+capacities. (3) `eval_enthalpy_R` builds on `eval_intEng_R` for gases only. (4) `eval_entropy_R` with the
+`SpeciesThermo` argument returns gas entropies and zeros for condensates; with the `ThermoOptions` argument it also
+solves @eq-ch03-species-functions-scond, which needs the reactions' saturation functions. Setup checks a user can
+hit: both `eval_entropy_R` refuse a `conc` or `stoich` whose species dimension is not $N_{\mathrm g}$ plus the
+number of condensates.
+
+The NASA-9 and H$_2$ options replace $c_v$, $c_p$ and $u$, but not the gas entropy, which keeps the constant
+$c_{p,n} = \mathcal R (c^{\star}_n + 1)$ of @eq-ch03-species-functions-sgas (verified by reading both
+`eval_entropy_R` at the pin).
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_nasa9_cp.py` | with `use-nasa9-cp`, $c_p$, $c_v$ follow the polynomial | $10^{-10}$ rel. | not yet derived |
+| `test_nasa9_cp.py` | with it, finite-difference $\mathrm d u/\mathrm d T$ equals $c_v$ | $10^{-6}$ rel. | not yet derived |
+| `test_nasa9_cp.py` | NASA-9 and constant $u$ agree at 300 K | $10^{-12}$ rel. | not yet derived |
+| `test_nasa9_cp.py` | without it, $c_p/\mathcal R = c^{\star} + 1$, $c_v/\mathcal R = c^{\star}$ | $10^{-14}$ rel. | not yet derived |
+| `test_h2_cp.py` | H$_2$ $c_p$ in both modes against reference values | $2 \times 10^{-3}$ abs. | not yet derived |
+
+: Tests of the per-species functions. {#tbl-ch03-species-functions-tests}
+
+The tolerances are read from the test files at the pin. No test checks @eq-ch03-species-functions-scond directly:
+the condensate entropy is exercised only through the adiabat test of @sec-ch03-adiabat. That is missing evidence.
 
 ### Limits
 
-Pending.
+With `use-nasa9-cp` or `use-h2-cp`, the entropy keeps a constant $c_p$ while $u$, $h$ and $c_p$ do not, so the
+functions are not mutually consistent for those species (verified by reading; the size of the effect is not
+measured). The condensate enthalpy ignores the extra internal-energy function. A condensate that appears in no
+reaction has zero entropy.

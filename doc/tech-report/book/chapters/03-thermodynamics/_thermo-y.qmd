@@ -1,8 +1,8 @@
-## Mass-fraction state and its mixture totals (`ThermoY`) (`ThermoY.compute`) {#sec-ch03-thermo-y}
+## Mass-fraction state and its mixture totals (`ThermoY`) {#sec-ch03-thermo-y}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo
+sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,143 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+A dynamical core advances density, internal energy and the mass fractions of the tracers, so its natural
+thermodynamic state is $(\rho, U, y)$. `ThermoY` works on that state. It converts mass fractions to partial
+densities and mole fractions, and computes pressure, temperature, heat capacity, internal energy and entropy per
+unit volume. Its `forward` method, the saturation adjustment at fixed energy and volume, is the subject of
+@sec-ch04.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Conversions of the $(\rho, U, y)$ state; the mixture totals @eq-ch03-thermo-y-totals.
+
+**Data.** $\rho$ [kg m$^{-3}$], $U$ [J m$^{-3}$], $y_n$ [-] for $n \ge 1$ (dry implicit), partial densities
+$\rho_n$ [kg m$^{-3}$].
+
+**Placement.** Called by the host's equation of state and before and after saturation adjustment.
+
+**Activation.** API: `ThermoY(options)`, then `compute("<from>-><to>", [...])`.
+
+**Guarantee / limits.** Exact except `VU->T` and `PV->T`, Newton iterations to `ftol` within `max_iter`.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $y_n$, mass fraction of species $n$ [-]; $\rho_n$, partial density of species $n$, mass per unit
+volume of the mixture [kg m$^{-3}$]; $\rho$, total density [kg m$^{-3}$]; $\mu_n$, molar mass [kg mol$^{-1}$]; $U$,
+$S$, $C_V$, internal energy [J m$^{-3}$], entropy [J m$^{-3}$ K$^{-1}$] and heat capacity at constant volume
+[J m$^{-3}$ K$^{-1}$] per unit volume. $c_n$, $x_n$ and $N_{\mathrm g}$ are those of @sec-ch03-eos.
+
+The `compute` keys are named by their inputs and output: `V` is the vector of partial densities $\rho_n$ (the
+code's "inverse specific volume", `ivol`), `D` the density, `Y` the mass fractions, `X` the mole fractions.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+**Partial densities and concentrations.** Species 0 is the dry gas and carries no mass fraction of its own:
+
+$$
+\begin{aligned}
+\rho_0 &= \rho \left(1 - \sum_{n \ge 1} y_n\right), \\
+\rho_n &= \rho\, y_n, \quad n \ge 1, \\
+c_n &= \rho_n / \mu_n .
+\end{aligned}
+$$
+
+`DY->V` computes the first two lines, `V->Y` inverts them with $y_n = \rho_n / \sum_k \rho_k$.
+
+**Mole fractions.** With $y_0 = 1 - \sum_{n\ge1} y_n$, the mole fraction is
+$x_n = (y_n/\mu_n) / \sum_k (y_k/\mu_k)$. Multiply numerator and denominator by $\mu_0$ and write the $k = 0$ term
+out:
+
+$$
+\begin{aligned}
+\mu_0 \sum_k \frac{y_k}{\mu_k} &= 1 - \sum_{k \ge 1} y_k + \sum_{k\ge1} y_k \frac{\mu_0}{\mu_k}
+= 1 + \sum_{k\ge1} y_k \left(\frac{\mu_0}{\mu_k} - 1\right) , \\
+x_n &= \frac{y_n\, \mu_0/\mu_n}{1 + \sum_{k\ge1} y_k \left(\mu_0/\mu_k - 1\right)}, \quad n \ge 1 .
+\end{aligned}
+$$ {#eq-ch03-thermo-y-xfrac}
+
+and $x_0 = 1 - \sum_{n\ge1} x_n$. @eq-ch03-thermo-y-xfrac is computed in `_yfrac_to_xfrac`
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::_yfrac_to_xfrac >}}).
+
+**Mixture totals.** Each total is a concentration-weighted sum of the per-species functions of
+@sec-ch03-species-functions:
+
+$$
+\begin{aligned}
+U &= \sum_n c_n u_n(T), \\
+C_V &= \sum_n c_n c_{v,n}(T), \\
+S &= \sum_n c_n s_n(T, p) .
+\end{aligned}
+$$ {#eq-ch03-thermo-y-totals}
+
+The first line is computed in `_intEng_vol` ({{< code src/thermo/thermo.hpp ThermoYImpl::_intEng_vol >}}), the
+second in `_cv_vol` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_cv_vol >}}), the third in `_entropy_vol`
+({{< code src/thermo/thermo.hpp ThermoYImpl::_entropy_vol >}}), which uses the condensate entropy of
+@eq-ch03-species-functions-scond. `TUS->F` returns the Helmholtz energy $U - T S$.
+
+**Temperature from energy.** `VU->T` solves $U(T) = U_{\mathrm{given}}$ for $T$. Since $\mathrm d U/\mathrm d T =
+C_V$, Newton's method is
+
+$$
+T \leftarrow T + \frac{U_{\mathrm{given}} - \sum_n c_n u_n(T)}{\sum_n c_n c_{v,n}(T)} ,
+$$ {#eq-ch03-thermo-y-newton}
+
+started from the constant-heat-capacity solution $T = (U_{\mathrm{given}} - \sum_n \rho_n u_{0,n}) / \sum_n \rho_n
+c_{v0,n}$, where $u_{0,n}$ [J kg$^{-1}$] and $c_{v0,n}$ [J kg$^{-1}$ K$^{-1}$] are the energy offset at $T = 0$ and
+the constant heat capacity per unit mass. With no extra functions and no NASA-9 or H$_2$ option, $U$ is linear in
+$T$ and the start is exact. @eq-ch03-thermo-y-newton is computed in `_intEng_to_temp`
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::_intEng_to_temp >}}).
 
 ### Numerical method
 
-Pending.
+Every conversion is pointwise. The two iterations, `VU->T` (@eq-ch03-thermo-y-newton) and `PV->T`
+(@sec-ch03-eos), stop when the largest relative temperature change over all cells,
+$\max \lvert 1 - T_{\mathrm{old}}/T_{\mathrm{new}} \rvert$, is below `ftol` (default $10^{-6}$), or after `max_iter`
+iterations (default 10). The test is global: one slow cell keeps every cell iterating, and each test copies one
+value to the host. Both keys are set in YAML under `dynamics: equation-of-state:` as `ftol` and `max-iter`.
+
+Tensor layout: mass fractions are `(ny, ...)` with the species first, partial densities and mole fractions are
+`(..., 1 + ny)` with the species last, where `ny` is the number of species minus one.
+
+The `ThermoY` figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| module | {{< code src/thermo/thermo.hpp ThermoYImpl >}} | `ThermoYImpl` | API |
+| dispatch of conversions | {{< code src/thermo/thermo_y.cpp ThermoYImpl::compute >}} | `compute` | key string |
+| `DY->V` | {{< code src/thermo/thermo_y.cpp ThermoYImpl::_yfrac_to_ivol >}} | `_yfrac_to_ivol` | always |
+| `V->Y` | {{< code src/thermo/thermo_y.cpp ThermoYImpl::_ivol_to_yfrac >}} | `_ivol_to_yfrac` | always |
+| `Y->X` | {{< code src/thermo/thermo_y.cpp ThermoYImpl::_yfrac_to_xfrac >}} | `_yfrac_to_xfrac` | always |
+| `VT->U` | {{< code src/thermo/thermo.hpp ThermoYImpl::_intEng_vol >}} | `_intEng_vol` | always |
+| `VU->T` | {{< code src/thermo/thermo_y.cpp ThermoYImpl::_intEng_to_temp >}} | `_intEng_to_temp` | `ftol`, `max-iter` |
+| `VT->cv` | {{< code src/thermo/thermo_y.cpp ThermoYImpl::_cv_vol >}} | `_cv_vol` | always |
+| `PVT->S` | {{< code src/thermo/thermo.hpp ThermoYImpl::_entropy_vol >}} | `_entropy_vol` | always |
+
+: Code map of `ThermoY`. {#tbl-ch03-thermo-y-code}
+
+Setup checks and warnings a user can hit: `V->Y`, `Y->X` and `DY->V` refuse an input whose species count is not
+the module's ("mass fraction size mismatch"); an unknown key is refused ("Unknown abbreviation"); `VU->T` and
+`PV->T` warn when `max_iter` is reached and return the last iterate.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo.release` (`DeviceTest.thermo_y`) | `DY->V` then `V->Y` returns $y$ | $10^{-4}$ rel. and abs. | not yet derived |
+| `test_thermo.release` (`DeviceTest.thermo_y`) | `VT->U` then `VU->T` returns $T$ | $10^{-4}$ rel. and abs. | not yet derived |
+| `test_thermo.release` (`DeviceTest.thermo_yx`) | `Y->X` then `X->Y` returns $y$ | $10^{-4}$ rel. and abs. | not yet derived |
+| `test_thermo.release` (`DeviceTest.eng_pres`) | `VU->T` returns the $T$ of a `ThermoX` state | $10^{-4}$ rel. and abs. | not yet derived |
+
+: Tests of `ThermoY`. {#tbl-ch03-thermo-y-tests}
+
+The tolerances are read from `tests/test_thermo.cpp` at the pin; they are much looser than the float64 round-off of
+these conversions, and their reason is missing evidence. The cases run on CPU in float32 and float64 and on CUDA
+when a GPU is present. `PVT->S` is computed but not asserted in `DeviceTest.thermo_y`.
 
 ### Limits
 
-Pending.
+The convergence test is a global maximum with a host copy per iteration, which serialises GPU work (a performance
+hypothesis, not measured). No test exercises `VU->T` with a temperature-dependent heat capacity, where the start is
+not exact.

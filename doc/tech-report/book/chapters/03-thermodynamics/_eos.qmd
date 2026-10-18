@@ -1,8 +1,8 @@
-## The mixture equation of state: ideal gas with condensed volume removed (`TPX->V`, `TUY->P`) {#sec-ch03-eos}
+## The mixture equation of state: gas pressure from gas concentrations (`TPX->V`, `VT->P`, `PV->T`) {#sec-ch03-eos}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo
+sources: src/thermo/thermo_x.cpp, src/thermo/thermo_y.cpp, src/thermo/thermo.hpp, src/thermo/eval_uhs.cpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,129 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+kintera stores a mixture of gases and condensates as one list of species, gases first and condensates after them.
+The equation of state relates the pressure to the temperature and the molar concentrations of the gases only. The
+condensates carry mass, energy and entropy, but no pressure, and their volume is not subtracted from the gas
+volume. Every conversion between a temperature-pressure description and a concentration description goes through
+this one relation.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Gas pressure from gas concentrations, @eq-ch03-eos-pressure; concentrations from mole fractions,
+@eq-ch03-eos-conc.
+
+**Data.** $T$ [K], $p$ [Pa], concentrations $c_n$ [mol m$^{-3}$], mole fractions $x_n$ [-].
+
+**Placement.** Inside `ThermoX.compute` and `ThermoY.compute`, and so inside every caller of them.
+
+**Activation.** Always. A per-species compressibility function (`czh`) is optional; without one $z_n = 1$.
+
+**Guarantee / limits.** Exact for $z_n = 1$; otherwise a Newton iteration to `ftol`.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $n$, species index, gases $n < N_{\mathrm g}$ first, then condensates; $N_{\mathrm g}$, number of
+gas species (count); $c_n$, molar concentration of species $n$ per unit volume of the whole mixture
+[mol m$^{-3}$]; $x_n$, mole fraction of species $n$ among all species, gas and condensed [-]; $x_{\mathrm g}$,
+sum of the gas mole fractions [-]; $z_n$, compressibility factor of gas $n$ [-]. Species $n = 0$ is the first gas,
+which the code treats as the reference ("dry") species.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+The gases share the whole volume and each obeys the ideal-gas law corrected by its compressibility factor. Summing
+the partial pressures $p_n = z_n c_n \mathcal R T$ over the gases gives
+
+$$
+p = \mathcal R T \sum_{n < N_{\mathrm g}} z_n c_n .
+$$ {#eq-ch03-eos-pressure}
+
+@eq-ch03-eos-pressure is computed in `_temp_to_pres`
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::_temp_to_pres >}}), which sums over the first $N_{\mathrm g}$
+entries only. With the default $z_n = 1$ it is Dalton's law for ideal gases.
+
+To go from mole fractions to concentrations, let $c$ be the total molar concentration of all species, gas and
+condensed, so that $c_n = x_n c$. The gas moles are the fraction $x_{\mathrm g} = \sum_{n<N_{\mathrm g}} x_n$ of
+the total. For $z_n = 1$, @eq-ch03-eos-pressure becomes
+
+$$
+\begin{aligned}
+p &= \mathcal R T \sum_{n<N_{\mathrm g}} x_n c = \mathcal R T\, x_{\mathrm g}\, c , \\
+c &= \frac{p}{\mathcal R T x_{\mathrm g}} .
+\end{aligned}
+$$
+
+So each gas and each condensate has the concentration
+
+$$
+\begin{aligned}
+c_n &= \frac{x_n\, p}{\mathcal R T x_{\mathrm g}}, \quad n < N_{\mathrm g}, \\
+c_m &= c_0\, \frac{x_m}{x_0}, \quad m \ge N_{\mathrm g} .
+\end{aligned}
+$$ {#eq-ch03-eos-conc}
+
+The second line is $x_m c$ written with $c = c_0 / x_0$. @eq-ch03-eos-conc is computed in `_xfrac_to_conc`
+({{< code src/thermo/thermo_x.cpp ThermoXImpl::_xfrac_to_conc >}}). Only the gas sum $x_{\mathrm g}$ enters the
+denominator; a mixture with condensates has a larger total concentration than its gas pressure alone suggests.
+
+When a compressibility function is set, the gas concentrations solve $z_n(T, c_n)\, c_n = c^{\mathrm{id}}_n$,
+where $c^{\mathrm{id}}_n$ is the first line of @eq-ch03-eos-conc. Newton's method on
+$f(c_n) = z_n c_n - c^{\mathrm{id}}_n$ with $f'(c_n) = z_n + c_n\, \partial z_n / \partial c_n$ gives the update
+
+$$
+c_n \leftarrow c_n + \frac{c^{\mathrm{id}}_n - z_n c_n}{z_n + c_n\, \partial z_n / \partial c_n} .
+$$
+
+The relation is exact for $z_n = 1$ (the first iterate already satisfies it). With $z_n \ne 1$ it is solved to the
+relative tolerance `ftol`.
 
 ### Numerical method
 
-Pending.
+The equation of state is evaluated pointwise in every cell; it has no stencil and no boundary values. Three
+conversions use it:
+
+1. `TPX->V` (`ThermoX`): mole fractions to concentrations by @eq-ch03-eos-conc. The gas concentrations are first
+   floored at `gas_floor` (default $10^{-20}$ mol m$^{-3}$); then the Newton update above runs until the largest
+   relative change is below `ftol` or `max_iter` iterations are spent.
+2. `VT->P` (`ThermoY`): pressure from concentrations by @eq-ch03-eos-pressure, in one evaluation.
+3. `PV->T` (`ThermoY`): temperature from pressure and concentrations. The starting guess is
+   $T = p / (\mathcal R \sum_{n<N_{\mathrm g}} c_n)$, exact for $z_n = 1$. The update is
+   $T \leftarrow T - f / \sum_n (c_{p,n} - c_{v,n}) c_n$ with $f = T \sum_n z_n c_n - p/\mathcal R$, a damped
+   Newton step that uses the heat-capacity difference as the slope.
+
+The equation-of-state figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| mole fractions to concentrations | {{< code src/thermo/thermo_x.cpp ThermoXImpl::_xfrac_to_conc >}} | `_xfrac_to_conc` | always |
+| pressure | {{< code src/thermo/thermo_y.cpp ThermoYImpl::_temp_to_pres >}} | `_temp_to_pres` | always |
+| temperature from pressure | {{< code src/thermo/thermo_y.cpp ThermoYImpl::_pres_to_temp >}} | `_pres_to_temp` | always |
+| compressibility factor | {{< code src/thermo/eval_uhs.cpp eval_czh >}} | `eval_czh` | `czh` |
+| its derivative | {{< code src/thermo/eval_uhs.cpp eval_czh_ddC >}} | `eval_czh_ddC` | `czh_ddC` |
+
+: Code map of the equation of state. {#tbl-ch03-eos-code}
+
+Warnings a user can hit: `_xfrac_to_conc` and `_pres_to_temp` warn when `max_iter` is reached. On that warning
+`_xfrac_to_conc` also writes the inputs to a file named `thermo_x_xfrac_to_conc_<time>.pt` in the working
+directory (verified by reading `_xfrac_to_conc` at the pin); `_pres_to_temp` writes nothing.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo.release` (`DeviceTest.thermo_y`) | `VT->P` then `PV->T` returns $T$ | $10^{-4}$ rel. and abs. | not yet derived |
+| `test_thermo.release` (`DeviceTest.eng_pres`) | `TPX->V` then `VT->P` returns $p$ | $10^{-4}$ rel. and abs. | not yet derived |
+| `test_thermo.release` (`DeviceTest.thermo_x`) | `V->D` equals concentration times molar mass, summed | $10^{-4}$ rel. and abs. | not yet derived |
+
+: Tests of the equation of state. {#tbl-ch03-eos-tests}
+
+The tolerances are read from `tests/test_thermo.cpp` at the pin. The `DeviceTest` cases run on CPU in float32 and
+float64, and on CUDA when a GPU is present. No test sets a compressibility function, so the Newton branch of
+`_xfrac_to_conc` and the damped Newton of `_pres_to_temp` with $z_n \ne 1$ have missing evidence.
 
 ### Limits
 
-Pending.
+Condensate volume is neglected: the gas occupies the whole volume. The second line of @eq-ch03-eos-conc divides by
+$x_0$, so a state whose first species has zero mole fraction gives non-finite condensate concentrations (verified
+by reading the formula; not run). The non-ideal branches are untested.

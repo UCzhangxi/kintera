@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo
+sources: src/thermo/extrapolate_ad.cpp, src/thermo/thermo.hpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,164 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+An initial atmosphere is often built by lifting a parcel along an adiabat: entropy is held fixed while pressure
+falls, and condensates form when vapours saturate. `ThermoX` provides this step. Given $(T, p, x)$ at one level,
+`extrapolate_dlnp` moves to a new pressure and `extrapolate_dz` to a new height under hydrostatic balance, and both
+return the temperature and equilibrated composition there. The temperature is found by a Newton iteration whose
+slope is the effective heat capacity, the ordinary heat capacity plus the latent heat released per kelvin by
+condensation that keeps the parcel saturated. This follows the multi-condensable moist adiabat of Li, Ingersoll and Oyafuso (2018,
+[doi:10.1175/JAS-D-17-0257.1](https://doi.org/10.1175/JAS-D-17-0257.1)).
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Hold the molar entropy at its target, @eq-ch03-adiabat-target, using the slope
+@eq-ch03-adiabat-cpeff.
+
+**Data.** $T$ [K], $p$ [Pa], $x_n$ [-] in and out (overwritten); $\Delta \ln p$ [-] or $\Delta z$ [m] and $g$
+[m s$^{-2}$].
+
+**Placement.** API calls, typically one per level when building a column.
+
+**Activation.** `extrapolate_dlnp(temp, pres, xfrac, dlnp, ...)`, `extrapolate_dz(temp, pres, xfrac, dz, grav,
+...)`; `rainout` default off.
+
+**Guarantee / limits.** In $\ln p$, no step error: entropy is held to 10 times `ftol`. In $z$, trapezoidal
+hydrostatics.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\bar s$, entropy per mole of mixture, gas and condensate [J mol$^{-1}$ K$^{-1}$]; $\bar c_p$, frozen
+heat capacity per mole of mixture [J mol$^{-1}$ K$^{-1}$]; $\bar c_p^{\mathrm{eff}}$, effective heat capacity per
+mole of mixture [J mol$^{-1}$ K$^{-1}$]; $\xi_r$, extent of reaction $r$ per mole of mixture [-]; $\mathsf G$, the
+gain matrix of the saturation adjustment at fixed $T$ and $p$ (@sec-ch04) [-]; $\Delta h_r = \sum_n \nu_{nr} h_n$
+[J mol$^{-1}$]; $\bar\mu$, mean molar mass of the mixture [kg mol$^{-1}$]; $g$, gravitational acceleration,
+positive [m s$^{-2}$]; $\Delta z$, height change, positive upward [m]. $\nu_{nr}$, $K_r$, $h_n$ and $c_{p,n}$ are
+those of @sec-ch03-species-functions.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+**Effective heat capacity.** Hold $p$ fixed and let $T$ change by $\mathrm d T$ in a saturated parcel. The frozen
+part of the enthalpy change per mole of mixture is $\bar c_p\, \mathrm d T$ with $\bar c_p = \sum_n x_n c_{p,n}$.
+The reaction extents change too, by $\mathrm d \xi_r$, releasing $-\Delta h_r\, \mathrm d \xi_r$. Saturation is
+kept: each active reaction's log quotient follows its log saturation constant, so with $\mathsf G$ the derivative of
+the log quotients with respect to the extents,
+
+$$
+\begin{aligned}
+\mathsf G\, \frac{\mathrm d \boldsymbol\xi}{\mathrm d T} &= \frac{\mathrm d \ln \mathbf K}{\mathrm d T}, \\
+\bar c_p^{\mathrm{eff}} &= \sum_n x_n c_{p,n} + \sum_r \Delta h_r \frac{\mathrm d \xi_r}{\mathrm d T} .
+\end{aligned}
+$$ {#eq-ch03-adiabat-cpeff}
+
+@eq-ch03-adiabat-cpeff is computed in `effective_cp`
+({{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::effective_cp >}}). Before solving the first line, the code
+divides each row of $\mathsf G$ and of the right side by that row's largest magnitude, which leaves the solution
+unchanged in exact arithmetic and lowers the condition number. The solve is a least-squares solve (`gelsd`) on CPU
+and a pseudo-inverse with absolute tolerance $10^{-6}$ on CUDA. Inactive reactions have zero rows and get zero
+$\mathrm d\xi_r/\mathrm d T$. Without a gain matrix (no reactions) the function returns $\bar c_p$.
+
+**Entropy target.** The parcel's molar entropy is $\bar s = S / \sum_n c_n$, with $S$ of
+@eq-ch03-thermo-x-totals. A reversible step keeps $\bar s$; a user-supplied rate adds a prescribed change:
+
+$$
+\begin{aligned}
+\bar s_{\mathrm{target}} &= \bar s_0 + \frac{\mathrm d \bar s}{\mathrm d \ln p}\, \Delta \ln p , \\
+\bar s_{\mathrm{target}} &= \bar s_0 + \frac{\mathrm d \bar s}{\mathrm d z}\, \Delta z ,
+\end{aligned}
+$$ {#eq-ch03-adiabat-target}
+
+the first line for `extrapolate_dlnp` and the second for `extrapolate_dz`, with the rates the arguments `ds_dlnp`
+and `ds_dz` (default 0). Both functions compute their target at entry.
+
+**Temperature update in $\ln p$.** At the new pressure, $\partial \bar s / \partial T = \bar c_p^{\mathrm{eff}} / T$
+along the saturated path, so Newton's method gives
+
+$$
+T \leftarrow T \left(1 + \frac{\bar s_{\mathrm{target}} - \bar s(T)}{\bar c_p^{\mathrm{eff}}}\right) ,
+$$
+
+computed in `extrapolate_dlnp` ({{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}}).
+
+**Hydrostatic step in $z$.** For a step $\Delta z$, the pressure follows the trapezoidal rule of
+$\mathrm d p / \mathrm d z = -\rho g$:
+
+$$
+p_1 = p_0 - \tfrac12 (\rho_0 + \rho_1)\, g\, \Delta z .
+$$ {#eq-ch03-adiabat-hydrostatic}
+
+The temperature update adds the change of $\bar s$ caused by the pressure change of this iteration,
+$-x_{\mathrm g} \mathcal R\, \Delta \ln p$ for ideal gases, with $x_{\mathrm g}$ of @sec-ch03-eos:
+
+$$
+T \leftarrow T \left(1 + \frac{\bar s_{\mathrm{target}} - \bar s + x_{\mathrm g} \mathcal R\, \Delta \ln p}
+{\bar c_p^{\mathrm{eff}}}\right) .
+$$
+
+The first pressure guess is isothermal, $p = p_0 \exp(-g \bar\mu \Delta z / (\mathcal R T))$. Both updates are in
+`extrapolate_dz` ({{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dz >}}).
+
+**Pseudo-adiabat.** With `rainout`, the condensate formed in the step leaves the parcel and carries its entropy
+with it. Per mole of the conserved dry gas, the target becomes
+
+$$
+\bar s_{\mathrm{target}} = \frac{x_0^{\mathrm{new}}}{x_0^{\mathrm{old}}}\, \bar s_0
+- \frac{\sum_{m \ge N_{\mathrm g}} s_m c_m}{\sum_{n < N_{\mathrm g}} c_n} + (\text{prescribed change}) ,
+$$
+
+with $s_m$ the condensate entropy of @eq-ch03-species-functions-scond, and the condensate mole fractions are set to
+zero and the rest renormalised.
+
+What is exact and what is truncated: `extrapolate_dlnp` has no truncation error in $\Delta \ln p$; its end state
+satisfies $\bar s(T, p_1) = \bar s_{\mathrm{target}}$ to within 10 times `ftol`, in J mol$^{-1}$ K$^{-1}$, whatever the
+step. `extrapolate_dz` adds the trapezoidal error of @eq-ch03-adiabat-hydrostatic, second order in $\Delta z$ for a
+smooth $\rho(z)$ (a standard property of the trapezoidal rule; no test measures it). The executable check is not written yet.
 
 ### Numerical method
 
-Pending.
+Each call runs a fixed-point loop of at most `max_iter` iterations. In every iteration it: (1) resets $x$ to the
+input composition; (2) runs the saturation adjustment `forward` at the current $(T, p)$, which returns $\mathsf G$;
+(3) with `rainout`, forms the pseudo-adiabatic target and removes the condensates; (4) evaluates
+$\bar c_p^{\mathrm{eff}}$ and $\bar s$; (5) stops if $\max \lvert \bar s_{\mathrm{target}} - \bar s \rvert$ is below 10 times `ftol`;
+(6) updates $T$ (and, in `extrapolate_dz`, first $p$). The convergence test is a maximum over all cells. If the loop
+ends without meeting it, a warning is printed and the last iterate is returned.
+
+The adiabat figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| effective heat capacity | {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::effective_cp >}} | `effective_cp` | gain given |
+| step in $\ln p$ | {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}} | `extrapolate_dlnp` | `dlnp`, `ds_dlnp`, `rainout` |
+| step in $z$ | {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dz >}} | `extrapolate_dz` | `dz`, `grav`, `ds_dz`, `rainout` |
+| step options | {{< code src/thermo/thermo.hpp ExtrapOptions >}} | `ExtrapOptions` | API |
+
+: Code map of the adiabat extrapolation. {#tbl-ch03-adiabat-code}
+
+Warnings a user can hit: "extrapolate_dlnp does not converge after N iterations" and "extrapolate_ad does not
+converge after N iterations" (the second is printed by `extrapolate_dz`). The `verbose` option prints the state of
+every iteration. Both functions overwrite `temp`, `pres` and `xfrac` in place.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo.release` (`DeviceTest.extrapolate_ad`) | molar entropy unchanged after a step $\Delta \ln p = -0.1$ | $10^{-3}$ rel. and abs. | not yet derived |
+| `test_earth.py` | a 2-D column built by `extrapolate_dlnp` runs | none | smoke test, no assertion |
+
+: Tests of the adiabat extrapolation. {#tbl-ch03-adiabat-tests}
+
+`DeviceTest.extrapolate_ad` is skipped in float32 and runs in float64 on CPU and on CUDA when a GPU is present.
+`tests/test_effective_cp_heap_state.py` asserts that `effective_cp` on CPU gives one value whatever the heap holds
+and keeps the latent term, but it is not registered with ctest at the pin, so CI does not run it.
+`test_jupiter_tp_adiabat.py` builds a deep adiabat with repeated `forward` calls and its own temperature bracket; it
+does not call `extrapolate_dlnp` or `extrapolate_dz`, so it is not evidence for this section. No test covers
+`extrapolate_dz`, `rainout`, or the trapezoidal order: missing evidence.
 
 ### Limits
 
-Pending.
+`extrapolate_dz` and `rainout` are untested. The CUDA path of `effective_cp` uses an absolute pseudo-inverse
+tolerance of $10^{-6}$ on the row-scaled matrix, while the CPU path uses `gelsd`; whether the two agree on
+ill-conditioned gain matrices is not measured. The entropy target uses the constant-$c_p$ gas entropy of
+@sec-ch03-species-functions, so with `use-nasa9-cp` the step conserves that entropy, not the NASA-9 one (verified by
+reading `eval_entropy_R`; the size of the effect is not measured).

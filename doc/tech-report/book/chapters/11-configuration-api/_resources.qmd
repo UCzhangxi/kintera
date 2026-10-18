@@ -2,7 +2,8 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/utils/find_resource.cpp, src/utils/find_resource.hpp
+sources: src/utils/find_resource.cpp, src/utils/find_resource.hpp, src/species.cpp, python/__init__.py,
+  configure.h.in
 status: draft
 author: Jiheng Hu
 reviewer: Xinyue (requested)
@@ -10,21 +11,28 @@ reviewer: Xinyue (requested)
 
 ### Summary
 
-kintera finds data files by name through a list of search directories. This section is a stub in this draft.
+kintera reads some data files by bare name, for example the NASA-9 table `nasa9.dat`. It finds them by searching
+an ordered list of directories, the *resource search path*. The path is a process-wide list. A caller can extend
+it, and the Python package adds its own data directory on import. The YAML configuration file itself is not
+looked up this way: `ThermoOptions.from_yaml` and `KineticsOptions.from_yaml` open the name they are given as is.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Locate a data file by name in a search path.
+**Purpose.** Map a bare data-file name to the first readable file on the search path.
 
-**Data.** pending
+**Data.** File name in; absolute or search-path-joined name out; error if not found.
 
-**Placement.** pending
+**Placement.** Called by readers of data files, such as the NASA-9 table reader.
 
-**Activation.** pending
+**Activation.** Always; extended with `add_resource_directory`.
 
-**Guarantee / limits.** pending
+**Guarantee / limits.** First readable match wins; not found raises an error.
 
-**Evidence.** pending
+**Evidence.** No test at the pin; see the Tests layer.
 :::
+
+The search path starts as the current directory alone. Every time it is read, two kinds of directory are appended
+when not already present: the `kintera/data` directory of every `python*` site-packages under `VIRTUAL_ENV` and
+`CONDA_PREFIX`, and the `data` directory of the kintera source tree that was configured at build time.
 
 ### Derivation
 
@@ -32,17 +40,68 @@ No derivation: this scheme is a file lookup.
 
 ### Numerical method
 
-No numerical method and no figure: this scheme is a file lookup.
+No numerical method and no figure: this scheme is a file lookup. The lookup runs these steps:
+
+1. A name starting with `~/` is expanded with `HOME` (else `USERPROFILE`) and opened there only; if it cannot be
+   opened, an error is raised.
+2. An absolute name (leading `/` or `\`, or a drive letter followed by a separator) is opened as is, or an
+   error is raised.
+3. Otherwise each directory of the search path is tried in order, and the first `<dir>/<name>` that opens for
+   reading is returned.
+4. If none opens, the error lists every directory searched.
 
 ### Code
 
-pending: `find_resource` ({{< code src/utils/find_resource.cpp find_resource >}}) is the entry point; the
-walk-through is not written yet.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| lookup | {{< code src/utils/find_resource.cpp find_resource >}} | `find_resource` | always |
+| extend path | {{< code src/utils/find_resource.cpp add_resource_directory >}} | `add_resource_directory` | caller |
+| read path | {{< code src/utils/find_resource.cpp deserialize_search_paths >}} | `deserialize_search_paths` | always |
+| store path | {{< code src/utils/find_resource.cpp serialize_search_paths >}} | `serialize_search_paths` | always |
+| Python data dir | {{< code python/__init__.py _add_packaged_resource_directory >}} | `_add_packaged_resource_directory` | on import |
+
+: Code map of resource lookup. {#tbl-ch11-resources-code}
+
+The search path is held as one separator-joined string, `search_paths`, initialised to `.`
+({{< code src/utils/find_resource.cpp >}}); the separator is `:`, or `;` on Windows. `deserialize_search_paths`
+({{< code src/utils/find_resource.cpp deserialize_search_paths >}}) splits it and normalises the list. The
+normalisation expands `~/`, drops empty entries and repeats, and appends the virtual-environment and source-tree
+`data` directories. The source-tree directory comes from `KINTERA_ROOT_DIR`, which CMake writes into
+{{< code configure.h.in >}} as the configured source directory.
+
+`add_resource_directory(dir, prepend)` ({{< code src/utils/find_resource.cpp add_resource_directory >}}) removes
+an existing entry equal to `dir` and inserts it at the front (`prepend`, the default) or at the end. It and
+`find_resource` hold one mutex. In Python, `kintera.add_resource_directory`, `set_search_paths`,
+`get_search_paths` and `find_resource` are bound in {{< code python/csrc/kintera.cpp >}}. On import the package
+prepends its own `data` directory when it exists (`_add_packaged_resource_directory`,
+{{< code python/__init__.py _add_packaged_resource_directory >}}).
+
+The NASA-9 table is found this way: `get_nasa9_db` ({{< code src/species.cpp get_nasa9_db >}}) calls
+`find_resource("nasa9.dat")` once per process and raises an error if it is not found or cannot be opened.
+
+`set_default_directories` ({{< code src/utils/find_resource.cpp set_default_directories >}}) would reset the path
+to `.` and `data`; no code at the pin calls it.
 
 ### Tests
 
-pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none | search order, `~/` and absolute names, error text | missing evidence | no test at the pin |
+
+: Tests of resource lookup. {#tbl-ch11-resources-tests}
+
+No registered test at the pin calls `find_resource` or `add_resource_directory` directly. Every test that loads a
+species list reaches the NASA-9 lookup, so a missing `nasa9.dat` would fail them; this is a hypothesis from
+reading `init_species_from_yaml` ({{< code src/species.cpp init_species_from_yaml overload=2 >}}), not checked by
+a run.
 
 ### Limits
 
-pending.
+- The search path is a fixed buffer of 65536 characters; `serialize_search_paths` copies into it with `strncpy`,
+  so a longer joined path is cut off without a message (read from the code; not tested).
+- The not-found message for a `~/` or absolute name is `find_resource::` followed directly by the name and
+  `not found`, with no space between them.
+- The not-found message suggests `-DMYPATH=` at build time; no build file at the pin reads `MYPATH` (checked by
+  searching the tree for `MYPATH`).
+- The source-tree `data` directory is the one configured at build time; an installed copy still searches that
+  path if it exists (read from the code; not tested).

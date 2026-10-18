@@ -160,10 +160,17 @@ has not run one.
 - `E4` is accepted and stored but does not enter the Arrhenius rate.
 - Evaporation entries store `minT` and `maxT` twice per reaction.
 - The Arrhenius reader ignores `Ea`; the fall-off and three-body readers accept it.
-- `type: kb-falloff` has no YAML reader at the pin; KB fall-off options are filled only by the KINETICS reader
-  of @sec-ch06.
+- `type: kb-falloff` has no YAML reader: `KineticsOptionsImpl::from_yaml` reads no KB fall-off entries. The
+  options are filled by the KINETICS-base `.pun` reader of @sec-ch06, or by hand (see below).
 - A `type` no reader claims is dropped without a message.
 :::
+
+By hand, KB fall-off options are set through the `kb_falloff` field of `KineticsOptionsImpl`
+({{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}). In Python, `bind_kinetics`
+({{< code python/csrc/pykinetics.cpp bind_kinetics >}}) exposes the class `KBFalloffOptions`, with setters for
+`Tref`, `fc`, `units`, `reactions`, `k0_A`, `k0_b`, `k0_Ea_R`, `kinf_A`, `kinf_b` and `kinf_Ea_R`, and the setter
+`KineticsOptions.kb_falloff`. The one reader that fills the field is `kinetics_options_from_kinetics_base_pun`
+({{< code src/photochem/kinetics_base_reader.cpp kinetics_options_from_kinetics_base_pun >}}).
 
 The older reader `parse_reactions_yaml` ({{< code src/utils/parse_yaml.cpp parse_reactions_yaml overload=1 >}}) defaults
 `type` to `arrhenius` and prints a message for `three-body` and `falloff` instead of building them; its C++ test

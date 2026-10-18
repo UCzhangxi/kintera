@@ -1,0 +1,305 @@
+{
+ "configure": "-DBUILD_EXAMPLES=OFF -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release -DCUDA=OFF",
+ "ctest_version": "4.4.3",
+ "external": {},
+ "format": "kintera-report ctest index 1",
+ "pin": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+ "registered": 49,
+ "repository": "chengcli/kintera",
+ "tests": [
+  {
+   "defined_at": "tests/CMakeLists.txt:18",
+   "name": "test_actinic_flux.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_adaptive_timestep.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:25",
+   "name": "test_alloc_space.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_atm2d.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:19",
+   "name": "test_ch4_photolysis.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:20",
+   "name": "test_chapman_cycle.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_coagulation_pressure_switch.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_cuda_workspace.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:22",
+   "name": "test_diffusion.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_earth.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:14",
+   "name": "test_equilibrate_tp_max_iter.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_equilibrate_uv_gain.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_equilibrium.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:23",
+   "name": "test_equilibrium.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_evaporation_extent.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_evaporation_general.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_evaporation_kessler.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:21",
+   "name": "test_falloff.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_h2_cp.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_inline_svp.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_jupiter_tp_adiabat.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:15",
+   "name": "test_kinetics.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_kinetics_base.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:24",
+   "name": "test_kinetics_base.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_kinetics_base_units.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_multirange_arrhenius.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_multirange_arrhenius_yaml.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_nasa9_cp.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_photolysis.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:17",
+   "name": "test_photolysis_kinetics.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:16",
+   "name": "test_photolysis_options.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:65",
+   "name": "test_python_subprocess",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_rate_constant_ddC.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:10",
+   "name": "test_reaction.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_reaction_equilibrium.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_refactor_phase1.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_reference_state_keys.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_saturation_adjustment_nh4sh.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_saturation_degenerate_bound.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_saturation_failure_reported.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:11",
+   "name": "test_species.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_species_registry.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_svp_autograd.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:12",
+   "name": "test_thermo.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_thermo_x_warm_start_shape.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:13",
+   "name": "test_vapor_functions.release",
+   "properties": {},
+   "via": "setup_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_version_fallback.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_version_floor.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_warm_start_shape.py",
+   "properties": {},
+   "via": "add_test"
+  }
+ ]
+}

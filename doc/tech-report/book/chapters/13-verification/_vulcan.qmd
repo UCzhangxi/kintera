@@ -1,4 +1,4 @@
-## Comparison cases against VULCAN networks (not registered with `ctest`) {#sec-ch13-vulcan}
+## Comparison scripts against VULCAN (scoped out: they need a VULCAN tree outside the repository) {#sec-ch13-vulcan}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
@@ -10,31 +10,66 @@ reviewer:
 
 ### Summary
 
-The directory `tests/vulcan/` holds a converted reaction network (`cho_photo.yaml`), the directory `cho/`, scripts
-that convert networks (`tools/`) and a Chapman comparison script (`chapman/run_comparison.py`). Its entry
-`photo_cross` is a symbolic link to `VULCAN/thermo/photo_cross`, a path that is not in the repository, so the link is
-dangling in a fresh clone. No `ctest` entry runs them:
-{{< code tests/CMakeLists.txt >}} registers only the C++ tests named by `setup_test` and the `test*.py` files at the
-top of `tests/`, not files in subdirectories. So the comparison runs only when a user starts its script.
+The directory `tests/vulcan/` holds a converted reaction network (`cho_photo.yaml`), conversion scripts (`tools/`) and
+two comparison scripts, `chapman/run_comparison.py` and `cho/run_comparison.py`. These comparisons cannot run from a
+clone of kintera, for two reasons visible at the pin:
 
-TODO: the At a glance box.
+::: {.callout-note title="At a glance"}
+**Purpose.** Compare kintera's Chapman and CHO chemistry with VULCAN runs.
+
+**Data.** A VULCAN tree under `tests/vulcan/VULCAN`, absent from the repository.
+
+**Placement.** By hand; not part of `ctest`.
+
+**Activation.** None from a clone: the reference data are missing.
+
+**Guarantee / limits.** Scoped out of this report.
+
+**Evidence.** See the Limits layer below.
+:::
 
 ### Derivation
 
-TODO: not yet written.
+No derivation: the comparison is scoped out (Limits).
 
 ### Numerical method
 
-TODO: not yet written, with its figure.
+No numerical method is described: the comparison is scoped out (Limits).
 
 ### Code
 
-TODO: the code table and the walk-through.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| Chapman comparison script | {{< code tests/vulcan/chapman/run_comparison.py run_kintera >}} | `run_kintera` | by hand |
+| test registration | {{< code tests/CMakeLists.txt >}} | `setup_test` | always |
+
+: Code map of the VULCAN comparison scripts. {#tbl-ch13-vulcan-code}
 
 ### Tests
 
-TODO: what the comparison measures, its tolerance, and a run at the pin; missing evidence.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none | not registered with `ctest` | none | none |
+
+: Tests of the VULCAN comparison. {#tbl-ch13-vulcan-tests}
 
 ### Limits
 
-TODO: not yet written; not measured.
+1. **They read a VULCAN tree that is not in the repository.** `chapman/run_comparison.py`
+   ({{< code tests/vulcan/chapman/run_comparison.py >}}) sets its data directory to `tests/vulcan/VULCAN`. It reads
+   the cross sections, the stellar flux and the VULCAN reference output from there; `cho/run_comparison.py` reads
+   its reference output from the same directory. No file under `tests/vulcan/VULCAN`
+   exists at the pin, and the entry `tests/vulcan/photo_cross` is a symbolic link to `VULCAN/thermo/photo_cross`,
+   which therefore dangles in a fresh clone.[^ch13-vulcan-tree]
+2. **No `ctest` entry runs them.** {{< code tests/CMakeLists.txt >}} registers only the C++ tests named by
+   `setup_test` and the `test*.py` files at the top of `tests/`, not scripts in subdirectories.
+
+So this report does not describe or quote a VULCAN comparison: not provided: its reference data are outside the
+repository. The Chapman chemistry itself is tested inside the suite by `tests/test_chapman_cycle.cpp` (ctest
+`test_chapman_cycle.release`), which time-marches it with the implicit step. The second-order Rosenbrock step that
+the Chapman script uses, `evolve_ros2`, has no test in the suite; the solvers are the subject of @sec-ch10.
+
+[^ch13-vulcan-tree]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `git ls-tree -r --name-only
+0d9f67f97d841147e23283d2dcdab302238d2c45 tests/vulcan`, which lists no path under `tests/vulcan/VULCAN`, and
+`git cat-file -p 0d9f67f97d841147e23283d2dcdab302238d2c45:tests/vulcan/photo_cross`, a mode-120000 entry whose target
+is `VULCAN/thermo/photo_cross`; git 2.52.0.]

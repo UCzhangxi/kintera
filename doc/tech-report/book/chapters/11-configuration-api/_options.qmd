@@ -1,0 +1,102 @@
+## The C++ options objects and modules (`ADD_ARG`) {#sec-ch11-options}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/add_arg.h, src/kinetics/kinetics.hpp, src/kinetics/evolve_implicit.hpp
+status: draft
+author: Jiheng Hu
+reviewer: Xinyue (requested)
+-->
+
+### Summary
+
+Every configurable part of kintera is a pair: an options struct that holds plain values, and a module that is
+built from the options and holds tensors. The options struct is what the YAML reader fills and what a C++ or
+Python caller may edit before building the module. Each option field is declared with one macro, `ADD_ARG`, which
+gives a chained setter and a getter of the same name.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** One options struct per module, with fluent setters and getters.
+
+**Data.** Plain C++ values and vectors; modules hold `torch` buffers built from them.
+
+**Placement.** Options are filled by `from_yaml` or by hand, then passed to the module constructor.
+
+**Activation.** Always; each field has an in-class default.
+
+**Guarantee / limits.** Editing options after the module is built does not rebuild the module (hypothesis).
+
+**Evidence.** See the Tests layer.
+:::
+
+The options of a module are reached in C++ as `module->options`, and in Python as the read-only attribute
+`options` (@sec-ch11-python-api).
+
+### Derivation
+
+No derivation: this scheme is an interface.
+
+### Numerical method
+
+No numerical method and no figure: this scheme is an interface.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| field macro | {{< code src/add_arg.h >}} | `ADD_ARG` | always |
+| kinetics options | {{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}} | `KineticsOptionsImpl` | always |
+| kinetics module | {{< code src/kinetics/kinetics.hpp KineticsImpl >}} | `KineticsImpl` | always |
+| implicit step | {{< code src/kinetics/evolve_implicit.hpp evolve_implicit >}} | `evolve_implicit` | caller |
+
+: Code map of the options objects. {#tbl-ch11-options-code}
+
+`ADD_ARG(T, name)` ({{< code src/add_arg.h >}}) expands to a private member `name_` and four public functions:
+`name(const T&)` and `name(T&&)` set the member and return `*this`, so calls chain; `name() const` and `name()`
+return a reference to it. Under the CUDA compiler the getters are marked host and device. A default is given by
+writing `= value` after the macro.
+
+The kinetics options `KineticsOptionsImpl` ({{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}) derive
+from the species thermodynamics struct and declare: `Tref` (default $298.15\,\mathrm{K}$), `Pref` (default
+$101325\,\mathrm{Pa}$), one sub-option per rate form (`arrhenius`, `coagulation`, `evaporation`, `three_body`,
+`lindemann_falloff`, `troe_falloff`, `sri_falloff`, `kb_falloff`, each default-constructed), and the flags
+`evolve_temperature`, `verbose` and `offset_zero` (all default `false`).
+
+The kinetics module `KineticsImpl` ({{< code src/kinetics/kinetics.hpp KineticsImpl >}}) exposes three calls:
+
+1. `forward(temp, pres, conc, extra)` ({{< code src/kinetics/kinetics.hpp KineticsImpl::forward >}}) takes
+   temperature [K] of shape `(...)`, pressure [Pa] of shape `(...)` and concentration
+   [$\mathrm{mol\,m^{-3}}$] of shape `(..., nspecies)`. It returns the reaction rates
+   [$\mathrm{mol\,m^{-3}\,s^{-1}}$] of shape `(..., nreaction)`, the derivative of the rate constants with
+   respect to concentration of shape `(..., nspecies, nreaction)`, and an optional derivative with respect to
+   temperature.
+2. `forward_with_rate_constants` ({{< code src/kinetics/kinetics.hpp KineticsImpl::forward_with_rate_constants >}})
+   returns the same three plus the raw forward rate constants, for a Jacobian that does not depend on state kept
+   in the module.
+3. `jacobian(temp, conc, cvol, rate, rc_ddC, rc_ddT, rate_constants)`
+   ({{< code src/kinetics/kinetics.hpp KineticsImpl::jacobian >}}) returns the reaction-space Jacobian of shape
+   `(..., nreaction_aug, nspecies)`; its header comment says `rate_constants` is required at zero solid
+   abundance.
+
+The free function `evolve_implicit(rate, stoich, jacobian, dt)`
+({{< code src/kinetics/evolve_implicit.hpp evolve_implicit >}}) returns the concentration change of shape
+`(..., nspecies)` from one backward-Euler step; the system it solves is @sec-ch10's subject.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none | `ADD_ARG` setters and getters | missing evidence | no test read in this draft |
+
+: Tests of the options objects. {#tbl-ch11-options-tests}
+
+The options objects are exercised by every test that builds a module; this draft has not mapped which test
+covers which field.
+
+### Limits
+
+- Editing an options field after its module is built is not reflected in the module's buffers until the module is
+  reset. This is a hypothesis from reading `ArrheniusImpl::reset`
+  ({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}}), which copies options into buffers; not tested.
+- The thermodynamics options and modules (`ThermoOptions`, `ThermoX`, `ThermoY`) are not yet described in this
+  section.

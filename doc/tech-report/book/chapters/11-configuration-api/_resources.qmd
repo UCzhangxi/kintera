@@ -1,0 +1,48 @@
+## Resource lookup for data files (`find_resource`) {#sec-ch11-resources}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/utils/find_resource.cpp, src/utils/find_resource.hpp
+status: draft
+author: Jiheng Hu
+reviewer: Xinyue (requested)
+-->
+
+### Summary
+
+kintera finds data files by name through a list of search directories. This section is a stub in this draft.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Locate a data file by name in a search path.
+
+**Data.** pending
+
+**Placement.** pending
+
+**Activation.** pending
+
+**Guarantee / limits.** pending
+
+**Evidence.** pending
+:::
+
+### Derivation
+
+No derivation: this scheme is a file lookup.
+
+### Numerical method
+
+No numerical method and no figure: this scheme is a file lookup.
+
+### Code
+
+pending: `find_resource` ({{< code src/utils/find_resource.cpp find_resource >}}) is the entry point; the
+walk-through is not written yet.
+
+### Tests
+
+pending.
+
+### Limits
+
+pending.

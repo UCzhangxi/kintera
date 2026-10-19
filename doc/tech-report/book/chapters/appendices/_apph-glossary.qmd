@@ -37,6 +37,7 @@
 
 ## Named concepts {.unnumbered .unlisted}
 
+- **batch dimension**: defined in [Device dispatch: one call, CPU or CUDA (`DispatchStub`)](#sec-ch12-dispatch).
 - **validation tolerance**: defined in [How the test suite is organised and run (`ctest`)](#sec-ch13-suite).
 
 ## Symbols {.unnumbered .unlisted}

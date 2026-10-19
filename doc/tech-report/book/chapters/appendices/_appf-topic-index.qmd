@@ -12,7 +12,7 @@
 
 *adaptive time step*, see **Rosenbrock step**.
 
-*ADD_ARG*, see **options objects, C++**.
+**ADD_ARG**: The C++ options objects and modules, @sec-ch11-options. See also **options objects, C++**.
 
 *adding a rate law*, see **Arrhenius rate constant**.
 

@@ -6,9 +6,13 @@
 
 *ADD_ARG*, see **options objects, C++**.
 
+*Antoine equation*, see **saturation vapor pressure**.
+
 **Arrhenius rate constant**: Arrhenius rate constants and their temperature bands, @sec-ch06-arrhenius.
 
 *autoconversion*, see **coagulation**.
+
+*autograd*, see **saturation vapor pressure, derivative**.
 
 ## B {.unnumbered .unlisted}
 
@@ -18,9 +22,13 @@
 
 ## C {.unnumbered .unlisted}
 
+*Clausius-Clapeyron*, see **saturation vapor pressure**.
+
 **coagulation**: Coagulation of cloud into precipitation, @sec-ch06-coagulation.
 
 **`composition`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
+
+*composition string*, see **molar mass**.
 
 *compressibility factor*, see **equation of state**.
 
@@ -166,6 +174,8 @@
 
 *Lindemann*, see **fall-off rate constant**.
 
+*LogSVPFunc*, see **saturation vapor pressure, derivative**.
+
 ## M {.unnumbered .unlisted}
 
 **mass fractions**: Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
@@ -174,11 +184,19 @@
 
 **moist adiabat**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
 
+**molar mass**: Molar masses from composition strings, @sec-ch02-molar-mass.
+
 **mole fractions**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
+
+*molecular weight*, see **molar mass**.
 
 ## N {.unnumbered .unlisted}
 
 **`name`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
+
+**NASA-9 polynomials**: NASA-9 polynomial data, @sec-ch02-nasa9.
+
+*nasa9.dat*, see **NASA-9 polynomials**.
 
 **notation index**: The notation index, @sec-appa-index.
 
@@ -195,6 +213,10 @@
 **package version**: Package version handling, @sec-ch11-version.
 
 *partial density*, see **mass fractions**.
+
+*phase*, see **species registry**.
+
+*physical constants*, see **units**.
 
 **`Pref`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
@@ -252,6 +274,10 @@
 
 *saturation ratio*, see **relative humidity**.
 
+**saturation vapor pressure**: Saturation vapor pressure fits per reaction, @sec-ch02-svp.
+
+**saturation vapor pressure, derivative**: Log saturation vapor pressure as a differentiable function, @sec-ch02-svp-autograd.
+
 *search path*, see **resource lookup**.
 
 *shared memory*, see **GPU kernels**.
@@ -262,7 +288,9 @@
 
 **`species`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
-*species list*, see **YAML input file**.
+*species list*, see **species registry**; **YAML input file**.
+
+**species registry**: The species registry: names, phases and per-species data, @sec-ch02-species-registry.
 
 *SRI*, see **fall-off rate constant**.
 
@@ -332,7 +360,13 @@
 
 *u0_R*, see **reference temperature and pressure, thermodynamic**.
 
+*unit conversion*, see **units**.
+
+**units**: Units and physical constants, @sec-ch02-units.
+
 ## V {.unnumbered .unlisted}
+
+*vapor pressure fit*, see **saturation vapor pressure**.
 
 *version number*, see **package version**.
 

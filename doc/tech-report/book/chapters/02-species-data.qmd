@@ -1,3 +1,37 @@
 # Species and thermodynamic data {#sec-ch02}
 
-pending
+This chapter describes the data kintera holds for each species before any thermodynamic function is evaluated: the
+species list read from the YAML file, each species' phase and elemental composition, its molar mass, its constant
+heat capacity and reference energy and entropy, its optional NASA-9 polynomial, and the saturation vapor pressure
+fits attached to condensation reactions. The functions that turn these data into energies, entropies and the
+equation of state are the subject of @sec-ch03.
+
+| scheme | YAML key or option | default | order | main test |
+|---|---|---|---|---|
+| @sec-ch02-species-registry | `species`[^rg-e2c86a33eac7] | none | exact | `test_species_registry.py` |
+| @sec-ch02-molar-mass | `composition`[^rg-e540c1be9eba] | none | exact | `test_species` |
+| @sec-ch02-nasa9 | `use-nasa9-cp` | off | exact | `test_nasa9_cp.py` |
+| @sec-ch02-svp | `rate-constant: formula` | none | exact | `test_vapor_functions` |
+| @sec-ch02-svp-autograd | `LogSVPFunc` (API) | always | exact | `test_svp_autograd.py` |
+| @sec-ch02-units | `UnitSystem` (API) | SI | exact | none |
+
+: Schemes of the species chapter. "Order" is the order of the scheme's discretization; a function evaluated
+pointwise is exact. {#tbl-ch02-schemes}
+
+{{< include 02-species-data/_species-registry.qmd >}}
+
+{{< include 02-species-data/_molar-mass.qmd >}}
+
+{{< include 02-species-data/_nasa9.qmd >}}
+
+{{< include 02-species-data/_svp.qmd >}}
+
+{{< include 02-species-data/_svp-autograd.qmd >}}
+
+{{< include 02-species-data/_units.qmd >}}
+
+<!-- reader glossary notes -->
+[^rg-e2c86a33eac7]: species — list of species maps; required; its order fixes the species index; read by `init_species_from_yaml`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L148-L155)
+
+[^rg-e540c1be9eba]: composition — map from element symbol to count; the molar mass is computed from it; passed to `molar_mass`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L165-L170)
+<!-- end reader glossary notes -->

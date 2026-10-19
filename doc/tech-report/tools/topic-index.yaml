@@ -135,6 +135,19 @@ sections:
   sec-ch03-adiabat:
     - moist adiabat: [pseudo-adiabat, rainout, isentrope]
     - effective heat capacity
+  # Chapter 2. Species and thermodynamic data
+  sec-ch02-species-registry:
+    - species registry: [species list, phase]
+  sec-ch02-molar-mass:
+    - molar mass: [composition string, molecular weight]
+  sec-ch02-nasa9:
+    - NASA-9 polynomials: [nasa9.dat]
+  sec-ch02-svp:
+    - saturation vapor pressure: [Clausius-Clapeyron, Antoine equation, vapor pressure fit]
+  sec-ch02-svp-autograd:
+    - saturation vapor pressure, derivative: [autograd, LogSVPFunc]
+  sec-ch02-units:
+    - units: [unit conversion, physical constants]
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd

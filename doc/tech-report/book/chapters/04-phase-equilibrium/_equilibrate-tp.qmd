@@ -11,29 +11,61 @@ reviewer:
 ### Summary
 
 Given a temperature, a pressure and mole fractions, this solver moves vapour into condensate, or back, until the
-conditions of @sec-ch04-conditions hold. It works in mole fractions, one cell at a time, through `ThermoX`. Each
-outer iteration linearises the logarithmic saturation conditions of the reactions that are out of equilibrium. It
-solves a small least-squares problem for the reaction extents, keeping every mole fraction non-negative, and takes the
-step. It stops when no reaction is out of equilibrium or after `max-iter` iterations.
+conditions of @sec-ch04-conditions hold. It works in mole fractions, one cell at a time, through `ThermoX`. Each outer
+iteration linearises the logarithmic saturation conditions of the reactions that are out of equilibrium. It solves a
+small constrained least-squares problem for the reaction extents, limits the step so that no amount goes negative,
+renormalises the mole fractions, and repeats. It stops when no reaction is out of equilibrium or after `max-iter`
+iterations. The default `max-iter` of 10 is too small for cold starts far from equilibrium (Limits).
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** Satisfy @eq-ch04-conditions-saturation at given $T$ and $p$.
 
-**Data.** Mole fractions in and out; $T$ [K], $p$ [Pa]; per-cell diagnostics.
+**Data.** Mole fractions in and out; $T$ [K], $p$ [Pa]; per-cell diagnostic.
 
 **Placement.** `ThermoX` forward, per cell, on CPU or CUDA.
 
-**Activation.** Whenever the options list reactions; YAML `max-iter` (10) and `ftol` ($10^{-6}$).
+**Activation.** Whenever the options list nucleation reactions; YAML `max-iter` (10) and `ftol` ($10^{-6}$).
 
-**Guarantee / limits.** Mole fractions stay non-negative; failures are reported, not raised.
+**Guarantee / limits.** Mole fractions stay non-negative; failures are reported in the diagnostic, not raised.
 
 **Evidence.** See the Tests layer below.
 :::
 
+Local symbols: as in @sec-ch04-conditions, and $\xi_j$ the extent of reaction $j$ in one step, in units of the
+current total of mole fractions; $\mathsf W$ the weight matrix (active reactions by species); $\mathsf S$ the
+stoichiometric matrix (species by active reactions), with entry $-\nu_{ij}$.
+
 ### Derivation
 
-TODO: the linearisation of the logarithmic conditions in the reaction extents, written out in full from
-`equilibrate_tp`, and the weight matrix it builds.
+Linearise the deficit $\Delta_j$ of every active reaction in the mole fractions. Write the left side of the
+mole-fraction
+condition as $L_j(\mathbf x) = \sum_{i\in\mathrm{g}} \nu_{ij} \ln x_i - \big(\sum_{i\in\mathrm{g}} \nu_{ij}\big)\ln
+x_{\mathrm{g}}$.
+Its derivative with respect to a gas mole fraction $x_i$ is
+
+$$
+\begin{aligned}
+\mathsf W_{ji} = \frac{\partial L_j}{\partial x_i}
+  &= \frac{\nu_{ij}}{x_i} - \frac{\sum_{k\in\mathrm{g}} \nu_{kj}}{x_{\mathrm{g}}} .
+\end{aligned}
+$$ {#eq-ch04-equilibrate-tp-weight}
+
+For a condensate the derivative is zero, because condensates do not enter $L_j$. A step of extents $\boldsymbol\xi$
+changes the mole fractions by $\delta\mathbf x = \mathsf S\,\boldsymbol\xi$. To first order the change of $L_j$ is
+$(\mathsf W\,\mathsf S\,\boldsymbol\xi)_j$, and the step that removes every deficit solves
+
+$$
+\begin{aligned}
+\mathsf W\,\mathsf S\,\boldsymbol\xi &= \mathbf b, \\
+b_j &= \ln K_j(T) - \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big)\ln p - L_j(\mathbf x) .
+\end{aligned}
+$$ {#eq-ch04-equilibrate-tp-step}
+
+@eq-ch04-equilibrate-tp-weight and @eq-ch04-equilibrate-tp-step are computed in `equilibrate_tp`
+({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}): the weight rows, the gain matrix $\mathsf W\mathsf S$
+over the active reactions, and the right side `logsvp[j] - log_frac_sum`. The system is not solved exactly. It is the
+objective of a least-squares problem with the constraint that no mole fraction goes negative (@sec-ch04-active-set).
+The linearisation is exact only for an infinitesimal step, so the outer loop repeats.
 
 ### Numerical method
 
@@ -41,21 +73,30 @@ TODO: the linearisation of the logarithmic conditions in the reaction extents, w
 
 1. **Input checks.** A non-positive temperature or pressure, a negative gas mole fraction, no gas at all, or an empty
    reaction list returns failure at once. A negative condensate amount is reset to zero with a printed warning.
-2. **Constants.** For every reaction it evaluates $\ln K_j(T) - (\sum_i \nu_{ij}) \ln p$ once, since $T$ and $p$ do not
-   change during the solve.
-3. **Active set.** It sorts the reactions into those out of equilibrium (@sec-ch04-conditions) and the rest. If none
-   is out of equilibrium, the cell is at equilibrium and the solve ends with success.
-4. **Linear step.** For the active reactions it builds a weight matrix, the derivative of each reaction's logarithmic
-   quotient with respect to the mole fractions, and a right side, the saturation deficit. The constrained
-   least-squares solver of @sec-ch04-active-set then gives the reaction extents. Its inner iterations are bounded by
-   the larger of the number of species plus one and `max-iter`.
-5. **Step limiting.** Each reaction's extent is scaled down so that no species it consumes goes negative.
-6. **Repeat** from step 3, up to `max-iter` outer iterations.
+2. **Constants.** For every reaction it evaluates $\ln K_j(T) - (\sum_{i\in\mathrm{g}} \nu_{ij}) \ln p$ once, since $T$
+   and $p$ do not change during the solve.
+3. **Active set.** It re-tests every reaction against @sec-ch04-conditions and moves the ones out of equilibrium to
+   the front of the reaction list. If none is out of equilibrium, the cell is at equilibrium and the solve ends with
+   success.
+4. **Linear step.** It builds @eq-ch04-equilibrate-tp-weight and @eq-ch04-equilibrate-tp-step for the active
+   reactions and calls the constrained least-squares solver of @sec-ch04-active-set. That call is bounded by the larger
+   of the number of species plus one and `max-iter` inner iterations.
+5. **Per-reaction clip.** Each reaction's extent is scaled down so that no species it consumes is drawn below zero.
+   The least-squares solver does not enforce a constraint that depends linearly on its active ones, so this clip is
+   needed.
+6. **Backtracking.** The whole step is halved until no gas mole fraction is negative and no gas that was present
+   reaches exactly zero. If the factor underflows the smallest normal number, the solve stops with status 4.
+7. **Renormalisation.** All mole fractions are divided by their sum, so they again add up to 1. This is where a change
+   in the total number of moles enters. For example, forming ammonium hydrosulfide removes two gas moles per mole of
+   condensate. The extents of the next iteration are therefore in units of the new total.
+8. **Repeat** from step 3, up to `max-iter` outer iterations.
+9. **Exit.** After the loop the reaction list is re-sorted once more, now putting first the reactions within
+   $\pm\epsilon$ of saturation, and the gain matrix of those reactions is returned to the caller.
 
 The per-cell scratch arrays come from a workspace sized by `equilibrate_tp_space`
 ({{< code src/utils/alloc.h equilibrate_tp_space >}}); on CUDA they live in shared memory, as @sec-ch12 explains.
 
-TODO: a figure of one outer iteration (active set, linear step, step limiting).
+TODO: a figure of one outer iteration (active set, linear step, clip, backtracking, renormalisation).
 
 ### Code
 
@@ -76,7 +117,8 @@ The options are read from the YAML block `dynamics: equation-of-state:` with the
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
 | `test_equilibrate_tp_max_iter.release` | success on the last allowed iteration; failure reported when not converged | exact status | the return code |
-| `test_cuda_workspace.py` | the solve on CUDA matches the CPU | TODO | TODO |
+| `test_saturation_adjustment_nh4sh.py` | ThermoX keeps condensates non-negative | exact sign | non-negativity |
+| `test_cuda_workspace.py` | the solve on CUDA matches the CPU | not tabulated yet | not tabulated yet |
 
 : Tests of saturation adjustment at fixed temperature and pressure. {#tbl-ch04-equilibrate-tp-tests}
 
@@ -89,8 +131,23 @@ GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
 
 ### Limits
 
-- The step is a linearisation, and convergence is not proven. A cell that does not converge within `max-iter` keeps
-  its last state and is reported as a failure (@sec-ch04-warm-start-failures).
+::: {.callout-warning title="Limits"}
+- **The default `max-iter` of 10 fails cold starts.** For `tests/jupiter.yaml` cells at $10^5$ Pa that start with all
+  water, ammonia and hydrogen sulfide in the vapour, the solve needs 44, 34, 22 and 15 outer iterations at 130, 150,
+  175 and 200 K, and 7 at 250 K. With `max-iter: 10` the four cold cells return diagnostic $-2010$, with the largest
+  remaining $\ln\mathrm{RH}$ at 18.0, 10.9, 5.0 and 0.60. With `max-iter: 50` all five converge, to
+  $|\ln\mathrm{RH}| < 2\times10^{-7}$.[^ch04-tp-maxiter] For cold starts a `max-iter` of about 50 is needed. A host
+  that adjusts every step starts near equilibrium and needs fewer.
+:::
+
+- The step is a linearisation, and convergence is not proven. A cell that does not converge keeps the state of its
+  last iteration and is reported in its diagnostic (@sec-ch04-warm-start-failures).
 - The tolerance `logsvp_eps` is passed as a single-precision `float` even in a double-precision solve. The effect on a
   tolerance tighter than about $10^{-7}$ is not measured.
-- TODO: convergence rate in iterations against the number of condensables; not measured.
+
+[^ch04-tp-maxiter]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` with
+`dynamics: {equation-of-state: {max-iter: 10}}` or `50`, cells at 130, 150, 175, 200 and 250 K and $10^5$ Pa with
+$x_{\mathrm{H_2O}} = 3\times10^{-3}$, $x_{\mathrm{NH_3}} = 3\times10^{-4}$, $x_{\mathrm{H_2S}} = 10^{-4}$, rest dry, no
+condensate; run: `python -P item10_maxiter.py <card> 10` and `... 50`, which call `ThermoX.forward` and
+`relative_humidity`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed
+check.]

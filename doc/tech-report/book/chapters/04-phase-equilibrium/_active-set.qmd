@@ -1,8 +1,8 @@
-## Constrained least squares for the reaction extents (`leastsq_kkt`) {#sec-ch04-active-set}
+## Constrained least squares for the reaction extents (`leastsq_kkt_feasible_origin`) {#sec-ch04-active-set}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/math/leastsq_kkt.h
+sources: src/math/leastsq_kkt.h, src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h
 status: draft
 author: gitlinffff
 reviewer:
@@ -10,30 +10,101 @@ reviewer:
 
 ### Summary
 
-Each step of both solvers asks for reaction extents that reduce the saturation deficits of the active reactions
+Each step of both solvers asks for reaction extents that reduce the saturation deficits of the active reactions,
 without making any mole fraction or concentration negative. That is a linear least-squares problem with inequality
-constraints, which kintera solves with an active-set method on the KKT conditions.
-The entry point is `leastsq_kkt_feasible_origin`
-({{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}}).
+constraints. kintera solves it with an active-set method on the Karush-Kuhn-Tucker (KKT) conditions: it keeps a
+working set of constraints held as equalities, adds the most violated one, and drops one whose multiplier has the
+wrong sign, until no constraint is violated. The standard theory of such methods is in the
+literature.[^ch04-active-set-refs]
 
-TODO: the At a glance box and the remaining summary paragraphs.
+::: {.callout-note title="At a glance"}
+**Purpose.** Solve @eq-ch04-active-set-problem for the extents of one outer step.
+
+**Data.** Gain matrix, deficits, stoichiometry, current amounts; extents out.
+
+**Placement.** Step 4 of @sec-ch04-equilibrate-tp and step 3 of @sec-ch04-equilibrate-uv.
+
+**Activation.** Always, when at least one reaction is active.
+
+**Guarantee / limits.** Returns codes 0-3; a constraint dependent on the working set is not enforced.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Local symbols: $\mathsf A$ the gain matrix $\mathsf W\mathsf S$ of @sec-ch04-equilibrate-tp; $\mathbf b$ the deficits;
+$\mathsf C$ the constraint matrix; $\mathbf d$ the current amounts (mole fractions or concentrations).
 
 ### Derivation
 
-TODO: not yet written.
+A step of extents $\boldsymbol\xi$ changes the amounts by $\mathsf S\boldsymbol\xi$. Requiring every new amount to be
+non-negative, $\mathbf d + \mathsf S\boldsymbol\xi \ge 0$, is the same as $-\mathsf S\boldsymbol\xi \le \mathbf d$.
+The step is therefore the solution of
+
+$$
+\begin{aligned}
+\min_{\boldsymbol\xi}\ \ & \lVert \mathsf A\boldsymbol\xi - \mathbf b \rVert_2 , \\
+\mathsf C\boldsymbol\xi &\le \mathbf d , \\
+\mathsf C &= -\mathsf S .
+\end{aligned}
+$$ {#eq-ch04-active-set-problem}
+
+Because $\mathbf d$ holds the current amounts, which are non-negative, $\boldsymbol\xi = 0$ is feasible. The solver
+relies on that and checks it on entry. @eq-ch04-active-set-problem is assembled in `equilibrate_tp`
+({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}) and solved by `leastsq_kkt_feasible_origin`
+({{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}}).
 
 ### Numerical method
 
-TODO: not yet written, with its figure.
+`leastsq_kkt_feasible_origin` ({{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}}) iterates:
+
+1. **Solve with the working set as equalities.** When $\mathsf A$ is square it first tries the KKT system in a direct
+   form, which avoids squaring the condition number. On a zero pivot or a non-finite solution it falls back to the
+   normal equations with a small diagonal regularisation.
+2. **Drop.** A working constraint whose multiplier is negative is removed.
+3. **Add.** Of the constraints the current solution violates, it adds the single most violated one that is linearly
+   independent of the working set: the part of its scaled row orthogonal to the working rows must keep more than
+   $\sqrt{\epsilon_{\mathrm{mach}}}$ of its norm. This keeps the working set full rank when several rows share a
+   direction, for example two condensates drawing on one vapour.
+4. **Stop** when nothing is violated and no multiplier is negative.
+
+A violated constraint that depends linearly on the working set is never added, so the returned step may still violate
+it. That is why both solvers clip each reaction's extent to its reactants' stock afterwards. A working constraint with a
+single non-zero coefficient is a bound on one unknown, and the solution is returned exactly on it.
+
+TODO: a figure of the working-set iteration on a two-reaction example.
 
 ### Code
 
-TODO: the code table and the walk-through.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| solver with the feasible-origin policy | {{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}} | `leastsq_kkt_feasible_origin` | always |
+| general solver (all violated rows at once) | {{< code src/math/leastsq_kkt.h leastsq_kkt >}} | `leastsq_kkt` | not used by these solvers |
+| workspace size | {{< code src/utils/alloc.h leastsq_kkt_feasible_origin_space >}} | `leastsq_kkt_feasible_origin_space` | always |
+
+: Code map of the constrained least-squares step. {#tbl-ch04-active-set-code}
+
+The return codes are 0 on success; 1 on invalid input or when $\boldsymbol\xi = 0$ is not feasible; 2 when the
+iteration bound is reached; 3 when the KKT system stays singular. The bound is the larger of the number of species
+plus one and `max-iter`. A non-zero code ends the outer solve, which then reports it through the diagnostic
+(@sec-ch04-warm-start-failures).
 
 ### Tests
 
-TODO: the test table; missing evidence.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_alloc_space.release` | the workspace size of the solvers | exact | byte counts |
+| none | the solution of @eq-ch04-active-set-problem itself | missing evidence | no direct test |
+
+: Tests of the constrained least-squares step. {#tbl-ch04-active-set-tests}
+
+No test in the tree calls the solver directly; it is exercised only through the saturation-adjustment tests. A direct
+test against a reference solution of a small problem with a dependent constraint is proposed, not present.
+
+[^ch04-active-set-refs]: [source: J. Nocedal and S. J. Wright, Numerical Optimization, 2nd ed., Springer (2006),
+<https://doi.org/10.1007/978-0-387-40065-5>, chapter 16; C. L. Lawson and R. J. Hanson, Solving Least Squares
+Problems, SIAM (1995), <https://doi.org/10.1137/1.9781611971217>, chapter 23.]
 
 ### Limits
 
-TODO: not yet written; not measured.
+- Constraints dependent on the working set are not enforced (see above); the caller's clip covers them.
+- The behaviour on a near-singular gain matrix is set by the regularised fallback. Its accuracy is not measured.

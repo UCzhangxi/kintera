@@ -2,7 +2,8 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo/equilibrate_tp.h, src/thermo/log_svp.cpp
+sources: src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h, src/thermo/log_svp.cpp, src/thermo/nucleation.cpp,
+  src/thermo/thermo_y.cpp
 status: draft
 author: gitlinffff
 reviewer:
@@ -10,40 +11,43 @@ reviewer:
 
 ### Summary
 
-Each condensation reaction turns gases into one condensate, for example water vapour into liquid water or ammonia
-and hydrogen sulfide into solid ammonium hydrosulfide. At equilibrium, a reaction whose condensate is present has its
-gas partial pressures on the saturation curve. A reaction whose condensate is absent may sit below that curve, but
-never above it. kintera writes this per reaction with a product of partial pressures, so one rule covers a single
-vapour and a reaction of two vapours alike. The condition is the one used for moist adiabats with several condensing
-species.[^ch04-conditions-lio18]
+Each condensation reaction of the thermodynamics options consumes gases and produces at least one condensate, for
+example water vapour into liquid water, or ammonia and hydrogen sulfide into solid ammonium hydrosulfide; a reaction
+may also produce gases. At equilibrium, a reaction whose condensate is present has its gas partial pressures on the
+saturation curve. A reaction whose condensate is absent may sit below that curve, but never above it. kintera writes
+this per reaction with a product of gas partial pressures, so one rule covers a single vapour and a reaction of two
+vapours alike. The condition is the one used for moist adiabats with several condensing species.[^ch04-conditions-lio18]
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** The conditions every saturation-adjustment solve must satisfy (@eq-ch04-conditions-saturation).
+**Purpose.** The conditions every saturation-adjustment solve aims for (@eq-ch04-conditions-saturation).
 
-**Data.** Gas mole fractions, condensate amounts, $T$ [K], $p$ [Pa]; one constant per reaction.
+**Data.** Gas mole fractions or concentrations, condensate amounts, $T$ [K], $p$ [Pa]; one constant per reaction.
 
 **Placement.** Inside both solvers of this chapter.
 
-**Activation.** Always, for every reaction the thermodynamics options list.
+**Activation.** For every reaction listed with `type: nucleation`; other condensates are not adjusted.
 
-**Guarantee / limits.** Satisfied to a tolerance in the logarithm, `ftol`.
+**Guarantee / limits.** Met to `ftol` in the logarithm only when the solve converges within `max-iter`.
 
 **Evidence.** See the Tests layer below.
 :::
 
-Local symbols: reaction $j$ with stoichiometric coefficient $\nu_{ij}$ of species $i$, positive for a gas consumed
-by condensation; $x_i$ the mole fraction of species $i$ among all species; $x_{\mathrm{g}}$ the sum of the gas mole
-fractions; $p_i = p\,x_i/x_{\mathrm{g}}$ the partial pressure [Pa] of gas $i$; $K_j(T)$ the saturation constant of
-reaction $j$ [$\mathrm{Pa}^{\sum_i \nu_{ij}}$]; $c_j$ the amount of the condensate of reaction $j$; $\Delta_j$ its
+Local symbols: reaction $j$ with stoichiometric coefficient $\nu_{ij}$ of species $i$, positive for a species the
+reaction consumes and negative for one it produces; $x_i$ the mole fraction of species $i$ among all species;
+$x_{\mathrm{g}}$ the sum of the gas mole fractions; $p_i = p\,x_i/x_{\mathrm{g}}$ the partial pressure [Pa] of gas
+$i$; $\sum_{i\in\mathrm{g}}$ a sum over gases only; $K_j(T)$ the saturation constant of reaction $j$
+[$\mathrm{Pa}^{\sum_{i\in\mathrm{g}} \nu_{ij}}$]; $c_j$ the amount of the condensate of reaction $j$; $\Delta_j$ its
 saturation deficit (dimensionless), defined below.
 
 ### Derivation
 
 The saturation constant of a reaction is the product of the partial pressures of its gases on the saturation curve,
-each raised to its coefficient. For water vapour condensing it is the saturation vapour pressure; for ammonium
-hydrosulfide it is the product of the ammonia and hydrogen sulfide partial pressures. Define the saturation deficit
-of reaction $j$ as $\Delta_j = \ln K_j(T) - \sum_i \nu_{ij} \ln p_i$, positive when the gases are subsaturated. The
-equilibrium conditions are then three complementarity relations, for every reaction $j$:
+each raised to its coefficient: gases consumed with a positive power, gases produced with a negative one. Condensed
+phases are pure and have unit activity, so they do not appear in the product. For water vapour condensing the constant
+is the saturation vapour pressure; for ammonium hydrosulfide it is the product of the ammonia and hydrogen sulfide
+partial pressures, with pressure exponent 2. Define the saturation deficit of reaction $j$ as
+$\Delta_j = \ln K_j(T) - \sum_{i\in\mathrm{g}} \nu_{ij} \ln p_i$, positive when the gases are subsaturated. The
+equilibrium conditions are three complementarity relations, for every reaction $j$:
 
 $$
 \begin{aligned}
@@ -56,33 +60,51 @@ $$ {#eq-ch04-conditions-saturation}
 In words: the condensate amount is never negative, the gases are never supersaturated, and a reaction whose
 condensate is present sits exactly on its saturation curve.
 
-The code tests these conditions in logarithms and in mole fractions. Taking the logarithm of the product and
+The code tests these conditions in logarithms and in mole fractions. Taking the logarithm of the gas product and
 substituting $p_i = p\,x_i/x_{\mathrm{g}}$:
 
 $$
 \begin{aligned}
-\sum_i \nu_{ij} \ln p_i &= \sum_i \nu_{ij} \ln\frac{x_i}{x_{\mathrm{g}}} + \Big(\sum_i \nu_{ij}\Big) \ln p \\
-\sum_i \nu_{ij} \ln\frac{x_i}{x_{\mathrm{g}}} &= \ln K_j(T) - \Big(\sum_i \nu_{ij}\Big) \ln p .
+\sum_{i\in\mathrm{g}} \nu_{ij} \ln p_i &= \sum_{i\in\mathrm{g}} \nu_{ij} \ln\frac{x_i}{x_{\mathrm{g}}}
+  + \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big) \ln p \\
+\sum_{i\in\mathrm{g}} \nu_{ij} \ln\frac{x_i}{x_{\mathrm{g}}} &= \ln K_j(T) - \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big) \ln p .
 \end{aligned}
 $$
 
-The left side of the second line is what `equilibrate_tp` accumulates as `log_frac_sum`, and the right side is its
-`logsvp[j]` ({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}). Equality is accepted when the two differ by
-at most the tolerance `logsvp_eps`, which the callers set from the option `ftol`.
+Both sums run over gases only: `equilibrate_tp` accumulates the pressure exponent in `stoich_sum` over the first
+`ngas` species, and the left side, `log_frac_sum`, over gases, keeping condensates out of it
+({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}). Summed over all species instead, the ammonium hydrosulfide
+reaction would get pressure exponent 1, an error of $\ln p$ in its condition. The right side is `logsvp[j]`. Equality
+is accepted when the two differ by at most the tolerance `logsvp_eps`, which the callers set from the option `ftol`.
+The fixed-energy solver uses the same constant in concentration units, @sec-ch04-equilibrate-uv.
 
 ### Numerical method
 
-No iteration here: this scheme defines the target. A reaction counts as out of equilibrium, and joins the active set
-of the solvers, when either
+No iteration here: this scheme defines the target. A reaction is out of equilibrium, and joins the active set of the
+solvers, when either
 
 1. its left side exceeds $\ln K_j + \epsilon$, so the gases are supersaturated and vapour must condense; or
 2. its left side is below $\ln K_j - \epsilon$ while its condensate is present, so condensate must evaporate.
 
-Here $\ln K_j$ stands for the right side of the second line above and $\epsilon$ for the tolerance `logsvp_eps`.
-
-A reaction whose condensate is absent and whose gases are subsaturated stays out of the active set: the inequality
-in @eq-ch04-conditions-saturation holds. Both tests are in `equilibrate_tp`
+Here $\ln K_j$ stands for the right side of the second line above and $\epsilon$ for the tolerance `logsvp_eps`. A
+reaction whose condensate is absent and whose gases are subsaturated stays out of the active set: the inequality in
+@eq-ch04-conditions-saturation holds. Both tests are in `equilibrate_tp`
 ({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}).
+
+**Which reactions and condensates take part.** The reactions are those of `type: nucleation`; every other reaction
+type is skipped when the equilibrium stoichiometry is read (`NucleationOptionsImpl::from_yaml`,
+{{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}}). So the complementarity holds per nucleation
+reaction, not for every condensate in the cell. A condensate that no nucleation reaction produces is never moved by
+saturation adjustment. The kintera test input `tests/jupiter.yaml` shows this: it turns liquid water into a
+precipitating copy `H2O(l,p)` by a `coagulation` reaction and evaporates that copy by an `evaporation` reaction.
+`H2O(l,p)` appears in no nucleation reaction, so a cell holding it in subsaturated air keeps it after the
+solve.[^ch04-conditions-precip] Only the kinetic evaporation of @sec-ch06 removes it.
+
+**A gas that is absent.** When a gas of an active reaction has zero mole fraction, its logarithm is undefined. The code
+replaces the missing terms by a boundary value along a feasible reaction extent and clamps it to
+$\pm\tfrac12 \ln$ of the largest representable number. A reaction that lacks both a gas it consumes and a gas it
+produces cannot move in either direction and is skipped for that iteration (`equilibrate_tp`,
+{{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}).
 
 TODO: a figure of the three cases (saturated, supersaturated, subsaturated without condensate) on a saturation curve.
 
@@ -91,29 +113,43 @@ TODO: a figure of the three cases (saturated, supersaturated, subsaturated witho
 | what | code link | symbol | switch |
 |---|---|---|---|
 | conditions and active-set test, fixed $T$, $p$ | {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}} | `equilibrate_tp` | always |
+| same, fixed $U$, $V$ | {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}} | `equilibrate_uv` | always |
 | saturation constant of a reaction | {{< code src/thermo/log_svp.cpp >}} | `LogSVPFunc` | always |
+| reactions taken into account | {{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}} | `NucleationOptionsImpl::from_yaml` | `type: nucleation` |
 
 : Code map of the equilibrium conditions. {#tbl-ch04-conditions-code}
-
-TODO: the walk-through of how a reaction with a gas that is absent is handled (the code moves its residual to a
-bounded boundary value instead of taking the logarithm of zero).
 
 ### Tests
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_saturation_adjustment_nh4sh.py` | ammonium hydrosulfide formation from two vapours | TODO | TODO |
+| `test_saturation_adjustment_nh4sh.py` | no reaction supersaturated, no cloud in subsaturated air, no negative amount; N and S conserved | RH within $10^{-5}$ of 1; `rtol=1e-12` for N, S | not stated in the test |
 
 : Tests of the equilibrium conditions. {#tbl-ch04-conditions-tests}
 
-TODO: the assertions and tolerances of the test above; missing evidence.
+`test_saturation_adjustment_nh4sh.py` uses two condensates that share a vapour, ammonia ice and ammonium
+hydrosulfide, so the pressure exponent 2 of the second reaction is exercised. It also requires that no cell is left
+unadjusted with a non-negative diagnostic, and that at most 10 of 2000 random cells fail.
 
 [^ch04-conditions-lio18]: [source: C. Li, A. P. Ingersoll and F. Oyafuso, "Moist adiabats with multiple condensing
 species: a new theory with application to giant-planet atmospheres", J. Atmos. Sci. 75, 1063-1072 (2018),
 <https://doi.org/10.1175/JAS-D-17-0257.1>, sections 2 and 3.]
 
+[^ch04-conditions-precip]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, one
+cell at 300 K and $10^5$ Pa with $x_{\mathrm{H_2O}} = x_{\mathrm{H_2O(l,p)}} = 10^{-3}$; run: `python -P
+item8_precip.py`, which calls `ThermoX.forward`, CPU, double: diagnostic 1, both mole fractions unchanged, final
+$\ln\mathrm{RH}$ of water $-3.57$; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a
+committed check.]
+
 ### Limits
 
-- Condensates are treated as pure phases with unit activity: their amount enters only through $c_j > 0$, never
-  through the product. Solutions of condensates are not modelled.
-- TODO: the behaviour when a gas of a reaction is absent from the cell; not measured.
+::: {.callout-warning title="Limits"}
+- **Ideal gas only.** The fixed-temperature tests use $p_i = p\,x_i/x_{\mathrm{g}}$, and the fixed-energy and partition
+  methods use the ideal-gas form $\ln(\mathcal R T)$. The compressibility terms of a non-ideal equation of state are
+  not used in these tests, so saturation is checked as if the gas were ideal.
+- **Only nucleation reactions are adjusted**, as above.
+- **The tolerance holds only after convergence.** With the default `max-iter` of 10, cold starts far from
+  equilibrium fail and leave residuals far above `ftol` (@sec-ch04-equilibrate-tp, Limits).
+:::
+
+- Condensates are pure phases with unit activity. Solutions of condensates are not modelled.

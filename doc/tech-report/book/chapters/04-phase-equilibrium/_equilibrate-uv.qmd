@@ -13,12 +13,14 @@ reviewer:
 A dynamical model knows each cell's density and internal energy, not its temperature. This solver finds the
 temperature and the gas-condensate split together, so that the conditions of @sec-ch04-conditions hold and the
 internal energy per volume is unchanged: latent heat released by condensation warms the cell. It runs through
-`ThermoY` in molar concentrations. Two methods are available. The general method uses the same active-set
-least-squares step as the fixed-temperature solver. The partition method is a shortcut for reaction sets in which
-every reaction has exactly one vapour and one condensate and no species appears in two reactions.
+`ThermoY` in molar concentrations. Two methods exist. The general method uses the same constrained least-squares step
+as the fixed-temperature solver (@sec-ch04-active-set). The partition method is a shortcut for reaction sets in which
+every reaction has exactly one vapour and one condensate and no species appears in two reactions. The option
+`uv-solver` chooses between them per cell, and the partition method can fail near the reference temperature (Limits).
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Satisfy @eq-ch04-conditions-saturation at fixed internal energy and volume.
+**Purpose.** Satisfy @eq-ch04-conditions-saturation at fixed internal energy and volume
+(@eq-ch04-equilibrate-uv-energy).
 
 **Data.** Concentrations and internal energy per volume in; temperature and concentrations out.
 
@@ -26,37 +28,89 @@ every reaction has exactly one vapour and one condensate and no species appears 
 
 **Activation.** YAML `dynamics: equation-of-state: uv-solver:` `auto` (default), `kkt` or `partition`.
 
-**Guarantee / limits.** `partition` is refused for reaction sets that do not qualify.
+**Guarantee / limits.** `partition` is refused for sets that do not qualify and can fail near `Tref`.
 
 **Evidence.** See the Tests layer below.
 :::
 
+Local symbols: as in @sec-ch04-conditions, and $C_i$ the molar concentration of species $i$ [$\mathrm{mol\,m^{-3}}$];
+$u_i$ its molar internal energy [$\mathrm{J\,mol^{-1}}$], with offset $u_{0,i}$ and constant molar heat capacity
+$c_{v,i}$ [$\mathrm{J\,mol^{-1}\,K^{-1}}$]; $U$ the internal energy per volume [$\mathrm{J\,m^{-3}}$].
+
 ### Derivation
 
-TODO: the energy constraint, the saturation constants in concentration units and the temperature solve, written
-out from `equilibrate_uv` ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}).
+In concentrations, the gas partial pressure of an ideal gas is $p_i = C_i \mathcal R T$. Substituting into the
+deficit of @sec-ch04-conditions gives the condition in concentration units:
+
+$$
+\begin{aligned}
+\sum_{i\in\mathrm{g}} \nu_{ij} \ln C_i &= \ln K_j(T) - \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big) \ln(\mathcal R T), \\
+\frac{\mathrm{d}}{\mathrm{d}T}\Big[\ln K_j(T) - \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big) \ln(\mathcal R T)\Big]
+  &= \frac{\mathrm{d}\ln K_j}{\mathrm{d}T} - \frac{\sum_{i\in\mathrm{g}} \nu_{ij}}{T} .
+\end{aligned}
+$$ {#eq-ch04-equilibrate-uv-constant}
+
+The internal energy per volume is held fixed while condensation moves species:
+
+$$
+\begin{aligned}
+U &= \sum_i u_i(T)\, C_i, \\
+u_i(T) &= u_{0,i} + c_{v,i}\, T .
+\end{aligned}
+$$ {#eq-ch04-equilibrate-uv-energy}
+
+A species may carry an extra temperature-dependent term in $u_i$, evaluated by the same function the thermodynamics
+uses. @eq-ch04-equilibrate-uv-constant and @eq-ch04-equilibrate-uv-energy are computed in `equilibrate_uv`
+({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}). After each composition step the temperature is found from
+@eq-ch04-equilibrate-uv-energy by Newton iteration, $T \leftarrow T + (U - \sum_i u_i C_i)/\sum_i
+(\mathrm{d}u_i/\mathrm{d}T)\,C_i$,
+until two iterates differ by less than $\max(10^{-4}\,\mathrm{K}, 8\,\epsilon_{\mathrm{mach}} T)$.
 
 ### Numerical method
 
-The method is chosen in `ThermoYImpl::forward` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}):
+**Method choice.** `ThermoYImpl::forward` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}) passes the choice
+to each cell:
 
-1. A reaction set qualifies for the partition method when every reaction has exactly one vapour consumed and one
-   condensate produced, and no species appears in more than one reaction. The check is in `ThermoYImpl::reset`
+1. A reaction set qualifies for the partition method when every reaction consumes exactly one vapour and produces
+   exactly one condensate, and no species appears in more than one reaction. The check is in `ThermoYImpl::reset`
    ({{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}).
-2. `uv-solver: partition` on a set that does not qualify raises an error: "UV partition solver requires disjoint
-   vapor-cloud reactions".
-3. `uv-solver: auto` passes the choice to the per-cell solver when the set qualifies, and uses the general method
-   otherwise. `kkt` always uses the general method.
+2. `uv-solver: partition` on a set that does not qualify raises "UV partition solver requires disjoint vapor-cloud
+   reactions". On a qualifying set, each cell runs only the partition method. A cell where it fails keeps its input
+   concentrations and temperature and gets diagnostic $-1$.
+3. `uv-solver: auto` on a qualifying set runs the partition method first in each cell and falls back to the general
+   method when it fails. On a set that does not qualify, `auto` and `kkt` run the general method.
 
-TODO: the iteration of each method, its starting guess, its stopping rule and a figure.
+**General method.** `equilibrate_uv` ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}) repeats, up to
+`max-iter` times:
+
+1. evaluate @eq-ch04-equilibrate-uv-constant at the current temperature;
+2. find the active reactions and build the weight matrix and right side in concentrations, as in
+   @sec-ch04-equilibrate-tp;
+3. solve the constrained least-squares problem of @sec-ch04-active-set;
+4. clip each reaction's extent to the stock of the species it consumes;
+5. shrink the whole step by a factor 0.99 per try until every gas present changes by a ratio between 0.01 and 100;
+   if the factor underflows, the solve stops with status 4;
+6. solve @eq-ch04-equilibrate-uv-energy for the new temperature, at most 100 Newton passes; more passes, or a
+   non-positive or non-finite temperature, stop the solve with status 4.
+
+**Partition method.** `equilibrate_uv_partition`
+({{< code src/thermo/equilibrate_uv.h equilibrate_uv_partition >}}) needs no linear algebra. At a trial temperature
+each reaction's vapour concentration is the smaller of its total and $K_j^{1/\nu}/(\mathcal R T)$, and the rest is
+condensate (`partition_uv_state`, {{< code src/thermo/equilibrate_uv.h partition_uv_state >}}). The temperature that
+matches $U$ is bracketed by halving or doubling, at most 64 times, and then found by a Newton iteration safeguarded by
+bisection. It stops when the energy residual is at most $64\,\epsilon_{\mathrm{mach}} \max(|U_0|, 1)$, where $U_0$ is
+the target energy in the solver's own reference. That tolerance is absolute.
+
+TODO: a figure of the two methods and the fallback of `auto`.
 
 ### Code
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| per-cell solver | {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}} | `equilibrate_uv` | always |
+| general method | {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}} | `equilibrate_uv` | `uv-solver` |
 | partition method | {{< code src/thermo/equilibrate_uv.h equilibrate_uv_partition >}} | `equilibrate_uv_partition` | `uv-solver` |
-| method choice | {{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}} | `ThermoYImpl::forward` | `uv-solver` |
+| partition state at a temperature | {{< code src/thermo/equilibrate_uv.h partition_uv_state >}} | `partition_uv_state` | `uv-solver` |
+| method choice and eligibility | {{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}} | `ThermoYImpl::reset` | `uv-solver` |
 
 : Code map of saturation adjustment at fixed internal energy and volume. {#tbl-ch04-equilibrate-uv-code}
 
@@ -64,13 +118,49 @@ TODO: the iteration of each method, its starting guess, its stopping rule and a 
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_equilibrate_uv_gain.py` | the gain matrix the solver returns | TODO | TODO |
-| `test_cuda_workspace.py` | the solve on CUDA matches the CPU | TODO | TODO |
+| `test_equilibrate_uv_gain.py` | the gain matrix is zero outside the active set | exact zeros | structure |
+| `test_saturation_adjustment_nh4sh.py` | adjusted cells satisfy the conditions; N and S conserved | RH within $10^{-5}$; `rtol=1e-12` | not stated in the test |
+| `test_cuda_workspace.py` | the solve on CUDA matches the CPU | not tabulated yet | not tabulated yet |
 
 : Tests of saturation adjustment at fixed internal energy and volume. {#tbl-ch04-equilibrate-uv-tests}
 
-TODO: assertions, tolerances and runs; missing evidence.
+No test in the tree checks that the internal energy is conserved, that is, $U$ after the solve equals $U$ before to the
+inner tolerance. A run on the cold-start cells of @sec-ch04-equilibrate-tp finds a relative change of at most
+$7.3\times10^{-16}$.[^ch04-uv-coldstart] A test of this property is proposed, not present.
 
 ### Limits
 
-TODO: not yet written; not measured.
+::: {.callout-warning title="Limits"}
+- **The partition method fails near `Tref`.** Its tolerance is absolute, and the target energy $U_0$ is close to zero
+  when the cell starts near the reference temperature. For one vapour (water, $x_{\mathrm{v}} = 5\times10^{-2}$, 1 bar)
+  started within 1 K of `Tref`, `uv-solver: partition` fails in every cell. It leaves the saturation residual
+  $\ln\mathrm{RH}$ at 0.29-0.40 for `Tref` 300 K and 4.09-4.28 for `Tref` 250 K, temperature unchanged.
+  `kkt` converges in the same cells to $|\ln\mathrm{RH}| \le 10^{-6}$.[^ch04-uv-partition] With `auto` such a cell
+  falls back to the general method.
+- **The default `max-iter` of 10 fails cold starts here too.** On the cold-start cells of @sec-ch04-equilibrate-tp the
+  general method fails at 130 and 150 K with `max-iter: 10` and converges with 20 or 30, in 14 and 12
+  iterations.[^ch04-uv-coldstart]
+- **`use-h2-cp` leaves the cell off saturation.** With the rotational heat capacity of hydrogen switched on, the
+  solver uses constant heat capacities for the hydrogen gas while `ThermoY` reports the temperature with the
+  rotational term. At the reported temperature the residual $\ln\mathrm{RH}$ is $+0.18$ (ammonia, 160 K), $+3.07$
+  (ammonia, 120 K) and $-3.5\times10^{-3}$ (water, 300 K). Without the option it is at most $2.3\times10^{-14}$.
+  [^ch04-uv-h2cp]
+:::
+
+- The saturation tests assume an ideal gas (@sec-ch04-conditions, Limits).
+
+[^ch04-uv-partition]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: a self-written card with dry gas,
+`H2O` and `H2O(l)`, one nucleation reaction with `formula: h2o_ideal`, `Tref` 300 or 250, `max-iter: 50`; cells at
+`Tref` $-1$, $-0.5$, 0, $+0.5$, $+1$ K and $10^5$ Pa; run: `python -P item5_partition_tref.py 300 partition` and the
+same with `kkt` and with 250, which call `ThermoY.forward` and `relative_humidity`, CPU, double; Python 3.11.13,
+torch 2.10.0+cu126; a measurement outside the suite, not a committed check.]
+
+[^ch04-uv-coldstart]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` with
+`uv-solver: kkt` and `max-iter` 10, 20 or 30, the cells of the fixed-temperature cold start; run: `python -P
+uv_coldstart.py 10` (and 20, 30), which calls `ThermoY.forward`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a
+measurement outside the suite, not a committed check.]
+
+[^ch04-uv-h2cp]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: a self-written card with `H2` as the dry
+gas, one vapour and its condensate, `Tref` 0, with and without `use-h2-cp: true`; run: `python -P uv_h2cp.py nh3_160
+on` and the other five cases, which call `ThermoY.forward`, `VU->T` and `relative_humidity`, CPU, double; Python
+3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed check.]

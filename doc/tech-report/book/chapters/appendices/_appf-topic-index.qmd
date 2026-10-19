@@ -148,6 +148,8 @@
 
 **dense linear solve**: Dense helpers and the pivoted Gaussian solve, @sec-ch10-dense.
 
+*detailed balance*, see **reverse rate constant**.
+
 *device and precision contract*, see **moving a module to the GPU**.
 
 **device dispatch**: Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
@@ -163,6 +165,8 @@
 **`diff_P`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
 **`diff_T`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
+
+*diffusion-limited growth*, see **evaporation, diffusion form**.
 
 *diffusion_tendency*, see **eddy diffusion tendency**.
 
@@ -204,6 +208,8 @@
 
 *equilibrium constant*, see **chemical equilibrium, conditions**.
 
+*equilibrium constant K_c*, see **reverse rate constant**.
+
 *EquilibriumOptions*, see **chemical equilibrium, options**.
 
 *error control*, see **Rosenbrock step**.
@@ -233,6 +239,8 @@
 *find_resource*, see **resource lookup**.
 
 *first run*, see **quick start**.
+
+*fixed internal energy*, see **Jacobian, reaction space**.
 
 **`formula`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
@@ -315,6 +323,8 @@
 **`Kzz`**: The eddy-diffusion operator on a column, @sec-ch08-operator.
 
 ## L {.unnumbered .unlisted}
+
+*L-stability*, see **implicit time step**.
 
 **latent heat**: Reference state and latent heat, @sec-ch03-reference-state.
 
@@ -490,6 +500,10 @@
 
 **resource lookup**: Resource lookup for data files, @sec-ch11-resources.
 
+**reverse rate constant**: Reaction rates by mass action, @sec-ch06-mass-action.
+
+*ROS2*, see **implicit time step**.
+
 *Rosenbrock*, see **implicit time step**.
 
 **Rosenbrock step**: Rosenbrock time steps with adaptive step size, @sec-ch09-rosenbrock.
@@ -598,6 +612,8 @@
 
 *temperature bands*, see **Arrhenius rate constant**.
 
+*temperature feedback*, see **Jacobian, reaction space**.
+
 **temperature from entropy**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
 
 **temperature from internal energy**: Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
@@ -644,6 +660,8 @@
 
 *unit conversion*, see **units**.
 
+*unit conversion of A*, see **Arrhenius rate constant**.
+
 **units**: Units and physical constants, @sec-ch02-units.
 
 *uv-solver*, see **saturation adjustment, fixed internal energy and volume**.
@@ -651,6 +669,8 @@
 ## V {.unnumbered .unlisted}
 
 **validation tolerance**: How the test suite is organised and run, @sec-ch13-suite.
+
+*van 't Hoff*, see **reverse rate constant**.
 
 *vanishing phase*, see **chemical equilibrium, failures**.
 

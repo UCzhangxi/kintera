@@ -69,7 +69,7 @@ c_m &= c_0\, \frac{x_m}{x_0}, \quad m \ge N_{\mathrm g} .
 \end{aligned}
 $$ {#eq-ch03-eos-conc}
 
-The second line is $x_m c$ written with $c = c_0 / x_0$. @eq-ch03-eos-conc is computed in `_xfrac_to_conc`
+For ideal gases the second line is $x_m c$ written with $c = c_0 / x_0$. @eq-ch03-eos-conc is computed in `_xfrac_to_conc`
 ({{< code src/thermo/thermo_x.cpp ThermoXImpl::_xfrac_to_conc >}}). Only the gas sum $x_{\mathrm g}$ enters the
 denominator; a mixture with condensates has a larger total concentration than its gas pressure alone suggests.
 
@@ -81,7 +81,16 @@ $$
 c_n \leftarrow c_n + \frac{c^{\mathrm{id}}_n - z_n c_n}{z_n + c_n\, \partial z_n / \partial c_n} .
 $$
 
-The relation is exact for $z_n = 1$ (the first iterate already satisfies it). With $z_n \ne 1$ it is solved to the
+The code computes the condensate line from the $c_0$ it returns, which is first floored at `gas_floor` and then
+Newton-corrected for $z_0$. Writing $c_0 = c^{\mathrm{id}}_0 / z_0$ and $c_n = c^{\mathrm{id}}_n / z_n$ gives
+
+$$
+\frac{c_m}{c_n} = \frac{x_m}{x_n}\, \frac{z_n}{z_0} ,
+$$
+
+so the returned concentrations reproduce the input mole fractions, $c_m / c_n = x_m / x_n$, only when $z_0 = z_n = 1$
+and $c^{\mathrm{id}}_0$ is above the floor. Otherwise mole fractions recomputed from the concentrations differ from
+the input. The relation is exact for $z_n = 1$ (the first iterate already satisfies it). With $z_n \ne 1$ it is solved to the
 relative tolerance `ftol`.
 
 ### Numerical method
@@ -133,8 +142,12 @@ float64, and on CUDA when a GPU is present. No test sets a compressibility funct
 ### Limits
 
 Condensate volume is neglected: the gas occupies the whole volume. The second line of @eq-ch03-eos-conc divides by
-$x_0$, so a state whose first species has zero mole fraction gives non-finite condensate concentrations (verified
-by reading the formula; not run). The non-ideal branches are untested.
+$x_0$. With $x_0 = 0$, $c_0$ is floored to `gas_floor` ($10^{-20}$ mol m$^{-3}$) and every condensate with
+$x_m > 0$ gets $c_m = 10^{-20} x_m / 0 = +\infty$ in IEEE arithmetic, and $x_m = 0$ gives NaN (read from
+`_xfrac_to_conc`). The content review of this chapter ran it[^ch03-x0-review]: $x_0 = 0$ with a cloud present
+returned $c_{\mathrm{H_2O(l)}} = \infty$, while $x_0 = 10^{-12}$ was finite and correct (4.454533 mol m$^{-3}$ both
+ways); these are the review's numbers, not rerun here. More generally, any $x_0$ with
+$c^{\mathrm{id}}_0 < 10^{-20}$ mol m$^{-3}$ inflates the condensate concentrations by the floor. The non-ideal branches are untested.
 
 The compressibility hooks are reachable from C++ only. No YAML key sets `czh` or `czh_ddC`; `populate_thermo`
 ({{< code src/species.cpp populate_thermo >}}), run by every `ThermoX` and `ThermoY` constructor, pads them with
@@ -146,3 +159,5 @@ Where a C++ caller does set $z_n \ne 1$, only the conversions of this section us
 $p\, x_n / x_{\mathrm g}$ in `equilibrate_tp` ({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}). The same
 holds for the relative humidity (@sec-ch03-relative-humidity). A non-ideal state would then be adjusted to an
 ideal-gas saturation; that it would be inconsistent with this section's pressure is a hypothesis (not run).
+
+[^ch03-x0-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 6, quoted in the description of [UCzhangxi/kintera#PRNUM](https://github.com/UCzhangxi/kintera/pull/PRNUM).

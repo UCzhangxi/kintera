@@ -30,8 +30,8 @@ condensation that keeps the parcel saturated. This follows the multi-condensable
 **Activation.** `extrapolate_dlnp(temp, pres, xfrac, dlnp, ...)`, `extrapolate_dz(temp, pres, xfrac, dz, grav,
 ...)`; `rainout` default off.
 
-**Guarantee / limits.** In $\ln p$, no step error: entropy is held to 10 times `ftol`. In $z$, trapezoidal
-hydrostatics.
+**Guarantee / limits.** Reversible step: no step error in $\ln p$. Rain-out: first order in $\Delta \ln p$. In $z$:
+trapezoidal hydrostatics.
 
 **Evidence.** See the Tests layer.
 :::
@@ -116,11 +116,21 @@ $$
 $$
 
 with $s_m$ the condensate entropy of @eq-ch03-species-functions-scond, and the condensate mole fractions are set to
-zero and the rest renormalised.
+zero and the rest renormalised. The target is evaluated once, at the end state: all the condensate formed over the
+step is removed with its end-state entropy $s_m(T_1, p_1)$ (verified by reading `extrapolate_dlnp` at the pin). The
+continuous pseudo-adiabat obeys $\mathrm d(n_{\mathrm g} \bar s_{\mathrm g}) = -\sum_m s_m\, \mathrm d n_m$, with
+$s_m$ varying along the path; evaluating $s_m$ at one end of the step is the one-sided rectangle rule for that
+integral, whose error is first order in $\Delta \ln p$. So the rain-out target, unlike the reversible one, depends
+on the step size.
 
-What is exact and what is truncated: `extrapolate_dlnp` has no truncation error in $\Delta \ln p$; its end state
-satisfies $\bar s(T, p_1) = \bar s_{\mathrm{target}}$ to within 10 times `ftol`, in J mol$^{-1}$ K$^{-1}$, whatever the
-step. `extrapolate_dz` adds the trapezoidal error of @eq-ch03-adiabat-hydrostatic, second order in $\Delta z$ for a
+What is exact and what is truncated: the reversible step of `extrapolate_dlnp` (no `rainout`) has no truncation error
+in $\Delta \ln p$; its end state satisfies $\bar s(T, p_1) = \bar s_{\mathrm{target}}$ to within 10 times `ftol`, in
+J mol$^{-1}$ K$^{-1}$, whatever the step. With `rainout` the step has the first-order error of the rectangle rule
+above. The content review of this chapter measured[^ch03-rainout-review] it against an independent fine-step
+integration, for a dry gas with water from saturation at 1 bar to 0.5 bar: the pseudo-adiabatic end temperature was
+off by $+6.27 \times 10^{-3}$, $+3.18 \times 10^{-3}$, $+1.63 \times 10^{-3}$, $+8.3 \times 10^{-4}$ and
+$+4.5 \times 10^{-4}$ K with 35, 70, 139, 277 and 555 steps, halving with the step, while the reversible error stayed
+at $7 \times 10^{-5}$ K or below. These are the review's measurements, not rerun here. `extrapolate_dz` adds the trapezoidal error of @eq-ch03-adiabat-hydrostatic, second order in $\Delta z$ for a
 smooth $\rho(z)$ (a standard property of the trapezoidal rule; no test measures it). The executable check is not written yet.
 
 ### Numerical method
@@ -155,20 +165,26 @@ every iteration. Both functions overwrite `temp`, `pres` and `xfrac` in place.
 |---|---|---|---|
 | `test_thermo.release` (`DeviceTest.extrapolate_ad`) | molar entropy unchanged after a step $\Delta \ln p = -0.1$ | $10^{-3}$ rel. and abs. | not yet derived |
 | `test_earth.py` | a 2-D column built by `extrapolate_dlnp` runs | none | smoke test, no assertion |
+| `test_python_subprocess` (`test_effective_cp_heap_state.py`) | CPU `effective_cp` is the same whatever the heap held, in one cell and in a batch, and exceeds the frozen $\bar c_p$ | exact equality | bitwise reproducibility by design |
 
 : Tests of the adiabat extrapolation. {#tbl-ch03-adiabat-tests}
 
 `DeviceTest.extrapolate_ad` is skipped in float32 and runs in float64 on CPU and on CUDA when a GPU is present.
 `tests/test_effective_cp_heap_state.py` asserts that `effective_cp` on CPU gives one value whatever the heap holds
-and keeps the latent term, but it is not registered with ctest at the pin, so CI does not run it.
+and keeps the latent term. It runs in CTest inside the single entry `test_python_subprocess`, which runs the
+`subprocess_tests` list of `tests/CMakeLists.txt` at the pin, and so in the CI of kintera (`ctest --output-on-failure`).
 `test_jupiter_tp_adiabat.py` builds a deep adiabat with repeated `forward` calls and its own temperature bracket; it
 does not call `extrapolate_dlnp` or `extrapolate_dz`, so it is not evidence for this section. No test covers
 `extrapolate_dz`, `rainout`, or the trapezoidal order: missing evidence.
 
 ### Limits
 
-`extrapolate_dz` and `rainout` are untested. The CUDA path of `effective_cp` uses an absolute pseudo-inverse
+`extrapolate_dz` and `rainout` are untested. With `rainout`, a column built in steps of $\Delta \ln p$ carries a
+first-order step error (Derivation); a precipitating copy of a condensate that has no nucleation reaction of its own
+leaves with zero entropy (@sec-ch03-species-functions). The CUDA path of `effective_cp` uses an absolute pseudo-inverse
 tolerance of $10^{-6}$ on the row-scaled matrix, while the CPU path uses `gelsd`; whether the two agree on
 ill-conditioned gain matrices is not measured. The entropy target uses the constant-$c_p$ gas entropy of
 @sec-ch03-species-functions, so with `use-nasa9-cp` the step conserves that entropy, not the NASA-9 one (verified by
 reading `eval_entropy_R`; the size of the effect is not measured).
+
+[^ch03-rainout-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 4, quoted in the description of [UCzhangxi/kintera#PRNUM](https://github.com/UCzhangxi/kintera/pull/PRNUM).

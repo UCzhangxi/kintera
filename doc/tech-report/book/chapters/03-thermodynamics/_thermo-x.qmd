@@ -25,7 +25,7 @@ and pressure, is the subject of @sec-ch04.
 
 **Activation.** API: `ThermoX(options)`, then `compute("<from>-><to>", [...])`.
 
-**Guarantee / limits.** Exact except `TPX->V` with $z_n \ne 1$ and `PXS->T`, iterations to `ftol`.
+**Guarantee / limits.** Exact except `TPX->V` with $z_n \ne 1$; `PXS->T` can return a wrong $T$ (Limits).
 
 **Evidence.** See the Tests layer.
 :::
@@ -65,18 +65,46 @@ The lines are computed in `_cp_vol` ({{< code src/thermo/thermo.hpp ThermoXImpl:
 ({{< code src/thermo/thermo.hpp ThermoXImpl::_enthalpy_vol >}}) and `_entropy_vol`
 ({{< code src/thermo/thermo.hpp ThermoXImpl::_entropy_vol >}}). `THS->G` returns the Gibbs energy $H - T S$.
 
-**Temperature from entropy at fixed pressure.** At fixed $p$ and fixed composition,
-$\partial S / \partial T = C_p / T$. A Newton step on $S(T) = S_{\mathrm{given}}$ is therefore
+**Temperature from entropy at fixed pressure.** `PXS->T` solves $S(T) = S_{\mathrm{given}}$ for the entropy per
+unit volume $S$ of @eq-ch03-thermo-x-totals, recomputing the concentrations from @eq-ch03-eos-conc at every
+iterate. At fixed $p$ and $x$ every concentration scales as $1/T$, so $\partial c_n / \partial T = -c_n / T$. For a
+gas, $\partial s_n / \partial T = c_{p,n} / T$ at fixed $p$ and $x_n$; assume the same for the condensates. Then
+
+$$
+\begin{aligned}
+\frac{\partial S}{\partial T} &= \sum_n \frac{\partial c_n}{\partial T} s_n + \sum_n c_n \frac{\partial s_n}{\partial T}
+= -\frac{S}{T} + \frac{C_p}{T} , \\
+\frac{\partial S}{\partial T} &= \frac{C_p - S}{T} .
+\end{aligned}
+$$ {#eq-ch03-thermo-x-entropy-slope}
+
+The code does not use this slope. Its update, computed in `_entropy_to_temp`
+({{< code src/thermo/thermo_x.cpp ThermoXImpl::_entropy_to_temp >}}), is
 
 $$
 T \leftarrow T \left(1 + \frac{S_{\mathrm{given}} - S(T)}{C_p(T)}\right) ,
 $$ {#eq-ch03-thermo-x-entropy-newton}
 
-computed in `_entropy_to_temp` ({{< code src/thermo/thermo_x.cpp ThermoXImpl::_entropy_to_temp >}}). After each
-step the code calls `forward`, the saturation adjustment at the new $(T, p)$, which changes the composition in place.
-The slope $C_p$ is the frozen one of @eq-ch03-thermo-x-totals: it omits the latent heat of the condensation that
-`forward` adds or removes, so in a saturated parcel the step is not the exact Newton step of the equilibrated
-$S(T)$ (the effective heat capacity of @sec-ch03-adiabat is that slope).
+which is Newton's method for an entropy per mole or per kilogram (slope $C_p/T$), not per volume. Write the update
+as $T \leftarrow \phi(T)$ with $\phi(T) = T + T (S_{\mathrm{given}} - S)/C_p$. At a root $T^{\ast}$,
+$S = S_{\mathrm{given}}$, so
+
+$$
+\phi'(T^{\ast}) = 1 - \frac{T^{\ast}}{C_p} \frac{\partial S}{\partial T} = 1 - \frac{C_p - S}{C_p} = \frac{S}{C_p}
+= \frac{\bar s}{\bar c_p} ,
+$$ {#eq-ch03-thermo-x-entropy-factor}
+
+with $\bar s = S / \sum_n c_n$ and $\bar c_p = C_p / \sum_n c_n$ per mole of mixture. Three consequences follow.
+(1) The iteration converges only where $\lvert \bar s / \bar c_p \rvert < 1$, and only linearly. (2) $\bar s$
+contains the arbitrary entropy constants `s0_R` and the reference state $T_\star$, $p_\star$
+(@sec-ch03-reference-state), so whether `PXS->T` converges depends on constants that should not change any
+physical answer. (3) By @eq-ch03-thermo-x-entropy-slope, $S(T)$ at fixed $p$ has a turning point where
+$S = C_p$, so a given $S_{\mathrm{given}}$ can have a second, spurious root, to which the iteration may converge.
+The adiabat code avoids all three by inverting the molar entropy $\bar s$ instead (@sec-ch03-adiabat).
+
+After each step the code calls `forward`, the saturation adjustment at the new $(T, p)$, which changes the
+composition in place. The slope $C_p$ is also frozen: it omits the latent heat of the condensation that `forward`
+adds or removes (the effective heat capacity of @sec-ch03-adiabat would include it).
 
 ### Numerical method
 
@@ -116,7 +144,7 @@ fractions it is given with the equilibrated ones.
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_thermo.release` (`DeviceTest.thermo_x`) | `TPV->S` then `PXS->T` returns $T$ | $10^{-4}$ rel. and abs. | not yet derived |
+| `test_thermo.release` (`DeviceTest.thermo_x`) | `TPV->S` then `PXS->T` returns $T$, starting at the answer ($T = T_\star$) | $10^{-4}$ rel. and abs. | not yet derived |
 | `test_thermo.release` (`DeviceTest.thermo_x`) | `V->D` equals concentration times molar mass, summed | $10^{-4}$ rel. and abs. | not yet derived |
 | `test_thermo.release` (`DeviceTest.thermo_xy`) | `X->Y` then `Y->X` returns $x$ | $10^{-4}$ rel. and abs. | not yet derived |
 
@@ -128,10 +156,23 @@ CPU in float32 and float64 and on CUDA when a GPU is present. `TV->cp` and `TV->
 
 ### Limits
 
-`PXS->T` uses the frozen heat capacity as its slope, which is a hypothesis for slow convergence in saturated
-parcels (not measured). It mutates its mole-fraction argument. Each of its iterations runs the saturation adjustment of @sec-ch04 with the
-same `max-iter`; a cell that the adjustment leaves unconverged gives `PXS->T` a composition off saturation, and
-`ThermoX.forward` keeps no failure count (verified by reading `ThermoXImpl::forward`,
-{{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}}). No test measures how often that happens at the default
-`max-iter` of 10. The file written on non-convergence lands in the
-working directory of the caller.
+`PXS->T` returns wrong temperatures, not merely slow ones, away from $T_\star$. The content review of this
+chapter, run on kintera built at the pin, measured[^ch03-pxs-review] for a dry parcel at 1 bar started at
+$T_\star = 300$ K: target 600 K gave 594.16 K with `max-iter` 10 and 599.9987 K with 100; target 150 K gave NaN
+(the first step makes $T < 0$); with `s0_R` 5 and target 600 K it converged to 103.78 K, the spurious root; with
+`s0_R` 15.7 or 30 it gave NaN or overflow. In saturated parcels of `tests/jupiter.yaml` equilibrated at $T_\star$
+and 1 bar the same review measured: 5 % H$_2$O, $T_\star = 300$ K, returned 321.605 K with `max-iter` 10 and 100;
+the Jupiter composition at 150 K returned NaN; 5 % H$_2$O at 280 K returned 280.871 K (10) and 280.0001 K (100).
+These numbers are the review's measurements; they were not rerun for this text, and no executable check at the pin
+reproduces them yet (missing evidence). They agree with
+@eq-ch03-thermo-x-entropy-factor: only a start at the answer is exact, and the frozen slope adds a latent-heat
+error in saturated parcels. The only test of `PXS->T` starts at $T_\star$, where the answer is the start.
+
+When `max_iter` is reached, `PXS->T` warns, writes its inputs to a file, and returns the last iterate; the caller
+cannot tell a converged result from an unconverged one except by the warning. It also mutates its mole-fraction
+argument. Each iteration runs the saturation adjustment of @sec-ch04 with the same `max-iter`; a cell that the
+adjustment leaves unconverged gives `PXS->T` a composition off saturation, and `ThermoX.forward` keeps no failure
+count (verified by reading `ThermoXImpl::forward`, {{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}}). The
+file written on non-convergence lands in the working directory of the caller.
+
+[^ch03-pxs-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), items 1 and 2, quoted in the description of [UCzhangxi/kintera#PRNUM](https://github.com/UCzhangxi/kintera/pull/PRNUM).

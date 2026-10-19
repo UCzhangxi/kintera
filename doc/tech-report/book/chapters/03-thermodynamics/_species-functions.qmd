@@ -27,7 +27,7 @@ computed from the condition that each condensation reaction is in equilibrium on
 **Activation.** Always. Optional per-species extra functions; `use-nasa9-cp` and `use-h2-cp` replace $c_v$, $c_p$
 and $u$ for the species they cover.
 
-**Guarantee / limits.** Exact (pointwise closed forms, one small linear solve for condensate entropy).
+**Guarantee / limits.** Exact closed forms; condensate entropy is set only for condensates with a nucleation reaction.
 
 **Evidence.** See the Tests layer.
 :::
@@ -120,12 +120,26 @@ $$ {#eq-ch03-species-functions-scond}
 
 One row per reaction gives a linear system for the condensate entropies; the matrix is the condensate block of
 $\nu_{nr}$, transposed. @eq-ch03-species-functions-scond is solved in the second `eval_entropy_R`
-({{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=2 >}}) with a Moore-Penrose pseudo-inverse, so a
-condensate that appears in no reaction gets zero entropy, and more reactions than condensates are solved in the
-least-squares sense. The data key `s0_R` of a condensate is not used.
+({{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=2 >}}) with a Moore-Penrose pseudo-inverse. The
+reactions are the `type: nucleation` reactions only: the stoichiometry matrix is built from
+`ThermoOptionsImpl::reactions` ({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::reactions >}}), which
+returns the nucleation reactions and nothing else (verified by reading at the pin). A condensate with no nucleation
+reaction of its own has a zero column in the block, and the pseudo-inverse gives it the minimum-norm value, zero.
+More reactions than condensates are solved in the least-squares sense. The data key `s0_R` of a condensate is not
+used.
 
-All five functions are exact closed forms; the only numerical step is the pseudo-inverse, exact up to round-off for
-a full-rank block. The executable check is not written yet.
+The zero is not a physical entropy. It reaches every condensate that enters only through other reaction types, for
+example the precipitating copies `H2O(l,p)` and `NH3(s,p)` of `tests/jupiter.yaml`, which appear only in a
+`coagulation` and an `evaporation` reaction and carry the same `cv_R` and `u0_R` as their clouds `H2O(l)` and
+`NH3(s)` (verified by reading the deck). Moving condensate from a cloud to its copy at fixed $(T, p)$ leaves $C_p$
+and $H$ unchanged but changes $S$ by the cloud's $s_m$ times the moved amount, and $s_m$ depends on the arbitrary
+constants `s0_R`, `Tref`[^rg-3024f877ff0c] and `Pref`[^rg-b6de325e7bca] (@sec-ch03-reference-state). Giving a copy the entropy of its cloud (same phase)
+would remove the dependence; that is a code change, not made here.
+
+The four energy-type functions are exact closed forms. The condensate entropy is exact up to round-off for the
+condensates that have a nucleation reaction and a full-rank block; for the others it is the zero above. The
+executable check is not written yet: it should assert $\sum_n \nu_{nr}(h_n - T s_n) = 0$ for every nucleation
+reaction at a saturated state, and record the cloud-to-copy invariance as an expected failure.
 
 ### Numerical method
 
@@ -182,5 +196,30 @@ the condensate entropy is exercised only through the adiabat test of @sec-ch03-a
 
 With `use-nasa9-cp` or `use-h2-cp`, the entropy keeps a constant $c_p$ while $u$, $h$ and $c_p$ do not, so the
 functions are not mutually consistent for those species (verified by reading; the size of the effect is not
-measured). The condensate enthalpy ignores the extra internal-energy function. A condensate that appears in no
-reaction has zero entropy.
+measured). The condensate enthalpy ignores the extra internal-energy function.
+
+The condensate-entropy solve of @eq-ch03-species-functions-scond mixes the two energy models when `use-nasa9-cp` or
+`use-h2-cp` covers a condensing vapour: its $\sum_n \nu_{nr} h_n$ term uses `eval_enthalpy_R`, which takes the
+NASA-9 or H$_2$ internal energy, while its vapour-entropy term keeps the constant-$c_p$ form (verified by reading the
+second `eval_entropy_R` at the pin). The condensate entropy then carries that mismatch itself. That this changes
+results is a hypothesis, not run: no deck at the pin combines `use-nasa9-cp` with a nucleation reaction. The
+settling check: with `use-nasa9-cp` on a condensing vapour, evaluate $\Delta G/(\mathcal R T)$ of its nucleation
+reaction at saturation using the NASA-9 entropy of the vapour; the hypothesis predicts a non-zero value equal to the
+entropy difference.
+
+Every condensate without a nucleation reaction of its own has zero entropy (see the Derivation). This reaches
+`TPV->S` and `PVT->S`, `PXS->T` (@sec-ch03-thermo-x), and the rain-out target of the adiabat (@sec-ch03-adiabat),
+which removes each condensate with its `eval_entropy_R` value. The sign and size of the resulting error are set by
+the reference-state constants. The content review of this chapter measured[^ch03-copy-review], on
+`tests/jupiter.yaml`, that moving $10^{-3}$ of the mixture from `H2O(l)` to `H2O(l,p)` at 280 K and 5 bar changes
+the specific entropy by $+36.2$ J kg$^{-1}$ K$^{-1}$, and $2 \times 10^{-4}$ from `NH3(s)` to `NH3(s,p)` at 140 K
+and 0.5 bar by $+32.0$ J kg$^{-1}$ K$^{-1}$, while $C_p$ and $H$ change by at most a relative
+$1.5 \times 10^{-16}$; with `Tref` = 0 the sign reverses. These are the review's measurements, not rerun here.
+
+[^ch03-copy-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 3, quoted in the description of [UCzhangxi/kintera#PRNUM](https://github.com/UCzhangxi/kintera/pull/PRNUM).
+
+<!-- reader glossary notes -->
+[^rg-3024f877ff0c]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
+
+[^rg-b6de325e7bca]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
+<!-- end reader glossary notes -->

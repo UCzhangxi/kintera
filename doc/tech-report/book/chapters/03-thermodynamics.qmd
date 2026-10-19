@@ -13,7 +13,7 @@ adjustment of @sec-ch04, the kinetics of @sec-ch06 and the coupling of @sec-ch14
 | @sec-ch03-thermo-y | `ThermoY` (API) | caller | exact | `test_thermo` |
 | @sec-ch03-thermo-x | `ThermoX` (API) | caller | exact | `test_thermo` |
 | @sec-ch03-relative-humidity | `relative_humidity` (API) | caller | exact | `test_inline_svp.py` |
-| @sec-ch03-adiabat | `extrapolate_dlnp`, `extrapolate_dz` (API) | caller | exact in $\ln p$, second in $z$ (not measured) | `test_thermo` |
+| @sec-ch03-adiabat | `extrapolate_dlnp`, `extrapolate_dz` (API) | caller | reversible: exact in $\ln p$; `rainout`: first in $\ln p$; second in $z$ (not measured) | `test_thermo` |
 
 : Schemes of the thermodynamics chapter. "Order" is the order of the scheme's discretization; a function
 evaluated pointwise is exact. {#tbl-ch03-schemes}

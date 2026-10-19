@@ -12,9 +12,11 @@ reviewer:
 
 A constant heat capacity is accurate only over a narrow temperature range. kintera ships a table of NASA-9
 polynomial coefficients for 293 species, which give heat capacity, enthalpy and entropy as functions of temperature
-in two ranges. The table is looked up by species name when the registry is filled. The coefficients are used in two
-places: the temperature-dependent heat capacity of @sec-ch03-species-functions when `use-nasa9-cp` is on, and the
-dimensionless Gibbs energy of the multiphase equilibrium solver (@sec-ch05).
+in two ranges. The table is looked up by species name when the registry is filled. The coefficients are used in three
+places: the temperature-dependent heat capacity of @sec-ch03-species-functions when `use-nasa9-cp` is on; the
+dimensionless Gibbs energy of the multiphase equilibrium solver (@sec-ch05); and the equilibrium constant of every
+reversible reaction in the kinetics (@sec-ch06), whenever any species of the kinetics options has NASA-9 data, whatever
+`use-nasa9-cp` says.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** $c_p/\mathcal R$, $h/(\mathcal R T)$, $s/\mathcal R$ from nine coefficients per range,
@@ -22,16 +24,17 @@ dimensionless Gibbs energy of the multiphase equilibrium solver (@sec-ch05).
 
 **Data.** `data/nasa9.dat` (293 species, 200-1000 K and 1000-6000 K); nine coefficients per range per species.
 
-**Placement.** Looked up by name in the registry reader; evaluated by the thermodynamic functions.
+**Placement.** Looked up by name in the registry reader; evaluated by the thermodynamics and by reverse kinetics.
 
-**Activation.** Lookup always; use in $c_p$, $c_v$, $u$ only with `reference-state: use-nasa9-cp: true` (default off).
+**Activation.** $c_p$, $c_v$, $u$ only with `use-nasa9-cp: true` (default off); reverse kinetics whenever any species has data.
 
 **Guarantee / limits.** Exact polynomial evaluation; no clamp outside 200-6000 K.
 
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $a_k$, $k = 0, \dots, 6$, polynomial coefficients, $a_k$ multiplying $T^{k-2}$ in $c_p/\mathcal R$ and so
+Local symbols: $p_{\mathrm{ref}}$, the kinetics reference pressure [Pa]; $\Delta n_j$, the net change of moles in
+reaction $j$ [-]; $a_k$, $k = 0, \dots, 6$, polynomial coefficients, $a_k$ multiplying $T^{k-2}$ in $c_p/\mathcal R$ and so
 carrying K$^{2-k}$; $b_1$, $b_2$, integration constants
 of enthalpy [K] and entropy [-]; $T_{\mathrm{mid}}$, the range boundary [K].
 
@@ -60,6 +63,23 @@ The file stores ten numbers per range, $a_0$ to $a_6$, an unused zero, $b_1$ and
 after the species name. `get_nasa9_db` ({{< code src/species.cpp get_nasa9_db >}}) keeps nine of them, dropping the
 zero, so index 7 holds $b_1$ and index 8 holds $b_2$.
 
+**Reverse kinetics.** For a reversible reaction $j$, `forward_with_rate_constants`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}) forms the equilibrium constant in
+concentration units from the Gibbs energies of @eq-ch02-nasa9-forms:
+
+$$
+\begin{aligned}
+\Delta_j \frac{g}{\mathcal R T} &= \sum_n \nu_{nj} \frac{g_n}{\mathcal R T} , \\
+K_{c,j} &= \exp\!\left(-\Delta_j \frac{g}{\mathcal R T}
++ \Delta n_j \ln \frac{p_{\mathrm{ref}}}{\mathcal R T}\right) ,
+\end{aligned}
+$$ {#eq-ch02-nasa9-kc}
+
+with $\nu_{nj}$ the net stoichiometric coefficient, $\Delta n_j = \sum_n \nu_{nj}$, and $p_{\mathrm{ref}}$ the
+kinetics reference pressure (`Pref`[^rg-7058b44e3174], default 101325 Pa). The reverse rate constant is $k_{f,j} / K_{c,j}$, with
+$K_{c,j}$ clamped below at $10^{-250}$. The branch runs when the options' `has_nasa9` is true, that is when any
+species has a non-zero coefficient; `use-nasa9-cp` is not consulted (verified by reading at the pin).
+
 ### Numerical method
 
 The low range is used for $T < T_{\mathrm{mid}}$ and the high range otherwise, chosen per cell and species by a mask.
@@ -78,6 +98,9 @@ The NASA-9 figure is not provided: the figure module is not written yet.
 | Gibbs energy by name | {{< code src/species.cpp nasa9_gibbs_rt >}} | `nasa9_gibbs_rt` | API |
 | Gibbs energy | {{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}} | `nasa9_gibbs_RT` | always |
 | lookup into registry | {{< code src/species.cpp init_species_from_yaml overload=2 >}} | `init_species_from_yaml` | `species` |
+| any data present | {{< code src/species.cpp SpeciesThermoImpl::has_nasa9 >}} | `has_nasa9` | always |
+| reverse rate constants | {{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}} | `forward_with_rate_constants` | reversible reactions |
+| reverse stoichiometric columns | {{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}} | `reset` | reversible reactions |
 
 : Code map of the NASA-9 data. {#tbl-ch02-nasa9-code}
 
@@ -103,3 +126,16 @@ concurrency test checks only finiteness and agreement between threads. That is m
 The polynomials are evaluated outside 200-6000 K without warning (verified by reading `nasa9_gibbs_RT`; no clamp).
 $T_{\mathrm{mid}}$ is fixed at 1000 K, which matches the file header's ranges. A working-directory `nasa9.dat`
 silently replaces the shipped one.
+
+In reverse kinetics, a species absent from the table has all-zero coefficients, so @eq-ch02-nasa9-forms gives it
+$g/(\mathcal R T) = 0$ at every temperature, and it enters $K_{c,j}$ of @eq-ch02-nasa9-kc as if its Gibbs energy were
+zero; no warning is printed (verified by reading `get_nasa9_db`, `init_species_from_yaml` and
+`forward_with_rate_constants`). If no species of the kinetics options is in the table, the reverse branch does not run:
+the reverse rates are not appended, while `reset` ({{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}}) has
+already appended a reverse column to the stoichiometry matrix for every reversible reaction. The rate vector is then
+shorter than the stoichiometry matrix has columns; what a caller that multiplies the two gets (a shape error or a
+silently truncated product) is a hypothesis, not run. No test covers either case: missing evidence.
+
+<!-- reader glossary notes -->
+[^rg-7058b44e3174]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
+<!-- end reader glossary notes -->

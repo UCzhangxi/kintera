@@ -19,7 +19,7 @@ value to kintera's base units. The physical constants every module shares are de
 
 **Data.** A value and a unit string such as `cm^3/molecule/s` in; the value in kg, m, s, K, A, mol out.
 
-**Placement.** Used by the reaction readers (`arrhenius`, fall-off, evaporation) when they read YAML.
+**Placement.** Used by the `arrhenius` and fall-off readers when they read YAML; evaporation keys are read as SI.
 
 **Activation.** Always for those readers; base units are kg, m, s, mol, Pa, J, K, A.
 
@@ -86,6 +86,27 @@ The classes are exercised only through the reaction readers' tests (@sec-ch06).
 
 ### Limits
 
-$\mathcal R$ and $N_{\mathrm A} k_{\mathrm B}$ differ by a relative $3.1 \times 10^{-7}$, so a quantity converted
-once through $k_{\mathrm B}$ and once through $\mathcal R$ disagrees at that level. Whether any code path mixes the two
-is not checked here.
+$\mathcal R$ and $N_{\mathrm A} k_{\mathrm B}$ differ by a relative $3.1 \times 10^{-7}$, but no code path mixes
+them: at the pin `KBoltz` of `src/constants.h` is used nowhere, and its `Avogadro` only in the `molec` and
+`molecule` units of the parser and in the Python constants (verified by searching `src/` and `python/`). The
+evaporation reader does not use the unit converter at all: it reads `diff_c`[^rg-efd2d54c73eb], `diff_T`[^rg-ffb24c59044b], `diff_P`[^rg-de7f5eedcfdd], `vm`[^rg-382fd4fd382d] and
+`diameter`[^rg-4ede27790fc5] as numbers in mol, m, s units without conversion
+({{< code src/kinetics/evaporation.cpp EvaporationOptionsImpl::from_yaml >}}), so a value given in other units is
+taken as SI silently.
+
+A second header, `src/utils/constants.hpp`, defines another `constants` namespace with per-kmol values
+($N_{\mathrm A} = 6.02214076 \times 10^{26}$ kmol$^{-1}$ and a gas constant $N_{\mathrm A} k_{\mathrm B}$ per kmol).
+It is included by `src/reaction.cpp` and `src/utils/parse_comp_string.cpp`, but neither uses any of its values
+(verified by reading both files); code that included both headers would see two different `Avogadro`.
+
+<!-- reader glossary notes -->
+[^rg-efd2d54c73eb]: diff_c — evaporation diffusivity at the reference state, mol-m-s units; default 2e-5; stored in option `diff_c`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L99)
+
+[^rg-ffb24c59044b]: diff_T — exponent of the temperature ratio in the evaporation diffusivity; default 1.75; stored in option `diff_T`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L100)
+
+[^rg-de7f5eedcfdd]: diff_P — exponent of the pressure ratio in the evaporation diffusivity; default -1; stored in option `diff_P`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L101)
+
+[^rg-382fd4fd382d]: vm — volume factor of the evaporation rate coefficient; default 1.8e-5; stored in option `vm`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L102)
+
+[^rg-4ede27790fc5]: diameter — length whose square divides the evaporation rate coefficient; default 1e-2; stored in option `diameter`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L103)
+<!-- end reader glossary notes -->

@@ -10,9 +10,11 @@ reviewer:
 
 ### Summary
 
-Saturation adjustment (@sec-ch04) needs, for every condensation reaction, the value its reactant partial pressures
-take on the saturation curve. kintera attaches this saturation constant to the reaction, not to a species, so that
-a reaction with two gaseous reactants (ammonium hydrosulfide from ammonia and hydrogen sulfide) has one constant.
+Saturation adjustment (@sec-ch04) needs, for every condensation reaction, the value that its signed product of gas
+partial pressures, $\prod_{\mathrm{gases}} p_n^{-\nu_{nr}}$ (gaseous reactants with positive exponents, gaseous
+products with negative ones), takes on the saturation curve. kintera attaches this saturation constant to the reaction,
+not to a species, so that a reaction with two gaseous reactants (ammonium hydrosulfide from ammonia and hydrogen
+sulfide) has one constant.
 The constant is given in YAML either by the name of a built-in fit or by one of two inline forms with their
 parameters. Every form returns the natural logarithm of the constant in Pa units, together with its temperature
 derivative.

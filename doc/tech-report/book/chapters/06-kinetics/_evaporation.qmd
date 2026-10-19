@@ -58,7 +58,75 @@ that brings the products to equilibrium, $(c_1 + x)(c_2 + x) = K$. Other stoichi
 extent of `EvaporationExtent`. @eq-ch06-evaporation-kappa is computed in `forward`
 ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}); the factor $c_p$ is applied in
 `forward_with_rate_constants` ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
-The origin of the factor 12 is not drafted yet.
+**Where $\kappa$ comes from.** Consider one spherical particle of radius $a = d/2$ at rest in a gas whose vapour
+concentration far away is $c_v$, and whose surface is at saturation, $c = K$. The vapour diffuses with diffusivity
+$D$, and the particle changes slowly compared with the diffusion time. The concentration around it is then
+quasi-steady and spherically symmetric: it solves $\nabla^2 c = 0$ with $c(a) = K$ and $c(\infty) = c_v$, so
+
+$$
+c(\rho) = c_v + (K - c_v)\, \frac{a}{\rho}
+$$
+
+at distance $\rho$ from the centre. The molar flux leaving the particle through any sphere around it is
+$-4\pi\rho^2 D\, \mathrm{d}c/\mathrm{d}\rho$, the same at every radius. Evaluated anywhere it gives
+
+$$
+\Phi = 4\pi a D\, (K - c_v) = 2\pi d D\, (K - c_v) \quad [\mathrm{mol\,s^{-1}}] ,
+$$
+
+Maxwell's result for diffusion-limited evaporation.[^ch06-pk] Next, count the particles. $c_p$ moles of condensate per
+m$^3$ occupy the volume $c_p v_m$, and if all particles have diameter $d$, each has volume $\pi d^3/6$. The number
+density is
+
+$$
+N = \frac{6\, c_p v_m}{\pi d^3} \quad [\mathrm{m^{-3}}] .
+$$
+
+The volumetric evaporation rate is the flux per particle times the number of particles,
+
+$$
+N \Phi = \frac{6\, c_p v_m}{\pi d^3}\, 2\pi d D\, (K - c_v) = \frac{12\, D\, v_m}{d^2}\, c_p\, (K - c_v) ,
+$$
+
+which is $\kappa\, c_p\, \eta$ of @eq-ch06-evaporation-kappa with $\eta = K - c_v$. This reading reproduces the factor
+12 exactly. The code does not state its source, so that this monodisperse-sphere model is the intended one is a
+hypothesis. It neglects the curvature and solute effects on $K$, latent heating of the particle, and the
+gas-kinetic correction for particles smaller than the mean free path.
+
+**The saturation product in concentration units.** The vapour-pressure function returns $\ln p_{\mathrm{sat}}$, which
+for a reaction with gas coefficients $\nu_g$ is the equilibrium product of partial pressures (@sec-ch02-svp). With
+$p_g = c_g \mathcal R T$ for every gas, the product of concentrations at saturation is
+
+$$
+K = \exp\!\Big(\ln p_{\mathrm{sat}} - \Big(\sum_g \nu_g\Big) \ln(\mathcal R T)\Big) ,
+$$ {#eq-ch06-evaporation-ksat}
+
+and for a single vapour this is $K = p_{\mathrm{sat}}/(\mathcal R T)$. @eq-ch06-evaporation-ksat is computed in
+`forward` ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}) from the same `LogSVPFunc` that the
+phase-equilibrium solvers use.
+
+**Zero rate exactly at saturation, and never negative.** For one vapour $\eta = K - c_v = K(1 - \mathrm{RH})$, with
+$\mathrm{RH} = c_v/K$ the relative humidity of @sec-ch03-relative-humidity. The rate therefore vanishes exactly where
+the phase solver of @sec-ch04 puts the parcel, at $\mathrm{RH} = 1$, because both use the same saturation function.
+The code clamps $\eta$ at zero: in supersaturated air the column contributes nothing, rather than a negative rate
+that would run it backwards. Supersaturation is relieved by the condensation path of the phase equilibrium.
+
+**Two products.** For `X(s) => A + B` evaporation stops when $(c_1 + x)(c_2 + x) = K$, where $x$ is the extent still
+to evaporate. Expanding gives the quadratic $x^2 + (c_1 + c_2) x + (c_1 c_2 - K) = 0$, whose non-negative root for
+$c_1 c_2 \le K$ is
+
+$$
+x = \frac{-(c_1 + c_2) + \sqrt{(c_1 + c_2)^2 - 4(c_1 c_2 - K)}}{2}
+= \frac{2 (K - c_1 c_2)}{c_1 + c_2 + \sqrt{(c_1 - c_2)^2 + 4K}} ,
+$$ {#eq-ch06-evaporation-extent}
+
+where the second form multiplies numerator and denominator by $(c_1 + c_2) + \sqrt{\cdot}$ and uses
+$(c_1 + c_2)^2 - 4 c_1 c_2 = (c_1 - c_2)^2$. @eq-ch06-evaporation-extent is computed in `forward`
+({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}) and replaces $\eta$ for such columns.
+
+The check evaluates the one-vapour rate at $c_v = 0.5K$, $K$ and $1.5K$. It finds @eq-ch06-evaporation-kappa to
+$1.7 \times 10^{-16}$, a rate of $1.4 \times 10^{-16}$ of its scale at saturation, and exactly zero above it. The
+two-product root satisfies its quadratic to $2.5 \times 10^{-15}$ at four states, including $c_1 = 0$.[^ch06-check-e]
 
 ### Numerical method
 
@@ -99,15 +167,29 @@ two lists was found in the kinetics sources, so the duplicate has no known effec
 | `test_evaporation_extent.py` | rate derivative vs finite difference | $10^{-6}$ rel. | finite-difference step |
 | `test_evaporation_general.py` | rate and Jacobian on CPU and CUDA agree | $10^{-12}$ abs. | not yet derived |
 | `test_evaporation_inputs.py` | default diffusivity exponents | exact | structural |
+| check `(a1)` | rate equals $\kappa c_p (K - c_v)$ at $c_v = 0.5 K$ | $10^{-10}$ rel. | round-off |
+| check `(a2)`, `(a3)` | rate zero at $c_v = K$; exactly zero at $1.5 K$ | $10^{-12}$; exact | round-off; the clamp |
+| check `(b)` | @eq-ch06-evaporation-extent solves its quadratic | $10^{-12}$ rel. | round-off |
 
 : Tests of evaporation. {#tbl-ch06-evaporation-tests}
 
 `test_evaporation_general.py` also checks atom conservation of an implicit step and convergence with the time step.
 CUDA cases skip when no GPU is present.
 
+[^ch06-pk]: [source: H. R. Pruppacher and J. D. Klett, Microphysics of Clouds and Precipitation, 2nd ed., Kluwer
+    Academic (1997), <https://doi.org/10.1007/978-0-306-48100-0>, chapter 13 (diffusional growth of a sphere).]
+
+[^ch06-check-e]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the `CH4(s,p) => CH4` and
+    `X(s) => A + B` cards inside the script; run: `KINTERA_WT=<build> python
+    doc/tech-report/derivation-checks/check_ch6_evaporation.py` from a scratch directory, with `<build>` a kintera build
+    at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch6_evaporation.out` lines `(a1)`-`(a3)`, `(b)`.]
+
 ### Limits
 
-The factor 12 and the default diameter of 1 cm are taken as given; their source is missing evidence.
+The factor 12 is derived above from a monodisperse-sphere model, but the code names no source, so that this model
+is intended is a hypothesis. The default diameter of 1 cm has no stated source (missing evidence). The model has no
+curvature, solute, latent-heating or gas-kinetic corrections, and all particles share one diameter.
 
 <!-- reader glossary notes -->
 [^rg-19e58e80d2ac]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)

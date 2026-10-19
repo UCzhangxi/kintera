@@ -34,22 +34,68 @@ Local symbols: $J_{jk}$, entry of the reaction-space Jacobian [$\mathrm{s^{-1}}$
 
 ### Derivation
 
-Differentiating @eq-ch06-mass-action-rate at fixed $T$,
+**At fixed temperature.** Write the rate of @eq-ch06-mass-action-rate as $r_j = k_j(T, c)\, P_j(c)$, with
+$P_j = \prod_i c_i^{\nu_{ij}}$ the mass-action product. The rate constant may depend on the concentrations through a
+third body (@sec-ch06-falloff) or a saturation deficit (@sec-ch06-evaporation). The product rule gives
 
 $$
-J_{jk} = \prod_i c_i^{\nu_{ij}}\, \frac{\partial k_j}{\partial c_k} + \nu_{kj}\, \frac{r_j}{c_k} .
+\left(\frac{\partial r_j}{\partial c_k}\right)_T = P_j\, \frac{\partial k_j}{\partial c_k} + k_j \frac{\partial P_j}{\partial c_k}
+= P_j\, \frac{\partial k_j}{\partial c_k} + \nu_{kj}\, \frac{r_j}{c_k} ,
 $$ {#eq-ch06-jacobian-entry}
 
-For an evaporation column the product is the condensate concentration $c_p$ alone, so the second term is
-$k_j\, \partial c_p / \partial c_k$. When `evolve_temperature` is set, the temperature responds to the reaction
-heating at fixed volume, and the chain rule adds
+because $\partial P_j / \partial c_k = \nu_{kj} P_j / c_k$. For an evaporation column the product is the condensate
+concentration $c_p$ alone, so the second term is $k_j\, \partial c_p / \partial c_k$, which is $k_j$ for the
+condensate and 0 for the gases.
+
+**Temperature follows from energy.** With `evolve_temperature` the step is taken in a closed cell at fixed volume with
+no heating from outside. The first law then holds the internal energy per volume fixed,
 
 $$
-J_{jk} \leftarrow J_{jk} - \prod_i c_i^{\nu_{ij}}\, \frac{\partial k_j}{\partial T}\, \frac{u_k}{C_V} .
+U = \sum_k c_k\, u_k(T) \quad [\mathrm{J\,m^{-3}}] ,
 $$
 
-@eq-ch06-jacobian-entry is computed in `jacobian` ({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}).
-The derivation of the temperature term from the energy equation is not drafted yet.
+with $u_k$ the molar internal energy of species $k$, including its reference offset (@sec-ch03-species-functions).
+A change of the concentrations at fixed $U$ must therefore change the temperature:
+
+$$
+\begin{aligned}
+0 = \mathrm{d}U &= \sum_k u_k\, \mathrm{d}c_k + \Big(\sum_k c_k \frac{\mathrm{d}u_k}{\mathrm{d}T}\Big)\, \mathrm{d}T \\
+&= \sum_k u_k\, \mathrm{d}c_k + C_V\, \mathrm{d}T ,
+\end{aligned}
+$$
+
+where $C_V = \sum_k c_k\, c_{v,k}$ is the heat capacity at constant volume per unit volume
+[$\mathrm{J\,m^{-3}\,K^{-1}}$]. Solving for $\mathrm{d}T$,
+
+$$
+\left(\frac{\partial T}{\partial c_k}\right)_U = -\frac{u_k}{C_V} .
+$$ {#eq-ch06-jacobian-dtdc}
+
+Raising the concentration of a species with a large (positive) energy content at fixed $U$ cools the cell, because
+that energy has to come from the thermal part.
+
+**Chain rule.** The rate depends on $c$ directly and through $T(c)$. At fixed $U$,
+
+$$
+\left(\frac{\partial r_j}{\partial c_k}\right)_U = \left(\frac{\partial r_j}{\partial c_k}\right)_T
++ \left(\frac{\partial r_j}{\partial T}\right)_c \left(\frac{\partial T}{\partial c_k}\right)_U
+= \left(\frac{\partial r_j}{\partial c_k}\right)_T - P_j\, \frac{\partial k_j}{\partial T}\, \frac{u_k}{C_V} ,
+$$ {#eq-ch06-jacobian-feedback}
+
+since only the rate constant depends on $T$, so $(\partial r_j/\partial T)_c = P_j\, \partial k_j/\partial T$, and
+$(\partial T/\partial c_k)_U$ is @eq-ch06-jacobian-dtdc.
+@eq-ch06-jacobian-entry and @eq-ch06-jacobian-feedback are computed in `jacobian`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}). It forms the first as `concp_fwd * rc_ddC +
+mass_derivative`
+and subtracts the second with $u_k = \mathcal R \cdot$ `eval_intEng_R` and $C_V$ the caller's argument `cvol`.
+Two consistency conditions follow. The energies must be the same functions, offsets included, that the
+thermodynamics uses to recover $T$ from $U$ (@sec-ch03-thermo-y); otherwise the linearisation targets a different
+$T(U)$. And `cvol` must be the heat capacity at constant volume.
+
+The check differentiates $r(c, T(c))$ by central differences, with $T$ solved from fixed $U$ at each perturbed state,
+and compares with `jacobian`: the worst relative difference is $1.5 \times 10^{-10}$. The fixed-temperature
+derivatives alone have the wrong sign for one entry, and are 0 for another whose feedback value is
+$1.4 \times 10^{7}$, so the check does test @eq-ch06-jacobian-feedback.[^ch06-check-g]
 
 ### Numerical method
 
@@ -83,8 +129,15 @@ definition at the pin.
 | `test_evaporation_general.py` | temperature feedback in the fixed-energy Jacobian | missing evidence | not yet read |
 | `test_falloff` | three-body and fall-off Jacobians | missing evidence | not yet read |
 | `test_rate_constant_ddC.py` | $\partial k/\partial c$ is per reaction | $10^{-6}$ rel. | finite difference |
+| check (`check_ch6_jacobian.py`) | @eq-ch06-jacobian-feedback against a fixed-$U$ central difference | $10^{-8}$ rel. | central difference |
 
 : Tests of the Jacobian. {#tbl-ch06-jacobian-tests}
+
+[^ch06-check-g]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-species card inside the
+    script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_jacobian.py` from a scratch
+    directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
+    output: `derivation-checks/check_ch6_jacobian.out`, last line. The check calls the energy function that the open
+    fix batch edits and is to be rerun when it lands.]
 
 ### Limits
 

@@ -62,7 +62,51 @@ $+\infty$, so every temperature falls in exactly one band. The last value of `T_
 a bound, though it must still exceed the one before it. With `A_ranges: [1.e-12, 2.e-12]` and
 `T_ranges: [500., 1000.]` under `rate-constant`[^rg-fe9f62b85a4d], the first band covers $T < 500$ K and the second
 $T \ge 500$ K, including $T \ge 1000$ K. Absent `b_ranges` and `Ea_R_ranges` are zeros, not the single-band
-defaults. The full derivation of the unit factor is not drafted yet.
+defaults.
+
+**The unit factor.** Rate data are tabulated per molecule and cm$^3$, while kintera works in mol and m$^3$. The same
+physical rate must come out in either system. Write $c'$ for a concentration in $\mathrm{molecule\,cm^{-3}}$ and $c$
+for the same concentration in $\mathrm{mol\,m^{-3}}$. One $\mathrm{mol\,m^{-3}}$ is $N_A$ molecules in
+$10^6\ \mathrm{cm^3}$, so
+
+$$
+\begin{aligned}
+c' &= \phi\, c \\
+\phi &= N_A \times 10^{-6}\ \mathrm{molecule\,mol^{-1}\,m^3\,cm^{-3}}
+\end{aligned}
+$$
+
+and a rate converts the same way, $r' = \phi\, r$. The input law is $r' = A' \prod_i c_i'^{\,\nu_{ij}}$, with the
+constant $A'$ in molecule, cm, s units. Substituting $c' = \phi c$ and $r' = \phi r$, and writing
+$n = \sum_i \nu_{ij}$ for the reaction order, and dividing by $\phi$,
+
+$$
+\begin{aligned}
+\phi\, r &= A' \phi^{\,n} \prod_i c_i^{\,\nu_{ij}} \\
+r &= A' \phi^{\,n-1} \prod_i c_i^{\,\nu_{ij}}
+\end{aligned}
+$$
+
+so the stored constant is
+
+$$
+A = A' \left(N_A \times 10^{-6}\right)^{n-1} .
+$$ {#eq-ch06-arrhenius-unit}
+
+@eq-ch06-arrhenius-unit is computed in `from_yaml`
+({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}}). It builds the unit string
+`molecule^(1-n) * cm^(-3(1-n)) * s^-1` from the sum of the reactant coefficients and calls
+`UnitSystem::convert_from` (@sec-ch02-units). A first-order reaction ($n = 1$) needs no conversion. A second-order
+one is multiplied by $6.022 \times 10^{17}$, the square of that for third order. The temperature dependence is
+untouched by the conversion, because $T$ and $E_a$ are in K in both systems.
+
+**Bands.** With bands, the masks of `forward` select exactly one band for every $T$, so $k(T)$ is single-valued.
+It is continuous only if the fits of neighbouring bands agree at their common bound; nothing enforces that. With
+`evolve_temperature`, $\partial k/\partial T$ is the derivative of the active band, because the selection is made
+before the formula is evaluated.
+
+The check compares the stored $A$ with @eq-ch06-arrhenius-unit for $n = 1, 2, 3$ and the rate constant with
+@eq-ch06-arrhenius-rate; both agree to $2.2 \times 10^{-16}$.[^ch06-check-b]
 
 ### Numerical method
 
@@ -175,11 +219,17 @@ The key `E4` is parsed into `E4_R` but `forward` does not use it (verified by re
 | `test_multirange_arrhenius.py` | single band matches the closed form | $10^{-12}$ rel. | not yet derived |
 | `test_multirange_arrhenius_yaml.py` | YAML bands equal the Python API | $10^{-13}$ rel. | not yet derived |
 | `test_multirange_arrhenius_yaml.py` | inactive overflow stays out of $k$ | $2 \times 10^{-6}$ rel. | not yet derived |
+| check `[b]` | stored $A$ against @eq-ch06-arrhenius-unit, $n = 1, 2, 3$; $k$ against @eq-ch06-arrhenius-rate | $10^{-12}$, $10^{-13}$ rel. | round-off |
 
 : Tests of Arrhenius rate constants. {#tbl-ch06-arrhenius-tests}
 
 The tolerances are read from the test files at the pin; the reason for each is missing evidence. No test covers the
 `Ea_R` default or `E4`.
+
+[^ch06-check-b]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the four-reaction card inside the
+    script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a scratch
+    directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
+    output: `derivation-checks/check_ch6_rates.out` lines `[b]`.]
 
 ### Limits
 

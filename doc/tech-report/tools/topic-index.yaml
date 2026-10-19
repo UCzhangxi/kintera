@@ -45,22 +45,23 @@ sections:
   sec-ch06-mass-action:
     - reaction rate, mass action: [law of mass action]
     - stoichiometric matrix
+    - reverse rate constant: [detailed balance, equilibrium constant K_c, van 't Hoff]
   sec-ch06-arrhenius:
-    - Arrhenius rate constant: [Ea_R, temperature bands, adding a rate law, new rate-constant form]
+    - Arrhenius rate constant: [Ea_R, temperature bands, adding a rate law, new rate-constant form, unit conversion of A]
   sec-ch06-pressure-switch:
     - pressure switch: [p-threshold]
   sec-ch06-falloff:
     - fall-off rate constant: [three-body reaction, Troe, Lindemann, SRI, third body, collision efficiency, effective third-body concentration]
   sec-ch06-evaporation:
-    - evaporation, diffusion form: [saturation deficit]
+    - evaporation, diffusion form: [saturation deficit, diffusion-limited growth]
   sec-ch06-kessler:
     - evaporation, Kessler form: [k3]
   sec-ch06-coagulation:
     - coagulation: [autoconversion]
   sec-ch06-jacobian:
-    - Jacobian, reaction space
+    - Jacobian, reaction space: [temperature feedback, fixed internal energy]
   sec-ch06-implicit:
-    - implicit time step: [backward Euler, evolve_implicit, Rosenbrock]
+    - implicit time step: [backward Euler, evolve_implicit, Rosenbrock, ROS2, L-stability]
   sec-ch06-kinetics-base:
     - KINETICS-base reader
   # Chapter 14. Coupling to snapy and paddle

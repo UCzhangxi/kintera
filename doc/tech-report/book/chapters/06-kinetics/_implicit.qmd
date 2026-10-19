@@ -32,16 +32,85 @@ Local symbols: $\delta$, concentration change over the step [$\mathrm{mol\,m^{-3
 
 ### Derivation
 
-Backward Euler for @eq-ch06-mass-action-tendency is $c^{n+1} = c^n + \Delta t\, S r(c^{n+1})$. Linearizing
-$r(c^{n+1}) \approx r(c^n) + J \delta$ with $\delta = c^{n+1} - c^n$ gives
+Write the tendency of @eq-ch06-mass-action-tendency as $f(c) = S\, r(c)$, with Jacobian $f'(c) = S J$, and the step
+as $h = \Delta t$.
+
+**Linearly implicit (backward) Euler.** Backward Euler sets $c^{n+1} = c^n + h f(c^{n+1})$, which is a nonlinear
+system. Expanding $f(c^{n+1}) \approx f(c^n) + S J\, \delta$ with $\delta = c^{n+1} - c^n$ and keeping one term
+(a single Newton iteration started at $c^n$) gives $\delta = h f(c^n) + h S J \delta$, that is
 
 $$
 \left(\frac{\mathsf I}{\Delta t} - S J\right) \delta = S\, r(c^n) .
 $$ {#eq-ch06-implicit-system}
 
 @eq-ch06-implicit-system is assembled and solved in `evolve_implicit_cell`
-({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}). It is first order in $\Delta t$; the
-linearization adds an error of second order in $\delta$.
+({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}). To find its order, write $A = S J$ and expand
+the solution in $h$:
+
+$$
+\delta = h\, (\mathsf I - h A)^{-1} f = h f + h^2 A f + O(h^3) .
+$$
+
+The exact solution over one step is $c(t + h) - c(t) = h f + \tfrac12 h^2 f' f + O(h^3)$. With $A = f'$ the two agree
+in the $h$ term and differ by $\tfrac12 h^2 f' f$, so the local error is $O(h^2)$ and the error after the $1/h$ steps
+of a fixed interval is $O(h)$: first order. The check integrates $A \Rightarrow B$ with $k = 1\ \mathrm{s^{-1}}$ to
+$t = 1$ and finds that halving the step (from 50 to 100 steps) divides the error by 1.992.[^ch06-check-h]
+
+**The two-stage Rosenbrock variant.** `evolve_ros2` takes the two stages of the ROS2 method of Verwer et
+al.,[^ch06-verwer] in a scaled form whose stages $k_1$, $k_2$ are concentration changes:
+
+$$
+\begin{aligned}
+W &= \frac{\mathsf I}{\gamma h} - A \\
+W k_1 &= f(c^n) \\
+W k_2 &= f\!\left(c^n + k_1/\gamma\right) - \frac{2}{\gamma h}\, k_1 \\
+\delta &= \frac{3}{2\gamma}\, k_1 + \frac{1}{2\gamma}\, k_2
+\end{aligned}
+$$ {#eq-ch06-implicit-ros2}
+
+with $\gamma = 1 + 1/\sqrt2$. @eq-ch06-implicit-ros2 is computed in `evolve_ros2`
+({{< code src/kinetics/evolve_implicit.hpp evolve_ros2 >}}), where the coefficients are `c21` $= -2/\gamma$, `m1`
+$= 3/(2\gamma)$ and `m2` $= 1/(2\gamma)$; the caller evaluates the second-stage rate at $c^n + k_1/\gamma$.
+Multiplying each stage equation by $\gamma h$ recovers Verwer's form, with stages $\gamma$ times smaller and
+$\mathsf I - \gamma h A$ as the matrix.
+
+*Order two for any matrix $A$.* Use $W^{-1} = \gamma h (\mathsf I - \gamma h A)^{-1} = \gamma h(\mathsf I + \gamma h
+A) + O(h^3)$,
+with $A$ an approximation of $f'$ that need not be exact. Expanding each stage to $O(h^2)$, with
+$f(c^n + k_1/\gamma) = f + f' k_1/\gamma + O(h^2)$:
+
+$$
+\begin{aligned}
+k_1 &= \gamma h f + \gamma^2 h^2 A f + O(h^3) \\
+f(c^n + k_1/\gamma) - \frac{2}{\gamma h} k_1 &= -f + h f' f - 2\gamma h A f + O(h^2) \\
+k_2 &= -\gamma h f + \gamma h^2 f' f - 3 \gamma^2 h^2 A f + O(h^3) \\
+\delta &= \frac{3}{2\gamma} k_1 + \frac{1}{2\gamma} k_2 = h f + \tfrac12 h^2 f' f + O(h^3)
+\end{aligned}
+$$
+
+The terms in $A$ cancel in the last line, and what remains is the Taylor expansion of the exact solution to
+$O(h^2)$. The local error is therefore $O(h^3)$ and the method is second order whatever Jacobian is used (a
+W-method). The check finds an error ratio of 3.882 when the step is halved, against 4 for second
+order.[^ch06-check-h]
+
+*Stiff decay is damped completely.* Apply the method to $y' = \lambda y$ with $A = \lambda$ and $z = h\lambda$. The
+stages are $k_1 = \gamma z\, y/(1 - \gamma z)$ and $k_2 = (\gamma z\, y + z k_1 - 2 k_1)/(1 - \gamma z)$, and one
+step multiplies $y$ by $R(z) = 1 + (3 k_1 + k_2)/(2\gamma y)$. For a very stiff mode, $z \to -\infty$,
+$k_1/y \to -1$ and $k_2/y \to -(\gamma - 1)/\gamma$, so
+
+$$
+R(-\infty) = 1 - \frac{3}{2\gamma} - \frac{\gamma - 1}{2\gamma^2} = 1 - \frac{2}{\gamma} + \frac{1}{2\gamma^2} .
+$$ {#eq-ch06-implicit-rinf}
+
+@eq-ch06-implicit-rinf vanishes when $2\gamma^2 - 4\gamma + 1 = 0$, that is $\gamma = 1 \pm 1/\sqrt2$. The code's
+$\gamma = 1 + 1/\sqrt2$ is one root. Stiff modes are then removed in one step instead of oscillating, which makes the
+method L-stable together with its A-stability.[^ch06-hw]
+
+**Atoms are conserved by both steps.** By @eq-ch06-implicit-system, $\delta = h S\,(r + J\delta)$, so $\delta$ is a
+combination of the columns of $S$. Any atom vector with $a S = 0$ (@sec-ch06-mass-action) then gives $a \delta = 0$,
+whatever the error of the linearisation. The same holds for each Rosenbrock stage, whose right-hand side lies in the
+range of $S$ (for $k_2$, because $k_1$ does). The check measures an atom drift of at most $5.6 \times 10^{-16}$ for
+both methods.[^ch06-check-h]
 
 ### Numerical method
 
@@ -73,12 +142,32 @@ The figure of one step is not provided: the figure module is not written yet.
 | `test_kinetics` | `DeviceTest.evolve_implicit` runs | none | smoke test, no assertion |
 | `test_evaporation_extent.py` | the step does not pass equilibrium | missing evidence | not yet read |
 | `test_evaporation_general.py` | atoms conserved; converges with $\Delta t$ | $10^{-15}$ abs. | not yet derived |
+| check (`check_ch6_implicit.py`) | error ratio on halving $\Delta t$: backward Euler 2, ROS2 4 | 10% | asymptotic regime at $N = 50, 100$ |
+| check (`check_ch6_implicit.py`) | atom total $c_A + c_B$ conserved, both methods | $10^{-14}$ rel. | round-off |
 
 : Tests of the implicit step. {#tbl-ch06-implicit-tests}
 
-`DeviceTest.evolve_implicit` prints its result and asserts nothing; the CPU and CUDA instantiations both pass.
+`DeviceTest.evolve_implicit` prints its result and asserts nothing; the CPU and CUDA instantiations both pass. The
+derivation check measures the error ratios 1.992 (backward Euler) and 3.882 (ROS2), and atom drifts of
+$2.2 \times 10^{-16}$ and $5.6 \times 10^{-16}$.[^ch06-check-h]
+
+[^ch06-check-h]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the `A => B` card inside the script;
+    run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_implicit.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch6_implicit.out`.]
+
+[^ch06-verwer]: [source: J. G. Verwer, E. J. Spee, J. G. Blom and W. Hundsdorfer, A second-order Rosenbrock method
+    applied to photochemical dispersion problems, SIAM J. Sci. Comput. 20, 1456-1480 (1999),
+    <https://doi.org/10.1137/S1064827597326651>.]
+
+[^ch06-hw]: [source: E. Hairer and G. Wanner, Solving Ordinary Differential Equations II: Stiff and
+    Differential-Algebraic Problems, 2nd ed., Springer (1996), <https://doi.org/10.1007/978-3-642-05221-7>, sections
+    IV.3 and IV.7.]
 
 ### Limits
 
-No registered test calls the Rosenbrock variant; it is called by the comparison script
-{{< code tests/vulcan/chapman/run_comparison.py >}}, which ctest does not run. Its accuracy is not measured.
+No registered test calls the Rosenbrock variant. It is called by the comparison script
+{{< code tests/vulcan/chapman/run_comparison.py >}}, which ctest does not run, and by the derivation check, which
+measures its order on a linear problem only. Its accuracy on a nonlinear stiff network is not measured. Both steps
+take one linearisation per step, so a fast reaction that is far from linear over the step is not iterated to
+convergence.

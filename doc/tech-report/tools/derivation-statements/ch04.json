@@ -1,0 +1,10 @@
+{
+  "eq-ch04-conditions-gibbs": "The derivative of the Gibbs energy along a reaction extent at fixed $T$ and $p$ is $\\mathcal R T$ times the saturation deficit, with $\\ln K_r = \\Delta_r G^\\circ/(\\mathcal R T) + (\\sum_n \\hat\\nu_{nr}) \\ln p^\\circ$ in the code's direction (gases to condensate); checked by `derivation-checks/check_ch4_tp.py`, line a.",
+  "eq-ch04-equilibrate-uv-latent": "Gibbs–Helmholtz and $h = u + \\mathcal R T$ for gases turn $\\mathrm d\\ln K'_r/\\mathrm dT$ into the latent internal energy $L_r/(\\mathcal R T^2)$; checked by `derivation-checks/check_ch2_svp.py`.",
+  "eq-ch04-equilibrate-uv-energy": "The internal energy per volume is held fixed while condensation moves species; the temperature update is Newton's method on this sum at fixed composition; checked by `derivation-checks/check_ch4_uv.py`, line a.",
+  "eq-ch04-equilibrate-uv-partition": "For disjoint one-vapour, one-condensate reactions each conserved total splits in closed form at a given temperature, so the fixed-energy problem is the scalar equation $U(T) = U_0$; checked by `derivation-checks/check_ch4_uv.py`, line b.",
+  "eq-ch04-equilibrate-uv-slope": "$\\mathrm dU/\\mathrm dT$ is the heat capacity at fixed composition plus, per saturated reaction, a latent term $c_{v_r} L_r^2/(\\hat\\nu_r^2 \\mathcal R T^2) \\ge 0$, so $U(T)$ is increasing and the root unique; checked by `derivation-checks/check_ch4_uv.py`, line d.",
+  "eq-ch04-active-set-kkt": "The Karush–Kuhn–Tucker conditions of the convex constrained least-squares problem: stationarity, primal and dual feasibility, complementarity; necessary and sufficient.",
+  "eq-ch04-active-set-block": "With the working set held as equalities, stationarity and the tight rows give one symmetric block system for the extents and the multipliers.",
+  "eq-ch04-active-set-direct": "For a square non-singular gain, premultiplying the first block row by $\\mathsf A^{-\\mathsf T}$ gives a system conditioned like $\\mathsf A$ rather than $\\mathsf A^{\\mathsf T}\\mathsf A$."
+}

@@ -54,6 +54,40 @@ $$
 \end{aligned}
 $$ {#eq-ch04-equilibrate-uv-constant}
 
+**What the temperature derivative means.** The derivative of the concentration-form constant is a latent internal
+energy, not an enthalpy. Start from the definition of $\ln K_r$ in @eq-ch04-conditions-gibbs. The Gibbs–Helmholtz
+relation $\mathrm d(\Delta_r G^\circ/T)/\mathrm dT = -\Delta_r H^\circ/T^2$ gives
+
+$$
+\begin{aligned}
+\frac{\mathrm d\ln K_r}{\mathrm dT} &= \frac{1}{\mathcal R}\frac{\mathrm d}{\mathrm dT}\frac{\Delta_r G^\circ}{T}
+  = -\frac{\Delta_r H^\circ}{\mathcal R T^2} = \frac{\Delta h_r}{\mathcal R T^2} , \qquad
+  \Delta h_r = \sum_{n<N_{\mathrm g}} \hat\nu_{nr}\, h_n - q_r\, h_{m_r} , \\
+\Delta h_r &= \sum_{n<N_{\mathrm g}} \hat\nu_{nr}\,(u_n + \mathcal R T) - q_r\, u_{m_r}
+  = L_r + \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \mathcal R T , \qquad
+  L_r = \sum_{n<N_{\mathrm g}} \hat\nu_{nr}\, u_n - q_r\, u_{m_r} , \\
+\frac{\mathrm d\ln K'_r}{\mathrm dT} &= \frac{\Delta h_r}{\mathcal R T^2} - \frac{\sum_{n<N_{\mathrm g}} \hat\nu_{nr}}{T}
+  = \frac{\Delta h_r - \big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\big)\mathcal R T}{\mathcal R T^2}
+  = \frac{L_r}{\mathcal R T^2} .
+\end{aligned}
+$$ {#eq-ch04-equilibrate-uv-latent}
+
+The first line is the Clausius–Clapeyron equation: $\Delta h_r$ is the enthalpy taken up when one unit of extent
+evaporates, and the standard and actual reaction enthalpies are equal because ideal-gas and condensate enthalpies do not
+depend on pressure. The second line uses the report's conventions, $h_n = u_n + \mathcal R T$ for an ideal gas and
+$h = u$ for a condensate (@sec-ch03-species-functions). $L_r$ is the latent heat of the notation table: the internal
+energy released per unit extent of condensation. In the third line the $\mathcal R T$ terms cancel exactly: changing
+the pressure-unit constant to concentration units turns the latent enthalpy into the latent internal energy. This is
+why the fixed-energy weight of @eq-ch04-equilibrate-uv-weight carries $\mathrm d\ln K'_r/\mathrm dT$: its coupling
+term $-(\mathrm d\ln K'_r/\mathrm dT)\,L_k/C_V$ becomes $-L_r L_k/(\mathcal R T^2 C_V)$.
+
+The code evaluates $\mathrm d\ln K_r/\mathrm dT$ from the saturation formula (`eval_logsvp_ddT`,
+{{< code src/thermo/svp_eval.h eval_logsvp_ddT >}}), not from the species energies. The two routes agree only for a
+condensate card that is consistent with its saturation curve (@sec-ch03-reference-state). For the ideal form,
+`check_ch2_svp.py` confirms $\mathcal R T^2\,\mathrm d\ln p_{\mathrm{sat}}/\mathrm dT = \mathcal R(\beta T_3 - \gamma T)$,
+a linear-in-$T$ latent enthalpy, to $4.4\times10^{-16}$, and the analytic derivatives against central differences to
+$7.3\times10^{-11}$ (tolerance $10^{-7}$).[^ch04-uv-svp-check]
+
 The internal energy per volume is held fixed while condensation moves species:
 
 $$
@@ -63,8 +97,11 @@ u_n(T) &= u_{0,n} + c_{v,n}\, T .
 \end{aligned}
 $$ {#eq-ch04-equilibrate-uv-energy}
 
-A species may carry an extra temperature-dependent term in $u_n$, evaluated by the same function the thermodynamics
-uses. @eq-ch04-equilibrate-uv-constant and @eq-ch04-equilibrate-uv-energy are computed in `equilibrate_uv`
+A species may carry an extra temperature-dependent term in $u_n$. That term must be the one `ThermoY` uses when it
+converts $U$ back to a temperature (`VU->T`, @sec-ch03-thermo-y): the solver finds the temperature at which
+@eq-ch04-equilibrate-uv-energy holds, and the host reports the temperature at which its own energy function gives the
+same $U$, so the two temperatures agree only if the two functions agree. At the code pin this fails under `use-h2-cp`
+(Limits). @eq-ch04-equilibrate-uv-constant and @eq-ch04-equilibrate-uv-energy are computed in `equilibrate_uv`
 ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}). After each composition step the temperature is found from
 @eq-ch04-equilibrate-uv-energy by Newton iteration, $T \leftarrow T + (U - \sum_n u_n c_n)/\sum_n
 (\mathrm{d}u_n/\mathrm{d}T)\,c_n$,
@@ -107,6 +144,108 @@ fraction does. Condensates have non-zero weights, through their energies $u_n$. 
 that term the gain of the check's example changes by 0.72 of its largest entry (`[C3]`), and each step would overshoot
 until the separate temperature update undid it.
 
+**The sign of the coupling.** Take one reaction $r$, one vapour $v$ with $\hat\nu_{vr} = \hat\nu$ and its condensate,
+with $\nu_{vr} = -\hat\nu$ in $\mathsf S$. The gain is then a number:
+
+$$
+g = (\mathsf W\mathsf S)_{rr} = -\frac{\hat\nu^2}{c_v} - \frac{L_r^2}{\mathcal R T^2\, C_V} ,
+$$
+
+using $\mathrm d\ln K'_r/\mathrm dT = L_r/(\mathcal R T^2)$ from @eq-ch04-equilibrate-uv-latent. Both terms are negative
+whatever the sign of $L_r$. The step asks for $\delta F_r = -F_r$, so $\xi = -F_r/g$. A supersaturated cell
+($F_r > 0$) therefore condenses ($\xi > 0$), as at fixed temperature. The coupling term makes $|g|$ larger, so the
+step is smaller than the fixed-temperature step $\xi_T = F_r c_v/\hat\nu^2$ by the factor
+
+$$
+\frac{\xi}{\xi_T} = \Big(1 + \frac{c_v\, L_r^2}{\hat\nu^2\, \mathcal R T^2\, C_V}\Big)^{-1} < 1 .
+$$
+
+Physically, condensing releases $L_r$ per unit extent, the temperature rises by $L_r\xi/C_V$, and the saturation
+constant rises with it, so less condensate is needed to reach saturation.
+
+**The temperature update.** The update after each composition step is Newton's method for the scalar equation
+$\sum_n u_n(T)\,c_n = U$ at fixed $c_n$: the derivative of the left side is $C_V$, so one pass is
+$T \leftarrow T + (U - \sum_n u_n c_n)/C_V$. When every $c_{v,n}$ is constant the left side is linear in $T$ and the
+first pass lands on the root, up to rounding. The second pass then moves $T$ by less than the tolerance
+$\max(10^{-4}\,\mathrm K, 8\,\epsilon_{\mathrm{mach}} T)$ and ends the loop, so the update takes two passes. The
+code's first test always passes, because its previous iterate starts at zero. A temperature-dependent extra term makes
+the left side nonlinear, and a few more passes are needed. `check_ch4_uv.py` line a compares the final temperature of
+`uv-solver: kkt` with an independent bisection of $U(T)$ on the one-vapour card. The two agree to
+$1.8\times10^{-9}$ K (tolerance $10^{-6}$ K), and $U$ and the water total change by at most $3.3\times10^{-16}$ and
+$2.2\times10^{-16}$ (relative).[^ch04-uv-check]
+
+**The partition method as one equation in temperature.** Assume that the reaction set qualifies for the partition
+method (Numerical method): every reaction $r$ consumes one vapour $v_r$ with coefficient $\hat\nu_r > 0$, produces one
+condensate $m_r$ with coefficient $q_r > 0$, and no species appears in two reactions. The fixed-energy problem then
+reduces to one equation in $T$, in four steps.
+
+*Step 1: a conserved total per reaction.* A change of extent $\delta\xi_r$ changes the vapour by $-\hat\nu_r\delta\xi_r$
+and the condensate by $+q_r\delta\xi_r$, and no other reaction touches either. So the vapour-equivalent total
+
+$$
+w_r = c_{v_r} + \frac{\hat\nu_r}{q_r}\, c_{m_r}
+$$
+
+does not change, and is fixed by the input state. `equilibrate_uv_partition` computes it as `totals`, and refuses a
+negative or non-finite total.
+
+*Step 2: the split at a given temperature.* At fixed $T$ the condition of @eq-ch04-equilibrate-uv-constant for one
+vapour is $\hat\nu_r \ln c_{v_r} = \ln K'_r(T)$. Using the second line of @eq-ch04-equilibrate-uv-constant, its
+solution is $c_{v_r} = K_r^{1/\hat\nu_r}/(\mathcal R T)$, the saturated vapour concentration. If $w_r$ is smaller,
+there is not enough material to saturate. Then the condensate is absent, and the vapour is subsaturated, as the
+complementarity condition of @sec-ch04-conditions allows. In both cases
+
+$$
+\begin{aligned}
+c_{v_r}(T) &= \min\!\Big(w_r,\ \frac{K_r(T)^{1/\hat\nu_r}}{\mathcal R T}\Big), \qquad
+c_{m_r}(T) = \frac{q_r}{\hat\nu_r}\,\big(w_r - c_{v_r}(T)\big) \ge 0 , \\
+U(T) &= \sum_n u_n(T)\, c_n(T) ,
+\end{aligned}
+$$ {#eq-ch04-equilibrate-uv-partition}
+
+with every species outside the reactions held at its input concentration. The composition is thus a function of $T$
+alone, and the fixed-energy problem is the scalar equation $U(T) = U_0$.
+
+*Step 3: the slope.* Differentiate @eq-ch04-equilibrate-uv-partition. A species outside the reactions contributes
+$c_{v,n} c_n$. On a subsaturated branch $c_{v_r} = w_r$ is constant. On a saturated branch,
+$\ln c_{v_r} = \ln K_r/\hat\nu_r - \ln(\mathcal R T)$, so
+$\mathrm dc_{v_r}/\mathrm dT = c_{v_r}\big(\hat\nu_r^{-1}\mathrm d\ln K_r/\mathrm dT - 1/T\big)$, and
+$\mathrm dc_{m_r}/\mathrm dT = -(q_r/\hat\nu_r)\,\mathrm dc_{v_r}/\mathrm dT$. Collecting the two terms of each saturated
+reaction,
+
+$$
+\begin{aligned}
+\frac{\mathrm dU}{\mathrm dT} &= \sum_n c_{v,n}\, c_n
+  + \sum_{r\ \text{saturated}} c_{v_r}\Big(\frac{1}{\hat\nu_r}\frac{\mathrm d\ln K_r}{\mathrm dT} - \frac1T\Big)
+    \Big(u_{v_r} - \frac{q_r}{\hat\nu_r}\, u_{m_r}\Big) \\
+  &= \sum_n c_{v,n}\, c_n + \sum_{r\ \text{saturated}} \frac{c_{v_r}\, L_r^2}{\hat\nu_r^2\, \mathcal R T^2} .
+\end{aligned}
+$$ {#eq-ch04-equilibrate-uv-slope}
+
+Here $c_{v,n}$ is $\mathrm du_n/\mathrm dT$, including any extra term. The second line uses the third line of
+@eq-ch04-equilibrate-uv-latent with $\sum_{n<N_{\mathrm g}}\hat\nu_{nr} = \hat\nu_r$: since
+$\mathrm d\ln K'_r/\mathrm dT = \mathrm d\ln K_r/\mathrm dT - \hat\nu_r/T = L_r/(\mathcal R T^2)$, the first bracket is
+$L_r/(\hat\nu_r\mathcal R T^2)$. The second bracket is $L_r/\hat\nu_r$ with $L_r = \hat\nu_r u_{v_r} - q_r u_{m_r}$.
+The first sum is the heat capacity at fixed composition. The second is the latent energy of the split moving with
+temperature: warming evaporates condensate, and that absorbs $L_r$ per unit extent. The first line is what
+`partition_uv_state` computes, with `eval_logsvp_ddT` for $\mathrm d\ln K_r/\mathrm dT$.
+
+*Step 4: one root.* The heat capacities are positive, so the first sum is positive. In the second line each latent term
+is a square times a positive factor. For a condensate card that is inconsistent with its saturation curve
+(@sec-ch03-reference-state), the first bracket of the first line comes from the curve and the second from the card.
+The term is then non-negative when the two latent energies have the same sign. $U(T)$ is continuous, because
+$c_{v_r}(T)$ is a minimum of continuous functions. It has a kink where a reaction reaches saturation,
+$K_r^{1/\hat\nu_r}/(\mathcal R T) = w_r$, and its slope is positive on each piece. So $U(T)$ is strictly increasing, and
+$U(T) = U_0$ has at most one root. A sign change of $U(T) - U_0$ between two temperatures then brackets that root,
+which is what the numerical method relies on. The general method solves the same conditions at the same $U$. It must
+therefore reach the same temperature when it converges.
+
+`check_ch4_uv.py` line b compares the partition temperature with the bisection oracle of line a on three cells
+(agreement $5.7\times10^{-14}$ K, tolerance $10^{-9}$ K) and with `uv-solver: kkt` ($1.8\times10^{-9}$ K, tolerance
+$10^{-6}$ K). Line d evaluates the oracle's $U(T)$ from 150 to 400 K, across the kink. The smallest slope is
+$9.4\times10^{3}$ J K$^{-1}$ m$^{-3}$, and the first line of @eq-ch04-equilibrate-uv-slope matches central differences
+to $4.7\times10^{-11}$ (tolerance $10^{-7}$), in the same run.
+
 ### Numerical method
 
 **Method choice.** `ThermoYImpl::forward` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}) passes the choice
@@ -136,14 +275,45 @@ to each cell:
    non-positive or non-finite temperature, stop the solve with status 4.
 
 **Partition method.** `equilibrate_uv_partition`
-({{< code src/thermo/equilibrate_uv.h equilibrate_uv_partition >}}) needs no linear algebra. At a trial temperature
-each reaction's vapour concentration is the smaller of its total and $K_r^{1/\hat\nu}/(\mathcal R T)$, and the rest is
-condensate (`partition_uv_state`, {{< code src/thermo/equilibrate_uv.h partition_uv_state >}}). The temperature that
-matches $U$ is bracketed by halving or doubling, at most 64 times, and then found by a Newton iteration safeguarded by
-bisection. It stops when the energy residual is at most $64\,\epsilon_{\mathrm{mach}} \max(|U_0|, 1)$, where $U_0$ is
-the target energy in the solver's own reference. That tolerance is absolute.
+({{< code src/thermo/equilibrate_uv.h equilibrate_uv_partition >}}) solves $U(T) = U_0$ of
+@eq-ch04-equilibrate-uv-partition and needs no linear algebra:
 
-The Newton passes are capped by the same `max-iter` as the general method (default 10): the loop runs while the
+1. Compute the totals $w_r$ from the input state. A negative or non-finite total fails the cell.
+2. Evaluate $U$ and the first line of @eq-ch04-equilibrate-uv-slope at the start temperature (`partition_uv_state`,
+   {{< code src/thermo/equilibrate_uv.h partition_uv_state >}}). The vapour is the total when
+   $\ln K_r/\hat\nu_r - \ln(\mathcal R T) \ge \ln w_r$, and $K_r^{1/\hat\nu_r}/(\mathcal R T)$ otherwise. A zero total
+   sets both concentrations to zero.
+3. If the residual $U - U_0$ is positive, halve the lower end of the bracket; if it is negative, double the upper end.
+   Stop when the residual at the new end has the other sign, and fail after 64 steps. Because $U(T)$ is increasing
+   (Step 4 of the Derivation), a sign change brackets the only root.
+4. Take the Newton step $T - (U - U_0)/(\mathrm dU/\mathrm dT)$. Replace it with the midpoint of the bracket when it
+   is not finite, falls outside the bracket, or does not move. Then move the bracket end on the side of the residual's
+   sign. The bracket always contains the root, so the iteration cannot diverge, and Newton's quadratic convergence
+   applies once the iterate is on the smooth piece that holds the root.
+5. Stop when $|U - U_0|$ is at most the tolerance below.
+
+The tolerance has to reflect how accurately $U$ can be computed. $U$ is a sum of terms $u_n c_n$, and each $u_n$ is
+itself an offset plus a temperature part. The rounding error of the sum is therefore of order
+$\epsilon_{\mathrm{mach}}\sum_n\big(|u_{0,n}| + |u_n - u_{0,n}|\big)c_n$, whatever the size of the sum. When the
+offsets nearly cancel, the sum is much smaller than its terms. In the solver's reference, energies are measured from
+$T_\star$, so this happens to a cell near $T_\star$, whose $U_0$ is close to zero. A tolerance relative to $|U_0|$
+alone is then below the rounding error and cannot be met. The correct test scales with the terms, evaluated at the
+start state:
+
+$$
+|U - U_0| \le 64\,\epsilon_{\mathrm{mach}} \max\Big(|U_0|,\ \sum_n \big(|u_{0,n}| + |u_n - u_{0,n}|\big)c_n,\ 1\Big) .
+$$
+
+At the code pin the test is $64\,\epsilon_{\mathrm{mach}} \max(|U_0|, 1)$, without the middle term. That is the
+failure near $T_\star$ in the Limits.[^ch04-uv-d6]
+
+The Newton loop also needs its own bound on the number of passes. In the worst case every pass is a bisection, which
+halves the bracket. A bracket whose width is comparable to $T$ shrinks to the spacing of double-precision numbers near
+$T$ after about 53 halvings (24 in single precision), so 64 passes always suffice. The bound should not depend on
+the outer `max-iter`, which counts linear steps of the general method. The correct bound is therefore
+$\max(\texttt{max-iter}, 64)$.[^ch04-uv-k4]
+
+At the code pin the Newton passes are capped by the same `max-iter` as the general method (default 10): the loop runs while the
 residual is above the tolerance and fewer than `max-iter` passes have been made. The 64 bracketing steps are a separate,
 fixed bound. On success the diagnostic is the number of Newton passes, counting the evaluation at the start
 temperature as the first, and the same count is written back to the caller's `max_iter`; it is not a count of outer
@@ -202,6 +372,18 @@ $9.2\times10^{-7}$) and on the cold-start cells of `tests/jupiter.yaml` with `ma
 It fails where it should: with `max-iter: 2` on the same cells ($\ln\mathrm{RH}$ up to 14) and with `use-h2-cp`
 (Limits; $|\ln\mathrm{RH}| = 3.5\times10^{-3}$).[^ch04-uv-host-rh]
 
+[^ch04-uv-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the one-vapour card of the script (dry
+gas, `H2O`, `H2O(l)`, `h2o_ideal`, $T_\star$ = 300 K), cells started at 280, 250 and 320 K with water mole fractions
+0.02, 0.01 and 0.05 (lines a, b, d) and at 296 to 304 K with 0.05 (line c); run:
+`python derivation-checks/check_ch4_uv.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
+lines a, b and d PASS, line c EXPECTED-FAIL; CPU, double; kintera 2.6.5 source build, Python 3.11.13,
+torch 2.10.0+cu126.]
+
+[^ch04-uv-svp-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the nucleation formulas of
+`tests/jupiter.yaml` (`h2o_ideal`, `nh3_ideal`, `nh3_h2s_lewis`) over 150 to 350 K; run:
+`python derivation-checks/check_ch2_svp.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin:
+`SUMMARY: 7 PASS, 0 FAIL`; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
+
 [^ch04-uv-host-rh]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the one-vapour card `ONE_VAPOUR` of
 `src/kintera_report/ch04/runs/common.py` and `tests/jupiter.yaml`; run: `python -P
 src/kintera_report/ch04/runs/uv_host_rh.py` with `KINTERA_REPO` set to a kintera checkout at the pin, which calls
@@ -216,26 +398,48 @@ outside the suite, not a committed check.]
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- **The partition method fails near $T_\star$.** Its tolerance is absolute, and the target energy $U_0$ is close to zero
-  when the cell starts near the reference temperature. For one vapour (water, $x_{\mathrm{v}} = 5\times10^{-2}$, 1 bar,
+- **The partition method fails near $T_\star$ at the code pin.** Its tolerance there is $64\,\epsilon_{\mathrm{mach}}
+  \max(|U_0|, 1)$, and the target energy $U_0$ is close to zero when the cell starts near the reference temperature,
+  so the tolerance falls below the rounding error of $U$ (Numerical method). For one vapour (water, $x_{\mathrm{v}} = 5\times10^{-2}$, 1 bar,
   $T_\star$ = 300 K), `uv-solver: partition` fails in 23 of 25 cells started between 297 and 303 K and succeeds only at
   297.00 and 302.25 K (@fig-ch04-equilibrate-uv-partition). A failed cell keeps its input temperature and leaves the
   saturation residual $\ln\mathrm{RH}$ between 0.17 and 0.51. `kkt` converges in every one of these cells to
   $|\ln\mathrm{RH}| < 10^{-6}$.[^ch04-uv-partition] With $T_\star$ = 250 K and starts within 1 K of it, `partition` fails in
   all five cells tried, leaving $\ln\mathrm{RH}$ between 4.09 and 4.28.[^ch04-uv-partition-250] With `auto` such a cell
-  falls back to the general method.
-- **`max-iter` also caps the partition method**, as above; lowering it below 5 to save time loses partition cells.
+  falls back to the general method. `check_ch4_uv.py` line c reproduces the failure on its own card: of seven starts
+  from 296 to 304 K, those at 299, 300 and 302 K return diagnostic $-1$ with the temperature left 2.8 to 3.5 K from the
+  oracle (EXPECTED-FAIL). Which starts fail depends on rounding: the committed output of the same script records a
+  different failing set. The scaled tolerance of the Numerical method lies above the rounding error by construction;
+  that it removes these failures is not measured at the code pin.[^ch04-uv-d6-limit]
+- **`max-iter` also caps the partition method at the code pin**, as above; lowering it below 5 to save time loses
+  partition cells. The correct bound is independent of it (Numerical method).
 - **The default `max-iter` of 10 fails cold starts here too.** On the cold-start cells of @sec-ch04-equilibrate-tp the
   general method fails at 130 and 150 K with `max-iter: 10` and converges with 20 or 30, in 14 and 12
   iterations.[^ch04-uv-coldstart]
-- **`use-h2-cp` leaves the cell off saturation.** With the rotational heat capacity of hydrogen switched on, the
-  solver uses constant heat capacities for the hydrogen gas while `ThermoY` reports the temperature with the
-  rotational term. At the reported temperature the residual $\ln\mathrm{RH}$ is $+0.18$ (ammonia, 160 K), $+3.07$
+- **`use-h2-cp` leaves the cell off saturation at the code pin.** The derivation requires the solver's $u_n(T)$ to be
+  the energy function `ThermoY` uses (@eq-ch04-equilibrate-uv-energy). With the rotational heat capacity of hydrogen
+  switched on, the pin passes only constant offsets and heat capacities to the solver, while `ThermoY` reports the
+  temperature with the rotational term.[^ch04-uv-d12] At the reported temperature the residual $\ln\mathrm{RH}$ is $+0.18$ (ammonia, 160 K), $+3.07$
   (ammonia, 120 K) and $-3.5\times10^{-3}$ (water, 300 K). Without the option it is at most $2.3\times10^{-14}$.
   [^ch04-uv-h2cp]
 :::
 
 - The saturation tests assume an ideal gas (@sec-ch04-conditions, Limits).
+
+[^ch04-uv-d6]: [source: UCzhangxi/kintera issue #54, row D6; at the pin the test is in `equilibrate_uv_partition`
+({{< code src/thermo/equilibrate_uv.h equilibrate_uv_partition >}}); the fix scales the tolerance by the summed terms
+at the start state; it is not part of the code pin.]
+
+[^ch04-uv-k4]: [source: UCzhangxi/kintera issue #54, row K4; at the pin the Newton loop of `equilibrate_uv_partition`
+runs while fewer than `max_iter` passes have been made; the fix bounds it by $\max(\texttt{max-iter}, 64)$; it is not
+part of the code pin.]
+
+[^ch04-uv-d6-limit]: [source: UCzhangxi/kintera issue #54, row D6; run record of `check_ch4_uv.py` as in the
+Derivation layer; the committed `derivation-checks/check_ch4_uv.out` lists 299, 300 and 301 K.]
+
+[^ch04-uv-d12]: [source: UCzhangxi/kintera issue #54, row D12; the solver call in `ThermoYImpl::forward`
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}) passes `u0` and `cv0` at the pin; the fix passes the
+hydrogen rotational energy and heat capacity to the solver as extra terms; it is not part of the code pin.]
 
 [^ch04-uv-partition]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the card `ONE_VAPOUR` of
 `src/kintera_report/ch04/runs/common.py`, with dry gas, `H2O` and `H2O(l)`, one nucleation reaction with

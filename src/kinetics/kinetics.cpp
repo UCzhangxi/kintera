@@ -533,9 +533,23 @@ KineticsImpl::forward_with_rate_constants(
     auto rc_ddC_rev = rc_ddC_fwd_rev / Kc_rev.clamp_min(1e-250).unsqueeze(-2);
     rc_ddC = torch::cat({rc_ddC, rc_ddC_rev}, -1);
 
+    // Reverse rate constant derivative: k_r = k_f / Kc, so
+    //   dk_r/dT = (dk_f/dT) / Kc - k_r d(ln Kc)/dT,
+    //   d(ln Kc)/dT = sum(nu h/RT) / T - dn / T,
+    // from d(g/RT)/dT = -(h/RT)/T and d ln(Pref/(R T))/dT = -1/T. Where the
+    // clamp on Kc is active, Kc is held constant and the second term is 0.
     if (rc_ddT.has_value()) {
+      auto h_RT = nasa9_enthalpy_RT(temp, nasa9_coeffs_low, nasa9_coeffs_high,
+                                    nasa9_Tmid);
+      auto dlnKc_dT =
+          (torch::matmul(h_RT, stoich_base) - dn) / temp.unsqueeze(-1);
+      auto dlnKc_dT_rev =
+          torch::where(Kc_rev > 1e-250, dlnKc_dT.index_select(-1, rev_indices),
+                       torch::zeros_like(Kc_rev));
       auto rc_ddT_fwd_rev = rc_ddT.value().index_select(-1, rev_indices);
-      rc_ddT = torch::cat({rc_ddT.value(), rc_ddT_fwd_rev}, -1);
+      auto rc_ddT_rev =
+          rc_ddT_fwd_rev / Kc_rev.clamp_min(1e-250) - kr_rev * dlnKc_dT_rev;
+      rc_ddT = torch::cat({rc_ddT.value(), rc_ddT_rev}, -1);
     }
   }
 

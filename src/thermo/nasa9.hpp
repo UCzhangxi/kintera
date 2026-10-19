@@ -62,4 +62,24 @@ inline torch::Tensor nasa9_gibbs_RT(torch::Tensor temp,
   return h_RT - s_R;  // (..., nspecies)
 }
 
+//! Compute dimensionless enthalpy h/RT for all species (NASA-9, same
+//! coefficient layout and range selection as nasa9_gibbs_RT). By
+//! Gibbs-Helmholtz, d(g/RT)/dT = -(h/RT)/T.
+inline torch::Tensor nasa9_enthalpy_RT(torch::Tensor temp,
+                                       torch::Tensor coeffs_low,
+                                       torch::Tensor coeffs_high,
+                                       torch::Tensor Tmid) {
+  auto T = temp.unsqueeze(-1);  // (..., 1)
+  auto T2 = T * T;
+  auto invT = 1.0 / T;
+
+  auto mask = (T < Tmid);  // (..., nspecies)
+  auto a = torch::where(mask.unsqueeze(-1), coeffs_low, coeffs_high);
+
+  return -a.select(-1, 0) * invT * invT + a.select(-1, 1) * T.log() * invT +
+         a.select(-1, 2) + a.select(-1, 3) * T / 2.0 +
+         a.select(-1, 4) * T2 / 3.0 + a.select(-1, 5) * T2 * T / 4.0 +
+         a.select(-1, 6) * T2 * T2 / 5.0 + a.select(-1, 7) * invT;
+}
+
 }  // namespace kintera

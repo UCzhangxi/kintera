@@ -50,6 +50,8 @@
 
 *block Jacobian*, see **sparse system, atm2d**.
 
+**boundary conditions, two-dimensional**: Eddy and molecular diffusion on the two-dimensional grid, @sec-ch09-transport.
+
 **bounded Newton step**: The bounded Newton step, @sec-ch10-newton.
 
 *branches*, see **photolysis cross section**.
@@ -102,6 +104,8 @@
 
 *constrained Newton*, see **bounded Newton step**.
 
+**corner precedence**: Eddy and molecular diffusion on the two-dimensional grid, @sec-ch09-transport.
+
 **coupling, equation of state**: Thermodynamics as the equation of state of snapy (thermodynamics card), @sec-ch14-thermo.
 
 **coupling, kinetics**: Kinetics after the dynamics step, @sec-ch14-kinetics.
@@ -113,6 +117,8 @@
 *CPU-only tests*, see **test coverage by device**.
 
 *CPU or GPU*, see **device dispatch**.
+
+**cross-section format**: Photolysis cross sections and their branches, @sec-ch07-cross-sections.
 
 **CSR**: The sparse linear solve on CUDA, @sec-ch10-sparse.
 
@@ -135,6 +141,8 @@
 ## D {.unnumbered .unlisted}
 
 *Dalton's law*, see **equation of state**.
+
+*data*, see **cross-section format**.
 
 *data files*, see **resource lookup**.
 
@@ -219,6 +227,8 @@
 *failed cells*, see **coupling, saturation adjustment**.
 
 **fall-off rate constant**: Three-body and fall-off rate constants, @sec-ch06-falloff.
+
+*filename*, see **cross-section format**.
 
 *find_resource*, see **resource lookup**.
 
@@ -406,6 +416,8 @@
 
 **photolysis rate constant**: Photolysis rate constants, @sec-ch07-rate.
 
+**photolysis reaction, adding**: Photolysis cross sections and their branches, @sec-ch07-cross-sections.
+
 **photolysis reaction rate**: Photolysis reaction rates and their Jacobian, @sec-ch07-photochem.
 
 *physical constants*, see **units**.
@@ -529,6 +541,8 @@
 *species order*, see **species registry**.
 
 **species registry**: The species registry: names, phases and per-species data, @sec-ch02-species-registry.
+
+*SpeciesBoundaryConditions2D*, see **boundary conditions, two-dimensional**.
 
 *speedup*, see **GPU timing**.
 

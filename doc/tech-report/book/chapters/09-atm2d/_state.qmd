@@ -57,6 +57,12 @@ No numerical method. `x1` is vertical and `x2` horizontal, and the state tensors
 with the species last; the flattened index of `(column, layer, species)` used by the sparse system is
 `(column * nlyr + layer) * nspecies + species` (`flatten_state_index`, @sec-ch09-assembly).
 
+Boundary conditions are given per side in `SpeciesBoundaryConditions2D`: `left` and `right` are the first and last
+columns ($x_2$ ends), `bottom` and `top` the first and last layers ($x_1$ ends). At a corner cell two sides apply;
+`left` and `right` are applied first and then overwritten by `bottom` and `top`, so a corner takes the bottom or top
+condition ({{< code python/atm2d/transport.py _apply_boundary_conditions >}}; the row forms are in the Numerical
+method of @sec-ch09-transport).
+
 The transport form and the chemistry solver are chosen by `CoreConfig`
 ({{< code python/atm2d/config.py CoreConfig >}}): `transport_form` (`c_diffusion`, `mr_diffusion`, `mr_exp`,
 `mr_hybrid`, or `None` for the density-dependent default of @sec-ch09-transport) and `chem_solver` (`newton`, `bdf`,

@@ -112,6 +112,10 @@ a block that is a list or a scalar is refused; an empty block keeps the defaults
 `equilibrium` or `normal` is refused; a file without `reference-state` makes `from_yaml` return no options; a
 non-positive latent heat at $T_\star$ gives the warning "condensation absorbs energy".
 
+The kinetics options read the same `Tref` and `Pref` keys but have other defaults, 298.15 K and 101325 Pa
+({{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}), so a deck that omits a key gives thermodynamics and
+kinetics different reference values (@sec-ch11-yaml-input).
+
 ### Tests
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |

@@ -157,6 +157,8 @@ sections:
   # Chapter 7. Photochemistry
   sec-ch07-cross-sections:
     - photolysis cross section: [KINETICS7, branches]
+    - photolysis reaction, adding
+    - cross-section format: [data, filename]
   sec-ch07-actinic-flux:
     - actinic flux
   sec-ch07-rate:
@@ -217,6 +219,8 @@ sections:
     - two-dimensional atmosphere, state: [atm2d, AtmState2D, column grid]
   sec-ch09-transport:
     - eddy diffusion, two-dimensional: [molecular diffusion, transport operator, mixing-ratio form]
+    - boundary conditions, two-dimensional: [SpeciesBoundaryConditions2D]
+    - corner precedence
   sec-ch09-molecular:
     - binary diffusion: [molecular diffusion, gravitational separation, mr_exp, mr_hybrid]
   sec-ch09-sources:

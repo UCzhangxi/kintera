@@ -92,8 +92,8 @@ the device. The scalar function `eval_logsvp` is the one place both the CPU and 
 path evaluate a constant, so an inline curve with the same constants as a named one gives bit-identical values.
 
 **Adding a vapor-pressure law.** If the new curve has the `ideal` or `antoine` form, no code is needed: give
-`formula: ideal` with `T3`, `P3`, `beta`, `gamma` (and optionally `betas`, `gammas`), or `formula: antoine` with `A`[^rg-6570f873f97b],
-`B`, `C`, in the reaction's `rate-constant`[^rg-7e0330505dc9]. A new functional form needs a rebuild:
+`formula: ideal` with `T3`, `P3`, `beta`, `gamma` (and optionally `betas`, `gammas`), or `formula: antoine` with the three Antoine
+coefficients `A, B, C` of @eq-ch02-svp-antoine (not the Arrhenius factor of @sec-ch06-arrhenius), in the reaction's `rate-constant`[^rg-7e0330505dc9]. A new functional form needs a rebuild:
 
 1. Write `double f(double T)` returning $\ln K_r$ with $K_r$ in Pa$^{m}$ (@eq-ch02-svp-ideal is an example), and its
    derivative `double f_ddT(double T)` returning $\mathrm d \ln K_r/\mathrm d T$ in K$^{-1}$, both `DISPATCH_MACRO`
@@ -124,7 +124,7 @@ The vapor-pressure figure is not provided: the figure module is not written yet.
 : Code map of the saturation vapor pressure fits. {#tbl-ch02-svp-code}
 
 Setup checks a user can hit: a nucleation reaction without `rate-constant` or `formula` is refused; `ideal` without
-`T3`, `P3`, `beta` or `gamma`, or with $T_3 \le 0$ or $p_3 \le 0$, is refused; `antoine` without `A`, `B` or `C`
+`T3`, `P3`, `beta` or `gamma`, or with $T_3 \le 0$ or $p_3 \le 0$, is refused; `antoine` without all three of `A, B, C`
 is refused; an inline form set from Python without its parameters is refused.
 
 ### Tests
@@ -149,8 +149,6 @@ stated range without warning (verified by reading the reader and the solvers; th
 section does not assess their accuracy.
 
 <!-- reader glossary notes -->
-[^rg-6570f873f97b]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
-
 [^rg-7e0330505dc9]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
 
 [^rg-20a032d46e8f]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)

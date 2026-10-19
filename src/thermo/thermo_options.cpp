@@ -118,6 +118,9 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
   // add reference species
   vapor_set.insert(species_names[0]);
 
+  // (source, copy) of the one-to-one coagulation reactions
+  std::vector<std::pair<std::string, std::string>> coag_pairs;
+
   // register reactions
   if (config["reactions"]) {
     // add nucleation reactions
@@ -160,6 +163,13 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
     // create temporary coagulation and evaporation options to add species
     auto coagulation = CoagulationOptionsImpl::from_yaml(config["reactions"]);
     add_to_vapor_cloud(vapor_set, cloud_set, coagulation);
+    for (auto const& rxn : coagulation->reactions()) {
+      if (rxn.reactants().size() == 1 && rxn.products().size() == 1 &&
+          rxn.reactants().begin()->second == rxn.products().begin()->second) {
+        coag_pairs.emplace_back(rxn.reactants().begin()->first,
+                                rxn.products().begin()->first);
+      }
+    }
     if (thermo->verbose()) {
       std::cout << fmt::format(
                        "[ThermoOptions] registered {} Coagulation reactions",
@@ -246,6 +256,34 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
     thermo->nasa9_Tmid().push_back(species_nasa9_Tmid[id]);
     thermo->names().push_back(species_names[id]);
     thermo->mu().push_back(species_weights[id]);
+  }
+
+  // condensate copies: a copy is in no nucleation reaction and its source is
+  // a nucleating condensate or a copy registered before it
+  std::set<std::string> resolved;
+  if (thermo->nucleation() != nullptr) {
+    for (auto const& rxn : thermo->nucleation()->reactions()) {
+      for (auto const& sp : rxn.products()) resolved.insert(sp.first);
+      for (auto const& sp : rxn.reactants()) resolved.insert(sp.first);
+    }
+  }
+  for (bool added = true; added;) {
+    added = false;
+    for (auto const& [src, dst] : coag_pairs) {
+      if (!cloud_set.count(src) || !cloud_set.count(dst) ||
+          !resolved.count(src) || resolved.count(dst)) {
+        continue;
+      }
+      auto id = [&](std::string const& name) {
+        return static_cast<int>(
+            std::find(species_names.begin(), species_names.end(), name) -
+            species_names.begin());
+      };
+      thermo->copy_ids().push_back(id(dst));
+      thermo->copy_src_ids().push_back(id(src));
+      resolved.insert(dst);
+      added = true;
+    }
   }
 
   return thermo;

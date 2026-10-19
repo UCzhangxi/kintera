@@ -8,8 +8,8 @@ adjustment of @sec-ch04, the kinetics of @sec-ch06 and the coupling of @sec-ch14
 | scheme | YAML key or option | default | order | main test |
 |---|---|---|---|---|
 | @sec-ch03-eos | `compute` (API) | always | exact | `test_thermo` |
-| @sec-ch03-species-functions | `cv_R`, `u0_R`, `s0_R` | 5/2, 0, 0 | exact | `test_nasa9_cp.py` |
-| @sec-ch03-reference-state | `reference-state` | 300 K, $10^5$ Pa | exact | `test_reference_state_keys.py` |
+| @sec-ch03-species-functions | `cv_R`[^rg-4630a13a9883], `u0_R`[^rg-5d6bd36f1041], `s0_R` | 5/2, 0, 0 | exact | `test_nasa9_cp.py` |
+| @sec-ch03-reference-state | `reference-state`[^rg-5d34b8be2a13] | 300 K, $10^5$ Pa | exact | `test_reference_state_keys.py` |
 | @sec-ch03-thermo-y | `ThermoY` (API) | caller | exact | `test_thermo` |
 | @sec-ch03-thermo-x | `ThermoX` (API) | caller | exact | `test_thermo` |
 | @sec-ch03-relative-humidity | `relative_humidity` (API) | caller | exact | `test_inline_svp.py` |
@@ -31,3 +31,11 @@ evaluated pointwise is exact. {#tbl-ch03-schemes}
 {{< include 03-thermodynamics/_relative-humidity.qmd >}}
 
 {{< include 03-thermodynamics/_adiabat.qmd >}}
+
+<!-- reader glossary notes -->
+[^rg-4630a13a9883]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)
+
+[^rg-5d6bd36f1041]: u0_R — reference internal energy divided by the gas constant, in K; default 0; stored in `species_uref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L178-L182)
+
+[^rg-5d34b8be2a13]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+<!-- end reader glossary notes -->

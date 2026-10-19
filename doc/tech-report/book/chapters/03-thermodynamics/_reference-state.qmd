@@ -20,7 +20,7 @@ reference values at run time.
 ::: {.callout-note title="At a glance"}
 **Purpose.** Fix the energy and entropy constants; the latent heat at $T_\star$ is @eq-ch03-reference-state-latent.
 
-**Data.** `Tref` [K], `Pref` [Pa]; per species `cv_R` [-], `u0_R` [K], `s0_R` [-].
+**Data.** `Tref`[^rg-3024f877ff0c] [K], `Pref`[^rg-b6de325e7bca] [Pa]; per species `cv_R` [-], `u0_R` [K], `s0_R` [-].
 
 **Placement.** Read by `ThermoOptions.from_yaml`; offsets moved in `ThermoY.reset` and `ThermoX.reset`.
 
@@ -129,3 +129,9 @@ The latent-heat check uses $u^{\star}$ only, so it ignores the NASA-9 and H$_2$ 
 their internal energy to 300 K, a fixed constant, not to `Tref`; with `Tref` other than 300 K, a NASA-9 species'
 energy at $T_\star$ is not $\mathcal R u^{\star}_n$ (verified by reading `eval_intEng_R`; the size of the effect is
 not measured).
+
+<!-- reader glossary notes -->
+[^rg-3024f877ff0c]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
+
+[^rg-b6de325e7bca]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
+<!-- end reader glossary notes -->

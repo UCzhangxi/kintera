@@ -1,0 +1,7 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+deck: tests/jupiter.yaml
+species: ['dry', 'H2O', 'NH3', 'H2S', 'H2O(l)', 'H2O(l,p)', 'NH3(s)', 'NH3(s,p)', 'NH4SH(s)']
+ case                       T[K] P[bar] x_cond  (s_X-s_X(p))/R  dsbar[J/mol/K] ds[J/kg/K] dtheta[K]  dcp/cp   dH/H
+ H2O(l) -> H2O(l,p)          280   5.0  1e-03         -9.3427      +0.07768    +36.2278    +0.0016  +1.5e-16  +0.0e+00
+ H2O(l) -> H2O(l,p)          280   5.0  1e-04         -9.3427      +0.00777     +3.6471    +0.0002  +0.0e+00  +0.0e+00
+ NH3(s) -> NH3(s,p)          140   0.5  2e-04        -40.7161      +0.06771    +32.0046    +0.0013  +0.0e+00  +0.0e+00

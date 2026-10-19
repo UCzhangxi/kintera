@@ -1,0 +1,9 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+card: ./d14.yaml; start T0 = 300.0 K, P0 = 1e+05 Pa (saturated), end P1 = 5e+04 Pa
+  oracle (RK4, 6931 steps): reversible 275.83117 K, pseudo 275.58323 K
+  nstep   dlnP       T_rev-oracle[K]  T_pseudo-oracle[K]
+     35  -0.01980       +0.00007       +0.00627
+     70  -0.00990       +0.00002       +0.00318
+    139  -0.00499       +0.00000       +0.00163
+    277  -0.00250       +0.00000       +0.00083
+    555  -0.00125       +0.00001       +0.00045

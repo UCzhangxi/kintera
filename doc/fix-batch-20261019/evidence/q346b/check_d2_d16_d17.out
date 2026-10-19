@@ -1,0 +1,40 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+
+== D2: zero vapour, condensate present (cold start), max-iter 10 (default) and 50
+   oracle: the reaction of the condensate must end with r = 0 (condensate left) or r <= 0
+   (condensate gone); r = sum(a ln p) - logsvp, from tp_oracle.residuals
+  H2O(l)   T=  280 max-iter 10: diag      2  vapour 2.5000e-03  cond left 0.0000e+00  r(rxn) [   -1.38  -692.02 -1377.01]
+  H2O(l)   T=  280 max-iter 50: diag      2  vapour 2.5000e-03  cond left 0.0000e+00  r(rxn) [   -1.38  -692.02 -1377.01]
+  H2O(l)   T=  300 max-iter 10: diag      2  vapour 2.5000e-03  cond left 0.0000e+00  r(rxn) [   -2.65  -692.56 -1379.59]
+  H2O(l)   T=  300 max-iter 50: diag      2  vapour 2.5000e-03  cond left 0.0000e+00  r(rxn) [   -2.65  -692.56 -1379.59]
+  NH3(s)   T=  180 max-iter 10: diag      2  vapour 3.0000e-04  cond left 0.0000e+00  r(rxn) [-674.     -3.66 -672.85]
+  NH3(s)   T=  180 max-iter 50: diag      2  vapour 3.0000e-04  cond left 0.0000e+00  r(rxn) [-674.     -3.66 -672.85]
+  NH4SH(s) T=  240 max-iter 10: diag      2  vapour 7.9994e-05  cond left 0.0000e+00  r(rxn) [-682.57   -9.21   -7.88]
+  NH4SH(s) T=  240 max-iter 50: diag      2  vapour 7.9994e-05  cond left 0.0000e+00  r(rxn) [-682.57   -9.21   -7.88]
+  H2O(l)   T=  280 max-iter 10: diag      2  vapour 9.5197e-03  cond left 4.0480e-02  r(rxn) [    0.    -691.98 -1376.93]
+  H2O(l)   T=  280 max-iter 50: diag      2  vapour 9.5197e-03  cond left 4.0480e-02  r(rxn) [    0.    -691.98 -1376.93]
+  NH3(s)   T=  160 max-iter 10: diag      2  vapour 3.0000e-04  cond left 0.0000e+00  r(rxn) [-669.7    -1.03 -665.33]
+  NH3(s)   T=  160 max-iter 50: diag      2  vapour 3.0000e-04  cond left 0.0000e+00  r(rxn) [-669.7    -1.03 -665.33]
+  NH4SH(s) T=  200 max-iter 10: diag      2  vapour 4.4999e-05  cond left 3.4998e-05  r(rxn) [-6.77e+02 -7.54e+00 -1.78e-15]
+  NH4SH(s) T=  200 max-iter 50: diag      2  vapour 4.4999e-05  cond left 3.4998e-05  r(rxn) [-6.77e+02 -7.54e+00 -1.78e-15]
+
+== D16: TPX->V with x_0 = 0 and a cloud present
+  x_0 =  5e-01: c_gas_total = 4.009080e+01  c_H2O(l) = 4.454533e+00  expected 4.454533e+00
+  x_0 =  1e-12: c_gas_total = 4.009080e+01  c_H2O(l) = 4.454533e+00  expected 4.454533e+00
+  x_0 =  0e+00: c_gas_total = 4.009080e+01  c_H2O(l) = inf  expected 4.454533e+00
+
+== D17: dG/dxi = sum_i nu_i mu_i at TP equilibrium (J/m^3 per mol/m^3 -> J/mol), / RT
+  T = 150 K {}: x = {'dry': '9.97e-01', 'H2O': '5.33e-11', 'NH3': '1.71e-04', 'H2S': '1.70e-13', 'H2O(l)': '2.50e-03', 'H2O(l,p)': '0.00e+00', 'NH3(s)': '4.92e-05', 'NH3(s,p)': '0.00e+00', 'NH4SH(s)': '8.00e-05'}
+    NH3 -> NH3(s)            dG/(RT) = -5.8976e-08
+    H2O(l) -> H2O(l,p)       dG/(RT) = -9.1396e+00
+    NH3(s) -> NH3(s,p)       dG/(RT) = -3.8654e+01
+  T = 200 K {}: x = {'dry': '9.97e-01', 'H2O': '1.60e-06', 'NH3': '2.29e-04', 'H2S': '8.80e-06', 'H2O(l)': '2.50e-03', 'H2O(l,p)': '0.00e+00', 'NH3(s)': '0.00e+00', 'NH3(s,p)': '0.00e+00', 'NH4SH(s)': '7.12e-05'}
+    H2O -> H2O(l)            dG/(RT) = +1.8102e-06
+    NH3 -> NH3(s)            dG/(RT) = +5.9076e+00
+    NH3 + H2S -> NH4SH(s)    dG/(RT) = +0.0000e+00
+    H2O(l) -> H2O(l,p)       dG/(RT) = -9.4785e+00
+  T = 280 K {'xh2o': 0.05}: x = {'dry': '9.50e-01', 'H2O': '9.52e-03', 'NH3': '3.00e-04', 'H2S': '8.00e-05', 'H2O(l)': '4.05e-02', 'H2O(l,p)': '0.00e+00', 'NH3(s)': '0.00e+00', 'NH3(s,p)': '0.00e+00', 'NH4SH(s)': '0.00e+00'}
+    H2O -> H2O(l)            dG/(RT) = +1.7601e-09
+    NH3 -> NH3(s)            dG/(RT) = +9.3122e+00
+    NH3 + H2S -> NH4SH(s)    dG/(RT) = +1.2922e+01
+    H2O(l) -> H2O(l,p)       dG/(RT) = -9.3427e+00

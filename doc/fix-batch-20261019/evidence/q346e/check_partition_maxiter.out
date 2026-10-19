@@ -1,0 +1,21 @@
+uv-solver partition, Tref 0, 1 bar; diag per cell (n = passes on success, -1 = failed)
+  x_v      T0[K] | max-iter 3   5   10   50
+  1e-03   200.0 |      3     3     3     3
+  1e-03   250.0 |     -1     4     4     4
+  1e-03   280.0 |      1     1     1     1
+  1e-03   300.0 |      1     1     1     1
+  1e-03   320.0 |      1     1     1     1
+  1e-02   200.0 |     -1     4     4     4
+  1e-02   250.0 |     -1     4     4     4
+  1e-02   280.0 |      3     3     3     3
+  1e-02   300.0 |      1     1     1     1
+  1e-02   320.0 |      1     1     1     1
+  5e-02   200.0 |     -1     4     4     4
+  5e-02   250.0 |     -1     5     5     5
+  5e-02   280.0 |     -1     5     5     5
+  5e-02   300.0 |     -1     5     5     5
+  5e-02   320.0 |      1     1     1     1
+max-iter 3: 7 of 15 cells failed
+max-iter 5: 0 of 15 cells failed
+max-iter 10: 0 of 15 cells failed
+max-iter 50: 0 of 15 cells failed

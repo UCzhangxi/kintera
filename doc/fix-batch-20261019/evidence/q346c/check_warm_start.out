@@ -1,0 +1,7 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+ T[K]  diag cold  diag warm  max|x_warm - x_cold|
+  130         44         44  0.00e+00
+  150         33         33  1.36e-20
+  175         22         22  0.00e+00
+  200         15         15  0.00e+00
+  250          6          6  0.00e+00

@@ -1,0 +1,31 @@
+Error: Non-positive temperature or pressure.
+Error: Non-positive temperature or pressure.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+Error: Non-positive temperature or pressure.
+Error: Non-positive temperature or pressure.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 100 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+
+== jupiter (H2O 2.5e-3, NH3 3e-4, H2S 8e-5)
+  T*[K]  T(PXS->T, max-iter 10)  T(max-iter 100)  warn10  cp_eff/cp  1-cp_eff/cp
+    150                     nan              nan       0      1.748      -0.748
+    200              199.997806       200.000026       0      1.412      -0.412
+    250              250.000086       249.999977       0      1.268      -0.268
+    280              280.000002       280.000002       0      1.063      -0.063
+    300              300.000000       300.000000       0      0.994       0.006
+    320              319.999996       319.999996       0      0.929       0.071
+
+== H2O-rich (H2O 5e-2)
+  T*[K]  T(PXS->T, max-iter 10)  T(max-iter 100)  warn10  cp_eff/cp  1-cp_eff/cp
+    150                     nan              nan       0      1.641      -0.641
+    200              200.012406       200.000030       0      1.366      -0.366
+    250              249.999901       250.000025       0      1.251      -0.251
+    280              280.870854       280.000111       0      1.799      -0.799
+    300              321.605394       321.605411       0      3.182      -2.182
+    320              319.999990       319.999990       0      0.878       0.122

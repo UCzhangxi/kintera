@@ -1,0 +1,20 @@
+Error: Non-positive temperature or pressure.
+Error: Non-positive temperature or pressure.
+Error: Non-positive temperature or pressure.
+Error: Non-positive temperature or pressure.
+Error: Non-positive temperature or pressure.
+Error: Non-positive temperature or pressure.
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+ s0_R(dry)  T*[K]   s/cp(molar)  T returned (max-iter 10)   (max-iter 100)  warnings(10)
+       0.0    150       -0.693                      nan              nan    0
+       0.0    300        0.000               300.000000       300.000000    0
+       0.0    600        0.693               594.162559       599.998737    0
+       5.0    150        0.735      111591423899.442932              nan    0
+       5.0    300        1.429               300.000000       300.000000    0
+       5.0    600        2.122               103.776068       103.767658    0
+      15.7    150        3.793   187079832237976674271534081551216422327572074528267869074980468898860927331491008501820525031883042212236052305100002593795063305732096.000000              nan    0
+      15.7    300        4.486               300.000000       300.000000    0
+      15.7    600        5.179                      nan              nan    0
+      30.0    150        7.878   58500160923888687219077660079734990511113358996092797340469875577760938658043808022027469782698614643404995394317525702630043835737065397763964928.000000              nan    0
+      30.0    300        8.571               300.000000       300.000000    0
+      30.0    600        9.265                      nan              nan    0

@@ -1,0 +1,8 @@
+== formula: h2o_ideal  (exit code 0)
+   options built
+   ThermoX built
+   forward returned: ['-2.7672e+01'] diag = 5.0
+== formula: h2o_idael  (exit code 1)
+   options built
+   ThermoX built
+   stderr last line: RuntimeError: Function h2o_idael not registered.

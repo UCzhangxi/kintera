@@ -1,0 +1,21 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+
+max-iter = 10
+ T[K]   diag    x_H2O        x_NH3        x_H2S       max r_j(active)  oracle x_H2O  oracle x_NH3  oracle x_H2S
+  130   -2010  2.4416e-06  2.9299e-07  7.8131e-08     1.778e+01   9.1748e-14    3.3481e-06    1.2937e-16
+  150   -2010  2.4416e-06  3.8340e-07  7.8131e-08     1.073e+01   5.3261e-11    1.7079e-04    1.6981e-13
+  175   -2010  2.4416e-06  2.2010e-04  7.8131e-08     4.835e+00   1.9407e-08    2.2000e-04    3.9900e-09
+  200   -2010  2.4416e-06  2.2884e-04  8.8229e-06     4.204e-01   1.6035e-06    2.2880e-04    8.8039e-06
+  250       6  7.6074e-04  3.0000e-04  8.0000e-05     8.159e-09   7.6074e-04    3.0000e-04    8.0000e-05
+
+max-iter = 50
+ T[K]   diag    x_H2O        x_NH3        x_H2S       max r_j(active)  oracle x_H2O  oracle x_NH3  oracle x_H2S
+  130      44  9.1755e-14  3.3484e-06  1.2938e-16     8.450e-08   9.1748e-14    3.3481e-06    1.2937e-16
+  150      33  5.3266e-11  1.7080e-04  1.6982e-13     9.491e-08   5.3261e-11    1.7079e-04    1.6981e-13
+  175      22  1.9409e-08  2.2002e-04  3.9903e-09     1.178e-10   1.9407e-08    2.2000e-04    3.9900e-09
+  200      15  1.6036e-06  2.2882e-04  8.8045e-06     2.312e-08   1.6035e-06    2.2880e-04    8.8039e-06
+  250       6  7.6074e-04  3.0000e-04  8.0000e-05     8.159e-09   7.6074e-04    3.0000e-04    8.0000e-05
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.

@@ -1,0 +1,7 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+card: card_two_cloud_tref0.yaml
+species: ['dry', 'H2O', 'NH3', 'H2O(l)', 'H2O(l,p)', 'NH3(s)', 'NH3(s,p)']
+ case                         T[K]  P[bar] x_cond   ds[J/kg/K]  dtheta[K]  theta[K]   dcp/cp     dH/H
+ H2O(l) -> H2O(l,p)             280    5.0  1e-03    -17.7678    -0.2539   175.235  +0.0e+00  -1.3e-16
+ H2O(l) -> H2O(l,p)             280    5.0  1e-04     -1.7874    -0.0257   176.991  +0.0e+00  +0.0e+00
+ NH3(s) -> NH3(s,p)             140    0.5  2e-04     -0.2918    -0.0040   170.425  +0.0e+00  +0.0e+00

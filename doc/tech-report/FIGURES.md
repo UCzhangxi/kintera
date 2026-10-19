@@ -20,3 +20,14 @@ Regenerate every figure: `python3 tools/render_figures.py` (to `build/figures/<c
 | `fig-ch04-equilibrate-uv-partition` | `04-phase-equilibrium/_equilibrate-uv.qmd` | `kintera_report/ch04/figures/fig_uv_partition.py` | `src/kintera_report/ch04/data/uv_partition_tref.json` (a model run, named in the file's `provenance`) |
 | `fig-ch04-nucleation-path` | `04-phase-equilibrium/_nucleation.qmd` | `kintera_report/ch04/figures/fig_nucleation_path.py`<br>`kintera_report/ch04/flow.py` | - |
 | `fig-ch04-warm-start-flow` | `04-phase-equilibrium/_warm-start-failures.qmd` | `kintera_report/ch04/figures/fig_warm_start_flow.py`<br>`kintera_report/ch04/flow.py` | - |
+
+## ch05
+
+| figure | section file | code | data (written by) |
+|---|---|---|---|
+| `fig-ch05-conditions-flash` | `05-chemical-equilibrium/_conditions.qmd` | `kintera_report/ch05/figures/fig_flash_binary.py` | `src/kintera_report/ch05/data/flash_binary.json` (`kintera_report/ch05/runs/run_equilibrium.py`) |
+| `fig-ch05-dependency-map` | `05-chemical-equilibrium.qmd` | `kintera_report/ch05/figures/fig_dependency_map.py` | - |
+| `fig-ch05-diagnostics-water` | `05-chemical-equilibrium/_diagnostics.qmd` | `kintera_report/ch05/figures/fig_water_condensation.py` | `src/kintera_report/ch05/data/water_condensation.json` (`kintera_report/ch05/runs/run_equilibrium.py`) |
+| `fig-ch05-log-k-gas` | `05-chemical-equilibrium/_log-k.qmd` | `kintera_report/ch05/figures/fig_ho_gas.py` | `src/kintera_report/ch05/data/h2o_dissociation.json` (`kintera_report/ch05/runs/run_equilibrium.py`) |
+| `fig-ch05-newton-loop` | `05-chemical-equilibrium/_newton.qmd` | `kintera_report/ch05/figures/fig_newton_loop.py`<br>`kintera_report/ch04/flow.py` | - |
+| `fig-ch05-options-path` | `05-chemical-equilibrium/_options.qmd` | `kintera_report/ch05/figures/fig_options_path.py`<br>`kintera_report/ch04/flow.py` | - |

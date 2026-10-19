@@ -8,6 +8,8 @@
 
 *active set*, see **constrained least squares**.
 
+*activity*, see **chemical equilibrium, conditions**.
+
 *ADD_ARG*, see **options objects, C++**.
 
 *Antoine equation*, see **saturation vapor pressure**.
@@ -31,6 +33,14 @@
 *branches*, see **photolysis cross section**.
 
 ## C {.unnumbered .unlisted}
+
+**chemical equilibrium, conditions**: Equilibrium conditions in logarithmic form, with element balance and several phases, @sec-ch05-conditions.
+
+**chemical equilibrium, failures**: Convergence and failure reporting (status, iterations, error), @sec-ch05-diagnostics.
+
+**chemical equilibrium, Newton iteration**: Newton iteration in the reaction extents, @sec-ch05-newton.
+
+**chemical equilibrium, options**: Options and the YAML reader, @sec-ch05-options.
 
 *Clausius-Clapeyron*, see **saturation vapor pressure**.
 
@@ -122,6 +132,8 @@
 
 **effective heat capacity**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
 
+*element balance*, see **chemical equilibrium, conditions**.
+
 *energy offset*, see **reference temperature and pressure, thermodynamic**.
 
 **enthalpy, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
@@ -133,6 +145,10 @@
 **equation of state**: The mixture equation of state: gas pressure from gas concentrations, @sec-ch03-eos.
 
 *equilibrate_tp*, see **saturation adjustment, fixed temperature and pressure**.
+
+*equilibrium constant*, see **chemical equilibrium, conditions**.
+
+*EquilibriumOptions*, see **chemical equilibrium, options**.
 
 **evaporation, diffusion form**: Evaporation of condensates by diffusion, @sec-ch06-evaporation.
 
@@ -159,6 +175,8 @@
 ## G {.unnumbered .unlisted}
 
 *Gaussian elimination*, see **dense linear solve**.
+
+*Gibbs energy*, see **NASA-9 polynomials**.
 
 *GoogleTest*, see **test suite**.
 
@@ -248,6 +266,8 @@
 
 **molar mass**: Molar masses from composition strings, @sec-ch02-molar-mass.
 
+*mole floor*, see **chemical equilibrium, options**.
+
 **mole fractions**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
 
 *molecular weight*, see **molar mass**.
@@ -258,9 +278,11 @@
 
 **`name`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
-**NASA-9 polynomials**: NASA-9 polynomial data, @sec-ch02-nasa9.
+**NASA-9 polynomials**: NASA-9 polynomial data, @sec-ch02-nasa9; Equilibrium constants from NASA-9 polynomials, @sec-ch05-log-k.
 
 *nasa9.dat*, see **NASA-9 polynomials**.
+
+*Nasa9LogK*, see **NASA-9 polynomials**.
 
 **notation index**: The notation index, @sec-appa-index.
 
@@ -285,6 +307,8 @@
 *partition solver*, see **saturation adjustment, fixed internal energy and volume**.
 
 *phase*, see **species registry**.
+
+*phase_equilibrate_tp*, see **chemical equilibrium, Newton iteration**.
 
 *PhotoChem*, see **photolysis reaction rate**.
 
@@ -327,6 +351,8 @@
 *rate defaults*, see **reaction list, YAML**.
 
 *rate-parameter keys*, see **reaction list, YAML**.
+
+*reaction extent*, see **chemical equilibrium, Newton iteration**.
 
 **reaction list, YAML**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
@@ -391,6 +417,10 @@
 **species registry**: The species registry: names, phases and per-species data, @sec-ch02-species-registry.
 
 *SRI*, see **fall-off rate constant**.
+
+*standard pressure*, see **chemical equilibrium, options**.
+
+*status code*, see **chemical equilibrium, failures**.
 
 **stoichiometric matrix**: Reaction rates by mass action, @sec-ch06-mass-action.
 
@@ -469,6 +499,8 @@
 *uv-solver*, see **saturation adjustment, fixed internal energy and volume**.
 
 ## V {.unnumbered .unlisted}
+
+*vanishing phase*, see **chemical equilibrium, failures**.
 
 *vapor pressure fit*, see **saturation vapor pressure**.
 

@@ -105,7 +105,9 @@ out-of-bracket step with the midpoint. The convergence test is
    |F(T)| \leq 64\,\epsilon_{\mathrm{machine}}
                   \max\left(|U_0|,1\right),
 
-with at most ``max_iter`` iterations counting the initial evaluation. The
+with at most ``max(max_iter, 64)`` iterations counting the
+initial evaluation, so a ``max_iter`` sized for the KKT solver does not stop
+a converging search. The
 ``ftol`` option applies to the KKT solver, not this partition energy test.
 If the partition solve fails, it restores the pre-partition temperature and
 concentrations (after nonnegative clamping). ``uv_solver: auto`` then tries

@@ -36,36 +36,125 @@ derivative.
 
 Local symbols: $K_r$, saturation constant of reaction $r$, as in the notation table (@sec-appa); $T_3$, $p_3$,
 reference (triple-point) temperature [K] and pressure [Pa]; $\beta$, $\gamma$, dimensionless fit coefficients [-];
-$A$, $B$, $C$, Antoine coefficients [-], [K], [K]; $L$, molar latent heat [J mol$^{-1}$]; $\Delta c$, heat-capacity
-difference, condensate minus vapor [J mol$^{-1}$ K$^{-1}$].
+$A$, $B$, $C$, Antoine coefficients [-], [K], [K]; $L$, molar latent heat at constant pressure, $h_{\mathrm v} -
+h_{\mathrm c}$ [J mol$^{-1}$], and $L_0$ its linear extrapolation to $T = 0$ [J mol$^{-1}$]; $\Delta c$, heat-capacity
+difference at constant pressure, condensate minus vapor, $c_{p,\mathrm c} - c_{p,\mathrm v}$ [J mol$^{-1}$ K$^{-1}$];
+$t = T/T_3$ [-]; $v_{\mathrm v}$, $v_{\mathrm c}$, molar volumes of vapor and condensate [m$^3$ mol$^{-1}$];
+subscripts $\mathrm v$ and $\mathrm c$ on $g$, $h$, $s$ mark the molar Gibbs energy, enthalpy and entropy of the
+vapor and the condensate; $\Delta h_r$, reaction enthalpy released per unit extent [J mol$^{-1}$]; $a$, $b$,
+coefficients of a $\log_{10}$ fit [-], [K].
 
 ### Derivation
 
-**Ideal form.** The Clausius-Clapeyron relation for an ideal vapor over a condensate of negligible volume is
-$\mathrm d \ln p / \mathrm d T = L(T) / (\mathcal R T^2)$. Let the latent heat vary linearly,
-$L(T) = L_3 + \Delta c\,(T_3 - T)$, with the sign chosen so that $L$ grows as $T$ falls for $\Delta c > 0$.
-Integrating from $(T_3, p_3)$:
+**Ideal form.** The question: what do the four numbers $T_3$, $p_3$, $\beta$, $\gamma$ of `formula: ideal` mean
+physically, and what is $\mathrm d \ln p / \mathrm d T$? Take one vapor condensing to one condensate, so that the
+reaction has one gas and $K_r$ is the vapor's saturation pressure $p$ ($m = 1$). The derivation rests on three
+assumptions, all stated here and none added later:
+
+1. the vapor is an ideal gas, with molar volume $v_{\mathrm v} = \mathcal R T / p$;
+2. the molar volume of the condensate, $v_{\mathrm c}$, is negligible against $v_{\mathrm v}$;
+3. the molar heat capacities at constant pressure of vapor and condensate, $c_{p,\mathrm v}$ and $c_{p,\mathrm c}$,
+   are constant over the range of the fit, so $\Delta c = c_{p,\mathrm c} - c_{p,\mathrm v}$ is a constant.
+
+Here $L = h_{\mathrm v} - h_{\mathrm c}$ is the molar latent heat at constant pressure, the enthalpy released when
+one mole condenses. It is not the constant-volume $L_r$ of the notation table: with $h = u + \mathcal R T$ for the
+vapor and $h = u$ for the condensate (@sec-ch03-species-functions), $L = L_r + \mathcal R T$ for this reaction.
+
+*Step 1: Clapeyron.* On the coexistence curve the two phases have equal molar Gibbs energies, $g_{\mathrm v} =
+g_{\mathrm c}$, and stay equal along the curve. With $\mathrm d g = v\, \mathrm d p - s\, \mathrm d T$ for each phase,
+$\mathrm d g_{\mathrm v} = \mathrm d g_{\mathrm c}$ gives the slope of the curve, and $g = h - T s$ equal on both sides
+turns the entropy difference into $L / T$:
 
 $$
-\begin{aligned}
-\ln \frac{p}{p_3} &= \int_{T_3}^{T} \frac{L_3 + \Delta c\, T_3 - \Delta c\, T'}{\mathcal R T'^2}\, \mathrm d T' \\
-&= \frac{L_3 + \Delta c\, T_3}{\mathcal R}\left(\frac{1}{T_3} - \frac{1}{T}\right)
-- \frac{\Delta c}{\mathcal R} \ln \frac{T}{T_3} .
-\end{aligned}
+\frac{\mathrm d p}{\mathrm d T} = \frac{s_{\mathrm v} - s_{\mathrm c}}{v_{\mathrm v} - v_{\mathrm c}}
+= \frac{L}{T\, (v_{\mathrm v} - v_{\mathrm c})} .
 $$
 
-With $t = T/T_3$, $\beta = (L_3 + \Delta c\, T_3)/(\mathcal R T_3)$ and $\gamma = \Delta c / \mathcal R$, the first
-term is $\beta (1 - 1/t)$, so
+*Step 2: Clausius-Clapeyron.* Assumptions 1 and 2 replace $v_{\mathrm v} - v_{\mathrm c}$ by $\mathcal R T / p$;
+dividing by $p$:
+
+$$
+\frac{\mathrm d \ln p}{\mathrm d T} = \frac{L(T)}{\mathcal R T^2} .
+$$ {#eq-ch02-svp-cc}
+
+*Step 3: Kirchhoff's law.* The latent heat changes along the curve at the rate of the heat-capacity difference,
+$\mathrm d L / \mathrm d T = c_{p,\mathrm v} - c_{p,\mathrm c} = -\Delta c$ (the enthalpy of an ideal gas does not
+depend on $p$, and by assumption 2 neither, to this order, does the condensate's). By assumption 3 the latent heat is
+linear in $T$:
+
+$$
+L(T) = L_0 - \Delta c\, T , \qquad L_0 = L(T_3) + \Delta c\, T_3 .
+$$ {#eq-ch02-svp-kirchhoff}
+
+$L_0$ is the straight line extrapolated to $T = 0$, a fit constant, not a latent heat measured near 0 K (assumption 3
+fails long before). For $\Delta c > 0$, the usual case of a condensate that holds more heat than its vapor, $L$
+grows as $T$ falls.
+
+*Step 4: integrate.* Separate @eq-ch02-svp-cc and integrate from the reference point $(T_3, p_3)$ to $(T, p)$ with
+@eq-ch02-svp-kirchhoff, term by term ($\int T'^{-2}\, \mathrm d T' = -1/T'$, $\int T'^{-1}\, \mathrm d T' = \ln T'$):
+
+$$
+\ln \frac{p}{p_3} = \int_{T_3}^{T} \frac{L_0 - \Delta c\, T'}{\mathcal R T'^2}\, \mathrm d T'
+= \frac{L_0}{\mathcal R}\left(\frac{1}{T_3} - \frac{1}{T}\right) - \frac{\Delta c}{\mathcal R} \ln \frac{T}{T_3} .
+$$
+
+*Step 5: collect in $t = T/T_3$.* The first term is $\frac{L_0}{\mathcal R T_3}\left(1 - \frac{T_3}{T}\right) =
+\beta \left(1 - \frac{1}{t}\right)$ and the second is $-\gamma \ln t$, with
+
+$$
+\beta = \frac{L_0}{\mathcal R T_3} , \qquad \gamma = \frac{\Delta c}{\mathcal R} ,
+$$ {#eq-ch02-svp-beta-gamma}
+
+so that
 
 $$
 \ln p = \beta \left(1 - \frac{1}{t}\right) - \gamma \ln t + \ln p_3 .
 $$ {#eq-ch02-svp-ideal}
 
-Its derivative is $\mathrm d \ln p / \mathrm d T = (\beta/t^2 - \gamma/t)/T_3$. Both are computed by
-`logsvp_ideal` ({{< code src/vapors/vapor_functions.h logsvp_ideal >}}) and `logsvp_ideal_ddT`
-({{< code src/vapors/vapor_functions.h logsvp_ideal_ddT >}}), and assembled with $\ln p_3$ in `eval_logsvp`
-({{< code src/thermo/svp_eval.h eval_logsvp >}}). The inline `ideal` form has a second pair $\beta_s$, $\gamma_s$
-(`betas`, `gammas`) used for $T \le T_3$; they default to $\beta$, $\gamma$.
+This is `logsvp_ideal` ({{< code src/vapors/vapor_functions.h logsvp_ideal >}}), with $\ln p_3$ added in
+`eval_logsvp` ({{< code src/thermo/svp_eval.h eval_logsvp >}}).
+
+Read backwards, @eq-ch02-svp-beta-gamma says what a fit's coefficients mean: $\beta \mathcal R T_3$ is the latent
+heat extrapolated to $T = 0$, $\gamma \mathcal R$ is the heat-capacity difference, and the latent heat the curve
+implies at any $T$ is
+
+$$
+L(T) = \mathcal R \left(\beta T_3 - \gamma T\right) .
+$$ {#eq-ch02-svp-latent}
+
+No kintera function returns this $L(T)$; it is $\mathcal R T^2$ times the derivative of step 6, `logsvp_ideal_ddT`
+({{< code src/vapors/vapor_functions.h logsvp_ideal_ddT >}}) divided by $T_3$. The latent heat of a condensate card
+(@sec-ch03-reference-state) must equal this line for the energy released on condensation to match the curve the
+solvers saturate to.
+
+*Step 6: the derivative.* With $\mathrm d/\mathrm d T = (1/T_3)\, \mathrm d/\mathrm d t$ and
+$\mathrm d/\mathrm d t\,[\beta(1 - 1/t) - \gamma \ln t] = \beta/t^2 - \gamma/t$:
+
+$$
+\frac{\mathrm d \ln p}{\mathrm d T} = \frac{1}{T_3}\left(\frac{\beta}{t^2} - \frac{\gamma}{t}\right) .
+$$ {#eq-ch02-svp-ideal-ddT}
+
+Multiplying by $\mathcal R T^2 = \mathcal R T_3^2 t^2$ gives $\mathcal R T_3 (\beta - \gamma t) =
+\mathcal R(\beta T_3 - \gamma T)$, which is @eq-ch02-svp-latent: the derivative returns to Clausius-Clapeyron,
+@eq-ch02-svp-cc, as it must. @eq-ch02-svp-ideal-ddT is what `logsvp_ideal_ddT`
+({{< code src/vapors/vapor_functions.h logsvp_ideal_ddT >}}) computes, before `eval_logsvp_ddT`
+({{< code src/thermo/svp_eval.h eval_logsvp_ddT >}}) divides it by $T_3$.[^ch02-svp-check]
+
+*Step 7: two branches.* A substance with a triple point has two curves through $(T_3, p_3)$: over the liquid above
+$T_3$ and over the solid below it. The inline `ideal` form carries a second pair $\beta_s$, $\gamma_s$ (`betas`,
+`gammas`, defaulting to $\beta$, $\gamma$) for $T \le T_3$, each pair derived as above with its own $L_0$ and
+$\Delta c$. At $t = 1$ both branches of @eq-ch02-svp-ideal give $\ln p_3$, so $\ln p$ is continuous at $T_3$.
+Their slopes are not equal: by @eq-ch02-svp-latent, $\mathcal R T^2\, \mathrm d \ln p/\mathrm d T$ jumps at $T_3$
+from the latent heat of vaporization $\mathcal R T_3 (\beta - \gamma)$ above to that of sublimation
+$\mathcal R T_3 (\beta_s - \gamma_s)$ below, and the difference is the latent heat of fusion at $T_3$. The curve has
+a kink there, steeper on the solid side when the fusion heat is positive, as it is for the constants of `h2o_ideal`
+and `nh3_ideal` ({{< code src/vapors/vapor_functions.h h2o_ideal >}},
+{{< code src/vapors/vapor_functions.h nh3_ideal >}}).
+
+**Several gases.** For a reaction with more than one gas, such as `nh3_h2s_lewis`, the same argument with the
+equilibrium constant in place of $p$ is the van 't Hoff equation, $\mathrm d \ln K_r / \mathrm d T =
+\Delta h_r / (\mathcal R T^2)$, with $\Delta h_r$ the reaction enthalpy released per unit extent. A fit
+$\ln K_r = (a - b/T) \ln 10$ therefore has the constant $\Delta h_r = \mathcal R\, b \ln 10$.[^ch02-svp-check]
 
 **Antoine form.** The Antoine equation gives $\log_{10}$ of the pressure in bar; converting to Pa and to the natural
 logarithm:
@@ -90,6 +179,13 @@ Pointwise evaluation per cell and reaction. `make_svp_spec` packs each reaction'
 1 `ideal`, 2 `antoine`) and a block of six parameters (`T3, P3, beta, gamma, betas, gammas` or `A, B, C`), copied to
 the device. The scalar function `eval_logsvp` is the one place both the CPU and CUDA kernels and the tensor
 path evaluate a constant, so an inline curve with the same constants as a named one gives bit-identical values.
+
+The scheme is a closed form, so there is no iteration, table or interpolation: per cell and reaction it costs one
+logarithm and one division for @eq-ch02-svp-ideal and two divisions for @eq-ch02-svp-ideal-ddT. The branch test is
+`T > T3`, so the liquid pair is used strictly above $T_3$ and the solid pair at and below it; at $T = T_3$ exactly the
+value is $\ln p_3$ from either pair and the derivative returned is the solid-branch slope. The derivative is
+therefore discontinuous at $T_3$ by $[(\beta_s - \gamma_s) - (\beta - \gamma)]/T_3$ (step 7); how the saturation
+solvers of @sec-ch04 behave when an iterate crosses $T_3$ is not tested here.
 
 **Adding a vapor-pressure law.** If the new curve has the `ideal` or `antoine` form, no code is needed: give
 `formula: ideal` with `T3`, `P3`, `beta`, `gamma` (and optionally `betas`, `gammas`), or `formula: antoine` with the three Antoine
@@ -140,6 +236,33 @@ is refused; an inline form set from Python without its parameters is refused.
 
 The tolerances are read from the test files at the pin. `test_vapor_functions.release` has a CUDA dispatch case
 that runs when a GPU is present.
+
+The derivation of the ideal form is checked by the derivation check `check_ch2_svp.py`, which reads kintera's
+$\ln K_r$ back through `relative_humidity` (every vapor at 1 Pa, so $\mathrm{RH}_r = 1/K_r$) for the three
+reactions of `tests/jupiter.yaml` (`h2o_ideal`, `nh3_ideal`, `nh3_h2s_lewis`) at nine temperatures from 150 to
+350 K, and passes all seven of its lines:[^ch02-svp-check]
+
+- @eq-ch02-svp-ideal: kintera's value against an independent copy of the formula and constants, below $10^{-12}$
+  absolute for each reaction (round-off of a sum of terms of size $\sim\!30$ in double precision);
+- @eq-ch02-svp-ideal-ddT: the analytic derivative against a central difference with $h = 10^{-3}$ K, at most
+  $7.3 \times 10^{-11}$ relative, tolerance $10^{-7}$ (the truncation error is $O(h^2/T^2) \sim 10^{-11}$);
+- @eq-ch02-svp-cc with @eq-ch02-svp-latent (and so @eq-ch02-svp-kirchhoff and @eq-ch02-svp-beta-gamma, from which
+  @eq-ch02-svp-latent follows): $\mathcal R T^2\, \mathrm d \ln p / \mathrm d T = \mathcal R(\beta T_3 -
+  \gamma T)$ on both branches, including $T_3 \pm 10^{-6}$ K, and the constant $\mathcal R\, b \ln 10$ for
+  `nh3_h2s_lewis`, below $10^{-12}$ relative (round-off).
+
+It also prints the extrapolated latent heats $\beta \mathcal R T_3$ of @eq-ch02-svp-beta-gamma: 56427.415 J mol$^{-1}$
+(water, liquid branch) and 52191.668 (ice), 32622.881 (ammonia, liquid) and 33532.683 (solid), and
+$\mathcal R \cdot 4705 \ln 10 = 90076.057$ J mol$^{-1}$ for `nh3_h2s_lewis`.[^ch02-svp-check] These are the
+numbers a condensate card of @sec-ch03-reference-state has to reproduce. The check covers the named two-branch fits
+through `eval_logsvp`; the inline `ideal` path is the same function with its constants read from YAML, and its
+agreement with the named twin is `test_inline_svp.py`.
+
+[^ch02-svp-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
+    `python doc/tech-report/derivation-checks/check_ch2_svp.py` from a scratch directory, with `KINTERA_WT` set to
+    the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch2_svp.out`, 7 PASS,
+    0 FAIL.]
 
 ### Limits
 

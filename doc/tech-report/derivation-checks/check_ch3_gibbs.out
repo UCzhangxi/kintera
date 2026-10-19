@@ -1,0 +1,6 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+   T=300 K p=1e+05 Pa RH=0.084844: dG/dxi = 6153.396661 J/mol, -R T ln RH = 6153.396591 J/mol, |diff|/(R T) = 2.83e-08
+   T=290 K p=2e+05 Pa RH=2.605195: dG/dxi = -2308.735496 J/mol, -R T ln RH = -2308.735487 J/mol, |diff|/(R T) = 3.77e-09
+   T=310 K p=5e+04 Pa RH=0.024059: dG/dxi = 9606.925808 J/mol, -R T ln RH = 9606.925907 J/mol, |diff|/(R T) = 3.86e-08
+   T=285 K p=1e+05 Pa RH=1.799863: dG/dxi = -1392.651666 J/mol, -R T ln RH = -1392.651672 J/mol, |diff|/(R T) = 2.60e-09
+3e d(H - T S)/dxi vs -R T ln RH, worst |diff|/(R T): measured 3.862e-08  tol 1e-06  PASS

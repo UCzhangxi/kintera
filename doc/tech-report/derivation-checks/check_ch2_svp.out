@@ -1,0 +1,16 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+nucleation formulas: ['h2o_ideal', 'nh3_ideal', 'nh3_h2s_lewis']
+2 h2o_ideal: kintera ln p_sat vs Python copy, max abs over 150..350 K: measured 1.776e-15  tol 1e-12  PASS
+2 h2o_ideal: analytic d ln p_sat/dT vs central FD (h = 1e-3 K), max rel: measured 5.090e-11  tol 1e-07  PASS
+2 nh3_ideal: kintera ln p_sat vs Python copy, max abs over 150..350 K: measured 1.776e-15  tol 1e-12  PASS
+2 nh3_ideal: analytic d ln p_sat/dT vs central FD (h = 1e-3 K), max rel: measured 7.276e-11  tol 1e-07  PASS
+2 nh3_h2s_lewis: kintera ln p_sat vs Python copy, max abs over 150..350 K: measured 1.243e-14  tol 1e-12  PASS
+2 nh3_h2s_lewis: analytic d ln p_sat/dT vs central FD (h = 1e-3 K), max rel: measured 5.454e-11  tol 1e-07  PASS
+T = 0 extrapolated latent heat beta*R*T3 (J/mol) and gamma:
+   h2o_ideal liquid branch (T > 273.16): beta*R*T3 = 56427.415  gamma = 4.986009
+   h2o_ideal solid  branch (T <= 273.16): beta*R*T3 = 52191.668  gamma = 0.52
+   nh3_ideal liquid branch (T > 195.4): beta*R*T3 = 32622.881  gamma = 5.62
+   nh3_ideal solid  branch (T <= 195.4): beta*R*T3 = 33532.683  gamma = 1.43
+   nh3_h2s_lewis (2 gases -> 1 solid): R*4705*ln10 = 90076.057 (T-independent)
+2 R T^2 dln p/dT = R (beta T3 - gamma T), worst rel over T and branches: measured 4.441e-16  tol 1e-12  PASS
+SUMMARY: 7 PASS, 0 FAIL

@@ -1,0 +1,5 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+  dr/dc_A: jacobian -2.8232709637e+06  FD(fixed U) -2.8232709633e+06  rel err 1.54e-10  | FD(fixed T) 2.8232709635e+06  (feedback share 2.00e+00)
+  dr/dc_B: jacobian -7.2934499896e+06  FD(fixed U) -7.2934499905e+06  rel err 1.20e-10  | FD(fixed T) 1.8821806425e+06  (feedback share 1.26e+00)
+  dr/dc_C: jacobian 1.4116354819e+07  FD(fixed U) 1.4116354817e+07  rel err 1.37e-10  | FD(fixed T) 0.0000000000e+00  (feedback share 1.00e+00)
+T-feedback Jacobian vs fixed-U FD, worst rel err: measured 1.536e-10  tol 1e-08  PASS

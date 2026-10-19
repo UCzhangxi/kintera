@@ -1,0 +1,17 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+a1 mr eddy, uniform mixing ratio: max|M c|/max(K c/dz^2) = 1.095e-16 tol 1.0e-13 PASS
+a2 mr eddy, random c: |sum(dz*dc/dt)|/sum|dz*dc/dt| = 6.274e-17 tol 1.0e-13 PASS
+b1 single species, c=exp(-z/H), dz=H/2, |dc/dt|/(D c/H^2):
+   mr centred : 1.188e-15 tol 1.0e-12 PASS
+   mr exp     : 3.186e-15 tol 1.0e-12 PASS
+   c-form     : 2.595e+00 (expected O(1), nonzero) PASS
+b2 minor species mu_i=2*mu_b, c_i=exp(-z/H_i), |dc_i/dt|/(D c_i/H_i^2):
+   mr exp, worst of 3 grids : 7.354e-14 tol 1.0e-12 PASS
+   mr centred interior errs : 1.059e-02, 2.615e-03, 6.517e-04
+   centred interior ratio dz=H_b/4->H_b/8: 4.050 expect 4 tol 10% PASS
+   centred interior ratio dz=H_b/8->H_b/16: 4.013 expect 4 tol 10% PASS
+   centred incl. boundary cells, ratio (info, one-sided rows): 2.277, 2.131
+c  Ros2 exact J: err(dt=1/40)=2.930e-04 err(dt=1/80)=7.602e-05 ratio 3.855 expect 4 tol 10% PASS
+c  Ros2 J*0.5  : err(dt=1/40)=8.739e-06 err(dt=1/80)=2.288e-06 ratio 3.819 expect 4 tol 10% PASS
+d  hog total >= 1: max|total_after/budget - 1| = 0.000e+00 tol 1.0e-13 PASS
+d' (info) hog total 0.5 < 1: total_after = 0.4050 vs budget 0.3 (hog_total is clamped to >= 1, so trimming is partial below 1)

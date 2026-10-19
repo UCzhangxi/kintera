@@ -1,0 +1,23 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+thermo species (9): ['dry', 'H2O', 'NH3', 'H2S', 'H2O(l)', 'H2O(l,p)', 'NH3(s)', 'NH3(s,p)', 'NH4SH(s)']
+1a Cp vs central FD of TV->H (rel): measured 2.703e-11  tol 1e-08  PASS
+1b Cp - Cv - R*sum_gas(c) (rel, ThermoY VT->cv): measured 3.411e-16  tol 1e-12  PASS
+1c sum_gas c R T = p (rel): measured 0.000e+00  tol 1e-13  PASS
+1c c_cloud/c_gas = x_cloud/x_gas, worst over gases (rel): measured 2.220e-16  tol 1e-13  PASS
+   RH[H2O] kintera 7.063229292669e-02  hand 7.063229292669e-02
+1d RH[H2O] vs hand value (rel): measured 2.220e-16  tol 1e-12  PASS
+   RH[NH3] kintera 5.017414152218e-05  hand 5.017414152218e-05
+1d RH[NH3] vs hand value (rel): measured 1.110e-16  tol 1e-12  PASS
+   RH[NH4SH] kintera 1.706519873265e-07  hand 1.706519873265e-07
+1d RH[NH4SH] vs hand value (rel): measured 1.110e-16  tol 1e-12  PASS
+   max_iter=10: 15 (cell, reaction) pairs with condensate, T = 130..280 K, p = 1e5 Pa; 6 cells report non-convergence (diag < 0)
+1d |RH - 1| where condensate present after forward (max_iter=10): measured 5.284e+07  tol 1e-06  INFO
+   max_iter=100: 15 (cell, reaction) pairs with condensate, T = 130..280 K, p = 1e5 Pa; 0 cells report non-convergence (diag < 0)
+1d |RH - 1| where condensate present after forward (max_iter=100): measured 2.043e-07  tol 1e-06  PASS
+SUMMARY: 8 PASS, 0 FAIL, 1 INFO
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.

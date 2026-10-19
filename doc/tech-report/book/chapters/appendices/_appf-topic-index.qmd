@@ -38,6 +38,8 @@
 
 *BDF*, see **steady state, Newton**.
 
+**binary diffusion**: Molecular (binary) diffusion and the exponential vertical schemes, @sec-ch09-molecular.
+
 *block Jacobian*, see **sparse system, atm2d**.
 
 **bounded Newton step**: The bounded Newton step, @sec-ch10-newton.
@@ -216,6 +218,8 @@
 
 **GPU kernels**: CUDA element loops and per-thread workspaces, @sec-ch12-kernels.
 
+*gravitational separation*, see **binary diffusion**.
+
 ## H {.unnumbered .unlisted}
 
 **heat capacity, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
@@ -310,9 +314,13 @@
 
 **mole fractions**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
 
-*molecular diffusion*, see **eddy diffusion, two-dimensional**.
+*molecular diffusion*, see **binary diffusion**; **eddy diffusion, two-dimensional**.
 
 *molecular weight*, see **molar mass**.
+
+*mr_exp*, see **binary diffusion**.
+
+*mr_hybrid*, see **binary diffusion**.
 
 *multilinear interpolation*, see **table interpolation**.
 

@@ -83,7 +83,7 @@ and attaches no run record (missing evidence).
 - Only float64 is instantiated in `test_diffusion`; float32 is not tested.
 - Molecular diffusion is not provided here: `src/diffusion` has only the eddy term. The binary (molecular)
   diffusion matrix is built in the two-dimensional solver
-  ({{< code python/atm2d/transport.py build_binary_diffusion_matrix >}}); answered at @sec-ch09.
+  ({{< code python/atm2d/transport.py build_binary_diffusion_matrix >}}); answered at @sec-ch09-molecular.
 
 <!-- reader glossary notes -->
 [^rg-8035248ae605]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)

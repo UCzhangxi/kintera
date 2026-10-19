@@ -24,7 +24,7 @@ Jacobian that makes the electron follow the cations, and pins that hold chosen c
 
 **Activation.** API: `project_atomic_budget`, `charge_balance_indices=`, `build_pin_mask` and its two appliers.
 
-**Guarantee / limits.** The projection only removes; it is a clip, not a conservation law.
+**Guarantee / limits.** The projection only removes, and removes less than the excess when hog atoms total below 1.
 
 **Evidence.** See the Tests layer.
 :::
@@ -41,12 +41,15 @@ $$
 \begin{aligned}
 X_e &= \max\left(0, \sum_n A_n - B_e\right), \\
 H &= \left\{ n : A_n > \tfrac{1}{N_e} \textstyle\sum_m A_m \right\}, \\
-c_n &\leftarrow \max\left(0,\ c_n - \frac{A_n}{\sum_{m \in H} A_m} \frac{X_e}{a_{en}}\right), \quad n \in H ,
+c_n &\leftarrow \max\left(0,\ c_n - \frac{A_n}{\max\left(1, \sum_{m \in H} A_m\right)} \frac{X_e}{a_{en}}\right), \quad n \in H ,
 \end{aligned}
 $$ {#eq-ch09-conservation-trim}
 
 with $N_e$ the number of non-fixed species containing $e$. Species below the mean share are untouched. The excess is
-shared in proportion to each hog's atoms, so before the clip at zero the hogs lose exactly $X_e$ atoms.
+shared in proportion to each hog's atoms. The code floors the hog total at 1 in concentration units (`clamp(min=1.0)`)
+and the atom counts at 1. So the hogs lose exactly $X_e$ atoms, before the clip at zero, only when
+$\sum_{m \in H} A_m \ge 1$; when the hog atoms total less than 1 they lose only $X_e \sum_{m \in H} A_m$, and the cell
+stays above its budget (run `[R5]`).
 @eq-ch09-conservation-trim is computed in `project_atomic_budget`
 ({{< code python/atm2d/conservation/atomic.py project_atomic_budget >}}). Elements are processed one after another,
 so trimming a species for one element also changes the other elements it contains.
@@ -90,12 +93,19 @@ The conservation figure is not provided: the figure module is not written yet.
 
 : Tests of conservation and pins. {#tbl-ch09-conservation-tests}
 
-No test at the pin covers the pin functions or `recompute_charge_balance_e`: missing evidence.
+No kintera test at the pin covers the pin functions or `recompute_charge_balance_e`. Runs[^ch09-r57] (pinned
+`python/atm2d` source, torch 2.10.0, CPU, float64): `[R5]`, three species of one atom each at 0.30, 0.05 and 0.05 with
+a budget of 0.20, leaves 0.340 atoms after the projection (the hog, 0.30, is trimmed by $0.30 \times 0.20 = 0.06$);
+`[R7]`, a bottom-cell pin of 7 applied as a Dirichlet row to a backward-Euler system gives 7.000000 after the solve.
+
+[^ch09-r57]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, lines `[R5]` and `[R7]`.
 
 ### Limits
 
 The atom count of a species with a two-digit subscript is wrong (for example `C4H10` is counted as 1 hydrogen, not
 10); the code says this is kept on purpose and a test asserts it. The projection only removes atoms, never adds them,
-and it is a repair, not a conservation property of the scheme. The fold uses the cation sum only, while
+and it is a repair, not a conservation property of the scheme. Because the hog total is floored at 1, a cell whose
+hog species hold less than one unit of the element in total is left above its budget (run `[R5]`); whether the floor is
+meant as a guard against division by zero or as a unit assumption is not stated in the code. The fold uses the cation sum only, while
 `recompute_charge_balance_e` uses cations minus anions; with anions present the Jacobian and the reset describe
 different constraints (verified by reading both; the effect is not measured, a hypothesis).

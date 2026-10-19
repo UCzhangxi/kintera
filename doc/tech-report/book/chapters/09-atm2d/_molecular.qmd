@@ -1,0 +1,146 @@
+## Molecular (binary) diffusion and the exponential vertical schemes (`binary_diffusion`, `mr_exp`, `mr_hybrid`) {#sec-ch09-molecular}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: python/atm2d/transport.py
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Above the homopause, molecular diffusion separates species by mass: in a still, isothermal column each species
+settles towards its own scale height. The two-dimensional solver adds this as a vertical operator on top of eddy
+diffusion. The caller supplies the binary-diffusion coefficients and the molecular weights; the solver does not compute
+coefficients itself. Two schemes are offered: a centred one that adds a gravitational-separation flux to the diffusion
+of @sec-ch09-transport, and an upwinded exponential one (`mr_exp`, `mr_hybrid`) that combines eddy and molecular
+diffusion into one face flux that is exact for an exponential profile.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Molecular-diffusion face fluxes, @eq-ch09-molecular-centred and @eq-ch09-molecular-exp.
+
+**Data.** `binary_diffusion` `(ncol, nlyr, nspecies, nspecies)`; `molecular_weights` `(nspecies,)`; CGS by default.
+
+**Placement.** `build_transport_matrix(..., binary_diffusion=, molecular_weights=)`, inside every transport operator.
+
+**Activation.** `binary_diffusion` given; scheme by `form` (`c_diffusion`, `mr_diffusion`, `mr_exp`, `mr_hybrid`).
+
+**Guarantee / limits.** Mixing-ratio and exponential forms hold the hydrostatic profile to round-off; the concentration form does not.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $D_{ij}$, binary-diffusion coefficient matrix of a cell [cm$^2$ s$^{-1}$ by default]; $\mu_i$, molecular
+weight of species $i$ [g mol$^{-1}$ with the default gas constant]; $\bar\mu = \sum_i x_i \mu_i$, mean molecular weight
+at a face; $g$, gravity [cm s$^{-2}$, `state.gravity`]; $R$, the gas constant passed as `gas_constant` (default
+$8.31446261815324 \times 10^{7}$ erg mol$^{-1}$ K$^{-1}$); $H = R T / (\bar\mu g)$, the atmospheric scale height [cm];
+$K$, eddy diffusivity; $F_i$, the upward flux of species $i$ through a face; $\delta z$, the distance between the two
+cell centres of the face.
+
+### Derivation
+
+**Centred scheme.** For each face the solver adds the molecular block $D_{ij}$ (averaged to the face) to the
+diffusion of @eq-ch09-transport-flux, in the concentration or the mixing-ratio form, and a gravitational-separation flux
+
+$$
+\begin{aligned}
+F^{\mathrm{grav}}_i &= -\frac{g}{R T} \sum_j D_{ij}\, (\mu_j - \bar\mu)\, \bar c_i , \\
+\bar c_i &= \tfrac12\left(c_{i,\mathrm{L}} + c_{i,\mathrm{R}}\right),
+\end{aligned}
+$$ {#eq-ch09-molecular-centred}
+
+with $T$ and $\bar\mu$ taken at the face. @eq-ch09-molecular-centred is assembled in
+`_assemble_vertical_matrix_diffusion` ({{< code python/atm2d/transport.py _assemble_vertical_matrix_diffusion >}})
+from the term `build_binary_diffusion_matrix` forms. For one species with a diagonal coefficient $D$, the
+mixing-ratio form gives, in an isothermal hydrostatic column with $n \propto \exp(-z/H)$,
+
+$$
+\begin{aligned}
+F_i &= -D\, n\, \frac{\partial (c_i/n)}{\partial z} - \frac{D g (\mu_i - \bar\mu)}{R T}\, c_i
+= -D \left(\frac{\partial c_i}{\partial z} + \frac{c_i}{H}\right) - D\left(\frac{1}{H_i} - \frac{1}{H}\right) c_i , \\
+F_i &= -D\left(\frac{\partial c_i}{\partial z} + \frac{c_i}{H_i}\right),
+\end{aligned}
+$$
+
+with $H_i = R T / (\mu_i g)$ the scale height of species $i$: the standard molecular-diffusion flux, which vanishes for $c_i \propto \exp(-z/H_i)$. In the concentration form the
+first term is $-D\, \partial c_i/\partial z$ with no $c_i/H$, so the flux misses the background scale-height term.
+
+**Exponential scheme.** `mr_exp` writes one flux for eddy plus molecular diffusion of species $i$ through a face:
+
+$$
+\begin{aligned}
+D_{\mathrm{tot}} &= K + D_{ii}, \\
+H_{\mathrm{eff}} &= H\, \frac{D_{\mathrm{tot}}}{K + D_{ii}\, \mu_i / \bar\mu}, \\
+S &= \frac{\delta z}{2 H_{\mathrm{eff}}}, \\
+F_i &= \frac{D_{\mathrm{tot}}}{\delta z}\left(c_{i,\mathrm{L}}\, e^{-S} - c_{i,\mathrm{R}}\, e^{S}\right) .
+\end{aligned}
+$$ {#eq-ch09-molecular-exp}
+
+$F_i = 0$ exactly when $c_{i,\mathrm{R}}/c_{i,\mathrm{L}} = e^{-2S} = e^{-\delta z / H_{\mathrm{eff}}}$, the exponential
+profile with scale height $H_{\mathrm{eff}}$, whatever $\delta z$. For small $S$, expanding
+$e^{\pm S} \approx 1 \pm S$ gives
+$F_i \approx -D_{\mathrm{tot}} (c_{i,\mathrm{R}} - c_{i,\mathrm{L}})/\delta z - D_{\mathrm{tot}}\, \bar c_i / H_{\mathrm{eff}}$,
+the centred diffusion plus a settling term. @eq-ch09-molecular-exp is assembled in `_assemble_vertical_kb_exponential`
+({{< code python/atm2d/transport.py _assemble_vertical_kb_exponential >}}), with $S$ clamped to $[-50, 50]$. Only the
+diagonal $D_{ii}$ enters. `mr_hybrid` uses @eq-ch09-molecular-exp for species with $\mu_i < 0.6\, \bar\mu$ and the
+centred mixing-ratio scheme with @eq-ch09-molecular-centred (diagonal) for all others.
+
+### Numerical method
+
+The coefficients are averaged from cell centres to faces; $T$ and the mole fractions $x_i = c_i / \sum_j c_j$ at a
+face are arithmetic means of the two cells. Faces where $T \le 0$ or $\bar\mu \le 0$ (empty cells above the
+atmosphere) carry no flux. All forms are assembled per face into the same sparse operator as eddy diffusion
+(@sec-ch09-assembly), so the step drivers see one transport matrix.
+
+Input contract, as a caller builds it:
+
+```python
+T = atm2d.build_transport_matrix(state, kzz, binary_diffusion=D, molecular_weights=mu,
+                                 density=n, form="mr_diffusion")   # D: (ncol, nlyr, ns, ns); mu: (ns,)
+```
+
+with $D$ in cm$^2$ s$^{-1}$, $\mu$ in g mol$^{-1}$, lengths in cm and `state.gravity` in cm s$^{-2}$ (the defaults), or
+all in SI with `gas_constant` = 8.31446 and `state.gravity` in m s$^{-2}$. A configuration check: with $K = 0$ and one
+species, the tendency of $c = e^{-z/H}$ must vanish in the mixing-ratio and exponential forms (run `[R8]`).
+
+The molecular-diffusion figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| molecular operator | {{< code python/atm2d/transport.py build_binary_diffusion_matrix >}} | `build_binary_diffusion_matrix` | `binary_diffusion`, `include_gravity` |
+| centred assembly | {{< code python/atm2d/transport.py _assemble_vertical_matrix_diffusion >}} | `_assemble_vertical_matrix_diffusion` | `c_diffusion`, `mr_diffusion` |
+| face mole fractions and $\bar\mu$ | {{< code python/atm2d/transport.py _interface_thermo >}} | `_interface_thermo` | always |
+| exponential scheme | {{< code python/atm2d/transport.py build_kb_exponential_vertical_matrix >}} | `build_kb_exponential_vertical_matrix` | `mr_exp`, `mr_hybrid` |
+| its assembly | {{< code python/atm2d/transport.py _assemble_vertical_kb_exponential >}} | `_assemble_vertical_kb_exponential` | `hybrid` |
+
+: Code map of molecular diffusion. {#tbl-ch09-molecular-code}
+
+Setup checks a user can hit: `molecular_weights` not shaped `(nspecies,)`; binary diffusion without molecular weights;
+`mr_exp` or `mr_hybrid` without both; `mr_diffusion` without a density.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_atm2d.py` (`test_binary_diffusion_creates_species_coupling`) | off-diagonal $D_{ij}$ couple species | qualitative | structure |
+| run `[R8]` | tendency of $c = e^{-z/H}$ for one species, $K = 0$ | round-off | float64 |
+
+: Tests of molecular diffusion. {#tbl-ch09-molecular-tests}
+
+Run `[R8]`[^ch09-r8] (pinned `python/atm2d` source, torch 2.10.0, CPU, float64; $T = 200$ K, $\mu = 28$ g mol$^{-1}$,
+$g = 980.665$ cm s$^{-2}$, $H = 6.056 \times 10^{5}$ cm, ten 1-km layers, $D = 10^{5}$ cm$^2$ s$^{-1}$): the largest
+interior tendency divided by $D c / H^{2}$ is $8.7 \times 10^{-15}$ in `mr_diffusion`, $8.4 \times 10^{-15}$ in
+`mr_exp`, and $1.002$ in `c_diffusion`. No kintera test checks either scheme against a hydrostatic profile.
+
+### Limits
+
+In the concentration form, molecular diffusion lacks the background scale-height term, so a hydrostatic profile is not
+an equilibrium (run `[R8]`); use a mixing-ratio form with molecular diffusion. The docstring of
+`build_kb_exponential_vertical_matrix` says `mr_hybrid` treats species with $\mu_i \ge \bar\mu$ by the centred
+scheme, while the code switches at $\mu_i < 0.6\,\bar\mu$ (verified by reading). The exponential scheme uses only the
+diagonal of $D_{ij}$. The units are the caller's to keep consistent (CGS by default), and no unit is checked.
+
+[^ch09-r8]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, line `[R8]`.

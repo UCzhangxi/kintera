@@ -5,3 +5,10 @@ torch 2.10.0+cu128; atm2d from $KINTERA_REPO/python at the pin
 [R3] steps 8->16: error 5.624e-03 -> 1.648e-03, observed order 1.771
 [R3] steps 16->32: error 1.648e-03 -> 4.496e-04, observed order 1.874
 [R3] steps 32->64: error 4.496e-04 -> 1.177e-04, observed order 1.934
+[R4] pydisort 1.8.13: optical depth 5 in index 0 only; mean intensity at levels 0..4: 7.958e-02, 5.362e-04, 5.362e-04, 5.362e-04, 5.362e-04
+[R5] atoms before 0.400, budget 0.200, after 0.340 (hog atoms 0.300 < 1, so the trim is scaled by 0.300)
+[R6] state changed on return: True; equals the post-transport result: True
+[R7] pinned bottom cell after the solve: 7.000000 (pin 7)
+[R8] H = 6.0560e+05 cm; form c_diffusion: max |tendency| / (D c / H^2) over interior cells = 1.002e+00
+[R8] H = 6.0560e+05 cm; form mr_diffusion: max |tendency| / (D c / H^2) over interior cells = 8.691e-15
+[R8] H = 6.0560e+05 cm; form mr_exp: max |tendency| / (D c / H^2) over interior cells = 8.365e-15

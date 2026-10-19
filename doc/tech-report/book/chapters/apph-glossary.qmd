@@ -21,10 +21,23 @@ definition. If no chapter uses the entry, the glossary says so. Neither absence
 from this glossary nor that marker establishes that the corresponding feature
 is unsupported by the code.
 
-**Not provided:** term-specific meanings and definition destinations. The
-current glossary contains no entries in any of its four groups. The headings
-below are a lookup structure, not evidence that all terms used in the book have
-been identified or defined. In particular, no glossary-based coverage of YAML
-keys, acronyms, concepts or symbols is claimed.
+## Reader concept routes {.unnumbered .unlisted}
+
+These reader spellings and aliases point to the relevant sections. They are lookup routes, not
+additional definitions or a promise that each destination fully answers every question. The generated
+registry below identifies verified defining sections. Where a definition is not registered, read the
+specific scope or limitation here and the destination's evidence.
+
+- **reference-pressure** (reference pressure, `Pref`): @sec-ch03-reference-state gives the reference-state convention; @sec-ch11-yaml-input gives the YAML spelling and units.
+- **Shomate**: @sec-ch02-nasa9 describes NASA-9, not a Shomate implementation. Shomate remains outside the frozen question scope; this route does not change that exclusion.
+- **third-body reaction** (three-body reaction, effective third-body concentration): @sec-ch06-falloff gives the collision-partner role, effective concentration equation, efficiencies and distinction from fall-off.
+- **binary diffusion** (binary-diffusion coefficient, molecular diffusion): @sec-ch09-molecular gives the coefficient matrix, units, molecular weights and vertical schemes; this is outside chapter 8's eddy-only scope.
+- **ADD_ARG** (option-field macro): @sec-ch11-options defines the macro, its getters and setters, and the option-extension procedure.
+- **batch dimension** (batch axes, leading dimensions): @sec-ch12-dispatch is the device and tensor-contract destination. Its available contract does not establish that every leading-axis layout is supported; check the per-call shape restrictions.
+- **validation tolerance** (test tolerance, comparison tolerance): @sec-ch13-suite defines the accepted test difference and distinguishes it from solver stopping thresholds.
+- **operator splitting** (split step, splitting order): @sec-ch14-kinetics explains dynamics followed by chemistry and the first-order limit; @sec-ch09-newton describes the two-dimensional split step.
+
+No new lookup grade is implied by these routes. In particular, an alias reaching NASA-9 is not a
+Shomate answer, and a local device contract is not a universal batch-shape guarantee.
 
 {{< include appendices/_apph-glossary.qmd >}}

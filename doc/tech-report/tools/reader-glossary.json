@@ -208,6 +208,11 @@
       "term": "batch dimension",
       "meaning": "a leading axis of a call's inputs over which the call repeats the same per-cell computation independently; the species or reaction axis is last, except in `ThermoY`",
       "section": "sec-ch12-dispatch"
+    },
+    {
+      "kind": "concept",
+      "term": "ADD_ARG",
+      "section": "sec-ch11-options"
     }
   ]
 }

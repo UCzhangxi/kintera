@@ -90,6 +90,8 @@
 
 *configuration file*, see **YAML input file**.
 
+**conservation tests, equilibrium**: How the test suite is organised and run, @sec-ch13-suite.
+
 **constrained least squares**: Constrained least squares for the reaction extents, @sec-ch04-active-set; Constrained least squares by an active set, @sec-ch10-kkt.
 
 *constrained Newton*, see **bounded Newton step**.
@@ -110,7 +112,7 @@
 
 *CSR matrix*, see **sparse linear solve**.
 
-*ctest*, see **test suite**.
+*ctest*, see **running the tests**; **test suite**.
 
 **CUDA build**: Building the CUDA library, @sec-ch12-build.
 
@@ -170,7 +172,7 @@
 
 *effective third-body concentration*, see **fall-off rate constant**.
 
-*element balance*, see **chemical equilibrium, conditions**.
+*element balance*, see **chemical equilibrium, conditions**; **conservation tests, equilibrium**.
 
 *energy offset*, see **reference temperature and pressure, thermodynamic**.
 
@@ -231,6 +233,8 @@
 *gravitational separation*, see **binary diffusion**.
 
 ## H {.unnumbered .unlisted}
+
+*H and O*, see **conservation tests, equilibrium**.
 
 **heat capacity, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
 
@@ -338,6 +342,8 @@
 
 ## N {.unnumbered .unlisted}
 
+*N and S*, see **conservation tests, equilibrium**.
+
 **`name`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
 **NASA-9 polynomials**: NASA-9 polynomial data, @sec-ch02-nasa9; Equilibrium constants from NASA-9 polynomials, @sec-ch05-log-k.
@@ -349,6 +355,8 @@
 *new rate-constant form*, see **Arrhenius rate constant**.
 
 *new vapor pressure law*, see **saturation vapor pressure**.
+
+*Not Run*, see **running the tests**.
 
 **notation index**: The notation index, @sec-appa-index.
 
@@ -404,7 +412,7 @@
 
 *pybind11*, see **Python bindings**.
 
-*pytest*, see **test suite**.
+*pytest*, see **running the tests**; **test suite**.
 
 *Python API*, see **Python bindings**.
 
@@ -456,6 +464,8 @@
 
 *run_hydro*, see **coupling, kinetics**.
 
+**running the tests**: How the test suite is organised and run, @sec-ch13-suite.
+
 ## S {.unnumbered .unlisted}
 
 *s0_R*, see **reference temperature and pressure, thermodynamic**.
@@ -481,6 +491,8 @@
 *shared memory*, see **GPU kernels**.
 
 *Shomate polynomials*, see **NASA-9 polynomials**.
+
+*skipped cases*, see **running the tests**.
 
 *snapy equation of state*, see **coupling, equation of state**.
 
@@ -513,6 +525,8 @@
 **steady state, Newton**: Newton solvers for implicit steps, @sec-ch09-newton.
 
 **stoichiometric matrix**: Reaction rates by mass action, @sec-ch06-mass-action.
+
+*stopping tolerance*, see **validation tolerance**.
 
 *supersaturation*, see **relative humidity**.
 
@@ -560,6 +574,8 @@
 
 **test suite**: How the test suite is organised and run, @sec-ch13-suite.
 
+*test tolerance*, see **validation tolerance**.
+
 *ThermoOptions*, see **options objects, C++**.
 
 *ThermoX*, see **mole fractions**.
@@ -595,6 +611,8 @@
 *uv-solver*, see **saturation adjustment, fixed internal energy and volume**.
 
 ## V {.unnumbered .unlisted}
+
+**validation tolerance**: How the test suite is organised and run, @sec-ch13-suite.
 
 *vanishing phase*, see **chemical equilibrium, failures**.
 

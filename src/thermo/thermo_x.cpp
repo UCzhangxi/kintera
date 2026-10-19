@@ -284,12 +284,26 @@ void ThermoXImpl::_entropy_to_temp(torch::Tensor pres, torch::Tensor xfrac,
                                    torch::Tensor entropy, torch::Tensor& out) {
   int iter = 0;
   bool converged = false;
+  torch::Tensor logt_pre, entropy_pre;
   while (iter++ < options->max_iter()) {
     auto conc = compute("TPX->V", {out, pres, xfrac});
     auto cp_vol = compute("TV->cp", {out, conc});
     auto entropy_vol = compute("TPV->S", {out, pres, conc});
     auto temp_pre = out.clone();
-    out *= 1. + (entropy - entropy_vol) / cp_vol;
+
+    // Newton step in ln T. c ~ 1/T at fixed p and x, so the frozen slope is
+    // dS_vol/dlnT = cp_vol - S_vol; after the first step the secant slope
+    // along the equilibrium path also carries the latent heat.
+    auto slope = cp_vol - entropy_vol;
+    auto logt = out.log();
+    if (logt_pre.defined()) {
+      auto dlogt = logt - logt_pre;
+      slope = torch::where(dlogt.abs() > 0.,
+                           (entropy_vol - entropy_pre) / dlogt, slope);
+    }
+    logt_pre = logt;
+    entropy_pre = entropy_vol;
+    out *= torch::exp((entropy - entropy_vol) / slope);
     forward(out, pres, xfrac);
     if ((1. - temp_pre / out).abs().max().item<double>() < options->ftol()) {
       converged = true;

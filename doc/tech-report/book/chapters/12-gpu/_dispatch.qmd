@@ -77,7 +77,7 @@ kin = kintera.Kinetics(kintera.KineticsOptions.from_yaml("jupiter.yaml"))
 cuda = torch.device("cuda")
 kin.to(cuda)                  # moves every buffer in place; returns None
 kin.to(torch.float32)         # optional: buffers to single precision, in place
-temp, pres, conc = temp.to(cuda), pres.to(cuda), conc.to(cuda)   # same precision as the buffers
+temp, pres, conc = (t.to(cuda) for t in (temp, pres, conc))  # buffer precision
 rate, rc_ddc, rc_ddt = kin.forward(temp, pres, conc)
 ```
 
@@ -89,15 +89,16 @@ rate, rc_ddc, rc_ddt = kin.forward(temp, pres, conc)
 read through a raw pointer outside the iterator are not: a module buffer left on the host is then read from the
 wrong memory. Every stub dispatches on `float32` and `float64` only; `float16` raises
 `not implemented for 'Half'`. A raw-pointer input of another precision than the iterator raises
-`expected scalar type`. The measured outcomes are in the last column:[^ch12-dispatch-move]
+`expected scalar type`. The arguments of each public entry are in @tbl-ch12-dispatch-batch; the measured outcomes
+are in the last column:[^ch12-dispatch-move]
 
 | stub | public entry | in the iterator | read outside the iterator | measured mismatch |
 |---|---|---|---|---|
-| `call_evolve_implicit` | `evolve_implicit(rate, stoich, jacobian, dt)` | `rate`, `jacobian` | `stoich` (argument) | `stoich` on the host with CUDA rates: illegal memory access (Limits) |
-| `call_equilibrate_tp` | `ThermoX.forward(temp, pres, xfrac)` | `temp`, `pres`, `xfrac`, warm-start buffers | buffer `stoich` | module on the host, inputs on CUDA: illegal memory access; `float32` inputs with a `float64` module: `expected scalar type Float but found Double` |
-| `call_equilibrate_uv` | `ThermoY.forward(rho, intEng, yfrac)` | `rho`, `intEng`, concentrations, warm-start buffers | buffer `stoich`, energy offsets and heat capacities | module on the host, inputs on CUDA: torch's device error, raised before the stub |
+| `call_evolve_implicit` | `evolve_implicit` | `rate`, `jacobian` | `stoich` (argument) | `stoich` on the host with CUDA rates: illegal memory access (Limits) |
+| `call_equilibrate_tp` | `ThermoX.forward` | `temp`, `pres`, `xfrac`, warm-start buffers | buffer `stoich` | module on the host, inputs on CUDA: illegal memory access; `float32` inputs with a `float64` module: `expected scalar type Float but found Double` |
+| `call_equilibrate_uv` | `ThermoY.forward` | `rho`, `intEng`, concentrations, warm-start buffers | buffer `stoich`, energy offsets and heat capacities | module on the host, inputs on CUDA: torch's device error, raised before the stub |
 | `call_logsvp_inline` | saturation curves, inside the two above | temperature, result | curve tables | none: the tables are copied to the inputs' device first |
-| `call_equilibrium` | `EquilibriumTP.forward(temp, pres, moles, log_k)` | all four, checked to share device and precision | buffers `stoich`, `phase_ids` | none: both are converted to the inputs' device and precision; mixed input devices raise a clear error |
+| `call_equilibrium` | `EquilibriumTP.forward` | all four, checked to share device and precision | buffers `stoich`, `phase_ids` | none: both are converted to the inputs' device and precision; mixed input devices raise a clear error |
 | `call_func1` to `call_func3` | named saturation functions | arguments, result | function table | per-device tables (@sec-ch12-device-functions) |
 
 : Device and precision contract of each dispatch stub. {#tbl-ch12-dispatch-contract}

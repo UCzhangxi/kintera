@@ -44,9 +44,11 @@
 
 **concentration from mole fraction**: The mixture equation of state: gas pressure from gas concentrations, @sec-ch03-eos.
 
+*condensation equilibrium*, see **saturation adjustment, equilibrium conditions**.
+
 *configuration file*, see **YAML input file**.
 
-**constrained least squares**: Constrained least squares by an active set, @sec-ch10-kkt.
+**constrained least squares**: Constrained least squares for the reaction extents, @sec-ch04-active-set; Constrained least squares by an active set, @sec-ch10-kkt.
 
 *constrained Newton*, see **bounded Newton step**.
 
@@ -90,6 +92,8 @@
 
 **device function tables**: Device function tables for user functions, @sec-ch12-device-functions.
 
+*diagnostic code*, see **saturation adjustment, failures**.
+
 **`diameter`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
 **`diff_c`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
@@ -127,6 +131,8 @@
 **`equation`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
 **equation of state**: The mixture equation of state: gas pressure from gas concentrations, @sec-ch03-eos.
+
+*equilibrate_tp*, see **saturation adjustment, fixed temperature and pressure**.
 
 **evaporation, diffusion form**: Evaporation of condensates by diffusion, @sec-ch06-evaporation.
 
@@ -202,6 +208,8 @@
 
 **KKT**: Constrained least squares by an active set, @sec-ch10-kkt.
 
+*KKT conditions*, see **constrained least squares**.
+
 *KKT system*, see **constrained least squares**.
 
 *Kzz*, see **eddy diffusion operator**.
@@ -256,6 +264,8 @@
 
 **notation index**: The notation index, @sec-appa-index.
 
+**nucleation reactions**: Which reactions take part (nucleation reactions), @sec-ch04-nucleation.
+
 ## O {.unnumbered .unlisted}
 
 *operator splitting*, see **coupling, kinetics**.
@@ -271,6 +281,8 @@
 *partial density*, see **mass fractions**.
 
 *partial pivoting*, see **dense linear solve**.
+
+*partition solver*, see **saturation adjustment, fixed internal energy and volume**.
 
 *phase*, see **species registry**.
 
@@ -346,7 +358,15 @@
 
 *s0_R*, see **reference temperature and pressure, thermodynamic**.
 
-*saturation deficit*, see **evaporation, diffusion form**.
+**saturation adjustment, equilibrium conditions**: Equilibrium conditions for several condensables (saturation adjustment), @sec-ch04-conditions.
+
+**saturation adjustment, failures**: Warm starts and failure reporting, @sec-ch04-warm-start-failures.
+
+**saturation adjustment, fixed internal energy and volume**: Saturation adjustment at fixed internal energy and volume, @sec-ch04-equilibrate-uv.
+
+**saturation adjustment, fixed temperature and pressure**: Saturation adjustment at fixed temperature and pressure, @sec-ch04-equilibrate-tp.
+
+*saturation deficit*, see **evaporation, diffusion form**; **saturation adjustment, equilibrium conditions**.
 
 *saturation ratio*, see **relative humidity**.
 
@@ -446,6 +466,8 @@
 
 **units**: Units and physical constants, @sec-ch02-units.
 
+*uv-solver*, see **saturation adjustment, fixed internal energy and volume**.
+
 ## V {.unnumbered .unlisted}
 
 *vapor pressure fit*, see **saturation vapor pressure**.
@@ -459,6 +481,8 @@
 **VULCAN comparison, scoped out**: Comparison scripts against VULCAN (scoped out: they need a VULCAN tree outside the repository), @sec-ch13-vulcan.
 
 ## W {.unnumbered .unlisted}
+
+**warm start**: Warm starts and failure reporting, @sec-ch04-warm-start-failures.
 
 *workspace per thread*, see **GPU kernels**.
 

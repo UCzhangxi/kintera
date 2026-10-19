@@ -12,7 +12,7 @@ reviewer:
 
 Each step of both solvers asks for reaction extents that reduce the saturation deficits of the active reactions,
 without making any mole fraction or concentration negative. That is a linear least-squares problem with inequality
-constraints. kintera solves it with an active-set method on the Karush-Kuhn-Tucker (KKT) conditions: it keeps a
+constraints. kintera solves it with an active-set method on the Karush-Kuhn-Tucker (KKT[^rg-99d77c21e9c3]) conditions: it keeps a
 working set of constraints held as equalities, adds the most violated one, and drops one whose multiplier has the
 wrong sign, until no constraint is violated. The standard theory of such methods is in the
 literature.[^ch04-active-set-refs]
@@ -122,3 +122,7 @@ Problems, SIAM (1995), <https://doi.org/10.1137/1.9781611971217>, chapter 23.]
 
 - Constraints dependent on the working set are not enforced (see above); the caller's clip covers them.
 - The behaviour on a near-singular gain matrix is set by the regularised fallback. Its accuracy is not measured.
+
+<!-- reader glossary notes -->
+[^rg-99d77c21e9c3]: KKT — Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134)
+<!-- end reader glossary notes -->

@@ -56,7 +56,7 @@ No derivation: this scheme maps an input to the matrices $\mathsf S$ and $\maths
    components, a gas phase in range, positive standard pressure, `max-iter` and `ftol`, and a non-negative
    `mole-floor`.
 
-The checks of step 5 are in `EquilibriumOptionsImpl::validate`
+The checks of step 5 run whenever the options are validated
 ({{< code src/equilibrium/equilibrium.cpp EquilibriumOptionsImpl::validate >}}).
 
 | key | meaning | default | read by |
@@ -111,8 +111,8 @@ use small inputs of the same form written by `run_equilibrium.py`. The two-phase
 
 : Tests of the options. {#tbl-ch05-options-tests}
 
-The two `test_equilibrium.release` rows are the gtest cases `EquilibriumOptions.ReadsSpeciesAndReactionsFromYaml`
-and `EquilibriumOptions.RejectsUnbalancedYamlReaction`. Both pass on both builds (@sec-ch05-conditions, Tests). No test covers the one-gas-phase
+The two `test_equilibrium.release` rows are gtest cases of the `EquilibriumOptions` suite: the YAML case is
+`ReadsSpeciesAndReactionsFromYaml`, the unbalanced case is `RejectsUnbalancedYamlReaction`. Both pass on both builds (@sec-ch05-conditions, Tests). No test covers the one-gas-phase
 rule, a component in two phases, the 64-component limit or the rank check.
 
 ### Limits

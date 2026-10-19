@@ -20,7 +20,7 @@ reference values at run time.
 ::: {.callout-note title="At a glance"}
 **Purpose.** Fix the energy and entropy constants; the latent heat at $T_\star$ is @eq-ch03-reference-state-latent.
 
-**Data.** `Tref`[^rg-3024f877ff0c] [K], `Pref`[^rg-b6de325e7bca] [Pa]; per species `cv_R` [-], `u0_R` [K], `s0_R` [-].
+**Data.** `Tref` [K], `Pref` [Pa]; per species `cv_R` [-], `u0_R` [K], `s0_R` [-].
 
 **Placement.** Read by `ThermoOptions.from_yaml`; offsets moved in `ThermoY.reset` and `ThermoX.reset`.
 
@@ -116,12 +116,12 @@ non-positive latent heat at $T_\star$ gives the warning "condensation absorbs en
 | `test_reference_state_keys.py` | a misspelt key is refused with a suggestion | exact | string match |
 | `test_reference_state_keys.py` | every valid key is accepted; `Tref` reads back 300 | exact | equality |
 | `test_reference_state_keys.py` | a list or scalar block is refused; an empty block keeps defaults | exact | equality |
+| `test_python_subprocess` (`test_latent_heat_sign.py`) | a condensate card with zero latent heat warns; a physical card (`u0_R` $-3430$ K) does not | exact | string match |
 
 : Tests of the reference state. {#tbl-ch03-reference-state-tests}
 
-`tests/test_latent_heat_sign.py` asserts the latent-heat warning for an endothermic card and its absence for a
-physical one, but it is not registered with ctest at the pin (it is absent from the ctest index of Appendix C), so
-CI does not run it. No test checks the offset shifts against @eq-ch03-reference-state-latent; that is missing
+`tests/test_latent_heat_sign.py` runs in CTest inside the single entry `test_python_subprocess`, which runs the
+`subprocess_tests` list of `tests/CMakeLists.txt` at the pin, and so in the CI of kintera (`ctest --output-on-failure`). No test checks the offset shifts against @eq-ch03-reference-state-latent; that is missing
 evidence.
 
 ### Limits
@@ -130,9 +130,3 @@ The latent-heat check uses $u^{\star}$ only, so it ignores the NASA-9 and H$_2$ 
 their internal energy to 300 K, a fixed constant, not to `Tref`; with `Tref` other than 300 K, a NASA-9 species'
 energy at $T_\star$ is not $\mathcal R u^{\star}_n$ (verified by reading `eval_intEng_R`; the size of the effect is
 not measured).
-
-<!-- reader glossary notes -->
-[^rg-3024f877ff0c]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
-
-[^rg-b6de325e7bca]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
-<!-- end reader glossary notes -->

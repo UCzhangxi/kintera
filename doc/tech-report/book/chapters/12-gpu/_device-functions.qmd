@@ -3,7 +3,7 @@
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
 sources: src/func_table.cpp, src/func_table.cu, src/utils/user_funcs.hpp, src/utils/user_funcs.cu,
-src/utils/utils_dispatch.cpp, src/utils/utils_dispatch.cu
+src/utils/utils_dispatch.cpp, src/utils/utils_dispatch.cu, src/thermo/thermo_dispatch.cu, src/vapors/vapor_functions.h
 status: draft
 author: gitlinffff
 reviewer:
@@ -11,28 +11,140 @@ reviewer:
 
 ### Summary
 
-A CUDA kernel cannot call a host function pointer, so kintera keeps a second table of the same named functions
-(saturation vapor pressure fits and other user functions) compiled for the device, and looks names up in it before a
-launch. The entry point is `get_device_func1` ({{< code src/utils/user_funcs.hpp get_device_func1 >}}).
+A named user function, such as a saturation vapor pressure fit selected with `rate-constant: {formula: h2o_ideal}`,
+is called through a table of function pointers. A CUDA kernel cannot call a host function pointer, so kintera keeps
+two tables of the same functions: a host table for the CPU drivers and a device table for the CUDA kernels. Both are
+indexed through one host list of names. The device table starts with a `nullptr` slot, so a name at position `id` of
+the list is entry `id` of the host table and entry `id + 1` of the device table. Nothing checks that the two tables
+hold the same functions in the same order: a function present in the host table but missing from the device table
+gives wrong values on CUDA without an error (Limits). The steps to add a vapor-pressure law are in
+@sec-ch02-svp, "Adding a vapor-pressure law"; this section explains the tables those steps edit.
 
-TODO: the At a glance box and the remaining summary paragraphs.
+::: {.callout-note title="At a glance"}
+**Purpose.** Map a function name to a callable on the CPU and on CUDA, @eq-ch12-device-functions-index.
+
+**Data.** Host name list `func1_names`; host table `func1_table_cpu`; device table `func1_table_cuda`.
+
+**Placement.** Before each CPU loop or CUDA launch that evaluates named functions.
+
+**Activation.** Every named `formula`[^rg-d2b95ba9579e] and its `_ddT` derivative; the empty name and `null` give no function.
+
+**Guarantee / limits.** An unknown name raises an error; a host-device table mismatch is not detected.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Local symbols: $n$, a requested function name; $\mathrm{id}(n)$, its position in `func1_names`, counted from 0;
+$h(n)$ and $d(n)$, the index used in the host and in the device table.
 
 ### Derivation
 
-TODO: not yet written.
+No derivation beyond the index rule. For a requested name $n$,
+
+$$
+\begin{aligned}
+h(n) &= \mathrm{id}(n) , \\
+d(n) &= \mathrm{id}(n) + 1 \quad \text{for a registered name}, \qquad d(n) = 0 \quad \text{for an empty name or
+\texttt{null}} .
+\end{aligned}
+$$ {#eq-ch12-device-functions-index}
+
+Slot 0 of the device table is the `nullptr` placeholder, so $d(n) = 0$ gives a null pointer, which the kernels skip.
+@eq-ch12-device-functions-index is computed in `get_host_func`
+({{< code src/utils/user_funcs.hpp get_host_func >}}) for $h$ and in `get_device_func1`
+({{< code src/utils/user_funcs.cu get_device_func1 >}}) for $d$.
 
 ### Numerical method
 
-TODO: not yet written, with its figure.
+The lookup runs on the host before every evaluation:
+
+1. **Names.** The caller passes the names of the functions to evaluate, for example the `formula` of each nucleation
+   reaction and the same names with `_ddT` appended for their derivatives.
+2. **CPU.** `call_func1_cpu` ({{< code src/utils/utils_dispatch.cpp call_func1_cpu >}}) and the saturation-adjustment
+   CPU drivers call `get_host_func` with `func1_names` and `func1_table_cpu`. Each name is searched for in
+   `func1_names` and replaced by the host pointer at the same position.
+3. **CUDA.** `call_func1_cuda` ({{< code src/utils/utils_dispatch.cu call_func1_cuda >}}) and the saturation-adjustment
+   CUDA drivers, for example `call_equilibrate_tp_cuda`
+   ({{< code src/thermo/thermo_dispatch.cu call_equilibrate_tp_cuda >}}), call `get_device_func1` with the same
+   `func1_names`. It builds the list of indices $d(n)$ on the host, copies it to the device, reads the address of the
+   device table from the constant `func1_table_device_ptr`, and gathers the device pointers at those indices.
+4. **Evaluation.** The CPU loop or the CUDA kernel calls each non-null pointer once per cell; a null pointer adds
+   nothing.
+
+"Function f not registered." is raised, on both devices, only when a name is not in `func1_names` and is neither
+empty nor `null`. Because both lookups use the one host list, a name registered there is accepted on CUDA even if the
+device table lacks it.
+
+Registering a function therefore means editing three lists in the same order: the function and its derivative,
+written as `DISPATCH_MACRO` functions in `src/vapors/vapor_functions.h` so that they compile for both devices, are
+appended to `func1_table_cpu` ({{< code src/func_table.cpp func1_table_cpu >}}) and their names to `func1_names`
+({{< code src/func_table.cpp func1_names >}}), and the same two functions to `func1_table_cuda`
+({{< code src/func_table.cu func1_table_cuda >}}), after the `nullptr` placeholder and at the same positions. The
+tables for functions of two and three arguments, `func2_table_cuda` and `func3_table_cuda`, hold only the
+placeholder at the pin. @fig-ch12-device-functions-tables shows the three lists.
+
+```{python}
+#| label: fig-ch12-device-functions-tables
+#| fig-cap: "The three lists of a named function. The name list and the host table share the index id; the device table holds a nullptr in slot 0, so the same function sits at id + 1. The arrows follow one name, f, from the list to both tables."
+#| fig-alt: "Three rows of boxes: func1_names and func1_table_cpu with h2o_ideal, ellipsis, f, f_ddT; func1_table_cuda with a grey nullptr box first and then the same four entries, one position to the right."
+#| echo: false
+from kintera_report.ch12.figures.fig_device_tables import make_fig
+make_fig()
+```
 
 ### Code
 
-TODO: the code table and the walk-through.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| host lookup | {{< code src/utils/user_funcs.hpp get_host_func >}} | `get_host_func` | CPU inputs |
+| device lookup | {{< code src/utils/user_funcs.cu get_device_func1 >}} | `get_device_func1` | CUDA inputs |
+| host table and names | {{< code src/func_table.cpp func1_table_cpu >}} | `func1_table_cpu`, `func1_names` | always |
+| device table | {{< code src/func_table.cu func1_table_cuda >}} | `func1_table_cuda` | CUDA builds |
+| CPU and CUDA drivers | {{< code src/utils/utils_dispatch.cu call_func1_cuda >}} | `call_func1_cpu`, `call_func1_cuda` | device of the inputs |
+
+: Code map of the device function tables. {#tbl-ch12-device-functions-code}
 
 ### Tests
 
-TODO: the test table; missing evidence.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_reaction_equilibrium.py` (`test_documented_native_curves`) | the 11 named curves, through the dispatch, equal their formulas, on CPU and on CUDA | $10^{-11}$ in $\ln K$ | not stated in the test |
+
+: Tests of the device function tables. {#tbl-ch12-device-functions-tests}
+
+The CUDA instance of `test_documented_native_curves` would catch a shifted device table for those 11 names: a shift
+returns another curve's values. It passes on a CUDA build, and its CUDA instance skips on a CPU build.[^ch12-devfn-test]
+No test evaluates the `_ddT` entries on CUDA, and none checks that the three lists have the same length and order.
+
+[^ch12-devfn-test]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the curve catalogue of
+`docs/reaction_catalogue.py`; run: `python -m pytest -q "tests/test_reaction_equilibrium.py::test_documented_native_curves"`
+from the source tree, CUDA build with one compute capability 6.1 GPU (2 passed) and CPU build with no GPU visible
+(1 passed, 1 skipped); CUDA 12.6.85, Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.]
 
 ### Limits
 
-TODO: not yet written; not measured.
+::: {.callout-warning title="Limits"}
+- **A function missing from the device table gives wrong values on CUDA, not an error.** Two cases were measured with
+  a scratch build in which a test function returning $\ln K = 7$ (and its derivative) was added to `func1_table_cpu`
+  and `func1_names` only. Appended at the end, it evaluated to 7 on the CPU and to 0 on CUDA: its device index
+  $\mathrm{id}+1$ points past the end of the device table, and the slot read there was null, so the kernel added
+  nothing. Inserted at the front, it shifted every later name by two device slots. On CUDA, `h2o_ideal` then returned
+  the values of `h2o_bryan` ($\ln K$ = 4.559 against 4.333 at 250 K), the test function returned those of
+  `h2o_ideal`, and the last registered name returned 0. In every case no error was raised.[^ch12-devfn-scratch]
+  Reading past the end of a device array is undefined; that it reads a null pointer on other builds is a hypothesis.
+:::
+
+- The device table is a fixed array compiled into the CUDA library; adding a function needs a rebuild of both
+  libraries.
+
+[^ch12-devfn-scratch]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 with `src/func_table.cpp` patched in a
+scratch copy only, not committed; deck: names `h2o_ideal`, `h2o_ideal_ddT`, `nh3_ideal`, `na_h2s_visscher_ddT` and
+the test function; run: `cmake --build . --target kintera_release` in the `build` directory of a `-DCUDA=ON` Release
+build, so that only the CPU library and its tables change, then `python -P probe.py <names>`, a scratch script that
+evaluates $\ln K$ at 250 K and 300 K through `relative_humidity` on CPU and CUDA tensors; source restored and the
+library rebuilt bit-identical afterwards; GeForce GTX 1080 Ti, CUDA 12.6.85, GCC 11.5.0, torch 2.10.0+cu126,
+Python 3.11.13.]
+
+<!-- reader glossary notes -->
+[^rg-d2b95ba9579e]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)
+<!-- end reader glossary notes -->

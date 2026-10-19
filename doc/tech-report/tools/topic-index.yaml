@@ -95,6 +95,7 @@ sections:
     - GPU kernels: [shared memory, workspace per thread]
   sec-ch12-device-functions:
     - device function tables
+    - vapor-pressure function, GPU table: [func1_table_cuda, nullptr slot, function not registered]
   sec-ch12-sparse-solver:
     - sparse solver, GPU
   # Chapter 13. Tests and validation

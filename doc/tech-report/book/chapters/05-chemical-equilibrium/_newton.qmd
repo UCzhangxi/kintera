@@ -68,6 +68,28 @@ The second line, at $\lambda = 1$, is the constraint form $\mathsf C\boldsymbol\
 @sec-ch10-newton, with $\mathsf C = -\mathsf S$ and $\mathbf d = \boldsymbol{\mathcal N} - \mathcal N_{\mathrm{floor}}$.
 The code sets these rows as `constraints` and `bounds`.
 
+**Why a direct solve.** `constrained_newton_step` factorises $\mathsf J$ itself rather than forming the normal
+equations $\mathsf J^{\mathsf T}\mathsf J\boldsymbol\delta = -\mathsf J^{\mathsf T}\mathbf r$. The singular values of
+$\mathsf J^{\mathsf T}\mathsf J$ are the squares of those of $\mathsf J$, so the normal equations would square the
+condition number. The direct LU solve loses digits in proportion to $\operatorname{cond}(\mathsf J)$ only, which is
+the same argument as for the direct form of the constrained least-squares step (@sec-ch04-active-set).
+
+**What the line search guarantees.** Along the Newton direction, a step of scale $\lambda$ changes the residuals by
+
+$$
+\mathbf r(\boldsymbol{\mathcal N} + \lambda\mathsf S\boldsymbol\delta) = \mathbf r + \lambda\,\mathsf J\boldsymbol\delta
+  + O(\lambda^2) = (1 - \lambda)\,\mathbf r + O(\lambda^2) ,
+$$
+
+so every non-zero residual shrinks in proportion, and $\max_r|r_r|$ falls for every small enough $\lambda$. Every
+amount is above the floor before the step, so small steps also keep the amounts above it. In exact arithmetic the
+halving loop therefore accepts a step whenever the direction is the Newton direction, provided the decrease sets in
+above the smallest scale, $10^{-12}$. When the bounds force the
+constrained least-squares direction, $\mathsf J\boldsymbol\delta \ne -\mathbf r$, and no decrease is guaranteed. The
+loop can then end with status 4. The merit function is the largest residual, and any decrease is accepted. Without
+a sufficient-decrease condition, a sequence of accepted steps can stall at a positive error. The vanishing phase of
+@sec-ch05-diagnostics is such a case.[^ch05-newton-refs]
+
 ### Numerical method
 
 `phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}) runs these steps in
@@ -143,6 +165,10 @@ the normal equations, which the direct solve of step 5 avoids; which path each o
 recorded by the test (hypothesis: the direct one). Both tests pass on both builds (@sec-ch05-conditions,
 Tests). No test makes the line search or the least-squares fallback run, and no test checks element conservation on
 a multiphase case.
+
+[^ch05-newton-refs]: [source: J. Nocedal and S. J. Wright, Numerical Optimization, 2nd ed., Springer (2006),
+<https://doi.org/10.1007/978-0-387-40065-5>, chapter 11 (Newton's method for nonlinear equations, merit functions
+and line searches).]
 
 [^ch05-ho-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `HO` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`, the cases of `h2o_dissociation.json`; run: `python -P

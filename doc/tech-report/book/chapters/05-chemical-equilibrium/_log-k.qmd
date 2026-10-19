@@ -32,7 +32,9 @@ constants are those at the standard pressure; the pressure of a cell enters only
 **Evidence.** See the Tests layer below.
 :::
 
-Symbols as in @sec-ch05-conditions; $h_n$ and $s_n$ of the notation table, here at $p^\circ$.
+Symbols as in @sec-ch05-conditions; $h_n$ and $s_n$ of the notation table, here at $p^\circ$. Local symbols:
+$c_{p,n}$, the heat capacity at constant pressure of species $n$ [J mol$^{-1}$ K$^{-1}$]; $\Delta_r h^\circ =
+\sum_n \nu_{nr} h_n$, the standard reaction enthalpy [J mol$^{-1}$].
 
 ### Derivation
 
@@ -50,6 +52,42 @@ The first line is `nasa9_gibbs_RT` ({{< code src/thermo/nasa9.hpp nasa9_gibbs_RT
 coefficients below the mid-point temperature and the high ones above it. The second line is `Nasa9LogK.__call__`
 ({{< code python/equilibrium/nasa9.py Nasa9LogK >}}), `-(gibbs_rt @ stoich)`, with the `stoich` buffer of an
 `EquilibriumTP` built from the same options.
+
+**Why this is the constant.** Three steps connect @eq-ch05-log-k-gibbs to the conditions of @sec-ch05-conditions.
+
+1. At equilibrium the chemical potentials $\mu_n = g^\circ_n + \mathcal R T\ln a_n$, weighted by $\nu_{nr}$, add up to
+   zero. Dividing by $\mathcal R T$ gives $\sum_n \nu_{nr}\ln a_n = -\sum_n \nu_{nr} g^\circ_n/(\mathcal R T)$, and the
+   right side is $\ln K^\circ_r$ of @eq-ch05-log-k-gibbs.
+2. The standard state of a gas is the pure ideal gas at $p^\circ$, and that of a condensed species is the pure phase.
+   So $g^\circ_n$ depends on $T$ only, and the pressure enters only through the gas activities $x_n p/p^\circ$ of
+   @eq-ch05-conditions-activity. $K^\circ_r$ is dimensionless and independent of $p$. A reaction that changes the
+   number of gas molecules responds to pressure through the factor $(p/p^\circ)^{\sum_{n\,\in\,\mathrm{gas}} \nu_{nr}}$
+   of its quotient.
+3. The temperature derivative follows from the forms of $h_n$ and $s_n$. At fixed $p^\circ$, $\mathrm dh_n/\mathrm dT =
+   c_{p,n}$ and $\mathrm ds_n/\mathrm dT = c_{p,n}/T$, so
+
+$$
+\begin{aligned}
+\frac{\mathrm d}{\mathrm dT}\frac{h_n}{\mathcal R T} &= \frac{c_{p,n}}{\mathcal R T} - \frac{h_n}{\mathcal R T^2} , \qquad
+\frac{\mathrm d}{\mathrm dT}\frac{s_n}{\mathcal R} = \frac{c_{p,n}}{\mathcal R T} , \qquad
+\frac{\mathrm d}{\mathrm dT}\frac{g^\circ_n}{\mathcal R T} = -\frac{h_n}{\mathcal R T^2} , \\
+\frac{\mathrm d\ln K^\circ_r}{\mathrm dT} &= -\sum_n \nu_{nr}\,\frac{\mathrm d}{\mathrm dT}\frac{g^\circ_n}{\mathcal R T}
+  = \frac{\sum_n \nu_{nr}\, h_n}{\mathcal R T^2} = \frac{\Delta_r h^\circ}{\mathcal R T^2} .
+\end{aligned}
+$$ {#eq-ch05-log-k-vant-hoff}
+
+The third relation of the first line is the Gibbs–Helmholtz equation, and the second line is the van 't Hoff
+equation:[^ch05-logk-refs] an exothermic reaction ($\Delta_r h^\circ < 0$) has a constant that falls with temperature.
+Within one NASA-9 range the identity holds exactly for the polynomial forms of @eq-ch02-nasa9-forms, because they are
+the integrals of one $c_{p,n}$ polynomial. At the mid-point temperature the coefficient set changes. Whether $h_n$
+and $s_n$ are continuous there is a property of the data, not something the code enforces (@sec-ch02-nasa9). The
+temperature derivative of reverse rate constants (@sec-ch06-mass-action) rests on the same identity.
+
+`check_ch5_equilibrium.py` line c solves 2 H$_2$ + O$_2$ $\rightleftharpoons$ 2 H$_2$O at 3500 K and $p = p^\circ$ with
+`Nasa9LogK`. Its own parse of the bundled table reproduces the library's $\Delta_r g^\circ/(\mathcal R T)$ exactly. The
+derivative of $\ln K^\circ$ by central differences matches $\Delta_r h^\circ/(\mathcal R T^2)$ from the integrated
+enthalpy to $4.7\times10^{-10}$ (tolerance $10^{-6}$). The solved state meets its residual to $8.0\times10^{-12}$
+(tolerance $10^{-10}$), with H and O conserved to $2.2\times10^{-16}$.[^ch05-logk-check]
 
 ### Numerical method
 
@@ -104,6 +142,14 @@ make_fig()
 The second row is the gtest case `Nasa9.ConcurrentFirstDatabaseAccess`. Both pass on both builds
 (@sec-ch05-conditions, Tests). No test checks a value of $\ln K^\circ_r$ against an
 independent table, or a condensed entry.
+
+[^ch05-logk-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: 2 H$_2$ + O$_2$ $\rightleftharpoons$ 2 H$_2$O with the NASA-9 entries of the package's `data/nasa9.dat`, 3500 K, $10^5$ Pa; run:
+`python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
+the pin: line c PASS (table parse, residual, H and O, van 't Hoff); CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
+
+[^ch05-logk-refs]: [source: P. Atkins and J. de Paula, Atkins' Physical Chemistry, 9th ed., Oxford University Press
+(2010): the Gibbs–Helmholtz equation in the chapter on the Second Law (properties of the Gibbs energy) and the
+van 't Hoff equation in the chapter on chemical equilibrium (response of equilibria to temperature).]
 
 [^ch05-logk-water]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
 `src/kintera_report/ch05/runs/run_equilibrium.py` with NASA-9 names N2, H2O and H2O_l_s; run: `python -P

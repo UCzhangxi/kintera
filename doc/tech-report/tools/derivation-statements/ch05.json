@@ -1,0 +1,3 @@
+{
+  "eq-ch05-log-k-vant-hoff": "Gibbs–Helmholtz on the NASA-9 forms gives the van 't Hoff equation $\\mathrm d\\ln K^\\circ_r/\\mathrm dT = \\Delta_r h^\\circ/(\\mathcal R T^2)$; checked by `derivation-checks/check_ch5_equilibrium.py`, line c."
+}

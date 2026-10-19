@@ -76,6 +76,72 @@ At configure time, `tests/CMakeLists.txt` links every `*.inp`, `*.dat` and `*.ya
 files and 40 Python test files: 16 C++ programs are built, 8 Python files run in the grouped entry and 32 run as
 single-file entries.
 
+**Running the tests and reading the counts.** In the build's test directory, `ctest -N` lists the registered
+entries without running them, `ctest --output-on-failure` runs them all, and `ctest -R <regex>` runs those whose
+names match; the exact entry names are in Appendix C (@sec-appc). A Python file can also be run directly from the
+source tree with `python -m pytest tests/<file> -rs`, which prints the reason of every skipped case. Four things
+decide what a run means:
+
+1. **What was built.** CUDA cases need a `-DCUDA=ON` build (@sec-ch12-build); a C++ file that `tests/CMakeLists.txt`
+   does not name is never built (Limits).
+2. **What the entry can start.** The single-file Python entries call `pytest` by name. When `pytest` is not on the
+   `PATH`, `ctest` reports those entries as `Not Run` and counts them as failures, while the C++ entries still pass.
+3. **What the inputs are.** The C++ tests read the input files linked into `build/tests` (Limits); some Python cases
+   need external data files and skip without them (@sec-ch13-results).
+4. **What a pass hides.** One `ctest` entry is a whole file. It passes when every case passes or skips, so a passing
+   entry can contain skipped cases. On a CPU build, `test_reaction_equilibrium.py` is one passing entry, while
+   `pytest` reports 63 of its 120 cases passed and 57 skipped because no CUDA device is present. A file whose module
+   skips as a whole is counted by `ctest` as a failure.
+
+Listing an entry is not running it, and running a file is not running every case in it.[^ch13-suite-run]
+
+**Which tests verify conservation in the equilibrium solvers.** Being registered does not make a test a verification
+of conservation; this map gives, for the two equilibrium solvers, which test asserts which conserved quantity, to
+what tolerance, and what it leaves open:
+
+| test | solver | quantity | assertion | tolerance | what it does not establish |
+|---|---|---|---|---|---|
+| `test_saturation_adjustment_nh4sh.py` | fixed $U$, $V$ (@sec-ch04-equilibrate-uv) | N and S atoms of 2000 random cells | element sums before and after | `rtol=1e-12`, `atol=0` | energy; the fixed-$T$ solver |
+| `test_reaction_equilibrium.py` | fixed $T$, $p$ and $U$, $V$; 13 reactions, 8 cases each | amounts along the reaction, $n - n_0 - \nu\,\xi$ | against an independent extent solve | $2\times10^{-6}$ (double), $2\times10^{-3}$ (single), relative | energy: its energy error is recomputed at the temperature read back from $U$, so it holds by construction |
+| `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | log-K solver (@sec-ch05-conditions) | H and O atoms of one gas cell at 4000 K | element sums before and after | `assert_close` defaults for double, `rtol=1e-7`, `atol=1e-7` | several phases |
+| `test_equilibrium.release` (`IdealGasReaction`) | log-K solver | total amount of A $\rightleftharpoons$ B | sum equals 1 | `rtol=1e-6`, `atol=1e-6` | element balance of other reactions |
+
+: Conservation tests of the equilibrium solvers. {#tbl-ch13-suite-conservation}
+
+Not verified by any test at the pin: conservation of the internal energy by the fixed-$U$, $V$ solver beyond
+construction (@sec-ch04-equilibrate-uv proposes a saturation check at the host temperature instead); element
+conservation of the log-K solver with several phases (@sec-ch05-newton measures it outside the suite); and the
+status codes 1 to 4 of the log-K solver (@sec-ch05-diagnostics).
+
+**Validation tolerances.** In this report, a validation tolerance is the largest difference a test accepts between a
+computed value and its reference, as an absolute bound, a relative bound or both. It is not the stopping tolerance
+of a solver, such as `ftol`, which decides when an iteration ends. A validation tolerance must allow for that
+stopping tolerance and for everything else between the computed value and the reference: the floating-point
+precision and the number of operations, the discretization error when the reference is an exact solution, and the
+uncertainty of the reference itself. A tolerance chosen this way is a bound with a reason; one written into a test
+without a reason only records what passed once.
+
+Worked example, `IdealGasReaction`: A $\rightleftharpoons$ B with $\ln K^\circ = 0$ and `ftol` $10^{-7}$. The solver
+stops when $|\ln(x_B/x_A)| \le \max(\ln(1+10^{-7}), 4\epsilon_{\mathrm{mach}})$ (@sec-ch05-diagnostics). With
+$x_A = 1/(1 + e^{r})$, a residual $r$ moves $x_A$ from 0.5 by about $|r|/4$, so the derived bound on
+$|x_A - 0.5|$ is $2.5\times10^{-8}$ in double and $1.8\times10^{-7}$ in single precision, rounding of $x_A$
+included. The test allows $10^{-6} + 10^{-5}\times 0.5 = 6\times10^{-6}$. The measured differences are
+$5.6\times10^{-9}$ and $6.0\times10^{-8}$.[^ch13-suite-tol] The test's bound is consistent with the derivation, about
+30 times the single-precision bound, but the test states no reason for it, as is the case for most tolerances of the
+suite (the "where the tolerance comes from" columns of chapters 4, 5 and 12). A test passing within such a bound
+shows agreement to that bound, not that the bound is the accuracy of the code.
+
+[^ch13-suite-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `ctest -N` (`Total Tests: 49`) and
+`ctest -R test_equilibrium` in `build/tests` of a `-DCUDA=OFF` Release build, first without `pytest` on the `PATH`
+(`test_equilibrium.py` reported `Not Run`, `test_equilibrium.release` passed) and then with it (both passed); then
+`python -m pytest -q -rs tests/test_reaction_equilibrium.py` from the source tree with no GPU visible (63 passed,
+57 skipped, reason `CUDA unavailable`); CMake 3.31.8, Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.]
+
+[^ch13-suite-tol]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the options of `make_options` in
+`tests/test_equilibrium.cpp`, rebuilt in Python; run: `python -P src/kintera_report/ch13/runs/tolerance_example.py`,
+CPU, single and double precision, status 0 in every cell; kintera 2.6.5 source build, Python 3.11.13, torch
+2.10.0+cu126.]
+
 [^ch13-suite-count]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `ctest -N` in `build/tests` of a
 Release build, which prints `Total Tests: 49`; CMake 3.31.8. The file counts are from `ls tests/test*.cpp` and
 `ls tests/test*.py`.]

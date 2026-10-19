@@ -196,6 +196,12 @@
       "meaning": "tolerance argument handed unchanged to the cuSOLVER QR solve; Python default 0, argument of `cuda_csr_solve_cusolver`",
       "section": "sec-ch10-sparse",
       "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92"
+    },
+    {
+      "kind": "concept",
+      "term": "validation tolerance",
+      "meaning": "the largest difference a test accepts between a computed value and its reference; distinct from a solver's stopping tolerance",
+      "section": "sec-ch13-suite"
     }
   ]
 }

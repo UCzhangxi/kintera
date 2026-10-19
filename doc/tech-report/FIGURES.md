@@ -31,3 +31,9 @@ Regenerate every figure: `python3 tools/render_figures.py` (to `build/figures/<c
 | `fig-ch05-log-k-gas` | `05-chemical-equilibrium/_log-k.qmd` | `kintera_report/ch05/figures/fig_ho_gas.py` | `src/kintera_report/ch05/data/h2o_dissociation.json` (`kintera_report/ch05/runs/run_equilibrium.py`) |
 | `fig-ch05-newton-loop` | `05-chemical-equilibrium/_newton.qmd` | `kintera_report/ch05/figures/fig_newton_loop.py`<br>`kintera_report/ch04/flow.py` | - |
 | `fig-ch05-options-path` | `05-chemical-equilibrium/_options.qmd` | `kintera_report/ch05/figures/fig_options_path.py`<br>`kintera_report/ch04/flow.py` | - |
+
+## ch12
+
+| figure | section file | code | data (written by) |
+|---|---|---|---|
+| `fig-ch12-device-functions-tables` | `12-gpu/_device-functions.qmd` | `kintera_report/ch12/figures/fig_device_tables.py` | - |

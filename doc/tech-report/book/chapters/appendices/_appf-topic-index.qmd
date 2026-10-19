@@ -236,6 +236,10 @@
 
 **`formula`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
+*func1_table_cuda*, see **vapor-pressure function, GPU table**.
+
+*function not registered*, see **vapor-pressure function, GPU table**.
+
 ## G {.unnumbered .unlisted}
 
 *Gaussian elimination*, see **dense linear solve**.
@@ -385,6 +389,8 @@
 **notation index**: The notation index, @sec-appa-index.
 
 **nucleation reactions**: Which reactions take part (nucleation reactions), @sec-ch04-nucleation.
+
+*nullptr slot*, see **vapor-pressure function, GPU table**.
 
 ## O {.unnumbered .unlisted}
 
@@ -649,6 +655,8 @@
 *vanishing phase*, see **chemical equilibrium, failures**.
 
 *vapor pressure fit*, see **saturation vapor pressure**.
+
+**vapor-pressure function, GPU table**: Device function tables for user functions, @sec-ch12-device-functions.
 
 *version number*, see **package version**.
 

@@ -8,7 +8,7 @@
 | @sec-ch12-dispatch | @eq-ch12-dispatch-implicit | For the implicit kinetics step that function solves | code: {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}; check: none | re-derived |
 | @sec-ch12-kernels | @eq-ch12-kernels-threads | The launcher `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) picks the block size from the scratch size of one cell: | code: {{< code src/loops.cuh gpu_mem_kernel >}}; check: none | re-derived |
 | @sec-ch12-kernels | @eq-ch12-kernels-implicit-bytes | Every allocation is rounded up to a multiple of 8 bytes, so in double precision (8 bytes per entry) | code: {{< code src/loops.cuh gpu_mem_kernel >}}; check: none | re-derived |
-| @sec-ch12-device-functions | none | TODO: not yet written. | code: ; check: none | n/a |
+| @sec-ch12-device-functions | @eq-ch12-device-functions-index | For a requested name $n$, | code: {{< code src/utils/user_funcs.hpp get_host_func >}}; check: none | re-derived |
 | @sec-ch12-sparse-solver | none | TODO: not yet written. | code: ; check: none | n/a |
 
 : Derivations of @sec-ch12. {#tbl-appb-ch12}

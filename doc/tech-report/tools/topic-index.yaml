@@ -143,6 +143,11 @@ sections:
   sec-ch03-adiabat:
     - moist adiabat: [pseudo-adiabat, rainout, isentrope]
     - effective heat capacity
+  # Chapter 1b. The parcel model in one place
+  sec-ch01b-state:
+    - parcel state variables: [fixed T and p, fixed U and V, what each solver holds fixed, element conservation]
+  sec-ch01b-shared:
+    - shared saturation function: [one energy model, latent energy, kinetic fixed point at saturation]
   # Chapter 2. Species and thermodynamic data
   sec-ch02-species-registry:
     - species registry: [species list, phase, species order, adding a species]

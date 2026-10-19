@@ -31,7 +31,7 @@ adjusted (@sec-ch04-conditions). A reaction may also give a temperature range, b
 
 ### Derivation
 
-No derivation: the reader maps YAML entries to the constants $K_j(T)$ of @sec-ch04-conditions.
+No derivation: the reader maps YAML entries to the constants $K_r(T)$ of @sec-ch04-conditions.
 
 ### Numerical method
 
@@ -39,7 +39,8 @@ No derivation: the reader maps YAML entries to the constants $K_j(T)$ of @sec-ch
 reaction entry:
 
 1. An entry whose `type`[^rg-e7755bb7941e] is not `nucleation` is skipped.
-2. The `equation`[^rg-af50ac18addc] and the `rate-constant`[^rg-f7d3460bb6bb] block are required. In `rate-constant`, `formula`[^rg-4090a0a3b182] is required:
+2. The `equation`[^rg-af50ac18addc] and the `rate-constant`[^rg-f7d3460bb6bb] block are required. In `rate-constant`,
+   `formula`[^rg-4090a0a3b182] is required:
    - `ideal` takes `T3`, `P3`, `beta` and `gamma`, with optional `betas` and `gammas` for a solid branch below `T3`;
    - `antoine` takes `A`[^rg-cf38eb9c6d82], `B` and `C`;
    - any other value names a function of the function table, such as `h2o_ideal`, `nh3_ideal` or the two-gas
@@ -53,7 +54,16 @@ When the species are classified into gases and condensates, a nucleation reactan
 nucleation reaction to have a condensed product (`ThermoYImpl::reset`,
 {{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}).
 
-TODO: a figure of the path from a YAML entry to $K_j(T)$.
+@fig-ch04-nucleation-path follows one entry.
+
+```{python}
+#| label: fig-ch04-nucleation-path
+#| fig-cap: "From a YAML reaction entry to the saturation constant the solvers use. Boxes in reading order; grey notes: other reaction types are skipped, the formula may be inline or named, and minT and maxT are stored but unused."
+#| fig-alt: "Five boxes left to right: YAML reaction entry, type nucleation, formula, log K, conditions of both solvers."
+#| echo: false
+from kintera_report.ch04.figures.fig_nucleation_path import make_fig
+make_fig()
+```
 
 ### Code
 
@@ -70,8 +80,8 @@ TODO: a figure of the path from a YAML entry to $K_j(T)$.
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
 | `test_saturation_adjustment_nh4sh.py` | two nucleation reactions parsed from YAML are adjusted correctly | RH within $10^{-5}$ | not stated in the test |
-| `test_inline_svp.py` | the inline `ideal` and `antoine` forms | not tabulated yet | not tabulated yet |
-| `test_thermo.release` | thermodynamics with the nucleation reactions of `tests/jupiter.yaml` | not tabulated yet | not tabulated yet |
+| `test_inline_svp.py` | inline `ideal` equals its named twin; `antoine` matches its formula and saturates | bitwise; $10^{-12}$; $10^{-8}$ | bitwise by design; the others not stated in the test |
+| `test_thermo.release` | round trips of `ThermoX`/`ThermoY` conversions with the nucleation reactions of `tests/jupiter.yaml` | $10^{-4}$ rel. and abs. | not stated in the test |
 
 : Tests of the nucleation reactions. {#tbl-ch04-nucleation-tests}
 

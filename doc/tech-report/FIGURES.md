@@ -8,3 +8,15 @@ for a file a model run wrote, a pointer to the run recorded in the file.
 Regenerate every figure: `python3 tools/render_figures.py` (to `build/figures/<chapter>/`); one chapter:
 `python3 tools/render_figures.py --chapters ch05`. The book itself draws them in the render
 (`quarto render book/`), from the same cells.
+
+## ch04
+
+| figure | section file | code | data (written by) |
+|---|---|---|---|
+| `fig-ch04-active-set-loop` | `04-phase-equilibrium/_active-set.qmd` | `kintera_report/ch04/figures/fig_active_set_loop.py`<br>`kintera_report/ch04/flow.py` | - |
+| `fig-ch04-conditions-cases` | `04-phase-equilibrium/_conditions.qmd` | `kintera_report/ch04/figures/fig_conditions_cases.py` | - |
+| `fig-ch04-dependency-map` | `04-phase-equilibrium.qmd` | `kintera_report/ch04/figures/fig_dependency_map.py` | - |
+| `fig-ch04-equilibrate-tp-coldstart` | `04-phase-equilibrium/_equilibrate-tp.qmd` | `kintera_report/ch04/figures/fig_tp_coldstart.py` | `src/kintera_report/ch04/data/tp_coldstart.json` (a model run, named in the file's `provenance`) |
+| `fig-ch04-equilibrate-uv-partition` | `04-phase-equilibrium/_equilibrate-uv.qmd` | `kintera_report/ch04/figures/fig_uv_partition.py` | `src/kintera_report/ch04/data/uv_partition_tref.json` (a model run, named in the file's `provenance`) |
+| `fig-ch04-nucleation-path` | `04-phase-equilibrium/_nucleation.qmd` | `kintera_report/ch04/figures/fig_nucleation_path.py`<br>`kintera_report/ch04/flow.py` | - |
+| `fig-ch04-warm-start-flow` | `04-phase-equilibrium/_warm-start-failures.qmd` | `kintera_report/ch04/figures/fig_warm_start_flow.py`<br>`kintera_report/ch04/flow.py` | - |

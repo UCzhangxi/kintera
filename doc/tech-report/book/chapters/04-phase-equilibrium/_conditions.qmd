@@ -32,12 +32,13 @@ vapours alike. The condition is the one used for moist adiabats with several con
 **Evidence.** See the Tests layer below.
 :::
 
-Local symbols: reaction $j$ with stoichiometric coefficient $\nu_{ij}$ of species $i$, positive for a species the
-reaction consumes and negative for one it produces; $x_i$ the mole fraction of species $i$ among all species;
-$x_{\mathrm{g}}$ the sum of the gas mole fractions; $p_i = p\,x_i/x_{\mathrm{g}}$ the partial pressure [Pa] of gas
-$i$; $\sum_{i\in\mathrm{g}}$ a sum over gases only; $K_j(T)$ the saturation constant of reaction $j$
-[$\mathrm{Pa}^{\sum_{i\in\mathrm{g}} \nu_{ij}}$]; $c_j$ the amount of the condensate of reaction $j$; $\Delta_j$ its
-saturation deficit (dimensionless), defined below.
+Symbols of the notation table (@sec-appa): $p$, $T$, $x_n$, $x_{\mathrm g}$, $N_{\mathrm g}$, $c_n$, $K_r$,
+$\nu_{nr}$, $\Delta_r$; reaction
+$r$ and species $n$, gases $n < N_{\mathrm g}$ first. Local symbols: $\hat\nu_{nr} = -\nu_{nr}$, the stoichiometric
+coefficient of species $n$ in reaction $r$ with the sign turned, so positive for a species the reaction consumes and
+negative for one it produces [-]; $p_n = p\,x_n/x_{\mathrm g}$ the partial pressure of gas $n$ [Pa]; $m_r$ the
+condensate that reaction $r$ produces, so $c_{m_r}$ is its concentration [mol m$^{-3}$]. The saturation deficit
+$\Delta_r$ is defined below. $K_r(T)$ has units Pa$^{\sum_{n<N_{\mathrm g}} \hat\nu_{nr}}$.
 
 ### Derivation
 
@@ -45,15 +46,15 @@ The saturation constant of a reaction is the product of the partial pressures of
 each raised to its coefficient: gases consumed with a positive power, gases produced with a negative one. Condensed
 phases are pure and have unit activity, so they do not appear in the product. For water vapour condensing the constant
 is the saturation vapour pressure; for ammonium hydrosulfide it is the product of the ammonia and hydrogen sulfide
-partial pressures, with pressure exponent 2. Define the saturation deficit of reaction $j$ as
-$\Delta_j = \ln K_j(T) - \sum_{i\in\mathrm{g}} \nu_{ij} \ln p_i$, positive when the gases are subsaturated. The
-equilibrium conditions are three complementarity relations, for every reaction $j$:
+partial pressures, with pressure exponent 2. Define the saturation deficit of reaction $r$ as
+$\Delta_r = \ln K_r(T) - \sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln p_n$, positive when the gases are subsaturated. The
+equilibrium conditions are three complementarity relations, for every reaction $r$:
 
 $$
 \begin{aligned}
-c_j &\ge 0, \\
-\Delta_j &\ge 0, \\
-c_j\,\Delta_j &= 0 .
+c_{m_r} &\ge 0, \\
+\Delta_r &\ge 0, \\
+c_{m_r}\,\Delta_r &= 0 .
 \end{aligned}
 $$ {#eq-ch04-conditions-saturation}
 
@@ -61,13 +62,13 @@ In words: the condensate amount is never negative, the gases are never supersatu
 condensate is present sits exactly on its saturation curve.
 
 The code tests these conditions in logarithms and in mole fractions. Taking the logarithm of the gas product and
-substituting $p_i = p\,x_i/x_{\mathrm{g}}$:
+substituting $p_n = p\,x_n/x_{\mathrm{g}}$:
 
 $$
 \begin{aligned}
-\sum_{i\in\mathrm{g}} \nu_{ij} \ln p_i &= \sum_{i\in\mathrm{g}} \nu_{ij} \ln\frac{x_i}{x_{\mathrm{g}}}
-  + \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big) \ln p \\
-\sum_{i\in\mathrm{g}} \nu_{ij} \ln\frac{x_i}{x_{\mathrm{g}}} &= \ln K_j(T) - \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big) \ln p .
+\sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln p_n &= \sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln\frac{x_n}{x_{\mathrm{g}}}
+  + \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln p \\
+\sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln\frac{x_n}{x_{\mathrm{g}}} &= \ln K_r(T) - \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln p .
 \end{aligned}
 $$
 
@@ -83,10 +84,10 @@ The fixed-energy solver uses the same constant in concentration units, @sec-ch04
 No iteration here: this scheme defines the target. A reaction is out of equilibrium, and joins the active set of the
 solvers, when either
 
-1. its left side exceeds $\ln K_j + \epsilon$, so the gases are supersaturated and vapour must condense; or
-2. its left side is below $\ln K_j - \epsilon$ while its condensate is present, so condensate must evaporate.
+1. its left side exceeds $\ln K_r + \epsilon$, so the gases are supersaturated and vapour must condense; or
+2. its left side is below $\ln K_r - \epsilon$ while its condensate is present, so condensate must evaporate.
 
-Here $\ln K_j$ stands for the right side of the second line above and $\epsilon$ for the tolerance `logsvp_eps`. A
+Here $\ln K_r$ stands for the right side of the second line above and $\epsilon$ for the tolerance `logsvp_eps`. A
 reaction whose condensate is absent and whose gases are subsaturated stays out of the active set: the inequality in
 @eq-ch04-conditions-saturation holds. Both tests are in `equilibrate_tp`
 ({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}).
@@ -106,7 +107,16 @@ $\pm\tfrac12 \ln$ of the largest representable number. A reaction that lacks bot
 produces cannot move in either direction and is skipped for that iteration (`equilibrate_tp`,
 {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}).
 
-TODO: a figure of the three cases (saturated, supersaturated, subsaturated without condensate) on a saturation curve.
+The three cases are sketched in @fig-ch04-conditions-cases.
+
+```{python}
+#| label: fig-ch04-conditions-cases
+#| fig-cap: "The three cases of the saturation conditions on a schematic saturation curve (blue line). Green circle: condensate present, on the curve; vermillion triangle: supersaturated, so vapour condenses back to the curve (arrow); black square: no condensate and below the curve, which the conditions allow."
+#| fig-alt: "A rising blue curve with a green dot on it, a red triangle above it with an arrow pointing down to the curve, and a black square below the curve."
+#| echo: false
+from kintera_report.ch04.figures.fig_conditions_cases import make_fig
+make_fig()
+```
 
 ### Code
 
@@ -144,7 +154,7 @@ committed check.]
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- **Ideal gas only.** The fixed-temperature tests use $p_i = p\,x_i/x_{\mathrm{g}}$, and the fixed-energy and partition
+- **Ideal gas only.** The fixed-temperature tests use $p_n = p\,x_n/x_{\mathrm{g}}$, and the fixed-energy and partition
   methods use the ideal-gas form $\ln(\mathcal R T)$. The compressibility terms of a non-ideal equation of state are
   not used in these tests, so saturation is checked as if the gas were ideal.
 - **Only nucleation reactions are adjusted**, as above.

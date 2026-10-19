@@ -8,7 +8,9 @@
 | @sec-ch06-mass-action | @eq-ch06-mass-action-tendency | Summed over reactions, the species tendency is | code: {{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}}; check: none | re-derived |
 | @sec-ch06-arrhenius | @eq-ch06-arrhenius-rate | Within one temperature band the rate constant is | code: {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::forward >}}; check: none | re-derived |
 | @sec-ch06-pressure-switch | @eq-ch06-pressure-switch-factor |  | code: {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::switch_pressure >}}; check: none | re-derived |
-| @sec-ch06-falloff | none | Not drafted: the derivations of the five forms are still to be written. | code: ; check: none | n/a |
+| @sec-ch06-falloff | @eq-ch06-falloff-meff | **Third body.** The effective third-body concentration of reaction $j$ is | code: {{< code src/kinetics/three_body.cpp ThreeBodyImpl::forward >}}; check: none | re-derived |
+| @sec-ch06-falloff | @eq-ch06-falloff-blend | **Fall-off.** With the reduced pressure $P_r = k_0 [M]_{\mathrm{eff}} / k_\infty$, the fall-off rate constant is the Lindemann expression times a broadening factor: | code: {{< code src/kinetics/lindemann_falloff.cpp LindemannFalloffImpl::forward >}}; check: none | re-derived |
+| @sec-ch06-falloff | @eq-ch06-falloff-broadening | Troe and SRI both use | code: {{< code src/kinetics/troe_falloff.cpp TroeFalloffImpl::compute_falloff_factor >}}; check: none | re-derived |
 | @sec-ch06-evaporation | @eq-ch06-evaporation-kappa | The rate coefficient and the rate are | code: {{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}; check: none | re-derived |
 | @sec-ch06-kessler | @eq-ch06-kessler-kappa | kintera sets | code: {{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}; check: none | re-derived |
 | @sec-ch06-kessler | @eq-ch06-kessler-rate | and dividing by $n$, which a closed cell of fixed volume conserves for one-to-one evaporation, | code: {{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}; check: none | re-derived |

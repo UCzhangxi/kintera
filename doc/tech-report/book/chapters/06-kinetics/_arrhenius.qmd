@@ -63,6 +63,28 @@ bands; padded slots have $A = 0$ and an empty window. With one band, `forward` e
 on $T$ and only then evaluates the exponential, so an inactive band far outside its range cannot overflow. The
 result is passed through the pressure switch of @sec-ch06-pressure-switch.
 
+**Adding a rate-constant form.** The Arrhenius evaluator is the template for a new form. At the pin a new form needs,
+in order (each step names the code that a new form copies):
+
+1. An options struct with the parameters, a `reactions()` list and `from_yaml`
+   ({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}}), selecting its reactions by `type`[^rg-36105a006e4f] and
+   converting the pre-exponential factor from molecule, cm, s units with `UnitSystem::convert_from`
+   (@sec-ch02-units), the reaction order counting all reactants.
+2. An `add_to_vapor_cloud` overload that registers the species of its reactions as gases or condensates
+   (@sec-ch02-species-registry).
+3. A module whose `forward(T, P, C, other)` returns the rate constants with one entry per reaction on the last axis,
+   in mol, m, s units, written in differentiable torch operations: `Kinetics.forward` passes $C$ expanded to
+   `(..., nspecies, nreaction)` with gradient tracking and obtains $\partial k/\partial c$ (and $\partial k/\partial T$
+   with `evolve_temperature`) by one backward pass, so no hand-written derivative is needed
+   ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
+4. A member in `KineticsOptionsImpl`, read in its `from_yaml`, appended in `KineticsOptionsImpl::reactions`
+   ({{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::reactions >}}), and registered as an evaluator in
+   `KineticsImpl::reset` in the same position, since the reaction columns follow that order.
+5. Python bindings for the options in `python/csrc/pykinetics.cpp`, if the form is to be built from Python.
+6. Devices: torch operations run on CPU and CUDA alike; a form that calls a scalar C function needs a CUDA twin.
+7. Checks: the rate against its closed form, and $\partial k/\partial c$ against a finite difference as
+   `test_rate_constant_ddC.py` does.
+
 The band-selection figure is not provided: the figure module is not written yet.
 
 ### Code
@@ -77,7 +99,7 @@ The band-selection figure is not provided: the figure module is not written yet.
 : Code map of Arrhenius rate constants. {#tbl-ch06-arrhenius-code}
 
 Setup checks a user can hit: `A_ranges` without `T_ranges`; band lists of different lengths; `T_ranges` not
-strictly increasing; a reaction with no `type`[^rg-36105a006e4f] or no `rate-constant`.
+strictly increasing; a reaction with no `type` or no `rate-constant`.
 
 The key `E4` is parsed into `E4_R` but `forward` does not use it (verified by reading `forward` at the pin).
 
@@ -106,7 +128,7 @@ an open question.
 
 [^rg-3a030b87ff19]: Ea_R — activation energy divided by the gas constant, in K; default 1 K in the Arrhenius reader; stored in option `Ea_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L96)
 
-[^rg-fe9f62b85a4d]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
-
 [^rg-36105a006e4f]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
+
+[^rg-fe9f62b85a4d]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
 <!-- end reader glossary notes -->

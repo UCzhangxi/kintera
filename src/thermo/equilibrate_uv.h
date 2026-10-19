@@ -207,8 +207,11 @@ DISPATCH_MACRO int equilibrate_uv_partition(
     }
     valid = bracketed;
 
+    // The bracketed search has its own bound: the YAML max-iter is sized for
+    // the KKT outer loop and must not abort a search that is converging.
+    int search_iter = *max_iter > 64 ? *max_iter : 64;
     T current = original_temperature;
-    while (valid && fabs(residual) > tolerance && iterations < *max_iter) {
+    while (valid && fabs(residual) > tolerance && iterations < search_iter) {
       T candidate = current - residual / derivative;
       if (!std::isfinite(candidate) || candidate <= lower ||
           candidate >= upper) {

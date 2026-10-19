@@ -8,6 +8,21 @@ namespace kintera {
 
 extern std::vector<std::string> species_names;
 extern std::vector<std::string> species_phases;
+extern std::vector<std::string> func1_names;
+
+void check_svp_formulas(NucleationOptions const& op) {
+  if (op == nullptr) return;
+  for (auto const& formula : op->logsvp()) {
+    if (formula.empty() || formula == "null" || formula == "ideal" ||
+        formula == "antoine")
+      continue;
+    for (auto const& name : {formula, formula + "_ddT"}) {
+      TORCH_CHECK(std::find(func1_names.begin(), func1_names.end(), name) !=
+                      func1_names.end(),
+                  "Function ", name, " not registered.");
+    }
+  }
+}
 
 void add_to_vapor_cloud(std::set<std::string>& vapor_set,
                         std::set<std::string>& cloud_set,
@@ -103,6 +118,7 @@ NucleationOptions NucleationOptionsImpl::from_yaml(
     options->svp_params().push_back(params);
   }
 
+  check_svp_formulas(options);
   return options;
 }
 

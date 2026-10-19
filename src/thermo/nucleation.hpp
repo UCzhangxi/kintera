@@ -60,6 +60,10 @@ using NucleationOptions = std::shared_ptr<NucleationOptionsImpl>;
 void add_to_vapor_cloud(std::set<std::string>& vapor_set,
                         std::set<std::string>& cloud_set, NucleationOptions op);
 
+//! Throws "Function <name> not registered." for a named svp formula that is
+//! not in the func table (or lacks its _ddT twin); inline forms are skipped
+void check_svp_formulas(NucleationOptions const& op);
+
 }  // namespace kintera
 
 #undef ADD_ARG

@@ -14,7 +14,9 @@ Every mixture total of this chapter is a sum over species of a concentration tim
 a heat capacity, an internal energy, an enthalpy or an entropy. This section gives those per-species functions.
 Gases and condensates differ in three places: a gas has $c_p = c_v + \mathcal R$ and a condensate $c_p = c_v$; a
 gas's enthalpy adds $z \mathcal R T$ to its internal energy; and a condensate's entropy is not read from data but
-computed from the condition that each condensation reaction is in equilibrium on its saturation curve.
+computed from the condition that each condensation reaction is in equilibrium on its saturation curve. The mixture
+heat capacities are the concentration-weighted sums of these molar ones, per unit volume in J m$^{-3}$ K$^{-1}$
+(@eq-ch03-species-functions-mixture).
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** Molar $c_v$, $c_p$, $u$, $h$, $s$ per species, @eq-ch03-species-functions-u to
@@ -63,6 +65,23 @@ function under the name of the function with `_ddT` appended. For an ideal gas, 
 $c_p = c_v + \mathcal R$; a condensate has $c_p = c_v$. `eval_cp_R`
 ({{< code src/thermo/eval_uhs.cpp eval_cp_R >}}) adds 1 to $c^{\star}_n$ for the gases only, plus a separate
 optional extra function for $c_p$.
+
+**Mixture heat capacities.** The mixture values that the state modules return are sums over all species, gases and
+condensates, of concentration times the molar value:
+
+$$
+\begin{aligned}
+C_V &= \sum_n c_n\, c_{v,n}(T), \\
+C_p &= \sum_n c_n\, c_{p,n}(T),
+\end{aligned}
+$$ {#eq-ch03-species-functions-mixture}
+
+in J m$^{-3}$ K$^{-1}$, since $c_n$ is in mol m$^{-3}$ and $c_{v,n}$, $c_{p,n}$ in J mol$^{-1}$ K$^{-1}$. $C_V$ is the
+`VT->cv` conversion of `ThermoY` (@sec-ch03-thermo-y) and $C_p$ the `TV->cp` conversion of `ThermoX`
+(@sec-ch03-thermo-x). Per mole of mixture, divide by $\sum_n c_n$ (this is the $\bar c_p = \sum_n x_n c_{p,n}$ of the
+adiabat, @sec-ch03-adiabat); per kilogram, divide by the density $\rho = \sum_n c_n \mu_n$ with $\mu_n$ the molar mass.
+Because condensates have $c_{p,n} = c_{v,n}$, $C_p - C_V = \mathcal R \sum_{n < N_{\mathrm g}} c_n$ counts the gases
+only (for $z_n = 1$ and no extra functions).
 
 **Enthalpy.** For a gas the code writes $h_n = u_n + z_n \mathcal R T$, and for a condensate
 $h_m = \mathcal R [u^{\star}_m + c^{\star}_m (T - T_\star)] + \mathcal R\, \zeta_m(T)$:

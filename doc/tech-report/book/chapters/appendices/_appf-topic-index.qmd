@@ -114,6 +114,8 @@
 
 *cuSOLVER*, see **sparse linear solve**.
 
+*Cv and Cp units*, see **heat capacity, per species**.
+
 **`cv_R`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
 *cv_R*, see **heat capacity, per species**.
@@ -307,6 +309,8 @@
 *mixing-ratio diffusion*, see **eddy diffusion operator**.
 
 *mixing-ratio form*, see **eddy diffusion, two-dimensional**.
+
+*mixture heat capacity*, see **heat capacity, per species**.
 
 **moist adiabat**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
 

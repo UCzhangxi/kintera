@@ -206,6 +206,21 @@ sections:
     - installation: [pip install, source build, building kintera]
   sec-ch01-quick-start:
     - quick start: [first run, example, jupiter.yaml]
+  # Chapter 9. The two-dimensional atmosphere solver
+  sec-ch09-state:
+    - two-dimensional atmosphere, state: [atm2d, AtmState2D, column grid]
+  sec-ch09-transport:
+    - eddy diffusion, two-dimensional: [advection, transport operator]
+  sec-ch09-sources:
+    - source terms, atm2d: [chemistry source, photochemistry source]
+  sec-ch09-assembly:
+    - sparse system, atm2d: [implicit operator, block Jacobian]
+  sec-ch09-rosenbrock:
+    - Rosenbrock step: [adaptive time step, error control]
+  sec-ch09-newton:
+    - steady state, Newton: [operator splitting, BDF]
+  sec-ch09-conservation:
+    - atom conservation: [charge balance, pinned species]
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd

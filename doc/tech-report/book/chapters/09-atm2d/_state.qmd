@@ -1,0 +1,33 @@
+## The column state and its configuration (`AtmState2D`, `Atm2DConfig`) {#sec-ch09-state}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: python/atm2d
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+Pending: this scheme is being drafted.
+
+### Derivation
+
+Pending: the derivation is being drafted.
+
+### Numerical method
+
+Pending.
+
+### Code
+
+Pending.
+
+### Tests
+
+Pending.
+
+### Limits
+
+Pending.

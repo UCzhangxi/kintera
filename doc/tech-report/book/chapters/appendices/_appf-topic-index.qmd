@@ -10,11 +10,21 @@
 
 *activity*, see **chemical equilibrium, conditions**.
 
+*adaptive time step*, see **Rosenbrock step**.
+
 *ADD_ARG*, see **options objects, C++**.
+
+*advection*, see **eddy diffusion, two-dimensional**.
 
 *Antoine equation*, see **saturation vapor pressure**.
 
 **Arrhenius rate constant**: Arrhenius rate constants and their temperature bands, @sec-ch06-arrhenius.
+
+*atm2d*, see **two-dimensional atmosphere, state**.
+
+*AtmState2D*, see **two-dimensional atmosphere, state**.
+
+**atom conservation**: Conservation of atoms and charge, and pinned species, @sec-ch09-conservation.
 
 *autoconversion*, see **coagulation**.
 
@@ -28,6 +38,10 @@
 
 *backward Euler*, see **implicit time step**.
 
+*BDF*, see **steady state, Newton**.
+
+*block Jacobian*, see **sparse system, atm2d**.
+
 **bounded Newton step**: The bounded Newton step, @sec-ch10-newton.
 
 *branches*, see **photolysis cross section**.
@@ -38,6 +52,8 @@
 
 **chapter map**: Where each part of kintera is described, @sec-ch01-map.
 
+*charge balance*, see **atom conservation**.
+
 **chemical equilibrium, conditions**: Equilibrium conditions in logarithmic form, with element balance and several phases, @sec-ch05-conditions.
 
 **chemical equilibrium, failures**: Convergence and failure reporting (status, iterations, error), @sec-ch05-diagnostics.
@@ -46,11 +62,15 @@
 
 **chemical equilibrium, options**: Options and the YAML reader, @sec-ch05-options.
 
+*chemistry source*, see **source terms, atm2d**.
+
 *Clausius-Clapeyron*, see **saturation vapor pressure**.
 
 **coagulation**: Coagulation of cloud into precipitation, @sec-ch06-coagulation.
 
 *code map*, see **chapter map**.
+
+*column grid*, see **two-dimensional atmosphere, state**.
 
 **`composition`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
@@ -136,6 +156,8 @@
 
 **eddy diffusion tendency**: The eddy-diffusion tendency of a column, @sec-ch08-tendency.
 
+**eddy diffusion, two-dimensional**: Eddy diffusion and advection on the two-dimensional grid, @sec-ch09-transport.
+
 **effective heat capacity**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
 
 *element balance*, see **chemical equilibrium, conditions**.
@@ -155,6 +177,8 @@
 *equilibrium constant*, see **chemical equilibrium, conditions**.
 
 *EquilibriumOptions*, see **chemical equilibrium, options**.
+
+*error control*, see **Rosenbrock step**.
 
 **evaporation, diffusion form**: Evaporation of condensates by diffusion, @sec-ch06-evaporation.
 
@@ -201,6 +225,8 @@
 ## I {.unnumbered .unlisted}
 
 *ideal gas law*, see **equation of state**.
+
+*implicit operator*, see **sparse system, atm2d**.
 
 **implicit time step**: Linearly implicit time step, @sec-ch06-implicit.
 
@@ -304,7 +330,7 @@
 
 ## O {.unnumbered .unlisted}
 
-*operator splitting*, see **coupling, kinetics**.
+*operator splitting*, see **coupling, kinetics**; **steady state, Newton**.
 
 **options objects, C++**: The C++ options objects and modules, @sec-ch11-options.
 
@@ -326,6 +352,8 @@
 
 *PhotoChem*, see **photolysis reaction rate**.
 
+*photochemistry source*, see **source terms, atm2d**.
+
 **photolysis cross section**: Photolysis cross sections and their branches, @sec-ch07-cross-sections.
 
 **photolysis rate constant**: Photolysis rate constants, @sec-ch07-rate.
@@ -333,6 +361,8 @@
 **photolysis reaction rate**: Photolysis reaction rates and their Jacobian, @sec-ch07-photochem.
 
 *physical constants*, see **units**.
+
+*pinned species*, see **atom conservation**.
 
 *pip install*, see **installation**.
 
@@ -396,6 +426,8 @@
 
 *Rosenbrock*, see **implicit time step**.
 
+**Rosenbrock step**: Rosenbrock time steps with adaptive step size, @sec-ch09-rosenbrock.
+
 *run_hydro*, see **coupling, kinetics**.
 
 ## S {.unnumbered .unlisted}
@@ -428,9 +460,13 @@
 
 *source directories*, see **chapter map**.
 
+**source terms, atm2d**: Chemical and photochemical source terms, @sec-ch09-sources.
+
 **sparse linear solve**: The sparse linear solve on CUDA, @sec-ch10-sparse.
 
 **sparse solver, GPU**: CUDA sparse linear solver, @sec-ch12-sparse-solver.
+
+**sparse system, atm2d**: The implicit operator and its sparse system, @sec-ch09-assembly.
 
 **`species`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
@@ -443,6 +479,8 @@
 *standard pressure*, see **chemical equilibrium, options**.
 
 *status code*, see **chemical equilibrium, failures**.
+
+**steady state, Newton**: Newton solvers for steady states, @sec-ch09-newton.
 
 **stoichiometric matrix**: Reaction rates by mass action, @sec-ch06-mass-action.
 
@@ -502,9 +540,13 @@
 
 **`tol`**: The sparse linear solve on CUDA, @sec-ch10-sparse.
 
+*transport operator*, see **eddy diffusion, two-dimensional**.
+
 **`Tref`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
 *Troe*, see **fall-off rate constant**.
+
+**two-dimensional atmosphere, state**: The column state and its configuration, @sec-ch09-state.
 
 **`type`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 

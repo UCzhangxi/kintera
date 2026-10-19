@@ -65,7 +65,11 @@ is restored on every exit, including an exception from the solver.
 `operator_split_step` ({{< code python/atm2d/newton/operator_split.py operator_split_step >}}) first solves the
 transport-only backward-Euler system, then hands the result to the chemistry step chosen by `KINTERA_CHEM_SOLVER`:
 `chemistry_only_newton_step`, or `chemistry_only_bdf_step`, which integrates $\mathrm d c/\mathrm d t = S(c)$ over
-$\Delta t$ with SciPy's BDF, LSODA or Radau and the analytic block-diagonal Jacobian, on CPU only.
+$\Delta t$ with SciPy's BDF, LSODA or Radau and the analytic block-diagonal Jacobian, on CPU only. Before the chemistry
+step it assigns the post-transport concentration to `state.concentration`; the chemistry step restores its own entry
+state, which is that post-transport value, so on return the caller's state holds the post-transport concentration
+(verified by reading and by run `[R6]`). `operator_split_advance` saves and restores the original state around its
+sub-steps.
 
 The Newton figure is not provided: the figure module is not written yet.
 
@@ -92,8 +96,10 @@ Setup checks a user can hit: an unknown `KINTERA_CHEM_SOLVER`; any error of the 
 
 : Tests of the Newton solvers. {#tbl-ch09-newton-tests}
 
-No test at the pin covers the chemistry-only Newton step, the SciPy integrators or the operator-split step: missing
-evidence.
+No kintera test at the pin covers the chemistry-only Newton step, the SciPy integrators or the operator-split step.
+Run `[R6]`[^ch09-r6] (pinned `python/atm2d` source, torch 2.10.0, CPU, float64): one `operator_split_step` on a
+three-layer column with a zero-rate source returns with `state.concentration` changed and equal to the post-transport
+result.
 
 ### Limits
 
@@ -102,3 +108,10 @@ steps is reported as converged; its floors decide which species count. Clipping 
 every solve, so the iterates are not those of a pure Newton method, and the cap ($c_n \le \sum_m c^{0}_m$) holds only
 for species that cannot exceed the cell total. The SciPy path is CPU-only. Operator splitting is first order in
 $\Delta t$ by its construction; its splitting error is not measured.
+
+`operator_split_step` documents that it does not modify `state.concentration`, but it leaves the post-transport
+concentration there (run `[R6]`). A caller that rejects the step and retries, as `adaptive_advance` does
+(@sec-ch09-rosenbrock), retries from the transported state rather than the entry state unless it restores the state
+itself; `operator_split_advance` does restore it.
+
+[^ch09-r6]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, line `[R6]`.

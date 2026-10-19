@@ -9,6 +9,12 @@ environment variable KINTERA_REPO); only torch, numpy and scipy are needed, no c
 [R1] Neumann boundary rows: the derivative a row imposes, bottom and top.
 [R2] adaptive_advance: the largest accepted step after one rejection.
 [R3] rosenbrock2_step on dc/dt = -k c: error at two step sizes and the observed order.
+[R4] pydisort layer order as compute_actinic_flux_disort calls it (needs pydisort; skipped if absent).
+[R5] project_atomic_budget: atoms left above the budget when the hog atoms total less than 1.
+[R6] operator_split_step: whether the caller's state.concentration is changed on return.
+[R7] pins as Dirichlet rows: the pinned value after a backward-Euler solve.
+[R8] molecular diffusion, one species in an isothermal column (CGS): the transport tendency of the
+     hydrostatic profile c = exp(-z/H) in the c_diffusion, mr_diffusion and mr_exp forms.
 """
 import math
 import os
@@ -92,8 +98,90 @@ def r3_ros2_order():
     return errs
 
 
+def r4_disort_order():
+    try:
+        import pydisort
+    except ImportError:
+        print("[R4] SKIPPED: pydisort not installed")
+        return None
+    nlyr = 4
+    op = pydisort.DisortOptions().flags("onlyfl,lamber")     # the options compute_actinic_flux_disort sets
+    op.ds().nlyr = nlyr
+    op.ds().nstr = 4
+    op.ds().nmom = 4
+    op.ds().nphase = 1
+    op.nwave(1).ncol(1)
+    ds = pydisort.Disort(op)
+    prop = torch.zeros((1, 1, nlyr, 2))
+    prop[..., 0, 0] = 5.0                  # all optical depth in index 0, atm2d's bottom cell (x1 increasing)
+    ds.forward(prop, umu0=torch.ones(1), phi0=torch.zeros(1), fbeam=torch.ones(1, 1), albedo=torch.zeros(1, 1))
+    u = ds.gather_flx()[..., pydisort.kIUAVG].flatten().tolist()
+    print(f"[R4] pydisort {pydisort.__version__}: optical depth 5 in index 0 only; mean intensity at levels 0..{nlyr}: "
+          + ", ".join(f"{v:.3e}" for v in u))
+    return u
+
+
+def r5_budget_floor():
+    from atm2d.conservation.atomic import project_atomic_budget
+    c = torch.tensor([[[0.30, 0.05, 0.05]]])          # three species, one cell, all with one atom of X
+    counts = {"X": torch.tensor([1.0, 1.0, 1.0])}
+    budget = {"X": torch.tensor([[[0.20]]])}
+    out = project_atomic_budget(c, atom_counts=counts, fixed_mask=torch.zeros(3, dtype=torch.bool), budget=budget)
+    print(f"[R5] atoms before {float(c.sum()):.3f}, budget 0.200, after {float(out.sum()):.3f} "
+          f"(hog atoms 0.300 < 1, so the trim is scaled by 0.300)")
+    return out
+
+
+def r6_split_state():
+    state = column(3, torch.tensor([[[1.0], [0.0], [0.0]]]))
+    entry = state.concentration.clone()
+    src = [IndexedFirstOrderSource(reactant=0, products=[], rate=0.0)]
+    from atm2d.newton import operator_split_step
+    res = operator_split_step(state, 1.0, kzz=torch.ones(1, 3), source_terms=src, transport_form="c_diffusion")
+    changed = not torch.equal(state.concentration, entry)
+    same_as_result = torch.allclose(state.concentration, res.concentration)
+    print(f"[R6] state changed on return: {changed}; equals the post-transport result: {same_as_result}")
+    return changed
+
+
+def r7_pins():
+    from atm2d.pins import BoundaryPinSpec, build_pin_mask, apply_pin_mask_as_dirichlet_rows
+    state = column(3, torch.tensor([[[1.0], [2.0], [3.0]]]))
+    system, rhs = atm2d.build_implicit_step_system(state, torch.ones(1, 3), 1.0, transport_form="c_diffusion")
+    mask, values = build_pin_mask(state, [BoundaryPinSpec([0], [0], torch.full((1, 3, 1), 7.0))])
+    system, rhs = apply_pin_mask_as_dirichlet_rows(system, rhs, mask, values)
+    c = atm2d.solve_sparse_system(system, rhs)
+    print(f"[R7] pinned bottom cell after the solve: {float(c[0, 0, 0]):.6f} (pin 7)")
+    return c
+
+
+def r8_molecular():
+    nlyr, temp, mu, g, rgas = 10, 200.0, 28.0, 980.665, 8.31446261815324e7    # K, g/mol, cm/s^2, erg/mol/K
+    hscale = rgas * temp / (mu * g)                                            # cm
+    z = torch.linspace(0.0, 10.0e5, nlyr + 1)                                  # cm
+    zc = 0.5 * (z[1:] + z[:-1])
+    c = torch.exp(-zc / hscale).view(1, nlyr, 1)
+    state = atm2d.AtmState2D(x1f=z, x2f=torch.tensor([0.0, 1.0]), temperature=torch.full((1, nlyr), temp),
+                             pressure=torch.full((1, nlyr), 1.0e6), concentration=c, gravity=g)
+    dmol = torch.full((1, nlyr, 1, 1), 1.0e5)                                  # cm^2/s
+    kzz = torch.zeros(1, nlyr)
+    density = c[..., 0]
+    for form in ("c_diffusion", "mr_diffusion", "mr_exp"):
+        op = atm2d.build_transport_matrix(state, kzz, binary_diffusion=dmol, molecular_weights=torch.tensor([mu]),
+                                          density=density, form=form)
+        tend = op.matvec(c)[0, 1:-1, 0]                                        # interior cells
+        scale = (1.0e5 / hscale ** 2) * c[0, 1:-1, 0]                          # D c / H^2, the size of each term
+        print(f"[R8] H = {hscale:.4e} cm; form {form}: max |tendency| / (D c / H^2) over interior cells = "
+              f"{float((tend.abs() / scale).max()):.3e}")
+
+
 if __name__ == "__main__":
     print(f"torch {torch.__version__}; atm2d from $KINTERA_REPO/python at the pin")
     r1_neumann()
     r2_ceiling()
     r3_ros2_order()
+    r4_disort_order()
+    r5_budget_floor()
+    r6_split_state()
+    r7_pins()
+    r8_molecular()

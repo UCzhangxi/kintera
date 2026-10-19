@@ -49,7 +49,10 @@ F_{i+1/2} &= s_n K_{zz,i+1/2}\, \frac{c_{i+1} - c_i}{\delta x_{1,i+1/2}} , \\
 \end{aligned}
 $$ {#eq-ch09-transport-flux}
 
-The face diffusivity is the arithmetic mean of the two cells (the boundary faces take the edge cell's value).
+The face diffusivity of an interior face is the arithmetic mean of the two cells. The interpolation also fills the two
+domain-edge faces with the edge cell's value, but the assembly uses interior faces only (`kzz_x1f[:, 1:-1]`,
+`kyy_x2f[1:-1, :]`), so no diffusive flux crosses the domain boundary: the operator is zero-flux at every edge unless
+a boundary row (below) or a boundary source (@sec-ch09-sources) is added (verified by reading).
 @eq-ch09-transport-flux is assembled face by face in `_add_two_cell_block`
 ({{< code python/atm2d/transport.py _add_two_cell_block >}}): a face adds $+F/\Delta x_{1,i}$ to cell $i$ and
 $-F/\Delta x_{1,i+1}$ to cell $i+1$, so $\sum_i \Delta x_{1,i}\, \mathrm d c_i / \mathrm d t$ telescopes to the
@@ -59,17 +62,19 @@ boundary fluxes and the interior conserves the column content exactly. The horiz
 
 $$
 F_{i+1/2} = s_n K_{zz,i+1/2}\, n_{i+1/2}\, \frac{c_{i+1}/n_{i+1} - c_i/n_i}{\delta x_{1,i+1/2}} ,
-\qquad n_{i+1/2} = \tfrac12\left(n_i + n_{i+1}\right),
 $$ {#eq-ch09-transport-mr}
+
+with the face density $n_{i+1/2} = \tfrac12 (n_i + n_{i+1})$,
 
 assembled in `_assemble_vertical_scalar_diffusion`
 ({{< code python/atm2d/transport.py _assemble_vertical_scalar_diffusion >}}) by scaling the two column entries by
 $n_{i+1/2}/n_i$ and $n_{i+1/2}/n_{i+1}$. For $c = x\, n$ with a uniform mixing ratio $x$ the flux vanishes, which is the
 property the form is chosen for. A face that touches a cell with $n = 0$ carries no flux.
 
-Molecular diffusion adds a full species-by-species block per face with a gravitational-separation term proportional
+Molecular diffusion and the exponential schemes are derived in @sec-ch09-molecular. In brief, molecular diffusion
+adds a full species-by-species block per face with a gravitational-separation term proportional
 to $g / (\mathcal R T)$ times molecular-weight differences, and the `mr_exp`/`mr_hybrid` forms use an upwinded
-exponential differencing of combined eddy and molecular diffusion. Their derivations are not written yet.
+exponential differencing of combined eddy and molecular diffusion.
 
 ### Numerical method
 
@@ -134,8 +139,14 @@ agree; on the left and bottom sides the sign is reversed. A zero-gradient condit
 left or bottom Neumann row. Whether this is a documentation error or a code error is for the code owners to decide.
 
 The spatial order of the concentration and mixing-ratio forms is second order on a uniform grid by the centred
-differences; it is not measured, and the non-uniform-grid order is a derivation still to write (TODO). The `mr_exp` and `mr_hybrid`
-derivations, and the molecular-diffusion derivation, are TODO.
+differences; it is not measured, and the non-uniform-grid order is a derivation still to write (TODO).
+
+The horizontal and cross terms (`kyy`, `kzy`, `kyz`) and the boundary rows exist only in `build_transport_matrix` and
+`build_implicit_operator`. None of the step drivers, `rosenbrock2_step`, `newton_implicit_step`, `operator_split_step`
+and `chemistry_only_newton_step`, accepts them: they build vertical transport only, and `rosenbrock2_step` passes
+`boundary_conditions=None` explicitly (verified by reading their signatures). A time-dependent two-dimensional run
+with horizontal mixing or boundary rows therefore needs a caller-written step; the Newton drivers can add boundary
+rows through their `system_postprocess` hook (@sec-ch09-newton).
 
 [^ch09-r1]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, line `[R1]`; run with `KINTERA_REPO`
 set to a kintera checkout at the pin.

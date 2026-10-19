@@ -12,9 +12,11 @@ reviewer:
 
 Chemistry enters the two-dimensional solver as source terms: each term gives, in every cell, a tendency
 $S(c)$ and its Jacobian $\partial S / \partial c$. The implicit steps of @sec-ch09-rosenbrock and @sec-ch09-newton
-only ever need this pair. Sources come from three places: kintera's kinetics and photochemistry modules
-(@sec-ch06, @sec-ch07), whose reaction Jacobians are mapped to species; a set of simple built-in sources (first-order
-loss, mass action, reversible exchange, boundary fluxes); and any user object that follows the same protocol.
+only ever need this pair, and they take it only from `source_terms`: the built-in sources (first-order loss, mass
+action, reversible exchange, boundary fluxes) or any user object that follows the same protocol. kintera's kinetics and
+photochemistry modules (@sec-ch06, @sec-ch07) enter differently: `build_implicit_operator` adds their Jacobian blocks to
+the matrix, but no step driver accepts them and no atm2d source class wraps them, so on their own they contribute no
+tendency to any step.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** Per-cell $S$ and $\partial S/\partial c$, summed over terms, @eq-ch09-sources-sum.
@@ -56,7 +58,11 @@ $$
 $$ {#eq-ch09-sources-stoich}
 
 computed in `build_chemistry_jacobian` ({{< code python/atm2d/chemistry.py build_chemistry_jacobian >}}) from
-`kinetics.forward` and `kinetics.jacobian`, and likewise for photochemistry in `build_photochemistry_jacobian`.
+`kinetics.forward` and `kinetics.jacobian`, and likewise for photochemistry in `build_photochemistry_jacobian`. Both
+return the Jacobian blocks only; the rates that `kinetics.forward` computes are discarded, and
+`build_implicit_operator` is their only caller in `python/atm2d` (verified by reading). To drive a step with a kintera
+network, a caller must wrap it as a `LocalSourceTerm` whose `linearize` returns both the species tendency
+$\sum_r \nu_{nr} w_r$ and @eq-ch09-sources-stoich.
 
 The built-in mass-action source of reactants $a$ with coefficients $p_a$ has rate $w = k \prod_a c_a^{p_a}$; it adds
 $+q_b w$ to each product $b$ and $-p_a w$ to each reactant, and its Jacobian column for reactant $m$ is
@@ -72,10 +78,24 @@ reactant concentrations are clamped at zero before the rate and its derivatives 
 is given, the Jacobian column of the electron is added to every cation column (@sec-ch09-conservation).
 
 The actinic flux that photochemistry needs can be computed by `compute_actinic_flux_disort`
-({{< code python/atm2d/radiation.py compute_actinic_flux_disort >}}): the total photoabsorption cross section of each
-species (branch 0 of each photolysis reaction) times its number density gives the extinction, times the layer
-thickness gives the optical depth; pydisort returns the mean intensity at levels, which is averaged to cell centres and
-multiplied by $4\pi$.
+({{< code python/atm2d/radiation.py compute_actinic_flux_disort >}}). Caller contract, step by step:
+
+1. Inputs: a `PhotoChem` module, the state, the top-of-atmosphere spectral flux on the photolysis wavelength grid
+   (`top_flux`, per column or shared), the cosine of the solar zenith angle `mu0`, the surface albedo, and
+   `concentration_unit` (`mol_m3`, the default, or `molecules_cm3`).
+2. Extinction: the total photoabsorption cross section of each species (branch 0 of each photolysis reaction) times its
+   number density in cm$^{-3}$, summed over species.
+3. Optical depth: extinction times the layer thickness `dx1f`, in the state's own length unit, so the cross sections,
+   the number density and the thickness must share one length unit.
+4. Radiative transfer: pydisort in flux-only mode with `nstreams` streams (4) returns the mean intensity at the
+   `nlyr + 1` levels, in the units of `top_flux`.
+5. Output: the mean intensity averaged to cell centres, times `actinic_scale` ($4\pi$), in layer order as passed.
+6. Update order: recompute the flux whenever the absorbers change enough to matter, before the photochemistry Jacobian;
+   atm2d does not do this for the caller.
+
+pydisort numbers its layers from the top of the atmosphere, and atm2d passes its layers in state order, with index 0 the
+bottom cell, without reversing them (verified by reading, and by run `[R4]`). The beam therefore enters through the
+bottom cell (see Limits).
 
 The sources figure is not provided: the figure module is not written yet.
 
@@ -109,6 +129,7 @@ Setup checks a user can hit: a term whose tendency or Jacobian has the wrong sha
 | `test_atm2d.py` (`test_mass_action_jacobian_keeps_first_order_zero_reactant_derivative`) | the Jacobian of a first-order term stays $k$ at zero concentration | default | PyTorch defaults |
 | `test_atm2d.py` (`test_total_cross_section_uses_absorption_branch_only`) | only branch 0 enters the extinction | exact | equality |
 | `test_atm2d.py` (`test_actinic_flux_from_disort_supports_2d_state`) | the actinic flux runs on a 2-D state | shape | construction |
+| run `[R4]` | pydisort's layer order under the call atm2d makes | exact | levels compared |
 
 : Tests of the source terms. {#tbl-ch09-sources-tests}
 
@@ -122,3 +143,13 @@ as zero in the rate but is not itself corrected here (the steps of @sec-ch09-ros
 afterwards). The optical depth multiplies a number density in cm$^{-3}$ by the layer thickness in the state's own
 length unit (verified by reading `compute_actinic_flux_disort`); the caller must make the cross sections and the
 thickness consistent, and that a mismatch gives a wrong flux silently is a hypothesis, not run.
+
+Layer orientation: with all optical depth in index 0, pydisort 1.8.13 returns mean intensities
+$7.958 \times 10^{-2}$ at level 0 and $5.362 \times 10^{-4}$ at levels 1 to 4 (run `[R4]`[^ch09-r4]), so index 0 is
+the top of its column. atm2d's index 0 is the bottom cell (the lower boundary sources and the `bottom` side use index
+0), and `compute_actinic_flux_disort` neither flips the optical depths nor the returned levels. Sunlight therefore
+enters the atm2d column from its lowest cell unless the caller orders $x_1$ from the top. The test of the function
+checks shapes only. This is a code behaviour to fix or to document as a caller obligation.
+
+[^ch09-r4]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, line `[R4]`; this run calls pydisort
+with the options `compute_actinic_flux_disort` sets, not the full function, which needs a `PhotoChem` module.

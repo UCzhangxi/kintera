@@ -211,6 +211,8 @@ sections:
     - two-dimensional atmosphere, state: [atm2d, AtmState2D, column grid]
   sec-ch09-transport:
     - eddy diffusion, two-dimensional: [molecular diffusion, transport operator, mixing-ratio form]
+  sec-ch09-molecular:
+    - binary diffusion: [molecular diffusion, gravitational separation, mr_exp, mr_hybrid]
   sec-ch09-sources:
     - source terms, atm2d: [chemistry source, photochemistry source]
   sec-ch09-assembly:

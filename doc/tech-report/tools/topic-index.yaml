@@ -46,11 +46,11 @@ sections:
     - reaction rate, mass action: [law of mass action]
     - stoichiometric matrix
   sec-ch06-arrhenius:
-    - Arrhenius rate constant: [Ea_R, temperature bands]
+    - Arrhenius rate constant: [Ea_R, temperature bands, adding a rate law, new rate-constant form]
   sec-ch06-pressure-switch:
     - pressure switch: [p-threshold]
   sec-ch06-falloff:
-    - fall-off rate constant: [three-body reaction, Troe, Lindemann, SRI]
+    - fall-off rate constant: [three-body reaction, Troe, Lindemann, SRI, third body, collision efficiency, effective third-body concentration]
   sec-ch06-evaporation:
     - evaporation, diffusion form: [saturation deficit]
   sec-ch06-kessler:

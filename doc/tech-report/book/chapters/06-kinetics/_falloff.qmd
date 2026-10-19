@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/kinetics/three_body.hpp, src/kinetics/lindemann_falloff.hpp, src/kinetics/troe_falloff.hpp, src/kinetics/sri_falloff.hpp, src/kinetics/kb_falloff.hpp
+sources: src/kinetics/three_body.hpp, src/kinetics/three_body.cpp, src/kinetics/lindemann_falloff.cpp, src/kinetics/troe_falloff.cpp, src/kinetics/sri_falloff.cpp, src/kinetics/kb_falloff.cpp, src/kinetics/kinetics.cpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,55 +10,146 @@ reviewer:
 
 ### Summary
 
-Pressure-dependent reactions need a rate constant that depends on the concentration of a third body. kintera
-provides the three-body form and the Lindemann, Troe, SRI and KB fall-off forms, each as its own evaluator. This
-section is a skeleton: only the code map is filled in.
+Some reactions need a collision partner that carries away energy without being changed: a third body, written `M`.
+Its effect enters through an effective third-body concentration, the sum of all concentrations weighted by
+species-specific collision efficiencies. At low pressure the rate grows linearly with that concentration; at high
+pressure it saturates. The three-body form keeps only the low-pressure limit; the fall-off forms (Lindemann, Troe, SRI,
+and the KB form read from KINETICS-base inputs) blend the two limits.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Rate constants that depend on the third-body concentration; equations not drafted.
+**Purpose.** $[M]_{\mathrm{eff}}$, @eq-ch06-falloff-meff; three-body $k_0 [M]_{\mathrm{eff}}$; fall-off @eq-ch06-falloff-blend.
 
-**Data.** $T$ [K], $c$ [$\mathrm{mol\,m^{-3}}$], third-body efficiencies.
+**Data.** $T$ [K], $c_n$ [mol m$^{-3}$]; efficiencies [-] (default 1); YAML $A$ in molecule, cm, s units.
 
-**Placement.** Evaluators four to eight of `Kinetics.forward`, registered only when they have reactions.
+**Placement.** Evaluators four to eight of `Kinetics.forward`, after Arrhenius, coagulation and evaporation.
 
-**Activation.** The reaction `type` keys of each form; KB fall-off only through `from_kinetics_base`.
+**Activation.** `type: three-body`; `type: falloff` (Lindemann), with a `Troe` or an `SRI` block; KB only from KINETICS-base.
 
-**Guarantee / limits.** Not drafted.
+**Guarantee / limits.** Pointwise closed forms; Troe and SRI broadening differ from the published forms (Limits).
 
 **Evidence.** See the Tests layer.
 :::
 
+Local symbols: $\varepsilon_{jn}$, collision efficiency of species $n$ in reaction $j$ [-]; $[M]_{\mathrm{eff}}$,
+effective third-body concentration [mol m$^{-3}$]; $k_0$, low-pressure rate constant (units of a reaction one order
+higher than written, without `M`); $k_\infty$, high-pressure rate constant; $P_r$, reduced pressure [-]; $F$, broadening
+factor [-]; $F_{\mathrm{cent}}$, its centre value [-]. $c_n$ is the concentration of species $n$ (@sec-ch06-mass-action).
+
 ### Derivation
 
-Not drafted: the derivations of the five forms are still to be written.
+**Third body.** The effective third-body concentration of reaction $j$ is
+
+$$
+[M]_{\mathrm{eff},j} = \sum_n \varepsilon_{jn}\, c_n ,
+$$ {#eq-ch06-falloff-meff}
+
+with $\varepsilon_{jn}$ from the reaction's `efficiencies` map and 1 for every species not listed, gases and condensates
+alike. A three-body reaction `A + B + M => AB + M` has rate constant $k = k_0(T)\, [M]_{\mathrm{eff}}$, with
+$k_0 = A (T/T_{\mathrm{ref}})^{b} \exp(-E_a/T)$ as in @sec-ch06-arrhenius and $T_{\mathrm{ref}}$ = 300 K; the mass-action
+product of @sec-ch06-mass-action then supplies $c_A c_B$. `M` (or `(+M)`) is not a species: species registration
+skips it, and it has no column of the stoichiometry matrix. @eq-ch06-falloff-meff is computed in `ThreeBodyImpl::forward`
+({{< code src/kinetics/three_body.cpp ThreeBodyImpl::forward >}}) as the product of the concentrations with an
+efficiency matrix built in `reset`.
+
+**Fall-off.** With the reduced pressure $P_r = k_0 [M]_{\mathrm{eff}} / k_\infty$, the fall-off rate constant is the
+Lindemann expression times a broadening factor:
+
+$$
+k = \frac{k_0 [M]_{\mathrm{eff}}}{1 + P_r}\, F .
+$$ {#eq-ch06-falloff-blend}
+
+For $P_r \to 0$ it tends to $k_0 [M]_{\mathrm{eff}} F$ and for $P_r \to \infty$ to $k_\infty F$. Lindemann has $F = 1$
+(`LindemannFalloffImpl::forward`, {{< code src/kinetics/lindemann_falloff.cpp LindemannFalloffImpl::forward >}}).
+Troe and SRI both use
+
+$$
+\begin{aligned}
+F &= F_{\mathrm{cent}}^{\,1/\left(1 + (\log_{10} P_r)^2\right)}, \\
+F^{\mathrm{Troe}}_{\mathrm{cent}} &= (1 - a)\, e^{-T/T_3} + a\, e^{-T/T_1} + e^{-T_2/T}, \\
+F^{\mathrm{SRI}}_{\mathrm{cent}} &= a\, e^{-b/T} + e^{-T/c} + d\, e^{-e/T},
+\end{aligned}
+$$ {#eq-ch06-falloff-broadening}
+
+where the last Troe term is present only when `T2` is non-zero and the last SRI term only when `E` is non-zero
+(`compute_falloff_factor` in {{< code src/kinetics/troe_falloff.cpp TroeFalloffImpl::compute_falloff_factor >}} and
+{{< code src/kinetics/sri_falloff.cpp SRIFalloffImpl::compute_falloff_factor >}}). $P_r$ is clamped to
+$[10^{-300}, 10^{300}]$ and $F_{\mathrm{cent}}$ likewise. The KB form of KINETICS-base inputs is
+$k = k_{\mathrm{low}}\, F / (1 + P_r)$ with $P_r = k_{\mathrm{low}}\, n / k_{\mathrm{high}}$, $n$ the total number
+density (an explicit `number_density` field, else $\sum_n c_n$), $F = F_c^{1/(1 + (\log_{10} P_r)^2)}$ with one
+constant $F_c$, and $k = 0$ where either limit is not positive (`KBFalloffImpl::forward`,
+{{< code src/kinetics/kb_falloff.cpp KBFalloffImpl::forward >}}).
 
 ### Numerical method
 
-Not drafted.
+All forms are pointwise in every cell. `Kinetics.forward` passes the concentrations expanded to one copy per reaction
+with gradient tracking on, so $\partial k/\partial c$ (and $\partial k/\partial T$ with `evolve_temperature`) comes from
+one backward pass through these formulas (@sec-ch06-jacobian); the third-body dependence of $k$ therefore enters the
+Jacobian without a hand-written derivative.
+
+The YAML keys: `rate-constant` (three-body) or `low-P-rate-constant` and `high-P-rate-constant` (fall-off), each with
+`A`, `b`, and `Ea_R` or `Ea` with a unit (`cal`, `kJ`, `J`); `efficiencies` (species: value); `Troe` with `A`, `T3`,
+`T1` and optional `T2`; `SRI` with `A`, `B`, `C` and optional `D`, `E`. $A$ is converted from molecule, cm, s units with
+the reaction order counting `M` once (once more for $k_0$ of a fall-off reaction). A missing `Ea_R` and `Ea` gives
+$E_a = 0$ here, unlike the 1 K default of @sec-ch06-arrhenius.
+
+The fall-off figure is not provided: the figure module is not written yet.
 
 ### Code
 
 | what | code link | symbol | switch |
 |---|---|---|---|
-| three-body | {{< code src/kinetics/three_body.hpp ThreeBodyImpl >}} | `ThreeBodyImpl` | three-body type |
-| Lindemann | {{< code src/kinetics/lindemann_falloff.hpp LindemannFalloffImpl >}} | `LindemannFalloffImpl` | Lindemann type |
-| Troe | {{< code src/kinetics/troe_falloff.hpp TroeFalloffImpl >}} | `TroeFalloffImpl` | Troe type |
-| SRI | {{< code src/kinetics/sri_falloff.hpp SRIFalloffImpl >}} | `SRIFalloffImpl` | SRI type |
-| KB | {{< code src/kinetics/kb_falloff.hpp KBFalloffImpl >}} | `KBFalloffImpl` | `from_kinetics_base` |
+| three-body reader | {{< code src/kinetics/three_body.cpp ThreeBodyOptionsImpl::from_yaml >}} | `from_yaml` | `type: three-body` |
+| efficiency matrix | {{< code src/kinetics/three_body.cpp ThreeBodyImpl::reset >}} | `reset` | `efficiencies` |
+| three-body rate | {{< code src/kinetics/three_body.cpp ThreeBodyImpl::forward >}} | `forward` | always |
+| Lindemann | {{< code src/kinetics/lindemann_falloff.cpp LindemannFalloffImpl::forward >}} | `forward` | `type: falloff` |
+| Troe | {{< code src/kinetics/troe_falloff.cpp TroeFalloffImpl::forward >}} | `forward` | `Troe` block |
+| SRI | {{< code src/kinetics/sri_falloff.cpp SRIFalloffImpl::forward >}} | `forward` | `SRI` block |
+| KB | {{< code src/kinetics/kb_falloff.cpp KBFalloffImpl::forward >}} | `forward` | `from_kinetics_base` |
 
 : Code map of three-body and fall-off rate constants. {#tbl-ch06-falloff-code}
 
-The exact YAML `type` strings of each form are still to be read from the readers.
+Setup checks a user can hit: a reaction without `equation`[^rg-7e638d7883ed]; a three-body reaction without `rate-constant`; a fall-off
+reaction without `low-P-rate-constant` or `high-P-rate-constant`; a species in an equation or in `efficiencies` that is
+not in the species list.
 
 ### Tests
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_falloff` | forward and Jacobian of each form | missing evidence | not yet read |
+| `test_falloff.release` (`FalloffEndToEndTest.forward_three_body_distinguishes_species_and_reaction_axes`) | three-body rate equals $k_0 [M]_{\mathrm{eff}}$, with and without the per-reaction axis | `allclose` defaults | PyTorch defaults |
+| `test_falloff.release` (`FalloffEndToEndTest.forward_three_body`, `forward_falloff_lindemann`, `forward_falloff_troe`, `forward_falloff_sri`) | the rate is non-zero | qualitative | none |
+| `test_falloff.release` (`FalloffEndToEndTest.species_registration_from_efficiencies`) | species named only in `efficiencies` are registered | exact | equality |
+| `test_falloff.release` (`FalloffEndToEndTest.jacobian_three_body_concentration`, `jacobian_falloff_lindemann`) | Jacobian entries through the third body are non-zero | $> 10^{-10}$ | qualitative |
 | `test_rate_constant_ddC.py` | $\partial k/\partial c$ is per reaction | $10^{-6}$ rel. | finite difference |
 
 : Tests of three-body and fall-off rate constants. {#tbl-ch06-falloff-tests}
 
+The test names and assertions are read from `tests/test_falloff.cpp` at the pin. Only the three-body form is compared
+with its closed form; the Lindemann, Troe and SRI tests assert only that the rate is non-zero, so
+@eq-ch06-falloff-blend and @eq-ch06-falloff-broadening have no reference-value test (missing evidence). The test
+`real_chemistry_sample_reaction_full` was not read for this section.
+
 ### Limits
 
-Not drafted.
+The Troe broadening of @eq-ch06-falloff-broadening is
+$\log F = \log F_{\mathrm{cent}} / (1 + (\log_{10} P_r)^2)$. The published Troe form (Gilbert, Luther and Troe 1983,
+[doi:10.1002/bbpc.19830870218](https://doi.org/10.1002/bbpc.19830870218)) has
+$\log F = \log F_{\mathrm{cent}} / \left(1 + \left[(\log_{10} P_r + c)/(N - d(\log_{10} P_r + c))\right]^2\right)$ with
+$c = -0.4 - 0.67 \log_{10} F_{\mathrm{cent}}$, $N = 0.75 - 1.27 \log_{10} F_{\mathrm{cent}}$, $d = 0.14$; the code's
+form is the case $c = 0$, $N = 1$, $d = 0$ (verified by reading). The SRI form of Stewart, Larson and Golden (1989,
+[doi:10.1016/0010-2180(89)90084-9](https://doi.org/10.1016/0010-2180(89)90084-9)) is
+$F = \left[a e^{-b/T} + e^{-T/c}\right]^{X}$ with $X = 1/(1 + (\log_{10} P_r)^2)$, which the code reproduces with three
+parameters; with `D` and `E` given, the code adds $d\, e^{-e/T}$ inside the bracket. Mechanism files whose five-parameter
+SRI entries mean $d \left[\ldots\right]^X T^{e}$ would be evaluated differently; that such inputs are misread is a
+hypothesis, not run. No test checks either broadening against reference values.
+
+The efficiency matrix has one column per registry species in card order (@sec-ch02-species-registry), and `forward`
+contracts it with the first columns of the concentration vector, which `Kinetics` orders gases first, then
+condensates. When the kinetics species are not the first registry species in the same order, an efficiency is applied
+to a different species (verified by reading `reset` and `forward`; the size of the effect is not measured, a
+hypothesis). Unlisted species, condensates included, count with efficiency 1. The `Ea` string uses the rounded
+constants 1.987 cal mol$^{-1}$ K$^{-1}$ and 8.314 J mol$^{-1}$ K$^{-1}$.
+
+<!-- reader glossary notes -->
+[^rg-7e638d7883ed]: equation — reaction string; => irreversible, <=> or = reversible; required; parsed by `Reaction`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L64-L68)
+<!-- end reader glossary notes -->

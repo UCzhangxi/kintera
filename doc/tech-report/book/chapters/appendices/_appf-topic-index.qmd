@@ -14,6 +14,8 @@
 
 *ADD_ARG*, see **options objects, C++**.
 
+*adding a rate law*, see **Arrhenius rate constant**.
+
 *adding a species*, see **species registry**.
 
 *Antoine equation*, see **saturation vapor pressure**.
@@ -71,6 +73,8 @@
 **coagulation**: Coagulation of cloud into precipitation, @sec-ch06-coagulation.
 
 *code map*, see **chapter map**.
+
+*collision efficiency*, see **fall-off rate constant**.
 
 *column grid*, see **two-dimensional atmosphere, state**.
 
@@ -163,6 +167,8 @@
 **eddy diffusion, two-dimensional**: Eddy and molecular diffusion on the two-dimensional grid, @sec-ch09-transport.
 
 **effective heat capacity**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
+
+*effective third-body concentration*, see **fall-off rate constant**.
 
 *element balance*, see **chemical equilibrium, conditions**.
 
@@ -339,6 +345,8 @@
 *nasa9.dat*, see **NASA-9 polynomials**.
 
 *Nasa9LogK*, see **NASA-9 polynomials**.
+
+*new rate-constant form*, see **Arrhenius rate constant**.
 
 *new vapor pressure law*, see **saturation vapor pressure**.
 
@@ -557,6 +565,8 @@
 *ThermoX*, see **mole fractions**.
 
 *ThermoY*, see **mass fractions**.
+
+*third body*, see **fall-off rate constant**.
 
 *three-body reaction*, see **fall-off rate constant**.
 

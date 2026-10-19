@@ -1,0 +1,90 @@
+## The eddy-diffusion tendency of a column (`diffusion_tendency`) {#sec-ch08-tendency}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/diffusion/diffusion.cpp, python/csrc/pydiffusion.cpp, tests/test_diffusion.cpp, tests/test_atm2d.py
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+This scheme returns the rate of change of every species at every level caused by eddy diffusion. It applies the
+coefficients of @sec-ch08-operator to the profiles. A caller adds the result to its other tendencies, or uses the
+same coefficients to build an implicit matrix, and takes the time step itself.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\mathrm d y / \mathrm d t$ from @eq-ch08-operator-tendency for all levels and species.
+
+**Data.** `y` (levels, species), `Kzz` and `dzi` (faces); returns the same shape as `y`.
+
+**Placement.** A spatial tendency; the caller owns the time integration.
+
+**Activation.** Always available; Python `kintera.diffusion_tendency`.
+
+**Guarantee / limits.** As @sec-ch08-operator; explicit stepping needs a small step.
+
+**Evidence.** `test_diffusion`, `test_atm2d.py`; see the Tests layer.
+:::
+
+The symbols are those of @sec-ch08-operator. The scheme has no option and no default.
+
+### Derivation
+
+No derivation beyond @sec-ch08-operator: the tendency is @eq-ch08-operator-tendency evaluated with the
+coefficients of @eq-ch08-operator-inner and @eq-ch08-operator-boundary.
+
+### Numerical method
+
+The tendency starts as $A_j\, y_{j,s}$ for every level. Then $B_j\, y_{j+1,s}$ is added on levels $0$ to $N-2$, and
+$C_j\, y_{j-1,s}$ on levels $1$ to $N-1$. The coefficients are broadcast over the species dimension. The result is
+exact to rounding for the operator; the caller's time scheme sets the accuracy in time. The stability limit of an
+explicit step is not derived here. The test below uses a forward-Euler step of $0.1\, h^2/K$.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| tendency | {{< code src/diffusion/diffusion.cpp diffusion_tendency >}} | `diffusion_tendency` | always |
+| declaration | {{< code src/diffusion/diffusion.hpp diffusion_tendency >}} | `diffusion_tendency` | always |
+| Python binding | {{< code python/csrc/pydiffusion.cpp bind_diffusion >}} | `bind_diffusion` | always |
+
+: Code map of the eddy-diffusion tendency. {#tbl-ch08-tendency-code}
+
+1. `diffusion_tendency` calls `diffusion_coefficients` and adds a trailing dimension to `A`[^rg-8035248ae605], `B` and `C`.
+2. It forms `A * y`, then adds the upper and lower neighbour terms in place on slices.
+3. `bind_diffusion` exposes both functions to Python as `kintera.diffusion_tendency(y, Kzz, dzi)` and
+   `kintera.diffusion_coefficients(y, Kzz, dzi)`, with the same argument names.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_diffusion` | `TendencyShape`: output is (levels, species) | exact | structural |
+| `test_diffusion` | `TendencySignCorrect`: negative at the peak, positive near the edge | sign only | the test |
+| `test_diffusion` | `GaussianSmooths`: 100 Euler steps lower the peak by over 5% | peak ratio below 0.95 | the test |
+| `test_diffusion` | `GaussianSmooths`: total of species 0 kept within 1% | relative 0.01 | the test, after clamping at zero |
+| `test_atm2d.py` | the 2-D eddy matrix equals this tendency per column | rtol and atol $10^{-12}$ | `assert_close` arguments |
+
+: Tests of the eddy-diffusion tendency. {#tbl-ch08-tendency-tests}
+
+The C++ cases are in {{< code tests/test_diffusion.cpp >}}, on the uniform 20-level grid of @sec-ch08-operator, in
+float64 on CPU and CUDA. The Python case is `test_vertical_eddy_transport_matches_columnwise_reference`
+({{< code tests/test_atm2d.py test_vertical_eddy_transport_matches_columnwise_reference >}}). It builds the
+two-dimensional eddy matrix of @sec-ch09 for two columns of five levels, with face coefficients taken as the mean of
+the centre values. It then compares each column with this function at $10^{-12}$. This draft has not run the tests
+and attaches no run record (missing evidence).
+
+### Limits
+
+- The Gaussian test clamps negative values to zero after each step, so its 1% conservation bound includes the
+  clamp; @prp-ch08-operator-column-total is the exact statement.
+- Only float64 is instantiated in `test_diffusion`; float32 is not tested.
+- Molecular diffusion is not provided here: `src/diffusion` has only the eddy term. The binary (molecular)
+  diffusion matrix is built in the two-dimensional solver
+  ({{< code python/atm2d/transport.py build_binary_diffusion_matrix >}}); answered at @sec-ch09.
+
+<!-- reader glossary notes -->
+[^rg-8035248ae605]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
+<!-- end reader glossary notes -->

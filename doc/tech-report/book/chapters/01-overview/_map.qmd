@@ -1,0 +1,89 @@
+## Where each part of kintera is described (`src/`, `python/`) {#sec-ch01-map}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/CMakeLists.txt, src/, python/__init__.py, python/csrc/kintera.cpp
+status: draft
+author: jihenghu
+reviewer: Editor (requested)
+-->
+
+### Summary
+
+The source of kintera is organized by topic, and so is this report. This section sends a reader from a
+question, or from a directory of the code, to the chapter and section that answers it. Each chapter opens with its
+own scheme table, which lists its sections with their options, defaults and tests.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** A route from a topic or a source directory to its chapter.
+
+**Data.** The chapter list below; the topic index (@sec-appf) and the task map (@sec-appg) give finer routes.
+
+**Placement.** Read first.
+
+**Activation.** Not applicable: this is a reading guide.
+
+**Guarantee / limits.** Chapters 5 and 9 are being written; their sections are forthcoming.
+
+**Evidence.** Not applicable; see the Tests layer.
+:::
+
+| chapter | look here for | main source |
+|---|---|---|
+| @sec-ch02 | species, molar masses, NASA-9 data, vapour pressure | `src/species.*`, `src/vapors/` |
+| @sec-ch03 | equation of state, thermodynamic functions, adiabats | `src/thermo/` |
+| @sec-ch04 | saturation adjustment of several condensables | `src/thermo/equilibrate_*` |
+| @sec-ch05 | multiphase chemical equilibrium (the log-K solver) | `src/equilibrium/` |
+| @sec-ch06 | reactions, rate constants, Jacobian, implicit step | `src/kinetics/` |
+| @sec-ch07 | cross sections, actinic flux, photolysis rates | `src/photochem/` |
+| @sec-ch08 | vertical eddy diffusion | `src/diffusion/` |
+| @sec-ch09 | the two-dimensional atmosphere solver | `python/atm2d/` |
+| @sec-ch10 | linear algebra, constrained least squares, interpolation | `src/math/` |
+| @sec-ch11 | YAML input, options objects, Python bindings | `src/utils/`, `python/csrc/` |
+| @sec-ch12 | CPU and CUDA execution | `src/loops.cuh`, dispatch files |
+| @sec-ch13 | test suite and validation cases | `tests/` |
+| @sec-ch14 | how snapy and paddle call kintera | other repositories |
+
+: Chapters of the report and the code they describe. {#tbl-ch01-map-chapters}
+
+Chapters 5 and 9 have no sections yet; the table points to their chapter labels only. The library is built from
+the directories that `src/CMakeLists.txt` lists ({{< code src/CMakeLists.txt >}}). The Python package re-exports the
+compiled module and adds the `atm2d`, `equilibrium` and `kinetics_base_titan` subpackages
+({{< code python/__init__.py >}}).
+
+### Derivation
+
+No derivation: this section is a reading guide.
+
+### Numerical method
+
+No numerical method and no figure: this section is a reading guide. A dependency map of the chapters (a figure) is
+not drawn yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| library sources | {{< code src/CMakeLists.txt >}} | `src/CMakeLists.txt` | always |
+| Python package | {{< code python/__init__.py >}} | `kintera` | always |
+| Python module entry | {{< code python/csrc/kintera.cpp >}} | `PYBIND11_MODULE` | always |
+
+: Code map of the source tree. {#tbl-ch01-map-code}
+
+The Python module and its bindings are described in @sec-ch11-python-api.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none | not applicable to a reading guide | n/a | n/a |
+
+: Tests of the chapter map. {#tbl-ch01-map-tests}
+
+The test suite as a whole is described in @sec-ch13-suite.
+
+### Limits
+
+- Chapters 5 and 9 are forthcoming; this map points to their chapter labels only.
+- The README of kintera at the pin describes the photochemistry module under `src/photolysis/`; the tree at the pin
+  has `src/photochem/` and no `src/photolysis/` ({{< code README.md >}}).

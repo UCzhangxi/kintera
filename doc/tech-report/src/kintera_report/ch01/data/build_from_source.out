@@ -1,0 +1,17 @@
+# Run record of runs/build_from_source.sh at the code pin (compiler from a GCC 13 toolset, 16 parallel jobs).
+# Deviation: torch was first installed from the CPU-only index; pyharp then failed to import (no libtorch_cuda.so),
+# and torch was reinstalled from PyPI as README step 1 writes it. The environment below is the final one.
+# kintera checkout: 0d9f67f97d841147e23283d2dcdab302238d2c45
+gcc (GCC) 13.3.1 20240611 (Red Hat 13.3.1-2)
+cmake version 3.26.5
+Python 3.11.13
+...
+-- Found Torch: <venv>/lib64/python3.11/site-packages/torch/lib/libtorch.so (found version "2.10.0") 
+[100%] Built target test_thermo.release
+Successfully installed kintera-2.6.5
+kintera                  2.6.5
+numpy                    2.4.6
+pydisort                 1.8.13
+pyharp                   2.7.6
+torch                    2.10.0      3
+kintera 2.6.5

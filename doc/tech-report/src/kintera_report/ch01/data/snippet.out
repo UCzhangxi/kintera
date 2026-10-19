@@ -1,0 +1,6 @@
+# Run record of runs/snippet.py, the code shown in @sec-ch01-quick-start, run from the root of a kintera checkout at
+# 0d9f67f97d841147e23283d2dcdab302238d2c45 with the source build of runs/build_from_source.sh (kintera 2.6.5):
+# cd <checkout> && CUDA_VISIBLE_DEVICES= python -P <report>/src/kintera_report/ch01/runs/snippet.py
+['dry', 'H2O', 'NH3', 'H2S', 'H2O(l)', 'H2O(l,p)', 'NH3(s)', 'NH3(s,p)', 'NH4SH(s)']
+tensor([[[8.6869e-01, 1.4291e-06, 2.0202e-02, 7.9201e-08, 1.0101e-01,
+          0.0000e+00, 0.0000e+00, 0.0000e+00, 1.0101e-02]]])

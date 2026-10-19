@@ -1,0 +1,117 @@
+## A first run: condensation on the Jupiter example card (`ThermoX.forward`) {#sec-ch01-quick-start}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: examples/jupiter.yaml, examples/example_jupiter.py, src/thermo/thermo_x.cpp, src/thermo/equilibrate_tp.h
+status: draft
+author: jihenghu
+reviewer: Editor (requested)
+-->
+
+### Summary
+
+The shortest useful kintera call reads a configuration file and brings one gas mixture to phase equilibrium at a
+given temperature and pressure. This section runs that call on the Jupiter example of the kintera repository. The
+mixture holds a dry background gas, water, ammonia and hydrogen sulfide. At 200 K and 1 bar, water condenses and
+ammonium hydrosulfide forms. The output can be compared with the recorded numbers below.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** One equilibrium-condensation call, `ThermoX.forward`, on a nine-species card.
+
+**Data.** `examples/jupiter.yaml`; temperature [K], pressure [Pa], mole fractions [-] in place.
+
+**Placement.** After @sec-ch01-install.
+
+**Activation.** `max_iter` set to 30; the card's own limit is 10.
+
+**Guarantee / limits.** Output recorded for two installs; identical to the printed digits.
+
+**Evidence.** Run records in the Tests layer.
+:::
+
+The example script of the repository, `example_jupiter.py` ({{< code examples/example_jupiter.py >}}), draws a random
+composition. The run below fixes the composition, so that its numbers can be quoted.
+
+### Derivation
+
+No derivation here: the equilibrium solve is the subject of @sec-ch04-equilibrate-tp, and the options it reads are
+described in @sec-ch11-yaml-input.
+
+### Numerical method
+
+No numerical method and no figure of its own. Run this from the root of a kintera checkout, so that the card's
+relative path resolves; `from_yaml` opens the path as given (@sec-ch11-resources):
+
+```python
+import torch
+from kintera import ThermoOptions, ThermoX
+torch.set_default_dtype(torch.float64)
+
+op = ThermoOptions.from_yaml("examples/jupiter.yaml")
+op.max_iter(30)
+thermo = ThermoX(op)
+species = op.species()
+xfrac = torch.zeros((1, 1, len(species)))
+for name, value in {"dry": 0.86, "H2O": 0.1, "NH3": 0.03, "H2S": 0.01}.items():
+    xfrac[..., species.index(name)] = value
+thermo.forward(torch.tensor([200.0]), torch.tensor([1.0e5]), xfrac)
+print(species)
+print(xfrac)
+```
+
+`ThermoX.forward` overwrites `xfrac` with the equilibrium mole fractions
+({{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}}). The species order is that of the card
+({{< code examples/jupiter.yaml >}}): `dry`, `H2O`, `NH3`, `H2S`, `H2O(l)`, `H2O(l,p)`, `NH3(s)`, `NH3(s,p)`,
+`NH4SH(s)`.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| input card | {{< code examples/jupiter.yaml >}} | `jupiter.yaml` | always |
+| equilibrium call | {{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}} | `ThermoXImpl::forward` | always |
+| non-convergence message | {{< code src/thermo/equilibrate_tp.h >}} | `equilibrate_tp` | `max_iter` |
+| repository example | {{< code examples/example_jupiter.py >}} | `example_jupiter.py` | always |
+
+: Code map of the first run. {#tbl-ch01-quick-start-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| run record, source build | the snippet prints the values below | printed digits | [^ch01-snippet] |
+| run record, both installs | the same call gives the same 7 printed digits | exact | [^ch01-quick] |
+
+: Runs of the first call. {#tbl-ch01-quick-start-tests}
+
+Starting from mole fractions 0.86, 0.1, 0.03 and 0.01 of `dry`, `H2O`, `NH3` and `H2S`, the call returns
+$8.686868 \times 10^{-1}$ for `dry`, $1.429130 \times 10^{-6}$ for `H2O`, $2.020210 \times 10^{-2}$ for `NH3`,
+$7.920146 \times 10^{-8}$ for `H2S`, $1.010087 \times 10^{-1}$ for `H2O(l)` and $1.010093 \times 10^{-2}$ for
+`NH4SH(s)`. The other three condensates stay at zero, and the fractions sum to 1 to the 15 printed
+digits.[^ch01-quick] The source build at the pin and the PyPI package 2.6.4 print the same digits.[^ch01-quick] This is
+a usage example, not a validation: the equilibrium solver is tested in @sec-ch04.
+
+[^ch01-snippet]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `examples/jupiter.yaml`; run:
+    `CUDA_VISIBLE_DEVICES="" python -P src/kintera_report/ch01/runs/snippet.py` from the checkout root (the code above,
+    saved as that file), CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6, kintera 2.6.5
+    from the source build; output: `src/kintera_report/ch01/data/snippet.out`.]
+
+[^ch01-quick]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `examples/jupiter.yaml`, the same
+    composition; run: `python -P src/kintera_report/ch01/runs/quick_start.py` with `KINTERA_REPO` at the pin, CPU,
+    double; Python 3.11.13, torch 2.10.0, numpy 2.4.6; kintera 2.6.5 (source build), output
+    `src/kintera_report/ch01/data/quick_start.out`, and kintera 2.6.4 (PyPI), output
+    `src/kintera_report/ch01/data/pip_install.out`; the run with argument 0 is
+    `src/kintera_report/ch01/data/quick_start_maxiter0.out`.]
+
+### Limits
+
+- With the card's own iteration limit of 10, the same call prints "equilibrate_tp did not converge after 10
+  iterations." and returns a different composition (for example $9.864170 \times 10^{-5}$ for `H2O`).[^ch01-quick] With
+  a limit of 30 it prints nothing. Whether 30 suffices for other states is not measured.
+- The repository's `example_jupiter.py` opens `jupiter.yaml` by a relative path, so it runs only from the `examples`
+  directory; run from the checkout root it fails with "bad file: jupiter.yaml".[^ch01-example]
+- Only CPU and double precision were run.
+
+[^ch01-example]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `examples/jupiter.yaml`; run:
+    `bash src/kintera_report/ch01/runs/example_jupiter.sh` with `KINTERA_REPO` at the pin, CPU; Python 3.11.13,
+    kintera 2.6.5 from the source build; output: `src/kintera_report/ch01/data/example_jupiter.out`.]

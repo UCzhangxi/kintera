@@ -169,6 +169,16 @@ DISPATCH_MACRO int equilibrate_uv_partition(
         nreaction, intEng_offset, cv_const, logsvp_func, logsvp_func_ddT,
         svp_kind, svp_params, intEng_R_extra, cv_R_extra, &energy, &derivative);
     residual = energy - h0;
+    // U is measured from Tref and is ~0 near it: scale the tolerance by the
+    // size of the terms summed into U (offset and T part), not by U alone.
+    T term_sum = 0.;
+    for (int species_index = 0; species_index < nspecies; ++species_index)
+      term_sum +=
+          (fabs(intEng_offset[species_index]) +
+           fabs(molar_energy[species_index] - intEng_offset[species_index])) *
+          conc[species_index];
+    if (term_sum > energy_scale) energy_scale = term_sum;
+    tolerance = 64. * std::numeric_limits<T>::epsilon() * energy_scale;
   }
 
   if (valid && fabs(residual) > tolerance) {

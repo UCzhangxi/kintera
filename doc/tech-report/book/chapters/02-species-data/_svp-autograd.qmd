@@ -35,11 +35,12 @@ Local symbols: $\mathcal L$, a scalar loss a caller differentiates [-]; $\bar g_
 ### Derivation
 
 The question: what does the backward pass of `LogSVPFunc` return, and why are second derivatives through it not
-available? Two facts from the code set it up. `forward` saves the temperature and the formula names (and, for inline
-forms, the parameters) and returns $L_r = \ln K_r(T_r)$, one column per reaction, from a temperature tensor that
-already has that column ({{< code src/thermo/log_svp.cpp LogSVPFunc::forward >}}). `backward` multiplies the
-incoming gradient by $\mathrm d \ln K_r / \mathrm d T$, which it evaluates with the `_ddT` functions of @sec-ch02-svp
-through the same kernels as the values, outside autograd ({{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}).
+available? Two facts from the code set it up. `forward` saves the temperature, the names of the derivative functions
+(`_ddT`), the inline flag and, for inline forms, the parameter tensors, and returns $L_r = \ln K_r(T_r)$, one column
+per reaction, from a temperature tensor that already has that column
+({{< code src/thermo/log_svp.cpp LogSVPFunc::forward >}}). `backward` multiplies the incoming gradient by
+$\mathrm d \ln K_r / \mathrm d T$, which it evaluates with the `_ddT` functions of @sec-ch02-svp through the same
+kernels as the values, outside autograd ({{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}).
 
 *Step 1: the forward map is column by column.* Column $r$ of the output depends only on column $r$ of the input
 temperature, so its Jacobian is diagonal:
@@ -87,12 +88,12 @@ which is not zero.
 
 `init` ({{< code src/thermo/log_svp.hpp LogSVPFunc::init >}}) copies the reactions' formula names and inline
 parameters into static members of the class. `call` and `grad` evaluate the values and derivatives without autograd;
-`forward` saves the formula names and the inline parameters in the autograd context, so a later `init` with another
-reaction set does not change what an earlier graph's backward pass uses. Evaluation goes through a tensor iterator
-over the reaction dimension, on CPU or CUDA; inline forms are evaluated by the same scalar `eval_logsvp` as the
-saturation kernels. The backward pass costs one more pass of the same kind, over the `_ddT` names: the numerical
-scheme is closed-form evaluation of each fit and of its hand-written derivative, with no iteration and no difference
-quotient.
+`forward` saves the `_ddT` names, the inline flag and the inline parameter tensors in the autograd context, so a later
+`init` with another reaction set does not change what an earlier graph's backward pass uses. Evaluation goes through a
+tensor iterator over the reaction dimension, on CPU or CUDA; inline forms are evaluated by the same scalar
+`eval_logsvp` as the saturation kernels. The backward pass costs one more pass of the same kind, over the `_ddT`
+names: the numerical scheme is closed-form evaluation of each fit and of its hand-written derivative, with no
+iteration and no difference quotient.
 
 The autograd figure is not provided: the figure module is not written yet.
 

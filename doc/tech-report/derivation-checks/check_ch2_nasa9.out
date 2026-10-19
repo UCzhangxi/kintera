@@ -1,0 +1,22 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+   293 species parsed from data/nasa9.dat
+   H2O: table h(298.15) = -241.8245 kJ/mol (CODATA -241.826), s(298.15) = 188.8280 J/(mol K) (CODATA 188.835)
+   H2: table h(298.15) = -0.0000 kJ/mol (CODATA 0.0), s(298.15) = 130.6802 J/(mol K) (CODATA 130.68)
+   O2: table h(298.15) = -0.0000 kJ/mol (CODATA 0.0), s(298.15) = 205.1482 J/(mol K) (CODATA 205.152)
+   CO2: table h(298.15) = -393.5076 kJ/mol (CODATA -393.51), s(298.15) = 213.7861 J/(mol K) (CODATA 213.785)
+(n1) table h(298.15 K) vs CODATA dfH, worst abs [kJ/mol]: measured 2.366e-03  tol 1e-01  PASS
+(n1) table s(298.15 K) vs CODATA S, worst abs [J/(mol K)]: measured 7.020e-03  tol 5e-02  PASS
+   (n2) H2: jump high - low at 1000 K: cp/R +3.800e-09, h/R +2.020e-06 K, s/R +2.002e-09
+   (n2) H2O: jump high - low at 1000 K: cp/R +1.070e-09, h/R +4.109e-05 K, s/R +3.140e-09
+   (n2) CH4: jump high - low at 1000 K: cp/R -4.893e-09, h/R -2.407e-05 K, s/R -3.460e-08
+   (n2) NH3: jump high - low at 1000 K: cp/R -8.483e-09, h/R -8.809e-06 K, s/R +1.271e-09
+   (n2) worst |jump| of cp/R over 293 species: 9.628e+04 (H2O_l_s)
+   (n2) worst |jump| of h/R [K] over 293 species: 1.134e+07 (H2O_l_s)
+   (n2) worst |jump| of s/R over 293 species: 1.271e+04 (H2O_l_s)
+   (n2) species whose h/R jumps by more than 1 K at 1000 K: 5 of 293: H2O_l_s (-1.134e+07 K), HNO3 (-1.019e+05 K), TiH (-1.050e+04 K), C_graphite (-1.217e+02 K), PN (+1.021e+02 K)
+   (n3) H2: kintera g/RT(1000) - g/RT(1000 - 1e-7) = -2.301626e-10, table (high at 1000, low at 1000 - 1e-7) = -2.301626e-10
+   (n3) H2O: kintera g/RT(1000) - g/RT(1000 - 1e-7) = +4.054576e-08, table (high at 1000, low at 1000 - 1e-7) = +4.054576e-08
+   (n3) CH4: kintera g/RT(1000) - g/RT(1000 - 1e-7) = +1.096337e-08, table (high at 1000, low at 1000 - 1e-7) = +1.096335e-08
+   (n3) NH3: kintera g/RT(1000) - g/RT(1000 - 1e-7) = -9.918828e-09, table (high at 1000, low at 1000 - 1e-7) = -9.918821e-09
+(n3) kintera's g/RT jump across 1000 K equals the table's range jump (no blending), worst abs: measured 2.132e-14  tol 1e-10  PASS
+ALL PASS

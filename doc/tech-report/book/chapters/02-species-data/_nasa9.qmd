@@ -57,9 +57,35 @@ $$ {#eq-ch02-nasa9-forms}
 The second line is $\int c_p\, \mathrm d T$ divided by $\mathcal R T$, with $b_1$ the constant of integration; the
 third is $\int c_p\, \mathrm d T / T$ divided by $\mathcal R$, with $b_2$ its constant. Term by term:
 $\int a_0 T^{-2}\,\mathrm d T = -a_0 T^{-1}$ and $\int a_0 T^{-3}\,\mathrm d T = -a_0 T^{-2}/2$;
-$\int a_1 T^{-1}\,\mathrm d T = a_1 \ln T$ and $\int a_1 T^{-2}\,\mathrm d T = -a_1 T^{-1}$; the powers
-$T^k$, $k \ge 0$, integrate to $T^{k+1}/(k+1)$ and $T^k/k$. The Gibbs energy is $g/(\mathcal R T) = h/(\mathcal R T)
+$\int a_1 T^{-1}\,\mathrm d T = a_1 \ln T$ and $\int a_1 T^{-2}\,\mathrm d T = -a_1 T^{-1}$. In $h$ the powers
+$T^k$, $k \ge 0$, integrate to $T^{k+1}/(k+1)$. In $s$ the integrand is $T^{k-1}$: the powers with $k \ge 1$ give
+$T^k/k$, and the constant $a_2$ gives $a_2 \ln T$. The Gibbs energy is $g/(\mathcal R T) = h/(\mathcal R T)
 - s/\mathcal R$, computed in `nasa9_gibbs_RT` ({{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}).[^ch02-nasa9-check]
+
+*Integration constants.* $b_1$ and $b_2$ are the constants of the two integrals, so the polynomial alone does not fix
+them. They are set by tabulated values at a reference temperature. In the NASA-9 convention, $h(298.15\ \mathrm K)$
+is the standard enthalpy of formation and $s(298.15\ \mathrm K)$ the third-law standard entropy at 1 bar (McBride,
+Zehe and Gordon, NASA/TP-2002-211556, 2002); each range carries its own pair. The shipped table follows this
+convention. Its $h$ and $s$ at 298.15 K agree with the CODATA key values for H2O, H2, O2 and CO2 to within
+$2.4 \times 10^{-3}$ kJ mol$^{-1}$ and $7.0 \times 10^{-3}$ J mol$^{-1}$ K$^{-1}$.[^ch02-nasa9-join]
+
+*Continuity at $T_{\mathrm{mid}}$.* The two ranges are fitted separately, so whether $c_p$, $h$ and $s$ agree at
+$T_{\mathrm{mid}} = 1000$ K is a property of the data. The code selects a range by $T < T_{\mathrm{mid}}$ and does not
+enforce or blend continuity: kintera's $g/(\mathcal R T)$ jumps across 1000 K by exactly the table's jump between the
+two ranges (to $2.1 \times 10^{-14}$). For the common gases the jumps are negligible: $h/\mathcal R$ jumps by
+$2.0 \times 10^{-6}$ K (H2), $4.1 \times 10^{-5}$ K (H2O), $-2.4 \times 10^{-5}$ K (CH4) and $-8.8 \times 10^{-6}$ K
+(NH3), and $c_p/\mathcal R$ by less than $10^{-8}$. Five of the 293 entries jump by more than 1 K in $h/\mathcal R$:
+`H2O_l_s` ($-1.1 \times 10^{7}$ K), `HNO3` ($-1.0 \times 10^{5}$ K), `TiH` ($-1.1 \times 10^{4}$ K), `C_graphite`
+($-1.2 \times 10^{2}$ K) and `PN` ($+1.0 \times 10^{2}$ K).[^ch02-nasa9-join] Above 1000 K `eval_nasa9` subtracts the
+low-range $h(300\ \mathrm K)$ from the high-range $h(T)$, so $b_1$ does not cancel there, and such a jump enters the
+internal energy directly.
+
+[^ch02-nasa9-join]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the package's `data/nasa9.dat`;
+    reference values: Cox, Wagman and Medvedev, *CODATA Key Values for Thermodynamics*, 1989; run:
+    `python doc/tech-report/derivation-checks/check_ch2_nasa9.py` from a scratch directory, with `KINTERA_WT` set to
+    the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch2_nasa9.out`, 3 PASS,
+    0 FAIL.]
 
 The heat-capacity path evaluates the enthalpy line multiplied by $T$, that is $h/\mathcal R = -a_0 T^{-1} + a_1 \ln T
 + a_2 T + a_3 T^2/2 + a_4 T^3/3 + a_5 T^4/4 + a_6 T^5/5 + b_1$, not $h/(\mathcal R T)$: `nasa9_h_R`
@@ -139,7 +165,8 @@ $\sum_n \nu_{n} (h_n/\mathcal R T - s_n/\mathcal R)$ from the second and third l
 $\Delta g/(\mathcal R T)$ to within $10^{-12}$ relative (round-off; PASS), and the van 't Hoff identity
 $\mathrm d \ln K / \mathrm d T = \Delta h/(\mathcal R T^2)$, with $\Delta h$ from the second line and the left side a
 central difference of `Nasa9LogK` with step $10^{-2}$ K, holds to $4.7 \times 10^{-10}$ relative, tolerance
-$10^{-6}$ (PASS). The first fixes $h - Ts$ and the second fixes $h$, so together they fix the entropy line. Only the
+$10^{-6}$ (PASS). The first fixes $h - Ts$ and the second fixes $h$, so together they fix $\Delta s$ of this
+reaction at this temperature. Only the
 high range at one temperature is exercised: the low range, the join at $T_{\mathrm{mid}}$ and agreement with
 published tables remain missing evidence.
 
@@ -153,7 +180,9 @@ published tables remain missing evidence.
 ### Limits
 
 The polynomials are evaluated outside 200-6000 K without warning (verified by reading `nasa9_gibbs_RT`; no clamp).
-$T_{\mathrm{mid}}$ is fixed at 1000 K, which matches the file header's ranges. A working-directory `nasa9.dat`
+$T_{\mathrm{mid}}$ is fixed at 1000 K, which matches the file header's ranges. The code does not enforce
+continuity at $T_{\mathrm{mid}}$; five entries of the shipped table jump by more than 1 K in $h/\mathcal R$ there
+(Derivation). A working-directory `nasa9.dat`
 silently replaces the shipped one.
 
 In reverse kinetics, a species absent from the table has all-zero coefficients, so @eq-ch02-nasa9-forms gives it

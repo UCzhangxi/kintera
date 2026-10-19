@@ -63,27 +63,83 @@ bands; padded slots have $A = 0$ and an empty window. With one band, `forward` e
 on $T$ and only then evaluates the exponential, so an inactive band far outside its range cannot overflow. The
 result is passed through the pressure switch of @sec-ch06-pressure-switch.
 
-**Adding a rate-constant form.** The Arrhenius evaluator is the template for a new form. At the pin a new form needs,
-in order (each step names the code that a new form copies):
+**Adding a rate-constant form: the evaluator contract.** A new form is C++ code compiled into kintera; at the pin there
+is no way to register an evaluator at run time or from Python. The contract below is read from the code at the pin;
+the Arrhenius evaluator is the model to copy.
 
-1. An options struct with the parameters, a `reactions()` list and `from_yaml`
-   ({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}}), selecting its reactions by `type`[^rg-36105a006e4f] and
-   converting the pre-exponential factor from molecule, cm, s units with `UnitSystem::convert_from`
-   (@sec-ch02-units), the reaction order counting all reactants.
-2. An `add_to_vapor_cloud` overload that registers the species of its reactions as gases or condensates
-   (@sec-ch02-species-registry).
-3. A module whose `forward(T, P, C, other)` returns the rate constants with one entry per reaction on the last axis,
-   in mol, m, s units, written in differentiable torch operations: `Kinetics.forward` passes $C$ expanded to
-   `(..., nspecies, nreaction)` with gradient tracking and obtains $\partial k/\partial c$ (and $\partial k/\partial T$
-   with `evolve_temperature`) by one backward pass, so no hand-written derivative is needed
-   ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
-4. A member in `KineticsOptionsImpl`, read in its `from_yaml`, appended in `KineticsOptionsImpl::reactions`
-   ({{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::reactions >}}), and registered as an evaluator in
-   `KineticsImpl::reset` in the same position, since the reaction columns follow that order.
-5. Python bindings for the options in `python/csrc/pykinetics.cpp`, if the form is to be built from Python.
-6. Devices: torch operations run on CPU and CUDA alike; a form that calls a scalar C function needs a CUDA twin.
-7. Checks: the rate against its closed form, and $\partial k/\partial c$ against a finite difference as
-   `test_rate_constant_ddC.py` does.
+*Classes to add.* (a) An options struct `XOptionsImpl` with its `std::shared_ptr` alias, holding one entry per
+reaction in `ADD_ARG` fields, a `reactions()` list of `Reaction` objects and a static `from_yaml` that reads the
+`reactions` list and keeps the entries of its own `type`[^rg-36105a006e4f], converting the pre-exponential factor from molecule, cm, s
+units with `UnitSystem::convert_from` (@sec-ch02-units), as
+{{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}} does. (b) A module
+`XImpl : torch::nn::Cloneable<XImpl>` with `TORCH_MODULE(X)`, whose constructor stores the options and calls `reset`,
+and whose `reset` turns the per-reaction parameters into tensors registered with `register_buffer`
+({{< code src/kinetics/arrhenius.hpp ArrheniusImpl >}}, {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}}).
+
+*The callback.* The module must have exactly the signature the evaluator list calls,
+
+```cpp
+torch::Tensor forward(torch::Tensor T, torch::Tensor P, torch::Tensor C,
+                      std::map<std::string, torch::Tensor> const& other);
+```
+
+because `KineticsImpl::forward_with_rate_constants`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}) stores every evaluator as a
+`torch::nn::AnyModule` and calls `forward(T, P, C, other)` on it. With `...` the batch shape of the caller's temperature
+(for example `(ncol, nlyr)`) and $n$ the number of reactions of this evaluator, the arguments are:
+
+| argument | shape | units | what it is |
+|---|---|---|---|
+| `T` | `(...)`; `(..., n)` with `evolve_temperature` | K | the caller's temperature; with `evolve_temperature`, a view of it expanded to one column per reaction with gradient tracking on |
+| `P` | `(...)` | Pa | the caller's pressure, passed through unchanged |
+| `C` | `(..., nspecies, n)` | mol m$^{-3}$ | the caller's concentrations expanded to one column per reaction, cloned, with gradient tracking on; species in the kinetics order, gases first, then condensates |
+| `other` | map | | the caller's extra tensors (for example `number_density`, `kf_override`), plus `gas_mask`, shape `(nspecies,)`, true for the gases, and `stoich`, shape `(nspecies, n)`, this evaluator's columns of the net stoichiometry |
+| return | `(..., n)` | mol, m, s | the rate constant $k_r$ of each reaction, not the rate: `Kinetics` multiplies by the mass-action product afterwards (@sec-ch06-mass-action) |
+
+: Arguments and return value of a rate-constant evaluator's `forward`, as `Kinetics` calls it. {#tbl-ch06-arrhenius-evaluator}
+
+The returned tensor is copied into the evaluator's columns of one result tensor allocated with the shape, dtype and
+device of `T` plus a reaction axis, so it must broadcast to `(..., n)`, and `Kinetics` keeps no reference to it.
+
+*Derivatives.* After the call, `Kinetics` runs one backward pass of $\sum_r k_r$ and reads
+$\partial k / \partial c$ as the gradient of `C` (and $\partial k / \partial T$ as the gradient of the expanded `T` with
+`evolve_temperature`). The column of `C` for reaction $r$ receives the derivative of every output, so $k_r$ must depend
+on `C[..., :, r]` (and `T[..., r]`) only: an evaluator that reads one column for all reactions puts every reaction's
+derivative on that column, which the fall-off forms guard against by contracting over the species axis and keeping
+the reaction axis ({{< code src/kinetics/troe_falloff.cpp TroeFalloffImpl::forward >}}). The forms at the pin add the
+reaction axis to `T` when `T` and `P` have the same shape, so one module serves both calls. $k$ must be built from
+differentiable torch operations; no hand-written derivative is read. Reactions named in `kf_override` get the supplied
+value and a zero derivative.
+
+*Mutation and ownership.* `C` and the expanded `T` are leaves that require gradients, so in-place operations on them are
+refused by autograd; `P` and the tensors in `other` belong to the caller or are views of the module's own buffers
+(`stoich`), and an evaluator must not modify them. Persistent state belongs in buffers registered in `reset`, which
+`clone` reruns; nothing from one call should be kept for the next. Tensors that are not buffers do not follow `to`, and
+must be moved at use, as the Arrhenius pressure switch does with
+`p_threshold_.to(rate.device(), rate.scalar_type())`
+({{< code src/kinetics/arrhenius.cpp ArrheniusImpl::switch_pressure >}}).
+
+*dtype and device.* `Kinetics` registers the evaluator as a submodule, so `kinetics.to(device, dtype)` moves its
+buffers. Tensors created inside `forward` should take the device and dtype of `T`, as the result tensor does. Torch
+operations run on CPU and CUDA alike; a form that calls a scalar C function needs a CUDA version of it (@sec-ch12).
+
+*Registration, five places in one order.* (1) An `ADD_ARG(XOptions, x)` member of `KineticsOptionsImpl`
+({{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}). (2) In `KineticsOptionsImpl::from_yaml`
+({{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::from_yaml overload=2 >}}), set the member from the
+`reactions` list and call `add_to_vapor_cloud` for its species (@sec-ch02-species-registry). (3) Append it in
+`KineticsOptionsImpl::reactions` ({{< code src/kinetics/kinetics_options.cpp KineticsOptionsImpl::reactions >}}). (4) In
+`KineticsImpl::reset` ({{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}}), give the member a default if it is
+null, push the module onto the evaluator list, `register_module` it and push its reaction count, at the same position
+as in step 3: the stoichiometry, the mass-action orders and the reverse columns are all built from `reactions()`, so a
+different order assigns rate constants to the wrong reactions. (5) To build it from Python, bind the options class and
+add the member to the `KineticsOptions` binding in `python/csrc/pykinetics.cpp`. The YAML `type` key is whatever
+`from_yaml` selects on.
+
+*Checks.* No kintera test exercises a hypothetical new form, but the existing ones are the pattern to copy: the value
+against its closed form, called both with `(..., nspecies)` and with the per-reaction axis, as
+`FalloffEndToEndTest.forward_three_body_distinguishes_species_and_reaction_axes` does; and $\partial k/\partial c$ from
+`Kinetics.forward` against a central finite difference per reaction, relative tolerance $10^{-6}$, with the other
+reactions' columns zero, as `test_rate_constant_ddC.py` does; on CPU and, where available, CUDA.
 
 The band-selection figure is not provided: the figure module is not written yet.
 
@@ -120,6 +176,13 @@ The tolerances are read from the test files at the pin; the reason for each is m
 
 `E4` is accepted and ignored. The `Ea_R` default is 1 K. Both are verified findings; whether they are intended is
 an open question.
+
+Evaluator contract: with `evolve_temperature`, `Kinetics` calls the backward pass of the evaluator's output
+unconditionally, so a rate constant that depends on neither `T` nor `C` through autograd would raise an error there
+(read from `forward_with_rate_constants`; not run, a hypothesis). The code at the pin does not determine whether an
+evaluator may return a tensor on another device or dtype than `T` (the copy into the result would convert it; no form
+does this), whether evaluators may be called from several threads, or any order other than the one in
+`KineticsOptionsImpl::reactions`.
 
 <!-- reader glossary notes -->
 [^rg-9b44b7a77056]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)

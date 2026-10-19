@@ -28,6 +28,7 @@ book:
   chapters:
     - index.qmd
     - chapters/01-overview.qmd
+    - chapters/01b-parcel-model.qmd
     - chapters/02-species-data.qmd
     - chapters/03-thermodynamics.qmd
     - chapters/04-phase-equilibrium.qmd

@@ -58,7 +58,49 @@ $$
 k = \frac{k_0 [M]_{\mathrm{eff}}}{1 + P_r}\, F .
 $$ {#eq-ch06-falloff-blend}
 
-For $P_r \to 0$ it tends to $k_0 [M]_{\mathrm{eff}} F$ and for $P_r \to \infty$ to $k_\infty F$. Lindemann has $F = 1$
+For $P_r \to 0$ it tends to $k_0 [M]_{\mathrm{eff}} F$ and for $P_r \to \infty$ to $k_\infty F$.
+
+**Where the Lindemann form comes from.** A unimolecular reaction $A \to P$ needs energy, which $A$ gains and loses
+in collisions with any third body $M$. Lindemann's mechanism[^ch06-lindemann] writes this as two steps, with $A^*$ an
+energized molecule:
+
+$$
+\begin{aligned}
+A + M &\rightleftharpoons A^* + M \quad \text{rates } k_a, k_{-a} \\
+A^* &\to P \quad \text{rate } k_b
+\end{aligned}
+$$
+
+$A^*$ is short-lived, so its concentration is quasi-steady: it is made as fast as it is used,
+
+$$
+\frac{\mathrm{d}[A^*]}{\mathrm{d}t} = k_a [A][M] - k_{-a} [A^*][M] - k_b [A^*] = 0 ,
+$$
+
+which gives $[A^*] = k_a [A][M] / (k_{-a}[M] + k_b)$. The product forms at the rate
+
+$$
+k_b [A^*] = \frac{k_a k_b [M]}{k_{-a}[M] + k_b}\, [A] = k\, [A] .
+$$
+
+At low pressure ($k_{-a}[M] \ll k_b$) every energized molecule reacts, and $k \to k_a [M]$. This identifies the
+low-pressure constant $k_0 = k_a$, second order overall. At high pressure ($k_{-a}[M] \gg k_b$) activation is in
+equilibrium, and $k \to k_a k_b / k_{-a} = k_\infty$. Dividing numerator and denominator by $k_b$ and substituting the
+two limits,
+
+$$
+k = \frac{k_a [M]}{1 + k_{-a}[M]/k_b} = \frac{k_0 [M]}{1 + k_0 [M]/k_\infty} = \frac{k_0 [M]}{1 + P_r} ,
+$$
+
+which is @eq-ch06-falloff-blend with $F = 1$ and $[M] = [M]_{\mathrm{eff}}$. The broadening factors $F$ are empirical
+corrections in $\log_{10} P_r$ to this two-state picture, and their parameters are fitted to data.[^ch06-troe]
+Because $k_0$ multiplies one more concentration ($[M]$) than $k_\infty$, its input unit carries one more order. The
+reader therefore converts $k_0$ with the order $n + 1$ in @eq-ch06-arrhenius-unit and $k_\infty$ with $n$
+(`low-P-rate-constant` and `high-P-rate-constant` in `LindemannFalloffOptionsImpl::from_yaml`,
+{{< code src/kinetics/lindemann_falloff.cpp LindemannFalloffOptionsImpl::from_yaml >}}). The check evaluates the
+Lindemann rate constant for $P_r$ from $10^{-6}$ to $10^{6}$, with a third-body efficiency, against
+$k_0 [M]/(1 + P_r)$, and reaches both limits to $10^{-6}$ at the ends of that range.[^ch06-check-c]
+ Lindemann has $F = 1$
 (`LindemannFalloffImpl::forward`, {{< code src/kinetics/lindemann_falloff.cpp LindemannFalloffImpl::forward >}}).
 Troe and SRI both use
 
@@ -121,13 +163,28 @@ not in the species list.
 | `test_falloff.release` (`FalloffEndToEndTest.species_registration_from_efficiencies`) | species named only in `efficiencies` are registered | exact | equality |
 | `test_falloff.release` (`FalloffEndToEndTest.jacobian_three_body_concentration`, `jacobian_falloff_lindemann`) | Jacobian entries through the third body are non-zero | $> 10^{-10}$ | qualitative |
 | `test_rate_constant_ddC.py` | $\partial k/\partial c$ is per reaction | $10^{-6}$ rel. | finite difference |
+| check `[c1]` | Lindemann $k$ against $k_0 [M]/(1 + P_r)$, $P_r = 10^{-6}..10^{6}$ | $10^{-12}$ rel. | round-off |
+| check `[c2]`, `[c3]` | low- and high-pressure limits | $2 \times 10^{-6}$ rel. | $P_r$ or $1/P_r$ at the range ends |
 
 : Tests of three-body and fall-off rate constants. {#tbl-ch06-falloff-tests}
 
 The test names and assertions are read from `tests/test_falloff.cpp` at the pin. Only the three-body form is compared
 with its closed form; the Lindemann, Troe and SRI tests assert only that the rate is non-zero, so
 @eq-ch06-falloff-blend and @eq-ch06-falloff-broadening have no reference-value test (missing evidence). The test
-`real_chemistry_sample_reaction_full` was not read for this section.
+`real_chemistry_sample_reaction_full` was not read for this section. The derivation checks measure
+$4.4 \times 10^{-16}$ for `[c1]` and $1.0 \times 10^{-6}$ for both limits, the size of $P_r$ at the ends of the
+range.[^ch06-check-c] The Troe and SRI broadening still has no reference-value test.
+
+[^ch06-lindemann]: [source: F. A. Lindemann, Trans. Faraday Soc. 17, 598-606 (1922),
+    <https://doi.org/10.1039/TF9221700598>.]
+
+[^ch06-troe]: [source: R. G. Gilbert, K. Luther and J. Troe, Ber. Bunsenges. Phys. Chem. 87, 169-177 (1983),
+    <https://doi.org/10.1002/bbpc.19830870218>.]
+
+[^ch06-check-c]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the fall-off card inside the script;
+    run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch6_rates.out` lines `[c1]`, `[c2]`, `[c3]`.]
 
 ### Limits
 

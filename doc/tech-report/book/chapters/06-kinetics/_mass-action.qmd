@@ -39,27 +39,129 @@ constant is the forward one divided by the equilibrium constant from the NASA-9 
 
 ### Derivation
 
-For an elementary reaction $j$ the law of mass action gives
+**Why a rate is a product of concentrations.** An elementary reaction is a single collision event. The number of such
+events per unit volume and time is proportional to the number density of each partner that must meet, so for a
+reaction whose reactant $i$ appears $\nu_{ij}$ times the event rate is proportional to $\prod_i c_i^{\nu_{ij}}$. The
+proportionality factor is the rate constant $k_j$, which depends on temperature (and, for the fall-off forms, on
+pressure) but not on the concentrations of the reactants:
 
 $$
 r_j = k_j(T, p) \prod_i c_i^{\nu_{ij}} .
 $$ {#eq-ch06-mass-action-rate}
 
 @eq-ch06-mass-action-rate is computed in `forward_with_rate_constants`
-({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}). Summed over reactions, the
-species tendency is
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), with the orders $\nu_{ij}$ held in
+the buffer `forward_orders`, equal to the reactant coefficients except for evaporation columns
+(@sec-ch06-evaporation). Since $r_j$ is in $\mathrm{mol\,m^{-3}\,s^{-1}}$ and each concentration in
+$\mathrm{mol\,m^{-3}}$, a reaction of total order $n_j = \sum_i \nu_{ij}$ has $k_j$ in
+$(\mathrm{mol\,m^{-3}})^{1 - n_j}\,\mathrm{s^{-1}}$; @sec-ch06-arrhenius converts the input units to these.
+
+**From rates to tendencies.** Each event of reaction $j$ changes the amount of species $i$ by $S_{ij}$ (products
+positive, reactants negative). Summing over reactions,
 
 $$
 \frac{\mathrm{d} c_i}{\mathrm{d} t} = \sum_j S_{ij}\, r_j .
 $$ {#eq-ch06-mass-action-tendency}
 
 @eq-ch06-mass-action-tendency is formed by the caller, for example as `stoich @ rate`, with $S$ the `stoich` buffer
-built in `reset` ({{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}}). Both are exact given $k_j$; the only
-modification is the concentration floor described under Numerical method.
+built in `reset` ({{< code src/kinetics/kinetics.cpp KineticsImpl::reset >}}).
 
-For a reversible reaction the reverse rate is $k_j K_{c,j}^{-1} \prod_i c_i^{\nu'_{ij}}$, with $\nu'_{ij}$ the
-product coefficients and $K_{c,j}$ the concentration equilibrium constant. The derivation of $K_{c,j}$ from the
-Gibbs energies is not drafted yet.
+**Reversible reactions as two columns.** For a reversible reaction `reset` appends a second column $-S_{\cdot j}$ to
+the stoichiometry. Its rate $r_{\bar j} = k_{\bar j} \prod_i c_i^{\nu'_{ij}}$ uses the product coefficients
+$\nu'_{ij}$ as orders. The two columns together contribute
+$S_{ij} r_j + (-S_{ij}) r_{\bar j} = S_{ij}(r_j - r_{\bar j})$ to @eq-ch06-mass-action-tendency, the net rate of
+the reaction.
+
+**Atoms are conserved exactly.** Let $a_{e i}$ be the number of atoms of element $e$ in species $i$. A balanced
+reaction has $\sum_i a_{e i} S_{ij} = 0$ for every element, and so does its negated reverse column. The element total
+$\sum_i a_{ei} c_i$ then has the tendency
+
+$$
+\frac{\mathrm{d}}{\mathrm{d}t} \sum_i a_{ei} c_i = \sum_j \Big(\sum_i a_{ei} S_{ij}\Big) r_j = 0 ,
+$$
+
+whatever the rate constants are, because the inner sum vanishes column by column. The check confirms both the rate
+formula and $a S = 0$ to round-off.[^ch06-check-a]
+
+**Reverse rate constants from the equilibrium constant.** Detailed balance states that at chemical equilibrium every
+elementary reaction runs as fast forward as backward, $r_j = r_{\bar j}$. With the orders above this reads
+$k_j \prod_i c_i^{\nu_{ij}} = k_{\bar j} \prod_i c_i^{\nu'_{ij}}$, and since $S_{ij} = \nu'_{ij} - \nu_{ij}$,
+
+$$
+\frac{k_j}{k_{\bar j}} = \prod_i c_i^{\,S_{ij}} \Big|_{\mathrm{eq}} .
+$$
+
+The right-hand side is fixed by thermodynamics. For an ideal gas the chemical potential of species $i$ at partial
+pressure $p_i = c_i \mathcal R T$ is $\mu_i = g_i^\circ(T) + \mathcal R T \ln(c_i \mathcal R T / p_{\mathrm{ref}})$,
+with $g_i^\circ$ the molar Gibbs energy at the reference pressure $p_{\mathrm{ref}}$ (the kinetics option
+`Pref`[^rg-f6026102f8bb],
+default 101325 Pa). At equilibrium the reaction Gibbs energy vanishes, $\sum_i S_{ij} \mu_i = 0$. Dividing by
+$\mathcal R T$ and moving the reference terms to the right gives
+
+$$
+\begin{aligned}
+\sum_i S_{ij} \ln c_i &= -\frac{\Delta g_j^\circ}{\mathcal R T} - \Delta n_j \ln\frac{\mathcal R T}{p_{\mathrm{ref}}} \\
+\Delta g_j^\circ &= \sum_i S_{ij}\, g_i^\circ(T) \\
+\Delta n_j &= \sum_i S_{ij}
+\end{aligned}
+$$
+
+so the equilibrium product is the concentration equilibrium constant
+
+$$
+\ln K_{c,j} = -\frac{\Delta g_j^\circ}{\mathcal R T} + \Delta n_j \ln\frac{p_{\mathrm{ref}}}{\mathcal R T} ,
+$$ {#eq-ch06-mass-action-kc}
+
+and detailed balance fixes the reverse rate constant as
+
+$$
+k_{\bar j} = \frac{k_j}{K_{c,j}} .
+$$ {#eq-ch06-mass-action-reverse}
+
+@eq-ch06-mass-action-kc and @eq-ch06-mass-action-reverse are computed in `forward_with_rate_constants`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}): $g_i^\circ/(\mathcal R T)$ comes
+from the NASA-9 polynomials (`nasa9_gibbs_RT`, @sec-ch02-nasa9), $\Delta n_j$ is the buffer `dn` built in `reset`, and
+$K_{c,j}$ is clamped below at $10^{-250}$ before the division. Because @eq-ch06-mass-action-reverse holds at every
+state, a state where all reversible reactions balance satisfies $\prod_i c_i^{S_{ij}} = K_{c,j}$, which is the
+chemical-equilibrium condition of @sec-ch05: the fixed point of the kinetics is the chemical equilibrium. The check
+compares $k_j/k_{\bar j}$ from the code with an independent $K_{c,j}$ from the NASA-9 data file at 300 K and 1500 K
+(both NASA-9 ranges) and finds the forward and reverse rates equal to round-off at such a state.[^ch06-check-d1]
+
+**Temperature derivative of the reverse rate constant.** Taking the logarithm of @eq-ch06-mass-action-reverse and
+differentiating,
+
+$$
+\frac{\mathrm{d} \ln k_{\bar j}}{\mathrm{d} T} = \frac{\mathrm{d} \ln k_j}{\mathrm{d} T} - \frac{\mathrm{d} \ln K_{c,j}}{\mathrm{d} T} .
+$$
+
+The first term of @eq-ch06-mass-action-kc changes with $T$ by the Gibbs-Helmholtz relation,
+$\mathrm{d}(g^\circ/\mathcal R T)/\mathrm{d}T = -h^\circ/(\mathcal R T^2)$, and the second by $-\Delta n_j/T$:
+
+$$
+\begin{aligned}
+\frac{\mathrm{d} \ln K_{c,j}}{\mathrm{d} T} &= \frac{\Delta h_j^\circ}{\mathcal R T^2} - \frac{\Delta n_j}{T} \\
+&= \frac{\Delta h_j^\circ - \Delta n_j \mathcal R T}{\mathcal R T^2} = \frac{\Delta u_j^\circ}{\mathcal R T^2} ,
+\end{aligned}
+$$
+
+using $h = u + \mathcal R T$ for each ideal gas, so that $\Delta h^\circ - \Delta n\, \mathcal R T = \Delta u^\circ$
+(the
+van 't Hoff equation in concentration units). Multiplying the first relation by $k_{\bar j}$,
+
+$$
+\frac{\mathrm{d} k_{\bar j}}{\mathrm{d} T} = \frac{1}{K_{c,j}} \frac{\mathrm{d} k_j}{\mathrm{d} T}
+- k_{\bar j} \frac{\Delta u_j^\circ}{\mathcal R T^2} .
+$$ {#eq-ch06-mass-action-reverse-dt}
+
+@eq-ch06-mass-action-reverse-dt is the correct temperature derivative. At the code pin `forward_with_rate_constants`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}) stores
+$\mathrm{d} k_j/\mathrm{d}T$ itself in the reverse column, without the factor $1/K_{c,j}$ and without the second term
+(see Limits). The concentration derivative is divided by $K_{c,j}$ correctly. The check measures the forward
+derivative against a finite difference, and confirms that the reverse entry is off by exactly the predicted
+amount.[^ch06-check-d2]
+
+No published derivation is quoted. The steps above are textbook chemical thermodynamics,[^ch06-kee] checked against
+the code at the pin.
 
 ### Numerical method
 
@@ -85,7 +187,8 @@ The figure of the evaluator order is not provided: the figure module is not writ
 
 : Code map of mass-action rates. {#tbl-ch06-mass-action-code}
 
-1. `from_yaml` reads `reference-state`[^rg-1ffc2d860575] (`Tref`[^rg-782fd094d3ef], `Pref`[^rg-f6026102f8bb]) and then each reaction family from `reactions`; reactants
+1. `from_yaml` reads `reference-state`[^rg-1ffc2d860575] (`Tref`[^rg-782fd094d3ef], `Pref`) and then each reaction
+family from `reactions`; reactants
    and products are sorted into vapor and cloud species, vapors first.
 2. `reset` builds `stoich` (species by reaction, reversible reactions appended as negated columns), registers one
    evaluator per family, and builds `forward_orders`, in which an evaporation column has order one in its
@@ -100,23 +203,64 @@ The figure of the evaluator order is not provided: the figure module is not writ
 | `test_kinetics` | `DeviceTest.forward` runs on CPU and CUDA | none | smoke test |
 | `test_chapman_cycle` | Arrhenius rates and Jacobian agree | missing evidence | not yet read |
 | `test_kinetics_null_options.py` | a family set to `None` has no reactions | exact | structural |
+| check `[a1]` | @eq-ch06-mass-action-rate against $k \prod c^{\nu}$ | $10^{-13}$ rel. | round-off |
+| check `[a2]` | atom matrix times $S$ is zero | exact | integer arithmetic |
+| check `[d1]` | $k_j/k_{\bar j}$ equals @eq-ch06-mass-action-kc; rates balance at equilibrium | $10^{-10}$ rel. | round-off of exp |
+| check `[d2]` | forward $\mathrm{d}k/\mathrm{d}T$ against a finite difference | $10^{-6}$ rel. | central difference |
 
-: Tests of mass-action rates. {#tbl-ch06-mass-action-tests}
+: Tests of mass-action rates. The check rows are lines of `check_ch6_rates.py`. {#tbl-ch06-mass-action-tests}
 
 The tolerances of the Chapman-cycle tests are missing evidence: they have not been read for this draft. CPU and
-CUDA instantiations of `test_kinetics` exist; run records are not attached yet.
+CUDA instantiations of `test_kinetics` exist; run records are not attached yet. The derivation checks run four
+reactions, including `2 H => H2` and a termolecular one, for `[a1]` and `[a2]`, which measure 0 for both. `[d1]` runs
+`O + O2 <=> O3` and `O + O3 <=> 2 O2` at 300 K and 1500 K and measures at most $2.8 \times 10^{-14}$. `[d2]`
+measures $2.4 \times 10^{-10}$ for the forward column. Its reverse line is an expected failure: the code gives
+$-81.9$ where the true $\mathrm{d}k_{\bar j}/\mathrm{d}T$ is $4.8 \times 10^{-8}$, and the difference equals the
+predicted $\mathrm{d}k_j/\mathrm{d}T - \mathrm{d}k_{\bar j}/\mathrm{d}T$ to $2.4 \times 10^{-10}$.[^ch06-check-d2]
+
+[^ch06-check-a]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the four-reaction card inside the
+    script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a scratch
+    directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
+    output: `derivation-checks/check_ch6_rates.out` lines `[a1]`, `[a2]`.]
+
+[^ch06-check-d1]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the ozone card inside the script, with
+    `data/nasa9.dat`; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a
+    scratch directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera
+    2.6.5; output: `derivation-checks/check_ch6_rates.out` lines `[d1]`.]
+
+[^ch06-check-d2]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the ozone card inside the script; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a scratch directory, with
+    `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch6_rates.out` lines `[d2]`; the reverse line is EXPECTED-FAIL by
+    design.]
+
+[^ch06-kee]: [source: R. J. Kee, M. E. Coltrin and P. Glarborg, Chemically Reacting Flow: Theory and Practice, Wiley
+    (2003), <https://doi.org/10.1002/0471461296>, the chapters on thermochemistry and mass-action kinetics.]
 
 ### Limits
 
-Untested hypothesis: for reversible reactions the temperature derivative of the reverse rate constant is the forward
-one copied ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), without the
-temperature derivative of $K_{c,j}^{-1}$. It matters only with `evolve_temperature` on and reversible reactions; no
-test covers that combination.
+::: {.callout-warning title="Limits"}
+- With `evolve_temperature` on, the reverse columns of $\partial k/\partial T$ are a copy of the forward ones. They lack
+  the factor $1/K_{c,j}$ and the term $-k_{\bar j}\,\Delta u_j^\circ/(\mathcal R T^2)$ of
+  @eq-ch06-mass-action-reverse-dt ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
+  The temperature-feedback Jacobian of @sec-ch06-jacobian is then wrong in every reversible reaction unless
+  $K_{c,j}$ is close to 1. The error is far larger than the van 't Hoff term alone ($-81.9$ against $4.8 \times 10^{-8}$
+  in the check). This is a recorded code defect with a fix in progress;[^ch06-d65] the derivation above is the
+  intended result.
+- $K_{c,j}$ is clamped below at $10^{-250}$, so a reverse rate constant cannot exceed $10^{250} k_j$.
+- The reverse columns are added only when the options carry NASA-9 data. The stoichiometry gets its reverse columns
+  whenever a reaction is reversible, so a reversible reaction without NASA-9 data would leave the rate vector
+  shorter than `stoich` has columns. Read from `reset` and `forward_with_rate_constants`; that this fails at the
+  `stoich @ rate` product is a hypothesis, not run.
+:::
+
+[^ch06-d65]: [source: UCzhangxi/kintera#54, row D65 (reverse-reaction `rc_ddT` entries: the $1/K_c$ factor and the
+    van 't Hoff term). This text is to be updated when that fix merges.]
 
 <!-- reader glossary notes -->
+[^rg-f6026102f8bb]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
+
 [^rg-1ffc2d860575]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
 
 [^rg-782fd094d3ef]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
-
-[^rg-f6026102f8bb]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
 <!-- end reader glossary notes -->

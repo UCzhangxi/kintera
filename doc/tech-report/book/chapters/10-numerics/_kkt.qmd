@@ -23,7 +23,7 @@ equilibrium solvers.
 **Purpose.** $\min \lVert \mathsf A x - b \rVert$ s.t. $\mathsf C x \le d$, first `neq` rows equalities,
 @eq-ch10-kkt-system.
 
-**Data.** $\mathsf A$ ($n_1 \times n_2$), $b$, $\mathsf C$ ($n_3 \times n_2$), $d$; $x$ returned in `b`[^rg-bb9a5abb1d7e].
+**Data.** $\mathsf A$ ($n_1 \times n_2$), $b$, $\mathsf C$ ($n_3 \times n_2$), $d$; $x$ returned in place of $b$.
 
 **Placement.** `equilibrate_tp`, `equilibrate_uv` (feasible origin); `constrained_newton_step` fallback.
 
@@ -85,7 +85,7 @@ above are read from the code.
 
 1. Inputs are checked: $n_1 \ge n_2 > 0$, $n_3 \ge 0$, $0 \le$ `neq` $\le n_3$; otherwise status 1.
 2. The feasible-origin policy also checks that $x = 0$ is feasible: $d_k \ge -64 \varepsilon \max|d|$ on inequalities
-   and $|d_k| \le 64 \varepsilon \max|d|$ on equalities; otherwise status 1 and `b` unchanged.
+   and $|d_k| \le 64 \varepsilon \max|d|$ on equalities; otherwise status 1 and the input array of $b$ unchanged.
 3. Each iteration first tries, under the feasible-origin policy and for square $\mathsf A$, the direct form
    $[[\mathsf A_s, \mathsf A_s^{-\mathrm T} \mathsf C_s^{\mathrm T}], [\mathsf C_s, \rho \mathsf I]]$ in
    `kkt_solve_direct` ({{< code src/math/leastsq_kkt.h kkt_solve_direct >}}). Its conditioning follows that of
@@ -125,19 +125,20 @@ The feasible-origin policy is called by `equilibrate_tp` ({{< code src/thermo/eq
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_thermo` | `LeastSquaresKkt.*`: 12 cases of solution, status and iteration count | $10^{-12}$ to $10^{-6}$ absolute, $10^{-10}$ relative, or exact | the test |
-| `test_thermo` | `LeastSquaresKktFeasibleOrigin.*`: 6 cases, incl. dependent rows and exact bounds | $10^{-18}$ to $10^{-5}$ absolute, or exact | the test |
+| `test_thermo` | general policy, 12 cases: solution, status, iterations | $10^{-12}$ to $10^{-6}$ abs., $10^{-10}$ rel., or exact | the test |
+| `test_thermo` | feasible-origin policy, 6 cases: dependent rows, exact bounds | $10^{-18}$ to $10^{-5}$ abs., or exact | the test |
 | `test_alloc_space` | both policies stay inside their pool budget | guard intact | the test |
 
 : Tests of the constrained least-squares solver. {#tbl-ch10-kkt-tests}
 
-The cases are in {{< code tests/test_thermo.cpp >}} and {{< code tests/test_alloc_space.cpp >}}. Examples: a
-redundant pair of equalities is solved with regularization to $10^{-8}$
-(`LeastSquaresKkt.RegularizesRedundantActiveConstraints`). An inconsistent pair returns status 3 and leaves $x = 0$
-(`LeastSquaresKkt.RejectsInconsistentEqualities`). A $-10^{-19}$ round-off bound is accepted as feasible to
-$10^{-18}$ (`LeastSquaresKktFeasibleOrigin.AcceptsRoundOffNegativeBound`). The `LeastSquaresKkt` cases are plain
-gtest cases on the CPU; two of them go through `constrained_newton_step`. The CUDA path of the same template is
-reached only through the `DeviceTest` equilibrium cases of `test_thermo`, which are also instantiated for CUDA. No run
+The cases are in {{< code tests/test_thermo.cpp >}} and {{< code tests/test_alloc_space.cpp >}}. The general
+policy's cases form the gtest suite `LeastSquaresKkt` and the feasible-origin cases the suite
+`LeastSquaresKktFeasibleOrigin`. Examples: a redundant pair of equalities is solved with regularization to
+$10^{-8}$ (case `RegularizesRedundantActiveConstraints` of the first suite). An inconsistent pair returns status 3
+and leaves $x = 0$ (case `RejectsInconsistentEqualities`). A $-10^{-19}$ round-off bound is accepted as feasible to
+$10^{-18}$ (case `AcceptsRoundOffNegativeBound` of the second suite). The cases of the first suite are plain gtest
+cases on the CPU; two of them go through `constrained_newton_step`. The CUDA path of the same template is reached
+only through the `DeviceTest` equilibrium cases of `test_thermo`, which are also instantiated for CUDA. No run
 record is attached in this draft (missing evidence).
 
 ### Limits
@@ -147,7 +148,3 @@ record is attached in this draft (missing evidence).
 - The feasible-origin policy may return an $x$ that violates a dependent row it chose not to activate; the caller must
   clip the step, as its doc comment states ({{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}}).
 - `reg` is a `float` argument even when `T` is `double`.
-
-<!-- reader glossary notes -->
-[^rg-bb9a5abb1d7e]: b — exponent of the temperature ratio in the Arrhenius rate; default 0; stored in option `b`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L95)
-<!-- end reader glossary notes -->

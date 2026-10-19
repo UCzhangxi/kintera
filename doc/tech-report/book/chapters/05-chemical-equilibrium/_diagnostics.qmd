@@ -1,0 +1,152 @@
+## Convergence and failure reporting (status, iterations, error) {#sec-ch05-diagnostics}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/equilibrium/phase_equilibrate_tp.h, src/equilibrium/equilibrium.cpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+`EquilibriumTP` never raises on a cell that does not converge. Each cell returns three numbers: a status code, the
+number of Newton steps taken, and the remaining error, the largest relative mismatch between a reaction quotient and
+its equilibrium constant. The caller must read them. The forward also returns the Jacobian of the last iteration as a
+"gain". The commonest failure on a well-posed problem is a phase that should vanish: the solver cannot remove it and
+reports status 4.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Report per cell whether @eq-ch05-conditions-residual was met, @eq-ch05-diagnostics-error.
+
+**Data.** `diagnostics[..., 0:3]` = status, iterations, error; gain, reactions by reactions.
+
+**Placement.** End of `phase_equilibrate_tp`, per cell.
+
+**Activation.** Always; YAML `ftol` ($10^{-8}$).
+
+**Guarantee / limits.** Status 0 means error $\le$ `ftol` in double; nothing is raised or counted.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Symbols as in @sec-ch05-conditions and @sec-ch05-newton. Local symbols: $Q_r$, the reaction quotient
+$\prod_n a_n^{\nu_{nr}}$ [-]; $\varepsilon$, the reported error [-]; $\epsilon_{\mathrm{mach}}$, the machine epsilon of
+the floating type [-].
+
+### Derivation
+
+The residual of @eq-ch05-conditions-residual is $r_r = \ln(Q_r/K^\circ_r)$. The code stops on $\max_r |r_r|$ and
+reports it transformed into a relative mismatch:
+
+$$
+\begin{aligned}
+\text{stop when } \max_r |r_r| &\le \max\big(\ln(1 + \texttt{ftol}),\ 4\,\epsilon_{\mathrm{mach}}\big) , \\
+\varepsilon &= \exp\big(\max_r |r_r|\big) - 1 = \max_r \max\Big(\frac{Q_r}{K^\circ_r}, \frac{K^\circ_r}{Q_r}\Big) - 1 .
+\end{aligned}
+$$ {#eq-ch05-diagnostics-error}
+
+So in double precision status 0 means $\varepsilon \le$ `ftol`: every quotient is within a factor $1 + $ `ftol` of
+its constant. In single precision the floor $4\,\epsilon_{\mathrm{mach}} = 4.8\times10^{-7}$ is larger than the
+default `ftol` and sets the target instead (`newton_check.py`, `[C5]`). Both lines are computed in
+`phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}): `target` and
+`diag[2] = exp(max_error) - 1`.
+
+### Numerical method
+
+At the end of each cell `phase_equilibrate_tp`
+({{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}) re-evaluates the residuals at the
+returned amounts and writes:
+
+| `diagnostics[..., 0]` | meaning | returned amounts |
+|---|---|---|
+| 0 | converged: $\max_r |r_r|$ at or below the target | the solution |
+| 1 | input rejected: $T$ or $p$ not positive, empty lists, gas phase out of range, or an amount not above `mole-floor` | the input |
+| 2 | `max-iter` iterations without meeting the target | the last iterate |
+| 3 | the bounded Newton step failed (@sec-ch10-newton) | the last iterate |
+| 4 | no step scale down to $10^{-12}$ reduced the largest residual | the last iterate |
+
+: Status codes of the log-K solver. {#tbl-ch05-diagnostics-status}
+
+`diagnostics[..., 1]` is the number of accepted Newton steps: 0 for a cell already at equilibrium or rejected, and
+`max-iter` for status 2. `diagnostics[..., 2]` is $\varepsilon$ at the returned amounts, 0 for status 1. The gain is the
+Jacobian @eq-ch05-newton-jacobian of the last iteration that built one, evaluated before that iteration's step. It is
+all zeros when no iteration built one, that is, for status 1 and for a cell already at equilibrium.
+
+**A phase that should vanish.** If the equilibrium has no amount of some phase, the iteration drives that phase
+towards `mole-floor` and the cell ends with status 4. The mechanism is a hypothesis we have not instrumented: near the
+floor the bound of @eq-ch05-newton-bounds caps every step that would reduce the phase further, and for a one-species
+phase the residual does not depend on its amount at all (`newton_check.py`, `[C3]`), so no step scale lowers the
+largest residual. Its amounts are then close to the one-phase answer, with the phase near the floor, but the error is large:
+the reaction that would form the phase is subsaturated. @fig-ch05-diagnostics-water shows this for water vapour over a
+pure liquid with NASA-9 constants and a fixed total of water. Up to 300 K the solve converges and the water partial
+pressure equals $p^\circ/K^\circ$ to $7.2\times10^{-9}$. From 302.5 K up, where all the water should be vapour,
+every cell has status 4, with at most $7.4\times10^{-14}$ mol of liquid left and an error rising from 0.062 to
+3.5.[^ch05-water-run]
+
+```{python}
+#| label: fig-ch05-diagnostics-water
+#| fig-cap: "Water vapour over a pure liquid with NASA-9 constants (N2 1 mol, water 0.02 mol each as vapour and liquid at the start, 1 bar). (a) Water partial pressure from EquilibriumTP (open green circles) and the saturation pressure p_std/K from the NASA-9 constant (blue line). (b) Reported error; dashed line: ftol. Grey bands: status 4, where the liquid should vanish."
+#| fig-alt: "Left: the solver's partial pressure follows the saturation curve up to 300 K and then stays flat at about 3.8 kPa while the curve keeps rising. Right: errors below 1e-8 up to 300 K, then between 0.06 and 3.5 in grey bands."
+#| echo: false
+from kintera_report.ch05.figures.fig_water_condensation import make_fig
+make_fig()
+```
+
+The other statuses, on the same card at 300 K: a converged solve takes 5 steps with error $2.1\times10^{-13}$ and
+gain 26.3. Restarting from its solution takes 0 steps and returns a zero gain. A zero liquid amount returns status 1
+with the input unchanged. `max-iter: 1` returns status 2 after 1 step with error 0.30. A start with too little water
+returns status 4 after 17 steps with error 0.80. Passing `warm_start=True` changes nothing.[^ch05-status-run] On the
+CUDA build the statuses of the two-component flash of @sec-ch05-conditions are the same in all 37 cells. The
+iteration counts differ in 18 of them, all status-4 cells whose iterates sit at the floor, and the status-0 results
+agree to $1.4\times10^{-8}$, within the tolerance.[^ch05-cuda-run]
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| target, status, iterations, error, gain | {{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}} | `phase_equilibrate_tp` | always |
+| output shapes | {{< code src/equilibrium/equilibrium.cpp EquilibriumTPImpl::forward >}} | `EquilibriumTPImpl::forward` | always |
+
+: Code map of convergence and failure reporting. {#tbl-ch05-diagnostics-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_equilibrium.release` (`IdealGasReaction`) | status 0 and error below the bound, on CPU and CUDA | error $< 10^{-5}$ | not stated in the test |
+| `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | status 0 for the H$_2$, O$_2$, H$_2$O solve at 4000 K | error $< 10^{-7}$ | not stated in the test |
+
+: Tests of convergence and failure reporting. {#tbl-ch05-diagnostics-tests}
+
+No test produces status 1, 2, 3 or 4, checks the iteration count, or checks the gain beyond its shape. The runs above
+show each status except 3. A suite test would build the water card of @fig-ch05-diagnostics-water and assert status 1,
+2 and 4 for the three inputs listed.
+
+[^ch05-water-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
+`src/kintera_report/ch05/runs/run_equilibrium.py`, the cases of `water_condensation.json`; run: `python -P
+src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>` (lines `[R5]`, `[R6]`), CPU, double; kintera 2.6.5 source
+build, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6; a measurement outside the suite, not a committed check.]
+
+[^ch05-status-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
+`src/kintera_report/ch05/runs/run_equilibrium.py` at 300 K and $10^5$ Pa, the cases of `status_cases.json`; run:
+`python -P src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>` (lines `[S]`), CPU, double; kintera 2.6.5 source
+build, Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed check.]
+
+[^ch05-cuda-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `BINARY` in
+`src/kintera_report/ch05/runs/run_equilibrium.py`; run: `python -P src/kintera_report/ch05/runs/run_equilibrium.py
+<out_dir> --device cuda` on the CUDA build, then `python -P src/kintera_report/ch05/runs/run_equilibrium.py --compare
+<cpu_dir> <cuda_dir>` (lines `[X1]`, `[X2]`); double; CUDA 12.6.85, GeForce GTX 1080 Ti, Python 3.11.13, torch
+2.10.0+cu126; a measurement outside the suite, not a committed check.]
+
+### Limits
+
+::: {.callout-warning title="Limits"}
+- **Nothing is raised or counted.** A cell with a non-zero status keeps its last iterate; the caller must read
+  `diagnostics[..., 0]`.
+- **A vanishing phase is reported as a failure.** Status 4 does not tell a phase that should vanish from a step that
+  stalled for another reason; the caller can tell them apart only by looking at the amounts.
+- **The gain lags one step.** It is the Jacobian before the last step, and zero for a cell that needed no step.
+:::
+
+- In single precision the target is $4.8\times10^{-7}$, not `ftol`.

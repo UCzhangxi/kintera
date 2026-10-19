@@ -1,0 +1,128 @@
+## Equilibrium constants from NASA-9 polynomials (`Nasa9LogK`) {#sec-ch05-log-k}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: python/equilibrium/nasa9.py, python/equilibrium/__init__.py, src/species.cpp, src/thermo/nasa9.hpp,
+  data/nasa9.dat, examples/equilibrium_nasa9.py
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+The solver takes $\ln K^\circ_r$ as an input. `Nasa9LogK` computes it from the NASA-9 polynomials bundled with
+kintera: it evaluates each component's $g^\circ_n/\mathcal R T$ and contracts it with the stoichiometric matrix of the
+options. The data file holds 293 species with two temperature ranges, 200 to 1000 K and 1000 to 6000 K. Besides
+gases it has a few condensed entries, such as liquid and solid water, which a component can be mapped to by name. The
+constants are those at the standard pressure; the pressure of a cell enters only through the gas activities.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\ln K^\circ_r$ of @eq-ch05-conditions-residual from tabulated data, @eq-ch05-log-k-gibbs.
+
+**Data.** $T$ [K] in, any shape; $\ln K^\circ_r$ out, shape `(..., R)` in option reaction order.
+
+**Placement.** Python, before each solve; any device.
+
+**Activation.** `Nasa9LogK(options, nasa9_species=None)`; names default to the components.
+
+**Guarantee / limits.** Two ranges joined at 1000 K; no range check; the pressure argument is ignored.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Symbols as in @sec-ch05-conditions; $h_n$ and $s_n$ of the notation table, here at $p^\circ$. Local symbols:
+$a_{0..6}$, $a_8$, $a_9$, the nine NASA-9 coefficients of one species in one range [-].
+
+### Derivation
+
+In each range the NASA-9 form gives the enthalpy and entropy of a species, and the Gibbs energy follows:
+
+$$
+\begin{aligned}
+\frac{h_n}{\mathcal R T} &= -\frac{a_0}{T^2} + \frac{a_1 \ln T}{T} + a_2 + \frac{a_3 T}{2} + \frac{a_4 T^2}{3}
+  + \frac{a_5 T^3}{4} + \frac{a_6 T^4}{5} + \frac{a_8}{T} , \\
+\frac{s_n}{\mathcal R} &= -\frac{a_0}{2T^2} - \frac{a_1}{T} + a_2 \ln T + a_3 T + \frac{a_4 T^2}{2}
+  + \frac{a_5 T^3}{3} + \frac{a_6 T^4}{4} + a_9 , \\
+\frac{g^\circ_n}{\mathcal R T} &= \frac{h_n}{\mathcal R T} - \frac{s_n}{\mathcal R} , \qquad
+\ln K^\circ_r = -\sum_n \nu_{nr}\, \frac{g^\circ_n}{\mathcal R T} .
+\end{aligned}
+$$ {#eq-ch05-log-k-gibbs}
+
+The first three lines are `nasa9_gibbs_RT` ({{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}), which takes the low
+coefficients below the mid-point temperature and the high ones above it. The last line is `Nasa9LogK.__call__`
+({{< code python/equilibrium/nasa9.py Nasa9LogK >}}), `-(gibbs_rt @ stoich)`, with the `stoich` buffer of an
+`EquilibriumTP` built from the same options.
+
+### Numerical method
+
+1. **Construction.** `Nasa9LogK(options, nasa9_species)` keeps one NASA-9 name per component, by default the
+   component names, and the stoichiometric matrix of the options.
+2. **Data.** `nasa9_gibbs_rt` ({{< code src/species.cpp nasa9_gibbs_rt >}}) reads `data/nasa9.dat` once per process,
+   guarded so that concurrent first calls are safe. It looks up each name, raising "NASA-9 species not found" for an
+   unknown one, and calls `nasa9_gibbs_RT` with a mid-point of 1000 K for every species.
+3. **Evaluation.** `__call__(temp, pressure)` returns $\ln K^\circ_r$ on the device and dtype of `temp`. The pressure
+   argument is deleted unused.
+
+For an ideal gas the constants are those at $p^\circ$, and the cell pressure enters through the factor $p/p^\circ$ of
+@eq-ch05-conditions-activity, so ignoring the argument is correct there. For a condensed species it means the
+constant has no pressure correction (@sec-ch05-conditions, Limits).
+
+**A condensed species from the same file.** Mapping the liquid of the water card of @sec-ch05-diagnostics to the
+entry `H2O_l_s` gives, for H$_2$O ⇌ H$_2$O(l), a saturation pressure $p^\circ/K^\circ$ of 3533.6 Pa at 300 K. kintera's
+own liquid-water curve `h2o_ideal` gives 3539.5 Pa there, so the two sources differ by $1.7\times10^{-3}$
+relative.[^ch05-logk-water] @fig-ch05-log-k-gas shows the constants and the equilibrium they give for a hot H-O gas.
+Above about 3500 K atomic H and the radical OH take over from water (at 3500 K, $x_{\mathrm{H_2O}} = 0.231$,
+$x_{\mathrm{OH}} = 0.157$, $x_{\mathrm{H}} = 0.253$).[^ch05-logk-ho]
+
+```{python}
+#| label: fig-ch05-log-k-gas
+#| fig-cap: "Hot H-O gas at 1 bar with NASA-9 constants, from 2 H2 + O2. (a) ln K of the four reactions from Nasa9LogK. (b) Equilibrium mole fractions from EquilibriumTP."
+#| fig-alt: "Left: ln K of water formation falls from 13 at 1500 K to -1 at 5000 K; the dissociation constants of H2 and O2 rise from about -22 and -25 to 4. Right: water dominates up to 3000 K; above 3500 K atomic H and O and the radical OH rise while water falls to 2e-4."
+#| echo: false
+from kintera_report.ch05.figures.fig_ho_gas import make_fig
+make_fig()
+```
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| log K model | {{< code python/equilibrium/nasa9.py Nasa9LogK >}} | `Nasa9LogK` | Python API |
+| database and lookup | {{< code src/species.cpp nasa9_gibbs_rt >}} | `nasa9_gibbs_rt` | always |
+| Gibbs energy | {{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}} | `nasa9_gibbs_RT` | always |
+| example | {{< code examples/equilibrium_nasa9.py >}} | `main` | not a test |
+
+: Code map of the NASA-9 constants. {#tbl-ch05-log-k-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | $\ln K^\circ$ for H$_2$ + ½ O$_2$ ⇌ H$_2$O at 4000 K has one finite entry, and the solve converges | finite | structure |
+| `test_equilibrium.release` (`Nasa9.ConcurrentFirstDatabaseAccess`) | eight concurrent first calls return the same finite values | `torch::allclose` defaults | the library defaults |
+
+: Tests of the NASA-9 constants. {#tbl-ch05-log-k-tests}
+
+Both pass on both builds (@sec-ch05-conditions, Tests). No test checks a value of $\ln K^\circ_r$ against an
+independent table, or a condensed entry.
+
+[^ch05-logk-water]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
+`src/kintera_report/ch05/runs/run_equilibrium.py` with NASA-9 names N2, H2O and H2O_l_s; run: `python -P
+src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>` (lines `[R4]`, `[R4b]`; `[R4b]` evaluates the formula of
+`h2o_ideal` in `src/vapors/vapor_functions.h`), CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch
+2.10.0+cu126, numpy 2.4.6; a measurement outside the suite, not a committed check.]
+
+[^ch05-logk-ho]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `HO` in
+`src/kintera_report/ch05/runs/run_equilibrium.py`; run: `python -P src/kintera_report/ch05/runs/run_equilibrium.py
+<out_dir>` (line `[R9]`), CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6; a
+measurement outside the suite, not a committed check.]
+
+### Limits
+
+- **No range check.** Temperatures below 200 K or above 6000 K are evaluated with the low or high coefficients
+  without a warning; the accuracy there is not measured.
+- **One mid-point for all species.** The coefficients switch at 1000 K for every species, as the file's two ranges
+  are stated.
+- **The pressure argument is ignored**, which is right for ideal gases and leaves condensed constants without a
+  pressure correction.

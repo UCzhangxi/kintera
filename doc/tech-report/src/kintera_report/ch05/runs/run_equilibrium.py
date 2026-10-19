@@ -172,6 +172,11 @@ def run_water(dev):
         rows["error"].append(diag[2])
     i300 = rows["T"].index(300.0)
     print(f"[R4] water: p_sat from NASA-9 ln K at 300 K = {rows['psat_from_K'][i300]:.1f} Pa")
+    # kintera's own liquid-water curve h2o_ideal (src/vapors/vapor_functions.h), above its triple point
+    tr, pr, beta, gamma = 273.16, 611.7, 24.845, 4.986009
+    ideal = pr * np.exp((1 - tr / 300.0) * beta - gamma * np.log(300.0 / tr))
+    print(f"[R4b] water: h2o_ideal at 300 K = {ideal:.1f} Pa; NASA-9 over h2o_ideal - 1 = "
+          f"{rows['psat_from_K'][i300] / ideal - 1:+.2e}")
     two = [i for i, s in enumerate(rows["status"]) if s == 0]
     print(f"[R5] water: status 0 for T <= {max(rows['T'][i] for i in two):.1f} K; "
           f"max |p_H2O/p_sat - 1| there = {max(abs(rows['p_h2o'][i] / rows['psat_from_K'][i] - 1) for i in two):.1e}")

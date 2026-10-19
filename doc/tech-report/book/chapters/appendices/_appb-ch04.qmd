@@ -4,11 +4,13 @@
 
 | scheme | equation | derivation | code and check | source |
 |---------------|---------|-------------------------------|-------------------------------------|--------|
-| @sec-ch04-conditions | @eq-ch04-conditions-saturation | The equilibrium conditions are then three complementarity relations, for every reaction $j$: | code: {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}; check: none | re-derived |
-| @sec-ch04-equilibrate-tp | none | TODO: the linearisation of the logarithmic conditions in the reaction extents, written out in full from `equilibrate_tp`, and the weight matrix it builds. | code: ; check: none | n/a |
-| @sec-ch04-equilibrate-uv | none | TODO: the energy constraint, the saturation constants in concentration units and the temperature solve, written out from `equilibrate_uv` ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}). | code: ; check: none | n/a |
-| @sec-ch04-active-set | none | TODO: not yet written. | code: ; check: none | n/a |
+| @sec-ch04-conditions | @eq-ch04-conditions-saturation | The equilibrium conditions are three complementarity relations, for every reaction $j$: | code: {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}; check: none | re-derived |
+| @sec-ch04-equilibrate-tp | @eq-ch04-equilibrate-tp-weight | Its derivative with respect to a gas mole fraction $x_i$ is | code: not tagged; check: none | re-derived |
+| @sec-ch04-equilibrate-tp | @eq-ch04-equilibrate-tp-step | To first order the change of $L_j$ is $(\mathsf W\,\mathsf S\,\boldsymbol\xi)_j$, and the step that removes every deficit solves | code: {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}; check: none | re-derived |
+| @sec-ch04-equilibrate-uv | @eq-ch04-equilibrate-uv-constant | Substituting into the deficit of @sec-ch04-conditions gives the condition in concentration units: | code: not tagged; check: none | re-derived |
+| @sec-ch04-equilibrate-uv | @eq-ch04-equilibrate-uv-energy | The internal energy per volume is held fixed while condensation moves species: | code: {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}; check: none | re-derived |
+| @sec-ch04-active-set | @eq-ch04-active-set-problem | The step is therefore the solution of | code: {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}; check: none | re-derived |
 | @sec-ch04-warm-start-failures | none | No derivation: this scheme is bookkeeping around the solvers. | code: ; check: none | n/a |
-| @sec-ch04-nucleation | none | TODO: not yet written. | code: ; check: none | n/a |
+| @sec-ch04-nucleation | none | No derivation: the reader maps YAML entries to the constants $K_j(T)$ of @sec-ch04-conditions. | code: ; check: none | n/a |
 
 : Derivations of @sec-ch04. {#tbl-appb-ch04}

@@ -38,10 +38,10 @@ No derivation: the reader maps YAML entries to the constants $K_j(T)$ of @sec-ch
 `NucleationOptionsImpl::from_yaml` ({{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}}) reads each
 reaction entry:
 
-1. An entry whose `type` is not `nucleation` is skipped.
-2. The `equation` and the `rate-constant` block are required. In `rate-constant`, `formula` is required:
+1. An entry whose `type`[^rg-e7755bb7941e] is not `nucleation` is skipped.
+2. The `equation`[^rg-af50ac18addc] and the `rate-constant`[^rg-f7d3460bb6bb] block are required. In `rate-constant`, `formula`[^rg-4090a0a3b182] is required:
    - `ideal` takes `T3`, `P3`, `beta` and `gamma`, with optional `betas` and `gammas` for a solid branch below `T3`;
-   - `antoine` takes `A`, `B` and `C`;
+   - `antoine` takes `A`[^rg-cf38eb9c6d82], `B` and `C`;
    - any other value names a function of the function table, such as `h2o_ideal`, `nh3_ideal` or the two-gas
      `nh3_h2s_lewis` ({{< code src/vapors/vapor_functions.h >}}).
 3. `minT` and `maxT` are read, with defaults 0 and $10^4$ K, and are stored. No solver reads them; they appear only in
@@ -81,3 +81,15 @@ No test checks that a reaction of another type is excluded, or that `minT`/`maxT
 
 - `minT` and `maxT` have no effect, as above.
 - A condensate outside every nucleation reaction is not adjusted (@sec-ch04-conditions).
+
+<!-- reader glossary notes -->
+[^rg-e7755bb7941e]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
+
+[^rg-af50ac18addc]: equation — reaction string; => irreversible, <=> or = reversible; required; parsed by `Reaction`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L64-L68)
+
+[^rg-f7d3460bb6bb]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
+
+[^rg-4090a0a3b182]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)
+
+[^rg-cf38eb9c6d82]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
+<!-- end reader glossary notes -->

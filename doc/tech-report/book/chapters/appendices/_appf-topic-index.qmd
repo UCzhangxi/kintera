@@ -6,6 +6,8 @@
 
 **actinic flux**: Actinic flux on the photolysis grid, @sec-ch07-actinic-flux.
 
+*active set*, see **constrained least squares**.
+
 *ADD_ARG*, see **options objects, C++**.
 
 *Antoine equation*, see **saturation vapor pressure**.
@@ -20,7 +22,11 @@
 
 **`b`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
+*back substitution*, see **LU decomposition**.
+
 *backward Euler*, see **implicit time step**.
+
+**bounded Newton step**: The bounded Newton step, @sec-ch10-newton.
 
 *branches*, see **photolysis cross section**.
 
@@ -40,6 +46,10 @@
 
 *configuration file*, see **YAML input file**.
 
+**constrained least squares**: Constrained least squares by an active set, @sec-ch10-kkt.
+
+*constrained Newton*, see **bounded Newton step**.
+
 **coupling, equation of state**: Thermodynamics as the equation of state of snapy (thermodynamics card), @sec-ch14-thermo.
 
 **coupling, kinetics**: Kinetics after the dynamics step, @sec-ch14-kinetics.
@@ -52,11 +62,17 @@
 
 *CPU or GPU*, see **device dispatch**.
 
+**CSR**: The sparse linear solve on CUDA, @sec-ch10-sparse.
+
+*CSR matrix*, see **sparse linear solve**.
+
 *ctest*, see **test suite**.
 
 **CUDA build**: Building the CUDA library, @sec-ch12-build.
 
 *CUDA option*, see **CUDA build**.
+
+*cuSOLVER*, see **sparse linear solve**.
 
 **`cv_R`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
@@ -67,6 +83,8 @@
 *Dalton's law*, see **equation of state**.
 
 *data files*, see **resource lookup**.
+
+**dense linear solve**: Dense helpers and the pivoted Gaussian solve, @sec-ch10-dense.
 
 **device dispatch**: Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
 
@@ -83,6 +101,8 @@
 *diffusion_tendency*, see **eddy diffusion tendency**.
 
 *dispatch stub*, see **device dispatch**.
+
+*dsolve_lu*, see **dense linear solve**.
 
 **`dzi`**: The eddy-diffusion operator on a column, @sec-ch08-operator.
 
@@ -118,6 +138,8 @@
 
 **example scripts**: Example scripts as quick-start runs, @sec-ch13-examples.
 
+**`extrapolate`**: Multilinear table interpolation, @sec-ch10-interpolation.
+
 ## F {.unnumbered .unlisted}
 
 *failed cells*, see **coupling, saturation adjustment**.
@@ -129,6 +151,8 @@
 **`formula`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
 ## G {.unnumbered .unlisted}
+
+*Gaussian elimination*, see **dense linear solve**.
 
 *GoogleTest*, see **test suite**.
 
@@ -148,11 +172,15 @@
 
 **internal energy, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
 
+*interpn*, see **table interpolation**.
+
 *isentrope*, see **moist adiabat**.
 
 ## J {.unnumbered .unlisted}
 
 *J value*, see **photolysis rate constant**.
+
+*Jacobi eigenvalues*, see **pseudo-inverse solve**.
 
 **Jacobian, reaction space**: Reaction-space Jacobian, @sec-ch06-jacobian.
 
@@ -172,6 +200,10 @@
 
 *Kirchhoff's law*, see **latent heat**.
 
+**KKT**: Constrained least squares by an active set, @sec-ch10-kkt.
+
+*KKT system*, see **constrained least squares**.
+
 *Kzz*, see **eddy diffusion operator**.
 
 **`Kzz`**: The eddy-diffusion operator on a column, @sec-ch08-operator.
@@ -182,13 +214,25 @@
 
 *law of mass action*, see **reaction rate, mass action**.
 
+*leastsq_kkt*, see **constrained least squares**.
+
 *Lindemann*, see **fall-off rate constant**.
 
+*line search*, see **bounded Newton step**.
+
 *LogSVPFunc*, see **saturation vapor pressure, derivative**.
+
+**LU decomposition**: LU decomposition, back substitution and inverse, @sec-ch10-lu.
+
+*ludcmp*, see **LU decomposition**.
 
 ## M {.unnumbered .unlisted}
 
 **mass fractions**: Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
+
+*matrix inverse*, see **LU decomposition**.
+
+*minimum-norm solution*, see **pseudo-inverse solve**.
 
 *mixing-ratio diffusion*, see **eddy diffusion operator**.
 
@@ -199,6 +243,8 @@
 **mole fractions**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
 
 *molecular weight*, see **molar mass**.
+
+*multilinear interpolation*, see **table interpolation**.
 
 ## N {.unnumbered .unlisted}
 
@@ -224,6 +270,8 @@
 
 *partial density*, see **mass fractions**.
 
+*partial pivoting*, see **dense linear solve**.
+
 *phase*, see **species registry**.
 
 *PhotoChem*, see **photolysis reaction rate**.
@@ -241,6 +289,10 @@
 **pressure switch**: Pressure switch on Arrhenius-form rates, @sec-ch06-pressure-switch.
 
 *pseudo-adiabat*, see **moist adiabat**.
+
+**pseudo-inverse solve**: The minimum-norm solve by eigen-decomposition, @sec-ch10-pseudo-inverse.
+
+*psolve*, see **pseudo-inverse solve**.
 
 *pybind11*, see **Python bindings**.
 
@@ -278,6 +330,8 @@
 
 **reference temperature and pressure, thermodynamic**: Reference state and latent heat, @sec-ch03-reference-state.
 
+**`reg`**: Constrained least squares by an active set, @sec-ch10-kkt.
+
 **relative humidity**: Relative humidity of each condensation reaction, @sec-ch03-relative-humidity.
 
 *release floor*, see **package version**.
@@ -305,6 +359,8 @@
 *shared memory*, see **GPU kernels**.
 
 *snapy equation of state*, see **coupling, equation of state**.
+
+**sparse linear solve**: The sparse linear solve on CUDA, @sec-ch10-sparse.
 
 **sparse solver, GPU**: CUDA sparse linear solver, @sec-ch12-sparse-solver.
 
@@ -348,6 +404,8 @@
 
 ## T {.unnumbered .unlisted}
 
+**table interpolation**: Multilinear table interpolation, @sec-ch10-interpolation.
+
 *temperature bands*, see **Arrhenius rate constant**.
 
 **temperature from entropy**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
@@ -369,6 +427,8 @@
 *ThermoY*, see **mass fractions**.
 
 *three-body reaction*, see **fall-off rate constant**.
+
+**`tol`**: The sparse linear solve on CUDA, @sec-ch10-sparse.
 
 **`Tref`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 

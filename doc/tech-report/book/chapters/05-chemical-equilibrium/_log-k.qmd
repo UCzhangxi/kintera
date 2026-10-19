@@ -69,7 +69,7 @@ For an ideal gas the constants are those at $p^\circ$, and the cell pressure ent
 constant has no pressure correction (@sec-ch05-conditions, Limits).
 
 **A condensed species from the same file.** Mapping the liquid of the water card of @sec-ch05-diagnostics to the
-entry `H2O_l_s` gives, for H$_2$O ⇌ H$_2$O(l), a saturation pressure $p^\circ/K^\circ$ of 3533.6 Pa at 300 K. kintera's
+entry `H2O_l_s` gives, for H$_2$O $\rightleftharpoons$ H$_2$O(l), a saturation pressure $p^\circ/K^\circ$ of 3533.6 Pa at 300 K. kintera's
 own liquid-water curve `h2o_ideal` gives 3539.5 Pa there, so the two sources differ by $1.7\times10^{-3}$
 relative.[^ch05-logk-water] @fig-ch05-log-k-gas shows the constants and the equilibrium they give for a hot H-O gas.
 Above about 3500 K atomic H and the radical OH take over from water (at 3500 K, $x_{\mathrm{H_2O}} = 0.231$,
@@ -99,7 +99,7 @@ make_fig()
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | $\ln K^\circ$ for H$_2$ + ½ O$_2$ ⇌ H$_2$O at 4000 K has one finite entry, and the solve converges | finite | structure |
+| `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | $\ln K^\circ$ for H$_2$ + ½ O$_2$ $\rightleftharpoons$ H$_2$O at 4000 K has one finite entry, and the solve converges | finite | structure |
 | `test_equilibrium.release` (`Nasa9.ConcurrentFirstDatabaseAccess`) | eight concurrent first calls return the same finite values | `torch::allclose` defaults | the library defaults |
 
 : Tests of the NASA-9 constants. {#tbl-ch05-log-k-tests}

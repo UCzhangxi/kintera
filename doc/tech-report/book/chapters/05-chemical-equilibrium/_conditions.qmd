@@ -129,10 +129,10 @@ make_fig()
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_equilibrium.py` (`test_python_core_binding_is_functional`) | A ⇌ B with $\ln K^\circ = 0$ ends at equal amounts; the input is not modified | `atol=1e-7`, `rtol=1e-7` | not stated in the test |
+| `test_equilibrium.py` (`test_python_core_binding_is_functional`) | A $\rightleftharpoons$ B with $\ln K^\circ = 0$ ends at equal amounts; the input is not modified | `atol=1e-7`, `rtol=1e-7` | not stated in the test |
 | `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | H and O are conserved by the H$_2$, O$_2$, H$_2$O solve at 4000 K | `assert_close` defaults for double | the PyTorch defaults |
 | `test_equilibrium.py` (`test_ill_conditioned_multiphase_newton_step`) | a silicate, metal and gas system of 25 components and 18 reactions converges with every amount positive | error $< 10^{-8}$ | the `ftol` of the case |
-| `test_equilibrium.release` (`IdealGasReaction`) | A ⇌ B at two temperatures ends at 0.5 each, summing to 1, status 0 | `rtol=1e-5`, `atol=1e-6` | not stated in the test |
+| `test_equilibrium.release` (`IdealGasReaction`) | A $\rightleftharpoons$ B at two temperatures ends at 0.5 each, summing to 1, status 0 | `rtol=1e-5`, `atol=1e-6` | not stated in the test |
 
 : Tests of the equilibrium conditions. {#tbl-ch05-conditions-tests}
 

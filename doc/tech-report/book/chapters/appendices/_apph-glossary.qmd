@@ -37,6 +37,7 @@
 
 ## Named concepts {.unnumbered .unlisted}
 
+- **validation tolerance**: defined in [How the test suite is organised and run (`ctest`)](#sec-ch13-suite).
 
 ## Symbols {.unnumbered .unlisted}
 

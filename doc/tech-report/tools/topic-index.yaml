@@ -97,6 +97,9 @@ sections:
   # Chapter 13. Tests and validation
   sec-ch13-suite:
     - test suite: [ctest, pytest, GoogleTest]
+    - running the tests: [ctest, pytest, skipped cases, Not Run]
+    - conservation tests, equilibrium: [element balance, N and S, H and O]
+    - validation tolerance: [test tolerance, stopping tolerance]
   sec-ch13-results:
     - test results, CPU and CUDA builds: [test counts]
   sec-ch13-device-coverage:

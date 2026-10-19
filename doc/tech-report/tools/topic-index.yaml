@@ -88,6 +88,9 @@ sections:
     - CUDA build: [CUDA option, GPU architectures]
   sec-ch12-dispatch:
     - device dispatch: [CPU or GPU, dispatch stub]
+    - moving a module to the GPU: [module.to, device and precision contract]
+    - batch dimension: [broadcasting, tensor shapes]
+    - GPU timing: [speedup, benchmark protocol]
   sec-ch12-kernels:
     - GPU kernels: [shared memory, workspace per thread]
   sec-ch12-device-functions:

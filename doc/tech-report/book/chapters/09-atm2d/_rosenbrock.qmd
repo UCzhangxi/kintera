@@ -249,8 +249,8 @@ Step 5 is checked by `check_ch9_ros2_error.py`, which compares the returned `err
 and a magnitude cap, so a step can be accepted with a large truncation error. The ceiling after a rejection is
 deliberate and tested, but it lasts for the whole call, so one early rejection fixes the step for the rest of the
 interval (run `[R2]`). The error estimate is formed after clipping at zero. A cell clipped to zero has
-$\lvert c^{1} - y_2 \rvert = \lvert y_2 \rvert$ divided by the smallest positive floating-point number, so with the
-default `error_floor` of 0 one clipped cell with $y_2 \ne 0$ sets an enormous relative error (verified by reading the
-formula; not run). A caller using the estimate for step control should set `error_floor`.
+$\lvert c^{1} - y_2 \rvert = \lvert y_2 \rvert$ divided by the smallest normal floating-point number (`finfo.tiny`),
+so with the default `error_floor` of 0 one clipped cell with $y_2 \ne 0$ sets an enormous relative error (verified by
+reading the formula; not run). A caller using the estimate for step control should set `error_floor`.
 
 [^ch09-r23]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, lines `[R2]` and `[R3]`.

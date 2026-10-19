@@ -6,7 +6,8 @@ here independently of atm2d (dense transport matrix from matvec, sources by hand
     G(c) = c - c0 - dt [T c + S(c)],   G'(c) = I - dt [T + dS/dc].
 (e1) one iteration of newton_implicit_step (no damping, no clip, no cap) equals c0 - G'(c0)^-1 G(c0), for a
      dt below 1 and above 1 (the code divides the system by dt when dt >= 1).
-(e2) undamped iterates converge quadratically: observed order p = log(G_{k+1}/G_k) / log(G_k/G_{k-1}) near 2.
+(e2) undamped iterates converge quadratically: observed order p = log(G_{k+1}/G_k) / log(G_k/G_{k-1}) near 2, and
+     the residual ratio |G_{k+1}| / |G_k|^2 stays bounded (within a factor 2 over the asymptotic iterations).
 (e3) with damping_factor 0.5 applied at every iteration the convergence is linear with ratio 1/2.
 (e4) large dt: the converged step satisfies T c + S(c) = (c - c0)/dt, and its distance to the steady state of
      T c + S(c) = 0 falls as 1/dt (decade ratios from dt = 1e9, where the 1/dt^2 term is below 1%).
@@ -117,6 +118,11 @@ orders = [math.log(res[i + 1] / res[i]) / math.log(res[i] / res[i - 1]) for i in
           if res[i + 1] > 1e-12 and res[i] < 1.0]
 print("   observed orders p_k once max|G| < 1 and while max|G| > 1e-12: " + ", ".join(f"{p:.3f}" for p in orders))
 report("(e2) observed order of the last two estimates, max |p - 2|", max(abs(p - 2) for p in orders[-2:]), 0.1)
+rr = [res[i + 1] / res[i] ** 2 for i in range(len(res) - 1) if res[i] < 1.0 and res[i + 1] > 1e-12]
+print("   residual ratios max|G_{k+1}| / max|G_k|^2 (normalised by max c0), once max|G| < 1 and while max|G_{k+1}| > 1e-12: "
+      + ", ".join(f"{r:.4f}" for r in rr))
+report("(e2b) residual ratio |G_{k+1}|/|G_k|^2 stays bounded near the root: max ratio / min ratio (bounded: <= 2)",
+       max(rr) / min(rr), 2.0)
 
 # (e3) damped: theta = 0.5 at every iteration (damping_trigger = 0)
 itd = []

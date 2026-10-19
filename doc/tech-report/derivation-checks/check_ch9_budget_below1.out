@@ -1,8 +1,8 @@
 kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
-   (y1) hog total 0.5, excess 0.21: corrected rule total_after = 0.300000, code total_after = 0.405000, limit formula 0.51 - 0.21 * 0.5 = 0.405000
+   (y1) hog total 0.5, excess 0.21: corrected rule total_after = 0.300000, code total_after = 0.405000, pinned-code formula 0.51 - 0.21 * 0.5 = 0.405000
 (y1) corrected rule meets the budget: |total_after / 0.3 - 1|: measured 0.000e+00  tol 1e-13  PASS
 (y1) corrected rule: no hog negative (min c): measured 0.000e+00  tol 0e+00  PASS
-(y1) code equals the limit formula eq-ch09-conservation-code: |total_after - 0.405| / 0.405: measured 0.000e+00  tol 1e-13  PASS
+(y1) code equals the pinned-code formula eq-ch09-conservation-code: |total_after - 0.405| / 0.405: measured 0.000e+00  tol 1e-13  PASS
 (y1) code meets the budget: |total_after / 0.3 - 1| (K9, UCzhangxi/kintera#54): measured 3.500e-01  tol 1e-13  EXPECTED-FAIL
    (y2) unit scale s = 1e-03: total_after / (s budget) corrected 1.000000, code 1.699650
    (y2) unit scale s = 1e+03: total_after / (s budget) corrected 1.000000, code 1.000000

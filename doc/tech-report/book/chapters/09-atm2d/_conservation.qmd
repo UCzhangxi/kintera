@@ -76,23 +76,23 @@ budget can only fall further below it. Where @eq-ch09-conservation-exact holds f
 state therefore satisfies every budget. The result depends on the order of the elements, and it is not the
 minimum-change projection onto all budgets at once: an element processed early can end strictly below its budget.
 
-*The code at the pin is a limit of this rule.* The code floors the hog total at 1 in the caller's concentration
-unit (`clamp(min=1.0)`) and divides by it:
+*The code at the pin.* The code floors the hog total at 1 in the caller's concentration unit (`clamp(min=1.0)`) and
+divides by it:
 
 $$
 c_n \leftarrow \max\left(0,\ c_n - \frac{A_n}{\max\left(1, \sum_{m \in H} A_m\right)} \frac{X_e}{a_{en}}\right),
 \quad n \in H .
 $$ {#eq-ch09-conservation-code}
 
-This is `project_atomic_budget` ({{< code python/atm2d/conservation/atomic.py project_atomic_budget >}}). It equals
-@eq-ch09-conservation-trim when $\sum_{m \in H} A_m \ge 1$. Below 1, the hogs lose
+This is `project_atomic_budget` ({{< code python/atm2d/conservation/atomic.py project_atomic_budget >}}). It coincides
+with @eq-ch09-conservation-trim when $\sum_{m \in H} A_m \ge 1$ and is a different rule below 1: there the hogs lose
 $X_e \sum_{m \in H} A_m$ atoms, only that fraction of the excess, and the cell stays above its budget (run `[R5]`).
 Because the floor is a number in the caller's unit, whether it applies depends on that unit. In number densities
 (cm$^{-3}$) a hog total below 1 is a nearly empty cell. In mole fractions the hog total of any trace element is far
 below 1, so the floor applies in almost every cell. This is defect K9 of the open fix batch.[^ch09-k9] The behaviour
-that row names as fixed is the result of @eq-ch09-conservation-trim, which is the corrected rule derived above.
-The floor on the atom counts (`counts_view.clamp(min=1.0)`) changes only species with
-$a_{en} = 0$, which are never hogs.
+that row names as fixed is the result of @eq-ch09-conservation-trim, the rule derived above; the pinned rule
+@eq-ch09-conservation-code is described here and in the Limits layer. The floor on the atom counts
+(`counts_view.clamp(min=1.0)`) changes only species with $a_{en} = 0$, which are never hogs.
 
 [^ch09-k9]: [source: [UCzhangxi/kintera#54](https://github.com/UCzhangxi/kintera/issues/54), row K9:
     "`project_atomic_budget` clamps the hog total to >= 1 (`clamp(min=1.0)`), so when the hog species hold fewer
@@ -146,9 +146,9 @@ a budget of 0.20, leaves 0.340 atoms after the projection (the hog, 0.30, is tri
 The derivation check `check_ch9_atm2d.py`, line `d`, tests @eq-ch09-conservation-trim where the code coincides with
 it.[^ch09-conservation-check] For element C over two carbon species and a fixed N2, in four cells with hog totals far
 above 1 and a budget of 0.8 times the current total, the total after the projection equals the budget to within
-$10^{-13}$ relative (printed 0; PASS). The information line `d'` shows the limit: with a hog total of 0.5 and a budget
-of 0.3, the total after is 0.4050. That is @eq-ch09-conservation-code, $0.51 - 0.21 \times 0.5$, and not the 0.3 of
-@eq-ch09-conservation-trim.
+$10^{-13}$ relative (printed 0; PASS). The information line `d'` shows where the two rules differ: with a hog total of
+0.5 and a budget of 0.3, the total after is 0.4050. That is @eq-ch09-conservation-code, $0.51 - 0.21 \times 0.5$, and
+not the 0.3 of @eq-ch09-conservation-trim.
 
 The condition @eq-ch09-conservation-exact is checked by `check_ch9_budget_exact.py`, for element C over three
 species and a fixed N2 in four cells whose hog totals are far above 1, so the code and the corrected rule coincide.
@@ -196,11 +196,11 @@ These two lines are expected to pass when the fix lands.
 
 The atom count of a species with a two-digit subscript is wrong (for example `C4H10` is counted as 1 hydrogen, not
 10); the code says this is kept on purpose and a test asserts it. The projection only removes atoms, never adds them,
-and it is a repair, not a conservation property of the scheme. Because the hog total is floored at 1, a cell whose
-hog species hold less than one unit of the element in total is left above its budget (run `[R5]`, check line `d'`).
-This is the limit @eq-ch09-conservation-code of the corrected rule @eq-ch09-conservation-trim, and its fix is
-open.[^ch09-k9] Even under the corrected rule, the budget is met only when @eq-ch09-conservation-exact holds, and a cell
-in which every non-fixed species holds the same number of atoms has no hog and is not trimmed. The fold uses the
-cation sum only, while
-`recompute_charge_balance_e` uses cations minus anions; with anions present the Jacobian and the reset describe
-different constraints (verified by reading both; the effect is not measured, a hypothesis).
+and it is a repair, not a conservation property of the scheme. Because the hog total is floored at 1, a cell whose hog
+species hold less than one unit of the element in total is left above its budget (run `[R5]`, check line `d'`). Here
+the pinned rule @eq-ch09-conservation-code differs from the corrected rule @eq-ch09-conservation-trim, which it
+coincides with for hog totals of at least 1; the fix is open.[^ch09-k9] Even under the corrected rule, the budget is
+met only when @eq-ch09-conservation-exact holds, and a cell in which every non-fixed species holds the same number of
+atoms has no hog and is not trimmed. The fold uses the cation sum only, while `recompute_charge_balance_e` uses
+cations minus anions; with anions present the Jacobian and the reset describe different constraints (verified by
+reading both; the effect is not measured, a hypothesis).

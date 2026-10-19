@@ -1,0 +1,14 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera.Evaporation, CH4(s,p) => CH4, ideal formula beta=12.87 gamma=1.5, c_v=0.2; T in (70.0, 75.0, 80.0, 85.0) K
+   T=70.0: dw/dT autograd 9.9086268535e+00 analytic 9.9086268535e+00; d2w/dT2 autograd 2.015825e+00 predicted(no lnp'') 2.015825e+00 true 1.697759e+00
+   T=75.0: dw/dT autograd 2.1793486405e+01 analytic 2.1793486405e+01; d2w/dT2 autograd 3.816925e+00 predicted(no lnp'') 3.816925e+00 true 3.157886e+00
+   T=80.0: dw/dT autograd 4.2554209540e+01 analytic 4.2554209540e+01; d2w/dT2 autograd 6.473172e+00 predicted(no lnp'') 6.473172e+00 true 5.255282e+00
+   T=85.0: dw/dT autograd 7.5413600080e+01 analytic 7.5413600080e+01; d2w/dT2 autograd 1.004116e+01 predicted(no lnp'') 1.004116e+01 true 7.990166e+00
+(a1) autograd dw/dT vs kappa K ((ln p)' - 1/T), worst rel: measured 1.332e-15  tol 1e-12  PASS
+(a2) torch.autograd.gradcheck at 78 K (eps 1e-6, rtol 1e-7) fails (1) or not (0): measured 0.000e+00  tol 0e+00  PASS
+   two reactions at 78 K: d w_CH4 / d T[:, CH4 column] = 3.2978402808e+01 (analytic 3.2978402808e+01), on the other column 0.0e+00
+(a3) per-column gradient: rel error on own column + |value on the other column|: measured 2.220e-16  tol 1e-12  PASS
+(b1) autograd d2w/dT2 vs prediction without (ln p)'', worst rel: measured 1.776e-15  tol 1e-12  PASS
+(b2) |autograd d2w/dT2 / true - 1|, must EXCEED tol (the dropped (ln p)'' term): measured 2.567e-01  tol 1e-02  PASS
+(b3) torch.autograd.gradgradcheck passes (1) or not (0); step 3 predicts 0: measured 0.000e+00  tol 0e+00  PASS
+ALL PASS

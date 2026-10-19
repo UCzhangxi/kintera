@@ -36,8 +36,8 @@ the floating type [-].
 
 ### Derivation
 
-The residual of @eq-ch05-conditions-residual is $r_r = \ln(Q_r/K^\circ_r)$. The code stops on $\max_r |r_r|$ and
-reports it transformed into a relative mismatch:
+The residual of @eq-ch05-conditions-residual is $r_r = \ln(Q_r/K^\circ_r)$. The code stops on the largest residual
+magnitude and reports it transformed into a relative mismatch:
 
 $$
 \begin{aligned}
@@ -46,7 +46,7 @@ $$
 \end{aligned}
 $$ {#eq-ch05-diagnostics-error}
 
-So in double precision status 0 means $\varepsilon \le$ `ftol`: every quotient is within a factor $1 + $ `ftol` of
+So in double precision status 0 means $\varepsilon \le$ `ftol`: every quotient is within a factor $1 + \texttt{ftol}$ of
 its constant. In single precision the floor $4\,\epsilon_{\mathrm{mach}} = 4.8\times10^{-7}$ is larger than the
 default `ftol` and sets the target instead (`newton_check.py`, `[C5]`). Both lines are computed in
 `phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}): `target` and

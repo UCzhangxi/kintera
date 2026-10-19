@@ -9,7 +9,7 @@
 | @sec-ch05-conditions | @eq-ch05-conditions-extent | Starting from the input amounts $\boldsymbol{\mathcal N}^0$, | code: {{< code src/equilibrium/phase_equilibrate_tp.h equilibrium_max_error >}}; check: `newton_check.py`, `[C2]`, `[C4]` | re-derived |
 | @sec-ch05-newton | @eq-ch05-newton-jacobian | Differentiating @eq-ch05-conditions-residual: | code: {{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}; check: `newton_check.py`, `[C1]`, `[C3]` | re-derived |
 | @sec-ch05-newton | @eq-ch05-newton-bounds | The amounts after a step of scale $\lambda$ must stay above the floor: | code: {{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}; check: `newton_check.py` | re-derived |
-| @sec-ch05-diagnostics | @eq-ch05-diagnostics-error | The code stops on $\max_r \vert r_r\vert $ and reports it transformed into a relative mismatch: | code: {{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}; check: `newton_check.py`, `[C5]` | re-derived |
+| @sec-ch05-diagnostics | @eq-ch05-diagnostics-error | The code stops on the largest residual magnitude and reports it transformed into a relative mismatch: | code: {{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}; check: `newton_check.py`, `[C5]` | re-derived |
 | @sec-ch05-options | none | No derivation: this scheme maps an input to the matrices $\mathsf S$ and $\mathsf E$ and the phase map $\pi(n)$ of @sec-ch05-conditions. | code: ; check: none | n/a |
 | @sec-ch05-log-k | @eq-ch05-log-k-gibbs | In each range the NASA-9 form gives the enthalpy and entropy of a species, and the Gibbs energy follows: | code: {{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}; check: none | re-derived |
 

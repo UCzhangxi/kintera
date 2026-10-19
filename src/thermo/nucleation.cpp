@@ -55,6 +55,18 @@ void add_to_vapor_cloud(std::set<std::string>& vapor_set,
   }
 }
 
+void check_temperature_range(NucleationOptions const& op) {
+  if (op == nullptr) return;
+  for (size_t j = 0; j < op->reactions().size(); ++j) {
+    double minT = j < op->minT().size() ? op->minT()[j] : 0.;
+    double maxT = j < op->maxT().size() ? op->maxT()[j] : 1.e4;
+    TORCH_CHECK(minT <= 0. && maxT >= 1.e4, "minT/maxT of reaction '",
+                op->reactions()[j].equation(), "' (", minT, ", ", maxT,
+                " K) are not applied by any solver; remove them or keep the "
+                "defaults 0 and 1e4 K");
+  }
+}
+
 NucleationOptions NucleationOptionsImpl::from_yaml(
     const YAML::Node& root,
     std::shared_ptr<NucleationOptionsImpl> derived_type_ptr) {
@@ -79,6 +91,7 @@ NucleationOptions NucleationOptionsImpl::from_yaml(
     auto node = rxn_node["rate-constant"];
     options->minT().push_back(node["minT"].as<double>(0.));
     options->maxT().push_back(node["maxT"].as<double>(1.e4));
+    check_temperature_range(options);
 
     TORCH_CHECK(node["formula"],
                 "'formula' is not defined in the rate-constant");

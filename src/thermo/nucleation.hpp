@@ -57,6 +57,10 @@ struct NucleationOptionsImpl {
 };
 using NucleationOptions = std::shared_ptr<NucleationOptionsImpl>;
 
+//! Throws for a minT/maxT other than the defaults (0, 1e4 K): no solver
+//! applies the range, so a narrower one would be silently ignored
+void check_temperature_range(NucleationOptions const& op);
+
 void add_to_vapor_cloud(std::set<std::string>& vapor_set,
                         std::set<std::string>& cloud_set, NucleationOptions op);
 

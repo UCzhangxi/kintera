@@ -134,7 +134,12 @@ with its closed form; the Lindemann, Troe and SRI tests assert only that the rat
 The Troe broadening of @eq-ch06-falloff-broadening is
 $\log F = \log F_{\mathrm{cent}} / (1 + (\log_{10} P_r)^2)$. The published Troe form (Gilbert, Luther and Troe 1983,
 [doi:10.1002/bbpc.19830870218](https://doi.org/10.1002/bbpc.19830870218)) has
-$\log F = \log F_{\mathrm{cent}} / \left(1 + \left[(\log_{10} P_r + c)/(N - d(\log_{10} P_r + c))\right]^2\right)$ with
+
+$$
+\log F = \log F_{\mathrm{cent}} / \left(1 + \left[(\log_{10} P_r + c)/(N - d(\log_{10} P_r + c))\right]^2\right)
+$$
+
+with
 $c = -0.4 - 0.67 \log_{10} F_{\mathrm{cent}}$, $N = 0.75 - 1.27 \log_{10} F_{\mathrm{cent}}$, $d = 0.14$; the code's
 form is the case $c = 0$, $N = 1$, $d = 0$ (verified by reading). The SRI form of Stewart, Larson and Golden (1989,
 [doi:10.1016/0010-2180(89)90084-9](https://doi.org/10.1016/0010-2180(89)90084-9)) is

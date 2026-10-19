@@ -6,7 +6,7 @@ gcc (GCC) 13.3.1 20240611 (Red Hat 13.3.1-2)
 cmake version 3.26.5
 Python 3.11.13
 ...
--- Found Torch: <venv>/lib64/python3.11/site-packages/torch/lib/libtorch.so (found version "2.10.0") 
+-- Found Torch: <venv>/lib64/python3.11/site-packages/torch/lib/libtorch.so (found version "2.10.0")
 [100%] Built target test_thermo.release
 Successfully installed kintera-2.6.5
 kintera                  2.6.5

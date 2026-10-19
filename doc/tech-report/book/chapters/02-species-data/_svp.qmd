@@ -91,6 +91,23 @@ Pointwise evaluation per cell and reaction. `make_svp_spec` packs each reaction'
 the device. The scalar function `eval_logsvp` is the one place both the CPU and CUDA kernels and the tensor
 path evaluate a constant, so an inline curve with the same constants as a named one gives bit-identical values.
 
+**Adding a vapor-pressure law.** If the new curve has the `ideal` or `antoine` form, no code is needed: give
+`formula: ideal` with `T3`, `P3`, `beta`, `gamma` (and optionally `betas`, `gammas`), or `formula: antoine` with `A`[^rg-6570f873f97b],
+`B`, `C`, in the reaction's `rate-constant`[^rg-7e0330505dc9]. A new functional form needs a rebuild:
+
+1. Write `double f(double T)` returning $\ln K_r$ with $K_r$ in Pa$^{m}$ (@eq-ch02-svp-ideal is an example), and its
+   derivative `double f_ddT(double T)` returning $\mathrm d \ln K_r/\mathrm d T$ in K$^{-1}$, both `DISPATCH_MACRO`
+   inline functions in `src/vapors/vapor_functions.h` so they compile for CPU and CUDA.
+2. Register both names, in the same order, in the CPU table and name list of `src/func_table.cpp`
+   (`func1_table_cpu`, `func1_names`) and in the CUDA table of `src/func_table.cu` (`func1_table_cuda`, whose first entry
+   is a `nullptr` placeholder). The derivative must be named `f_ddT`: `LogSVPFunc` and the solvers look it up by
+   appending `_ddT` to the formula name.
+3. Select it in YAML with `rate-constant: {formula: f}`. An unregistered name stops with "Function f not registered."
+4. Check it as the named fits are checked (@sec-ch02-svp Tests): values against reference values, the derivative
+   against a central finite difference, and, on CUDA, the same values through the dispatch.
+
+The valid temperature range is the caller's responsibility: `minT` and `maxT` are read but not enforced (Limits).
+
 The vapor-pressure figure is not provided: the figure module is not written yet.
 
 ### Code
@@ -102,12 +119,12 @@ The vapor-pressure figure is not provided: the figure module is not written yet.
 | ideal form | {{< code src/vapors/vapor_functions.h logsvp_ideal >}} | `logsvp_ideal` | `ideal` |
 | Antoine form | {{< code src/vapors/vapor_functions.h logsvp_antoine >}} | `logsvp_antoine` | `antoine` |
 | water, two branches | {{< code src/vapors/vapor_functions.h h2o_ideal >}} | `h2o_ideal` | `h2o_ideal` |
-| YAML reader | {{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant`[^rg-7e0330505dc9] |
+| YAML reader | {{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant` |
 
 : Code map of the saturation vapor pressure fits. {#tbl-ch02-svp-code}
 
 Setup checks a user can hit: a nucleation reaction without `rate-constant` or `formula` is refused; `ideal` without
-`T3`, `P3`, `beta` or `gamma`, or with $T_3 \le 0$ or $p_3 \le 0$, is refused; `antoine` without `A`[^rg-6570f873f97b], `B` or `C`
+`T3`, `P3`, `beta` or `gamma`, or with $T_3 \le 0$ or $p_3 \le 0$, is refused; `antoine` without `A`, `B` or `C`
 is refused; an inline form set from Python without its parameters is refused.
 
 ### Tests
@@ -132,9 +149,9 @@ stated range without warning (verified by reading the reader and the solvers; th
 section does not assess their accuracy.
 
 <!-- reader glossary notes -->
-[^rg-20a032d46e8f]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)
+[^rg-6570f873f97b]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
 
 [^rg-7e0330505dc9]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
 
-[^rg-6570f873f97b]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
+[^rg-20a032d46e8f]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)
 <!-- end reader glossary notes -->

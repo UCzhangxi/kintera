@@ -4,7 +4,7 @@
 
 | scheme | equation | derivation | code and check | source |
 |---------------|---------|-------------------------------|-------------------------------------|--------|
-| @sec-ch02-species-registry | none | None: the registry stores data and derives nothing except the molar mass, which @sec-ch02-molar-mass gives. | code: ; check: none | n/a |
+| @sec-ch02-species-registry | @eq-ch02-species-registry-order | So with registry indices $0, 1, \dots$: | code: {{< code src/species.cpp init_species_from_yaml overload=2 >}}; check: none | re-derived |
 | @sec-ch02-molar-mass | @eq-ch02-molar-mass-sum | The molar mass is the composition-weighted sum of atomic masses: | code: {{< code src/utils/molar_mass.cpp molar_mass >}}; check: none | re-derived |
 | @sec-ch02-nasa9 | @eq-ch02-nasa9-forms | Within one temperature range the NASA-9 forms are | code: {{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}; check: none | re-derived |
 | @sec-ch02-nasa9 | @eq-ch02-nasa9-kc | **Reverse kinetics.** For a reversible reaction $j$, `forward_with_rate_constants` ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}) forms the equilibrium constant in concentration units from the Gibbs energies of @eq-ch02-nasa9-forms: | code: {{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}; check: none | re-derived |

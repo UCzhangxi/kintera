@@ -14,6 +14,8 @@
 
 *ADD_ARG*, see **options objects, C++**.
 
+*adding a species*, see **species registry**.
+
 *Antoine equation*, see **saturation vapor pressure**.
 
 **Arrhenius rate constant**: Arrhenius rate constants and their temperature bands, @sec-ch06-arrhenius.
@@ -334,6 +336,8 @@
 
 *Nasa9LogK*, see **NASA-9 polynomials**.
 
+*new vapor pressure law*, see **saturation vapor pressure**.
+
 **notation index**: The notation index, @sec-appa-index.
 
 **nucleation reactions**: Which reactions take part (nucleation reactions), @sec-ch04-nucleation.
@@ -464,6 +468,8 @@
 
 *shared memory*, see **GPU kernels**.
 
+*Shomate polynomials*, see **NASA-9 polynomials**.
+
 *snapy equation of state*, see **coupling, equation of state**.
 
 *source build*, see **installation**.
@@ -481,6 +487,8 @@
 **`species`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
 *species list*, see **species registry**; **YAML input file**.
+
+*species order*, see **species registry**.
 
 **species registry**: The species registry: names, phases and per-species data, @sec-ch02-species-registry.
 

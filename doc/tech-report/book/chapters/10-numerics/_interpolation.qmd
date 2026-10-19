@@ -1,0 +1,100 @@
+## Multilinear table interpolation (`interpn`) {#sec-ch10-interpolation}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/interpolation.hpp, src/math/interpolation.cpp, src/photochem/photolysis.cpp,
+  src/photochem/actinic_flux.hpp
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+Photolysis cross sections and actinic fluxes are tabulated on grids of temperature and wavelength. They must be
+evaluated at the model's own temperatures and wavelengths. kintera interpolates such tables linearly in each
+dimension, recursively, on `torch` tensors, for a batch of query points at once. The `extrapolate`[^rg-49e301347274] is a flag:
+when it is false, a query outside a grid takes the value at the nearest end.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Multilinear interpolation of a table, @eq-ch10-interpolation-weight.
+
+**Data.** Query coordinates per dimension; one 1-D grid per dimension; table (grid sizes..., values).
+
+**Placement.** Photolysis cross sections and actinic flux (@sec-ch07).
+
+**Activation.** Always; `extrapolate` defaults to `false` (clamp to the end values).
+
+**Guarantee / limits.** Exact for data linear in each dimension; grids of two or more points.
+
+**Evidence.** Missing evidence: no direct test at the pin.
+:::
+
+Local symbols: $q$, a query coordinate in one dimension; $x_0 \le q \le x_1$, the bracketing grid values; $w$, the
+weight of the upper neighbour; $f_0$, $f_1$, the values interpolated in the remaining dimensions at $x_0$ and $x_1$.
+
+### Derivation
+
+In one dimension,
+
+$$
+\begin{aligned}
+w &= \frac{q - x_0}{x_1 - x_0} \\
+f(q) &= (1 - w)\, f_0 + w\, f_1
+\end{aligned}
+$$ {#eq-ch10-interpolation-weight}
+
+Applying @eq-ch10-interpolation-weight dimension after dimension, each time with $f_0$ and $f_1$ interpolated in the
+remaining dimensions, gives multilinear interpolation. @eq-ch10-interpolation-weight is computed in `interpn_recur`
+({{< code src/math/interpolation.cpp interpn_recur >}}). Without extrapolation, $w$ is clamped to $[0, 1]$, so a query
+outside the grid takes the end value.
+
+### Numerical method
+
+1. For each dimension the bracketing index comes from `torch::searchsorted`. A grid is taken as decreasing when its
+   second entry is not above its first, and is then searched in reverse.
+2. The lower index is clamped to $[0, N-2]$ for a grid of $N$ points; a zero spacing is replaced by 1 to avoid a
+   division by zero.
+3. The recursion descends one dimension per level and evaluates both neighbours, so a table of $D$ dimensions costs
+   $2^D$ lookups per query.
+4. `interpn` checks that there is one query vector per grid and reshapes the result to the query shape followed by the
+   value dimensions.
+
+The figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| entry | {{< code src/math/interpolation.cpp interpn >}} | `interpn` | `extrapolate` |
+| recursion | {{< code src/math/interpolation.cpp interpn_recur >}} | `interpn_recur` | `extrapolate` |
+| callers | {{< code src/photochem/actinic_flux.hpp >}} | `interpn` | always |
+
+: Code map of table interpolation. {#tbl-ch10-interpolation-code}
+
+`photolysis.cpp` ({{< code src/photochem/photolysis.cpp >}}) also calls `interpn` on a temperature and wavelength
+grid.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none | `interpn` alone | missing evidence | no direct test at the pin |
+
+: Tests of table interpolation. {#tbl-ch10-interpolation-tests}
+
+The photolysis tests (`test_photolysis_kinetics`, `test_actinic_flux`) may reach `interpn` through its callers;
+that path has not been traced, and what those tests assert about interpolated values has not been read for this
+draft (missing evidence).
+
+### Limits
+
+- The direction test reads `coord[1].item<float>()` and `coord[0].item<float>()`. A grid needs at least two points,
+  and on a
+  CUDA grid each call copies two values to the host (read from the code; not measured).
+- A non-monotonic grid is not detected.
+- With `extrapolate` true, $w$ is not clamped and the end interval is extended linearly.
+
+<!-- reader glossary notes -->
+[^rg-49e301347274]: extrapolate — flag of the table interpolation; when `extrapolate` is false, queries outside a grid take the end values; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/interpolation.cpp#L51-L55)
+<!-- end reader glossary notes -->

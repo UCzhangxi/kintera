@@ -1,0 +1,107 @@
+## Dense helpers and the pivoted Gaussian solve (`dsolve_lu`) {#sec-ch10-dense}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/core.h, src/math/swap.h, src/kinetics/evolve_implicit_impl.h, src/equilibrium/phase_equilibrate_tp.h
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+The per-cell solvers of kintera work on small dense matrices stored as plain row-major arrays. A set of helpers does
+the vector and matrix products they need. One function, `dsolve_lu`, solves a square system by Gaussian elimination
+with partial pivoting. It is the first solve of the implicit kinetics step and of the constrained Newton step, and
+it reports an exactly singular matrix so that the caller can fall back to a least-squares solve.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Solve $\mathsf A x = b$ in place for a small dense $\mathsf A$, @eq-ch10-dense-elimination.
+
+**Data.** Row-major $n \times n$ array and length-$n$ vector, destroyed and overwritten.
+
+**Placement.** Inside per-cell kernels, on CPU or CUDA (@sec-ch12).
+
+**Activation.** Always; no option.
+
+**Guarantee / limits.** Fails only on an exactly zero pivot; no condition estimate.
+
+**Evidence.** Indirect, through `test_thermo`; see the Tests layer.
+:::
+
+Local symbols: $\mathsf A$, an $n \times n$ matrix with entries $a_{ik}$; $b$, the right-hand side; $x$, the
+solution; $k$, the elimination step; $f_{ik}$, the multiplier of row $i$ at step $k$.
+
+### Derivation
+
+At step $k$ the row with the largest $|a_{ik}|$, $i \ge k$, is swapped into row $k$ together with $b_k$. Then each
+lower row is reduced:
+
+$$
+\begin{aligned}
+f_{ik} &= a_{ik} / a_{kk} \\
+a_{ij} &\leftarrow a_{ij} - f_{ik}\, a_{kj} \\
+b_i &\leftarrow b_i - f_{ik}\, b_k
+\end{aligned}
+$$ {#eq-ch10-dense-elimination}
+
+for $i > k$ and $j > k$. Back substitution then gives, for $i = n-1$ down to $0$,
+
+$$
+x_i = \frac{1}{a_{ii}} \Big( b_i - \sum_{j > i} a_{ij}\, x_j \Big) .
+$$ {#eq-ch10-dense-back}
+
+@eq-ch10-dense-elimination and @eq-ch10-dense-back are computed in `dsolve_lu`
+({{< code src/math/core.h dsolve_lu >}}). The method is exact in exact arithmetic; its rounding error is that of
+partial-pivoting elimination, not derived here.
+
+### Numerical method
+
+The elimination runs column by column with no scaling of rows. A column whose largest remaining magnitude is exactly
+zero ends the solve with `false`; any nonzero pivot, however small, is accepted. The multipliers are not stored, so
+the factorization cannot be reused for another right-hand side. The figure is not provided: the figure module is not
+written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| pivoted solve | {{< code src/math/core.h dsolve_lu >}} | `dsolve_lu` | always |
+| products | {{< code src/math/core.h mmdot >}} | `mmdot` | always |
+| matrix-vector product | {{< code src/math/core.h mvdot >}} | `mvdot` | always |
+| $\mathsf A^{\mathrm T} \mathsf A$ | {{< code src/math/core.h matmul_ATA >}} | `matmul_ATA` | always |
+| swaps | {{< code src/math/swap.h swap_cols_safe >}} | `swap_cols_safe` | always |
+
+: Code map of the dense helpers. {#tbl-ch10-dense-code}
+
+1. `core.h` also holds `set_identity`, `vvdot`, `norm2`, `normalize`, `mvdot_t` and `mmdot_t`; `swap.h` holds
+   `swap_cols`, `swap_cols_safe`, `swap_vals` and `swap_rows`. All are templates marked for host and device.
+2. The implicit kinetics step of @sec-ch06 builds $\mathsf I/\Delta t - \mathsf S \mathsf J$ with `mmdot` and calls
+   `dsolve_lu`; if it returns `false`, the step falls back to `psolve` of @sec-ch10-pseudo-inverse
+   ({{< code src/kinetics/evolve_implicit_impl.h >}}).
+3. `constrained_newton_step` of @sec-ch10-newton calls `dsolve_lu` first.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo` | `LeastSquaresKkt.DirectlySolvesIllConditionedSquareSystem`: the direct path solves | absolute $10^{-6}$ | the test |
+| none | `dsolve_lu` alone, the products, the swaps | missing evidence | no direct test at the pin |
+
+: Tests of the dense helpers. {#tbl-ch10-dense-tests}
+
+The test case is in {{< code tests/test_thermo.cpp >}}; it reaches `dsolve_lu` through `constrained_newton_step`. No
+run record is attached in this draft (missing evidence).
+
+### Limits
+
+- `mmdot_t` does not compute $\mathsf a\,\mathsf b^{\mathrm T}$: its inner sum reads `a[i * n2 + j] * b[j * n2 + k]`,
+  with `j` where `k` belongs ({{< code src/math/core.h mmdot_t >}}). It has no caller outside `src/math` at the pin,
+  so no result depends on it (searched in `src`, `python` and `tests`).
+- `swap_cols` carries the comment "no-op trick won't work; do normal swap" next to a comma expression. Read under
+  C++17 sequencing rules, the expression does swap the two columns; this is a hypothesis, not tested. It has no
+  caller; `psolve` uses `swap_cols_safe` ({{< code src/math/swap.h swap_cols >}}).
+- `swap_rows` takes a row count `m` that it does not use.
+- `set_identity`, `vvdot`, `norm2`, `normalize`, `mvdot_t`, `swap_cols`, `swap_rows` and `swap_vals` have no caller
+  outside `src/math` at the pin (searched by name; `normalize` also matches unrelated words).
+- `dsolve_lu` gives no warning for a nearly singular matrix.

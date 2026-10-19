@@ -1,0 +1,153 @@
+## Constrained least squares by an active set (`leastsq_kkt`) {#sec-ch10-kkt}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/leastsq_kkt.h, src/utils/alloc.h, src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h,
+  tests/test_thermo.cpp, tests/test_alloc_space.cpp
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+Saturation adjustment and the Newton steps of phase equilibrium must solve a least-squares problem whose unknowns are
+bounded: a reaction extent cannot use more of a species than there is. kintera solves
+$\min \lVert \mathsf A x - b \rVert$ subject to linear equalities and inequalities with an active-set method. Each
+iteration solves the Karush-Kuhn-Tucker (KKT) system of the currently active constraints. It then drops constraints
+whose multiplier has the wrong sign and adds constraints the new solution violates. Two policies share the code. The
+general one adds every violated row; the feasible-origin one adds one independent row at a time and is used by the
+equilibrium solvers.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\min \lVert \mathsf A x - b \rVert$ s.t. $\mathsf C x \le d$, first `neq` rows equalities,
+@eq-ch10-kkt-system.
+
+**Data.** $\mathsf A$ ($n_1 \times n_2$), $b$, $\mathsf C$ ($n_3 \times n_2$), $d$; $x$ returned in `b`[^rg-bb9a5abb1d7e].
+
+**Placement.** `equilibrate_tp`, `equilibrate_uv` (feasible origin); `constrained_newton_step` fallback.
+
+**Activation.** Always; `reg` defaults to 0, `max_iter` is set by the caller.
+
+**Guarantee / limits.** Status 0, 1 (bad input), 2 (no convergence) or 3 (singular or infeasible).
+
+**Evidence.** `test_thermo` (`LeastSquaresKkt*`), `test_alloc_space`; see the Tests layer.
+:::
+
+Local symbols: $\mathsf A$, objective matrix [-]; $b$, objective vector; $\mathsf C$, constraint matrix; $d$,
+constraint bounds; $x$, unknowns ($n_2$); $\mathcal W$, the active set; $\mathsf C_{\mathcal W}$, $d_{\mathcal W}$, its
+rows; $\mu$, the multipliers of the active rows; $\varepsilon$, the machine epsilon of the type; $\rho$, the dual
+regularization `reg`. The `reg` is a diagonal perturbation of the multiplier block in scaled KKT units; zero
+leaves the block unregularized unless a factorization fails.
+
+### Derivation
+
+For a fixed active set, the stationarity and feasibility conditions of
+$\tfrac12 \lVert \mathsf A x - b \rVert^2$ with $\mathsf C_{\mathcal W} x = d_{\mathcal W}$ are
+
+$$
+\begin{bmatrix} \mathsf A^{\mathrm T} \mathsf A & \mathsf C_{\mathcal W}^{\mathrm T} \\
+\mathsf C_{\mathcal W} & \rho\, \mathsf I \end{bmatrix}
+\begin{bmatrix} x \\ \mu \end{bmatrix}
+=
+\begin{bmatrix} \mathsf A^{\mathrm T} b \\ d_{\mathcal W} \end{bmatrix} ,
+$$ {#eq-ch10-kkt-system}
+
+with $\rho = 0$ unless regularization is asked for or needed. @eq-ch10-kkt-system is assembled and solved in
+`leastsq_kkt_impl` ({{< code src/math/leastsq_kkt.h leastsq_kkt_impl >}}), in scaled units.
+
+The scaling is applied before assembly. Column $j$ of $\mathsf A$ is divided by its largest magnitude $\gamma_j$, and
+$b$ by its largest magnitude
+$\beta$ (at least 1). A constraint row is then expressed in the scaled unknowns $\tilde x_j = x_j \gamma_j / \beta$
+and divided by its own largest magnitude, $d$ included:
+
+$$
+\begin{aligned}
+\tilde a_{ij} &= a_{ij} / \gamma_j \\
+\tilde c_{kj} &= \frac{c_{kj}\, \beta / \gamma_j}{r_k} \\
+\tilde d_k &= d_k / r_k \\
+r_k &= \max\big(|d_k|, \max_j |c_{kj} \beta / \gamma_j|\big)
+\end{aligned}
+$$ {#eq-ch10-kkt-scaling}
+
+@eq-ch10-kkt-scaling is computed by `kkt_column_scale` and `kkt_row_scale`
+({{< code src/math/leastsq_kkt.h kkt_row_scale >}}); the solution is scaled back by $\beta / \gamma_j$ at the end. A
+column of zeros keeps scale 1.
+
+After each solve, an active inequality whose multiplier is negative is dropped. The general policy then adds every
+inactive row with $\tilde c_k \tilde x - \tilde d_k > 0$. The feasible-origin policy adds only the most violated row
+whose scaled form keeps more than $\sqrt{\varepsilon}$ of its 2-norm after projection off the active rows (modified
+Gram-Schmidt, twice), in `kkt_orthogonalize` ({{< code src/math/leastsq_kkt.h kkt_orthogonalize >}}). The iteration
+stops when the active set no longer changes. No published convergence proof is cited for these policies; the steps
+above are read from the code.
+
+### Numerical method
+
+1. Inputs are checked: $n_1 \ge n_2 > 0$, $n_3 \ge 0$, $0 \le$ `neq` $\le n_3$; otherwise status 1.
+2. The feasible-origin policy also checks that $x = 0$ is feasible: $d_k \ge -64 \varepsilon \max|d|$ on inequalities
+   and $|d_k| \le 64 \varepsilon \max|d|$ on equalities; otherwise status 1 and `b` unchanged.
+3. Each iteration first tries, under the feasible-origin policy and for square $\mathsf A$, the direct form
+   $[[\mathsf A_s, \mathsf A_s^{-\mathrm T} \mathsf C_s^{\mathrm T}], [\mathsf C_s, \rho \mathsf I]]$ in
+   `kkt_solve_direct` ({{< code src/math/leastsq_kkt.h kkt_solve_direct >}}). Its conditioning follows that of
+   $\mathsf A$, not its square.
+4. Otherwise, or if that fails, the normal-equation block @eq-ch10-kkt-system is factored with `ludcmp` at pivot
+   tolerance $10 \varepsilon$. All-zero rows are skipped, and an all-zero row with a nonzero right-hand side gives
+   status 3. If the factorization fails, a second attempt adds $10^{-10}$ ($10^{-5}$ in single precision) to the
+   primal diagonal, and $-10^{-10}$ to the dual diagonal when $\rho = 0$.
+5. If regularization was used, the final active rows must hold, and under the general policy every row must hold,
+   to $64 \varepsilon + 10 \times$ the fallback value; otherwise status 3.
+6. The feasible-origin policy returns an unknown bounded by an active single-coefficient row exactly on its bound,
+   $x_j = d_k / c_{kj}$.
+7. Reaching `max_iter` without a fixed active set prints a warning and returns 2; `max_iter` is overwritten with the
+   iterations used.
+
+Scratch space comes from the `work` pool, sized by `leastsq_kkt_space` and `leastsq_kkt_feasible_origin_space`
+({{< code src/utils/alloc.h leastsq_kkt_space >}}). The figure of the active-set swaps is not provided: the figure
+module is not written yet; the code carries it as an ASCII diagram.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| general policy | {{< code src/math/leastsq_kkt.h leastsq_kkt >}} | `leastsq_kkt` | `reg`, `max_iter` |
+| feasible-origin policy | {{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}} | `leastsq_kkt_feasible_origin` | `reg`, `max_iter` |
+| shared driver | {{< code src/math/leastsq_kkt.h leastsq_kkt_impl >}} | `leastsq_kkt_impl` | `KktActivePolicy` |
+| direct square form | {{< code src/math/leastsq_kkt.h kkt_solve_direct >}} | `kkt_solve_direct` | square $\mathsf A$ |
+| workspace size | {{< code src/utils/alloc.h leastsq_kkt_space >}} | `leastsq_kkt_space` | always |
+
+: Code map of the constrained least-squares solver. {#tbl-ch10-kkt-code}
+
+The feasible-origin policy is called by `equilibrate_tp` ({{< code src/thermo/equilibrate_tp.h >}}) and
+`equilibrate_uv` ({{< code src/thermo/equilibrate_uv.h >}}); the general policy runs as the fallback of
+`constrained_newton_step` (@sec-ch10-newton).
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo` | `LeastSquaresKkt.*`: 12 cases of solution, status and iteration count | $10^{-12}$ to $10^{-6}$ absolute, $10^{-10}$ relative, or exact | the test |
+| `test_thermo` | `LeastSquaresKktFeasibleOrigin.*`: 6 cases, incl. dependent rows and exact bounds | $10^{-18}$ to $10^{-5}$ absolute, or exact | the test |
+| `test_alloc_space` | both policies stay inside their pool budget | guard intact | the test |
+
+: Tests of the constrained least-squares solver. {#tbl-ch10-kkt-tests}
+
+The cases are in {{< code tests/test_thermo.cpp >}} and {{< code tests/test_alloc_space.cpp >}}. Examples: a
+redundant pair of equalities is solved with regularization to $10^{-8}$
+(`LeastSquaresKkt.RegularizesRedundantActiveConstraints`). An inconsistent pair returns status 3 and leaves $x = 0$
+(`LeastSquaresKkt.RejectsInconsistentEqualities`). A $-10^{-19}$ round-off bound is accepted as feasible to
+$10^{-18}$ (`LeastSquaresKktFeasibleOrigin.AcceptsRoundOffNegativeBound`). The `LeastSquaresKkt` cases are plain
+gtest cases on the CPU; two of them go through `constrained_newton_step`. The CUDA path of the same template is
+reached only through the `DeviceTest` equilibrium cases of `test_thermo`, which are also instantiated for CUDA. No run
+record is attached in this draft (missing evidence).
+
+### Limits
+
+- The error message for a bad `neq` says "must be non-negative" also when `neq` exceeds $n_3$.
+- Convergence of the active-set iteration is not proved here; `max_iter` is the only guard (status 2).
+- The feasible-origin policy may return an $x$ that violates a dependent row it chose not to activate; the caller must
+  clip the step, as its doc comment states ({{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}}).
+- `reg` is a `float` argument even when `T` is `double`.
+
+<!-- reader glossary notes -->
+[^rg-bb9a5abb1d7e]: b — exponent of the temperature ratio in the Arrhenius rate; default 0; stored in option `b`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L95)
+<!-- end reader glossary notes -->

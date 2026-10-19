@@ -1,0 +1,87 @@
+## The minimum-norm solve by eigen-decomposition (`psolve`) {#sec-ch10-pseudo-inverse}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/psolve.h, src/math/core.h, src/math/swap.h, src/kinetics/evolve_implicit_impl.h
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+When the implicit kinetics matrix of a cell is exactly singular, the pivoted solve of @sec-ch10-dense gives up. The
+step then needs the minimum-norm least-squares solution, $x = \mathsf A^{+} b$. kintera computes it in the cell
+itself, without a library: it diagonalizes $\mathsf A^{\mathrm T} \mathsf A$ by Jacobi rotations and sums over the
+singular values that are not negligible.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $x = \mathsf A^{+} b$ for a square $\mathsf A$, @eq-ch10-pseudo-inverse-sum.
+
+**Data.** Row-major $n \times n$ $\mathsf A$; $b$ overwritten by $x$.
+
+**Placement.** Fallback of the implicit kinetics step (@sec-ch06) when `dsolve_lu` fails.
+
+**Activation.** Only on that fallback.
+
+**Guarantee / limits.** Fixed rotation limit and absolute tolerances; see Limits.
+
+**Evidence.** Missing evidence: no test at the pin.
+:::
+
+Local symbols: $\lambda_i$, eigenvalues of $\mathsf A^{\mathrm T} \mathsf A$ in descending order; $v_i$, their
+eigenvectors; $\sigma_i = \sqrt{\lambda_i}$, the singular values; $u_i = \mathsf A v_i / \sigma_i$.
+
+### Derivation
+
+With $\mathsf A^{\mathrm T} \mathsf A = \sum_i \lambda_i v_i v_i^{\mathrm T}$, the singular value decomposition of
+$\mathsf A$ has right vectors $v_i$, singular values $\sigma_i$ and left vectors $u_i$. The pseudo-inverse solution is
+
+$$
+x = \sum_{i:\ \lambda_i > \epsilon_\lambda} \frac{u_i^{\mathrm T} b}{\sigma_i}\, v_i ,
+$$ {#eq-ch10-pseudo-inverse-sum}
+
+where the threshold is $\epsilon_\lambda = 10^{-12} \lambda_0$ when $\lambda_0 > 0$ and $10^{-12}$ otherwise.
+@eq-ch10-pseudo-inverse-sum is computed in `psolve` ({{< code src/math/psolve.h psolve >}}).
+
+### Numerical method
+
+1. $\mathsf A^{\mathrm T} \mathsf A$ is formed by `matmul_ATA`.
+2. `jacobi_eigen_symmetric` ({{< code src/math/psolve.h jacobi_eigen_symmetric >}}) repeats: find the largest
+   off-diagonal entry (`max_abs_offdiag`); stop if it is below $10^{-12}$; else apply one Jacobi rotation to that
+   pair. At most 100 rotations are applied.
+3. Eigenvalues in $(-10^{-14}, 0)$ are set to zero, and the pairs are sorted in descending order
+   (`sort_eigenpairs_desc`).
+4. @eq-ch10-pseudo-inverse-sum is summed over the kept pairs.
+
+Squaring $\mathsf A$ squares its condition number. The figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| solve | {{< code src/math/psolve.h psolve >}} | `psolve` | always |
+| eigen-decomposition | {{< code src/math/psolve.h jacobi_eigen_symmetric >}} | `jacobi_eigen_symmetric` | always |
+| sort | {{< code src/math/psolve.h sort_eigenpairs_desc >}} | `sort_eigenpairs_desc` | always |
+| caller | {{< code src/kinetics/evolve_implicit_impl.h >}} | `psolve` | singular matrix |
+
+: Code map of the minimum-norm solve. {#tbl-ch10-pseudo-inverse-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none | `psolve` on a singular matrix | missing evidence | no test calls it at the pin |
+
+: Tests of the minimum-norm solve. {#tbl-ch10-pseudo-inverse-tests}
+
+No test at the pin calls `psolve` or reaches the singular branch knowingly (searched by name in `tests`).
+
+### Limits
+
+- The loop variable is called `sweep`, but each pass applies one rotation, so `max_sweeps = 100` caps the rotations
+  at 100 ({{< code src/math/psolve.h jacobi_eigen_symmetric >}}). A cyclic Jacobi sweep of an $n \times n$ matrix has
+  $n(n-1)/2$ rotations. Whether 100 rotations suffice for the species counts in use is a hypothesis, not measured.
+- The stopping test ($10^{-12}$) and the clean-up of negative eigenvalues ($10^{-14}$) are absolute, not relative to
+  the size of the entries. Their effect for badly scaled matrices is not measured.
+- Convergence is not reported: the loop ends silently at the rotation limit.

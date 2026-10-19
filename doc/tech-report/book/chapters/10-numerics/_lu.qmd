@@ -1,0 +1,108 @@
+## LU decomposition, back substitution and inverse (`ludcmp`, `lubksb`, `luminv`) {#sec-ch10-lu}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/ludcmp.h, src/math/lubksb.h, src/math/luminv.h, src/math/leastsq.h, src/utils/alloc.h
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+The least-squares solvers factor their systems once and then solve. kintera keeps a Crout LU decomposition with
+implicit (row-scaled) partial pivoting for this, adapted from the Numerical Recipes routines. The kernel accepts a
+mask of rows to skip and a pivot tolerance, and it allocates its scratch space from a caller-supplied memory pool.
+Back substitution and a column-by-column inverse use the factored matrix.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\mathsf P \mathsf A = \mathsf L \mathsf U$ and solves with it, @eq-ch10-lu-crout.
+
+**Data.** Row-major $n \times n$ array, overwritten by $\mathsf L$ and $\mathsf U$; permutation `indx`.
+
+**Placement.** Inside `leastsq_kkt` (@sec-ch10-kkt) and `leastsq`.
+
+**Activation.** Always; `pivot_tolerance` defaults to 0, `skip_row` to none.
+
+**Guarantee / limits.** Returns 0 for a singular matrix; no condition estimate.
+
+**Evidence.** Through the `leastsq_kkt` tests; see the Tests layer.
+:::
+
+Local symbols: $\mathsf A$, an $n \times n$ matrix with entries $a_{ij}$; $\mathsf L$, unit lower triangular;
+$\mathsf U$, upper triangular; $\mathsf P$, the row permutation; $s_i$, the inverse of the largest $|a_{ij}|$ in row
+$i$; $\tau$, the pivot tolerance.
+
+### Derivation
+
+Crout's method computes, column by column, the entries $u_{ij}$ of $\mathsf U$ on and above the diagonal
+($i \le j$) and the entries $\ell_{ij}$ of $\mathsf L$ below it ($i > j$):
+
+$$
+\begin{aligned}
+u_{ij} &= a_{ij} - \sum_{k < i} \ell_{ik}\, u_{kj} \\
+\ell_{ij} &= \frac{1}{u_{jj}} \Big( a_{ij} - \sum_{k < j} \ell_{ik}\, u_{kj} \Big)
+\end{aligned}
+$$ {#eq-ch10-lu-crout}
+
+Before the division, the row with the largest scaled candidate $s_i \big| a_{ij} - \sum_{k<j} \ell_{ik} u_{kj} \big|$
+is swapped into the pivot position. The factorization is refused when that largest scaled value is not above
+$\tau$. @eq-ch10-lu-crout is computed in `ludcmp` ({{< code src/math/ludcmp.h ludcmp >}}). A solve then runs forward
+substitution with $\mathsf L$ and back substitution with $\mathsf U$ in `lubksb`
+({{< code src/math/lubksb.h lubksb >}}). Exact in exact arithmetic.
+
+### Numerical method
+
+1. `ludcmp` records $s_i$ for every row; a row of zeros ends it with return value 0.
+2. Columns are processed left to right. The pivot test is relative: `vv[i] * fabs(sum)` must exceed
+   `pivot_tolerance`, so with the default 0 only an exactly zero pivot fails.
+3. The return value is the permutation sign, $\pm 1$, or 0 for a singular matrix. `indx[j]` holds the row swapped
+   into position $j$.
+4. Rows and columns flagged in `skip_row` are left out of the factorization and of the solve; `leastsq_kkt` uses this
+   for all-zero rows of its KKT[^rg-8c02b98e6297] block.
+5. `lubksb` skips the leading zeros of the right-hand side: it starts the forward sum at the first nonzero entry.
+6. `luminv` solves for the unit vectors one column at a time.
+
+Scratch space comes from `pmalloc` and `pool_rewind` on the `work` pool; its size is `ludcmp_space`
+({{< code src/utils/alloc.h ludcmp_space >}}). The figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| factorization | {{< code src/math/ludcmp.h ludcmp >}} | `ludcmp` | `pivot_tolerance`, `skip_row` |
+| substitution | {{< code src/math/lubksb.h lubksb >}} | `lubksb` | `skip_row` |
+| inverse | {{< code src/math/luminv.h luminv >}} | `luminv` | always |
+| unconstrained least squares | {{< code src/math/leastsq.h leastsq >}} | `leastsq` | always |
+
+: Code map of the LU kernels. {#tbl-ch10-lu-code}
+
+`leastsq` ({{< code src/math/leastsq.h leastsq >}}) solves $\min \lVert \mathsf A x - b \rVert$ through the normal
+equations $\mathsf A^{\mathrm T} \mathsf A\, x = \mathsf A^{\mathrm T} b$ with `ludcmp` and `lubksb`.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo` | the `LeastSquaresKkt` cases solve through `ludcmp` and `lubksb` | per case | @sec-ch10-kkt |
+| `test_alloc_space` | `leastsq_kkt` stays inside its pool budget, which includes `ludcmp_space` | guard intact | the test |
+| none | `ludcmp` and `lubksb` alone; `luminv`; `leastsq` | missing evidence | no direct test |
+
+: Tests of the LU kernels. {#tbl-ch10-lu-tests}
+
+{{< code tests/test_thermo.cpp >}} also holds `test_ludcmp_skip`, a function that prints a result for a skipped
+row; it is not a gtest case, and its call in `main` is commented out. No run record is attached in this draft
+(missing evidence).
+
+### Limits
+
+- The doc comment of `ludcmp` says `indx` "outputs as +/- 1"; in the code the sign is the return value and `indx`
+  holds row indices ({{< code src/math/ludcmp.h ludcmp >}}).
+- `leastsq` ignores the return value of `ludcmp`, so a singular $\mathsf A^{\mathrm T} \mathsf A$ is solved with an
+  incomplete factorization (read from the code; not tested). `leastsq` and `luminv` have no caller outside `src/math`
+  at the pin.
+- The normal equations square the condition number of $\mathsf A$.
+
+<!-- reader glossary notes -->
+[^rg-8c02b98e6297]: KKT — Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134)
+<!-- end reader glossary notes -->

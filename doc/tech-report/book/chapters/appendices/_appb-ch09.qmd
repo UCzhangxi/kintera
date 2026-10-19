@@ -4,12 +4,14 @@
 
 | scheme | equation | derivation | code and check | source |
 |---------------|---------|-------------------------------|-------------------------------------|--------|
-| @sec-ch09-state | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch09-transport | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch09-sources | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch09-assembly | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch09-rosenbrock | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch09-newton | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
-| @sec-ch09-conservation | none | Pending: the derivation is being drafted. | code: ; check: none | n/a |
+| @sec-ch09-state | @eq-ch09-state-geometry | The geometry is defined from the face coordinates alone: | code: {{< code python/atm2d/atm_state2d.py AtmState2D.__post_init__ >}}; check: none | re-derived |
+| @sec-ch09-transport | @eq-ch09-transport-flux | **Concentration form.** Integrate $\partial c / \partial t = \partial_{x_1}(K_{zz} \partial_{x_1} c)$ over cell $i$ of width $\Delta x_{1,i}$ and approximate the face gradient by the difference of the two adjacent centres: | code: {{< code python/atm2d/transport.py _add_two_cell_block >}}; check: none | re-derived |
+| @sec-ch09-transport | @eq-ch09-transport-mr | **Mixing-ratio form.** Diffusing the mixing ratio $c / n$ instead of $c$ gives the face flux | code: {{< code python/atm2d/transport.py _assemble_vertical_scalar_diffusion >}}; check: none | re-derived |
+| @sec-ch09-sources | @eq-ch09-sources-sum | Each term $t$ returns its tendency and Jacobian in every cell, and the solver adds them: | code: {{< code python/atm2d/sources/combine.py build_source_linearization >}}; check: none | re-derived |
+| @sec-ch09-sources | @eq-ch09-sources-stoich | For kintera's kinetics, the species Jacobian is the reaction Jacobian mapped through the stoichiometry, | code: {{< code python/atm2d/chemistry.py build_chemistry_jacobian >}}; check: none | re-derived |
+| @sec-ch09-assembly | @eq-ch09-assembly-be | Backward Euler for $\mathrm d c/\mathrm d t = \mathsf T c + S(c)$, with the source linearized about $c^{k}$, $S(c) \approx S(c^{k}) + \mathsf J (c - c^{k})$, gives for the new state $c$: | code: {{< code python/atm2d/assembly.py build_implicit_step_system >}}; check: none | re-derived |
+| @sec-ch09-rosenbrock | @eq-ch09-rosenbrock-ros2 | The scheme is the two-stage Rosenbrock method of Verwer, Spee, Blom and Hundsdorfer (1999, doi:10.1137/S1064827597326651) in the form the code uses: | code: {{< code python/atm2d/rosenbrock.py rosenbrock2_step >}}; check: none | re-derived |
+| @sec-ch09-newton | @eq-ch09-newton-iterate | Each Newton iteration rebuilds @eq-ch09-assembly-be with the source linearized at the current iterate and the start state $c^{0}$ held fixed, solves it, and then corrects the result: | code: {{< code python/atm2d/newton/coupled.py newton_implicit_step >}}; check: none | re-derived |
+| @sec-ch09-conservation | @eq-ch09-conservation-trim | For each element $e$ and cell, with the fixed species excluded, the excess over the budget and the trimmed concentrations are | code: {{< code python/atm2d/conservation/atomic.py project_atomic_budget >}}; check: none | re-derived |
 
 : Derivations of @sec-ch09. {#tbl-appb-ch09}

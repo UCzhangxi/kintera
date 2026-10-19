@@ -1,8 +1,8 @@
-## Newton solvers for steady states (`newton`) {#sec-ch09-newton}
+## Newton solvers for implicit steps (`newton_implicit_step`, `operator_split_step`) {#sec-ch09-newton}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: python/atm2d
+sources: python/atm2d/newton/
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,95 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Besides the Rosenbrock step, the solver offers backward-Euler steps solved by Newton's method, which are the usual
+route to a steady state: a backward-Euler step of very large size approaches the steady state of
+$\mathsf T c + S(c) = 0$. Three variants share one result type: the coupled step solves transport and chemistry
+together in one sparse system; the chemistry-only step solves each cell's chemistry with transport held fixed; and the
+operator-split step does transport first and chemistry second. The chemistry-only step can be replaced by SciPy's
+stiff integrators.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Solve @eq-ch09-assembly-be by Newton iteration, @eq-ch09-newton-iterate.
+
+**Data.** State in; `NewtonResult` (concentration, converged flag, iterations, largest relative change) out.
+
+**Placement.** Inside a caller's time loop, usually wrapped by `adaptive_advance` (@sec-ch09-rosenbrock).
+
+**Activation.** API; chemistry solver by `KINTERA_CHEM_SOLVER` (`newton`, `bdf`, `lsoda`, `radau`).
+
+**Guarantee / limits.** Stops on relative change below `convergence_tol` (default $10^{-4}$), not on a residual.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $c^{k}$, the iterate; $\tilde c^{k+1}$, the solution of the linearized system; $\varepsilon_k$, the
+largest relative change of iteration $k$; $\theta$, the damping factor. Other symbols are those of @sec-ch09-assembly.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+Each Newton iteration rebuilds @eq-ch09-assembly-be with the source linearized at the current iterate and the start
+state $c^{0}$ held fixed, solves it, and then corrects the result:
+
+$$
+\begin{aligned}
+\left(\mathsf I - \Delta t\, \mathsf L(c^{k})\right) \tilde c^{k+1} &= c^{0} + \Delta t\left[S(c^{k}) - \mathsf J(c^{k})\, c^{k}\right], \\
+c^{k+1} &= \mathrm{clip}\left(c^{k} + \theta\,(\tilde c^{k+1} - c^{k})\right), \\
+\varepsilon_{k+1} &= \max_n \frac{\lvert c^{k+1}_n - c^{k}_n \rvert}{\max(\lvert c^{k}_n \rvert, \text{floors})} ,
+\end{aligned}
+$$ {#eq-ch09-newton-iterate}
+
+with $\theta = 1$ unless the raw change exceeds `damping_trigger`, in which case $\theta$ = `damping_factor` (0.5).
+The first line is exactly Newton's method for $c - c^{0} - \Delta t\,[\mathsf T c + S(c)] = 0$, because the linearized
+system is that residual's Newton step. @eq-ch09-newton-iterate is computed in `newton_implicit_step`
+({{< code python/atm2d/newton/coupled.py newton_implicit_step >}}); the relative change in
+`per_species_relative_change` ({{< code python/atm2d/newton/result.py per_species_relative_change >}}).
 
 ### Numerical method
 
-Pending.
+After each solve the coupled step clips negatives to zero (or takes absolute values with `clip_negative="abs"`), caps
+each species at the cell's total starting concentration (`mass_conservation_cap`, default on), and applies an optional
+post-process hook. It stops when $\varepsilon$ is below `convergence_tol`, or when it diverges by the optional thresholds
+(off by default in the coupled step; growth factor 10 and threshold $10^{6}$ in the chemistry-only step), or after
+`max_iterations` (100). If it did not converge, it returns the iterate with the smallest $\varepsilon$. The entry state
+is restored on every exit, including an exception from the solver.
+
+`operator_split_step` ({{< code python/atm2d/newton/operator_split.py operator_split_step >}}) first solves the
+transport-only backward-Euler system, then hands the result to the chemistry step chosen by `KINTERA_CHEM_SOLVER`:
+`chemistry_only_newton_step`, or `chemistry_only_bdf_step`, which integrates $\mathrm d c/\mathrm d t = S(c)$ over
+$\Delta t$ with SciPy's BDF, LSODA or Radau and the analytic block-diagonal Jacobian, on CPU only.
+
+The Newton figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| coupled step | {{< code python/atm2d/newton/coupled.py newton_implicit_step >}} | `newton_implicit_step` | `convergence_tol`, `damping_factor`, `clip_negative` |
+| chemistry only | {{< code python/atm2d/newton/chemistry_only.py chemistry_only_newton_step >}} | `chemistry_only_newton_step` | `newton` |
+| SciPy integrators | {{< code python/atm2d/newton/chemistry_only_bdf.py chemistry_only_bdf_step >}} | `chemistry_only_bdf_step` | `bdf`, `lsoda`, `radau` |
+| operator split | {{< code python/atm2d/newton/operator_split.py operator_split_step >}} | `operator_split_step` | `KINTERA_CHEM_SOLVER` |
+| result and stop measure | {{< code python/atm2d/newton/result.py NewtonResult >}} | `NewtonResult` | API |
+
+: Code map of the Newton solvers. {#tbl-ch09-newton-code}
+
+Setup checks a user can hit: an unknown `KINTERA_CHEM_SOLVER`; any error of the operator builders.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_atm2d.py` (`test_newton_implicit_step_honors_mr_transport_form`) | the coupled step uses the mixing-ratio form when asked | as in the test | not yet derived |
+| `test_atm2d.py` (`test_newton_implicit_step_restores_state_on_non_finite_iterate`) | the entry state is restored after a non-finite iterate | exact | equality |
+
+: Tests of the Newton solvers. {#tbl-ch09-newton-tests}
+
+No test at the pin covers the chemistry-only Newton step, the SciPy integrators or the operator-split step: missing
+evidence.
 
 ### Limits
 
-Pending.
+Convergence is judged by the relative change between iterates, not by the residual, so a stalled iteration with small
+steps is reported as converged; its floors decide which species count. Clipping and the mass cap are applied after
+every solve, so the iterates are not those of a pure Newton method, and the cap ($c_n \le \sum_m c^{0}_m$) holds only
+for species that cannot exceed the cell total. The SciPy path is CPU-only. Operator splitting is first order in
+$\Delta t$ by its construction; its splitting error is not measured.

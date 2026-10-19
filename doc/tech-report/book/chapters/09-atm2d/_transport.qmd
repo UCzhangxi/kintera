@@ -1,8 +1,8 @@
-## Eddy diffusion and advection on the two-dimensional grid (`transport`) {#sec-ch09-transport}
+## Eddy and molecular diffusion on the two-dimensional grid (`build_transport_matrix`) {#sec-ch09-transport}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: python/atm2d
+sources: python/atm2d/transport.py
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,132 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Transport in the two-dimensional solver is diffusion: vertical and horizontal eddy diffusion, an optional cross term,
+and optional vertical molecular (binary) diffusion with gravitational separation. Each is discretized by finite
+volumes into a sparse linear operator on the flattened state, so that $\mathrm d c / \mathrm d t = \mathsf T c$ for the
+transport part. The vertical eddy term has two forms: diffusion of the concentration itself, or diffusion of the
+mixing ratio $c / n$ with $n$ the total number density, which is the form that keeps a well-mixed species well mixed in
+a column whose density falls with height. There is no advection operator in `python/atm2d` at the pin.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** The transport operator $\mathsf T$, @eq-ch09-transport-flux (concentration form) and
+@eq-ch09-transport-mr (mixing-ratio form).
+
+**Data.** $K_{zz}$, $K_{yy}$ (cell-centred), optional binary-diffusion matrices; units are the caller's.
+
+**Placement.** `build_transport_matrix`, called by the operator and step builders of @sec-ch09-assembly.
+
+**Activation.** `form`: `c_diffusion`, `mr_diffusion`, `mr_exp`, `mr_hybrid`; default `mr_diffusion` when a density is given.
+
+**Guarantee / limits.** Conservative fluxes; centred, second order in space (not measured).
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $K_{zz}$, $K_{yy}$, vertical and horizontal eddy diffusivities [length$^2$ time$^{-1}$]; $n_{j,i}$, total
+number density of a cell; $F_{i+1/2}$, the diffusive flux through the face between layers $i$ and $i+1$; $s_n$, a
+per-species scale factor of the diffusivity (`species_diffusion_scale`, default 1). Geometry symbols are those of
+@sec-ch09-state.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+**Concentration form.** Integrate $\partial c / \partial t = \partial_{x_1}(K_{zz} \partial_{x_1} c)$ over cell $i$ of
+width $\Delta x_{1,i}$ and approximate the face gradient by the difference of the two adjacent centres:
+
+$$
+\begin{aligned}
+F_{i+1/2} &= s_n K_{zz,i+1/2}\, \frac{c_{i+1} - c_i}{\delta x_{1,i+1/2}} , \\
+\frac{\mathrm d c_i}{\mathrm d t} &= \frac{F_{i+1/2} - F_{i-1/2}}{\Delta x_{1,i}} .
+\end{aligned}
+$$ {#eq-ch09-transport-flux}
+
+The face diffusivity is the arithmetic mean of the two cells (the boundary faces take the edge cell's value).
+@eq-ch09-transport-flux is assembled face by face in `_add_two_cell_block`
+({{< code python/atm2d/transport.py _add_two_cell_block >}}): a face adds $+F/\Delta x_{1,i}$ to cell $i$ and
+$-F/\Delta x_{1,i+1}$ to cell $i+1$, so $\sum_i \Delta x_{1,i}\, \mathrm d c_i / \mathrm d t$ telescopes to the
+boundary fluxes and the interior conserves the column content exactly. The horizontal term is the same along $x_2$.
+
+**Mixing-ratio form.** Diffusing the mixing ratio $c / n$ instead of $c$ gives the face flux
+
+$$
+F_{i+1/2} = s_n K_{zz,i+1/2}\, n_{i+1/2}\, \frac{c_{i+1}/n_{i+1} - c_i/n_i}{\delta x_{1,i+1/2}} ,
+\qquad n_{i+1/2} = \tfrac12\left(n_i + n_{i+1}\right),
+$$ {#eq-ch09-transport-mr}
+
+assembled in `_assemble_vertical_scalar_diffusion`
+({{< code python/atm2d/transport.py _assemble_vertical_scalar_diffusion >}}) by scaling the two column entries by
+$n_{i+1/2}/n_i$ and $n_{i+1/2}/n_{i+1}$. For $c = x\, n$ with a uniform mixing ratio $x$ the flux vanishes, which is the
+property the form is chosen for. A face that touches a cell with $n = 0$ carries no flux.
+
+Molecular diffusion adds a full species-by-species block per face with a gravitational-separation term proportional
+to $g / (\mathcal R T)$ times molecular-weight differences, and the `mr_exp`/`mr_hybrid` forms use an upwinded
+exponential differencing of combined eddy and molecular diffusion. Their derivations are not written yet.
 
 ### Numerical method
 
-Pending.
+The operator is built from triplets and stored as a sparse matrix (@sec-ch09-assembly). The form is resolved in
+`_resolve_transport_form`: an explicit `form`, else `KINTERA_TRANSPORT_FORM`, else `mr_diffusion` if a density is
+supplied and `c_diffusion` otherwise.
+
+Boundary conditions replace whole rows (`_apply_boundary_conditions`,
+{{< code python/atm2d/transport.py _apply_boundary_conditions >}}). A Dirichlet row becomes the identity row with the
+boundary value on the right side. A Neumann row becomes a one-sided difference between the boundary cell and its
+neighbour, $(c_{\mathrm{nei}} - c_{\mathrm{row}})/\delta x$ for the left and bottom sides and
+$(c_{\mathrm{row}} - c_{\mathrm{nei}})/\delta x$ for the right and top sides, equal to the given value. Left and right
+are applied first and then overwritten by bottom and top, so corners take the bottom or top condition.
+
+The transport figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| full transport | {{< code python/atm2d/transport.py build_transport_matrix >}} | `build_transport_matrix` | `form` |
+| eddy diffusion | {{< code python/atm2d/transport.py build_eddy_diffusion_matrix >}} | `build_eddy_diffusion_matrix` | `kzz`, `kyy`, `kzy`, `kyz` |
+| molecular diffusion | {{< code python/atm2d/transport.py build_binary_diffusion_matrix >}} | `build_binary_diffusion_matrix` | `binary_diffusion` |
+| exponential form | {{< code python/atm2d/transport.py build_kb_exponential_vertical_matrix >}} | `build_kb_exponential_vertical_matrix` | `mr_exp`, `mr_hybrid` |
+| form selection | {{< code python/atm2d/transport.py _resolve_transport_form >}} | `_resolve_transport_form` | `KINTERA_TRANSPORT_FORM` |
+| one face | {{< code python/atm2d/transport.py _add_two_cell_block >}} | `_add_two_cell_block` | always |
+| boundary rows | {{< code python/atm2d/transport.py _apply_single_boundary >}} | `_apply_single_boundary` | `dirichlet`, `neumann`, `none` |
+
+: Code map of the transport operator. {#tbl-ch09-transport-code}
+
+Setup checks a user can hit: an unknown transport form; `mr_diffusion` without a density, or a density not shaped
+`(ncol, nlyr)`; `mr_exp`/`mr_hybrid` without binary diffusion and molecular weights; binary diffusion without molecular
+weights; a boundary kind other than `none`, `dirichlet` or `neumann`.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_atm2d.py` (`test_vertical_eddy_transport_matches_columnwise_reference`) | 2-D operator equals a column-by-column reference | $10^{-12}$ rel. and abs. | not yet derived |
+| `test_atm2d.py` (`test_mr_diffusion_zero_flux_for_uniform_mixing_ratio`, `test_mr_diffusion_conserves_column_mass`) | @eq-ch09-transport-mr gives no flux for uniform $x$ and conserves the column | as in the test | not yet derived |
+| `test_atm2d.py` (`test_steady_2d_diffusion_four_side_dirichlet_matches_linear_solution`) | steady 2-D diffusion with four Dirichlet sides matches the linear solution | $2.5 \times 10^{-3}$ | not yet derived |
+| `test_atm2d.py` (`test_boundary_corner_precedence_overrides_left_with_top`) | top overrides left at the corner; the top Neumann row has $\pm 1/\delta x$ | default | PyTorch defaults |
+| run `[R1]` | the derivative a Neumann row imposes on each side | exact | linear solve of a linear profile |
+
+: Tests of the transport operator. {#tbl-ch09-transport-tests}
+
+The tolerances are read from `tests/test_atm2d.py` at the pin. `test_steady_1d_advection_diffusion_dirichlet_matches_analytic_solution`
+builds its advection-diffusion operator by hand and uses atm2d only for the boundary rows and the solve, so it is not
+evidence for an atm2d advection operator. Its CUDA twin and the other CUDA cases are skipped unless a GPU and the
+native cuSolver binding are available.
+
+Run `[R1]`[^ch09-r1] (pinned `python/atm2d` source, torch 2.10.0, CPU, float64): a 20-layer column on $[0, 1]$ with
+$K_{zz} = 1$, a Dirichlet value 1 on one side and a Neumann value 0.5 on the other. With the Neumann row at the bottom
+the solution has $\mathrm d c/\mathrm d x_1 = 0.5$, an outward normal derivative of $-0.5$; at the top it has
+$\mathrm d c/\mathrm d x_1 = 0.5$, an outward normal derivative of $+0.5$.
 
 ### Limits
 
-Pending.
+A Neumann value is imposed as $\mathrm d c / \mathrm d x$ along the positive axis on every side (run `[R1]`), while
+the docstring of `SpeciesBoundaryCondition` says it is the outward normal derivative. On the right and top sides the two
+agree; on the left and bottom sides the sign is reversed. A zero-gradient condition is unaffected. No test checks a
+left or bottom Neumann row. Whether this is a documentation error or a code error is for the code owners to decide.
+
+The spatial order of the concentration and mixing-ratio forms is second order on a uniform grid by the centred
+differences; it is not measured, and the non-uniform-grid order is a derivation still to write (TODO). The `mr_exp` and `mr_hybrid`
+derivations, and the molecular-diffusion derivation, are TODO.
+
+[^ch09-r1]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, line `[R1]`; run with `KINTERA_REPO`
+set to a kintera checkout at the pin.

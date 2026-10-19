@@ -1,0 +1,7 @@
+torch 2.10.0+cu128; atm2d from $KINTERA_REPO/python at the pin
+[R1] bottom: value 0.5, imposed dc/dz = 0.500000, outward normal derivative = -0.500000
+[R1] top: value 0.5, imposed dc/dz = 0.500000, outward normal derivative = 0.500000
+[R2] dt_target 8, initial_attempt 1, only the first attempt rejected: accepted 16, rejected 1, distinct accepted dts [0.5], max accepted dt 0.5
+[R3] steps 8->16: error 5.624e-03 -> 1.648e-03, observed order 1.771
+[R3] steps 16->32: error 1.648e-03 -> 4.496e-04, observed order 1.874
+[R3] steps 32->64: error 4.496e-04 -> 1.177e-04, observed order 1.934

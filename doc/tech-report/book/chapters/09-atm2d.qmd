@@ -1,20 +1,20 @@
 # The two-dimensional atmosphere solver {#sec-ch09}
 
 This chapter describes the Python solver of `python/atm2d`, which advances the composition of an atmosphere on a
-two-dimensional grid of columns. It holds the state, computes transport by eddy diffusion and advection, adds the
+two-dimensional grid of columns. It holds the state, computes transport by eddy and molecular diffusion, adds the
 chemical and photochemical sources of @sec-ch06 and @sec-ch07, assembles the implicit operator as one sparse system,
 and advances it with a Rosenbrock step of adaptive size or solves for a steady state with Newton's method. The
 linear algebra it relies on is described in @sec-ch10.
 
 | scheme | YAML key or option | default | order | main test |
 |---|---|---|---|---|
-| @sec-ch09-state | `Atm2DConfig` (API) | caller | n/a | `test_atm2d.py` |
-| @sec-ch09-transport | `transport` (API) | caller | pending | `test_atm2d.py` |
+| @sec-ch09-state | `AtmState2D`, `CoreConfig` (API) | caller | n/a | `test_atm2d.py` |
+| @sec-ch09-transport | `form` | `mr_diffusion` with a density | second in space (not measured) | `test_atm2d.py` |
 | @sec-ch09-sources | `sources` (API) | caller | n/a | `test_atm2d.py` |
 | @sec-ch09-assembly | `assembly` (API) | always | n/a | `test_atm2d.py` |
-| @sec-ch09-rosenbrock | `rosenbrock` (API) | caller | pending | `test_adaptive_timestep.py` |
-| @sec-ch09-newton | `newton` (API) | caller | n/a | `test_atm2d.py` |
-| @sec-ch09-conservation | `conservation`, `pins` (API) | caller | n/a | `test_atm2d.py` |
+| @sec-ch09-rosenbrock | `rosenbrock2_step`, `adaptive_advance` (API) | caller | second in time (run) | `test_adaptive_timestep.py` |
+| @sec-ch09-newton | `KINTERA_CHEM_SOLVER` | `newton` | first in time | `test_atm2d.py` |
+| @sec-ch09-conservation | `project_atomic_budget`, pins (API) | caller | n/a | `test_refactor_phase1.py` |
 
 : Schemes of the two-dimensional solver chapter. {#tbl-ch09-schemes}
 

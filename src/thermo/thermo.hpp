@@ -87,8 +87,9 @@ struct ThermoOptionsImpl final : public SpeciesThermoImpl {
   ADD_ARG(std::string, uv_solver) = "auto";
 
   //! condensates in no nucleation reaction that a coagulation reaction
-  //! `X => X(p)` makes from another condensate: species ids of each copy and
-  //! of its source. A copy has the chemical potential of its source.
+  //! `X => X(p)` makes from another condensate with the same thermodynamic
+  //! data: species ids of each copy and of its source. A copy has the
+  //! entropy of its source.
   ADD_ARG(std::vector<int>, copy_ids);
   ADD_ARG(std::vector<int>, copy_src_ids);
 };

@@ -1,0 +1,7 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+rate constant k = 1 1/s (card A = 1, unimolecular unit factor 1)
+backward Euler: err(N=50) 3.6484e-03, err(N=100) 1.8318e-03; ratio measured 1.9918  expected 2 tol 10%  PASS
+backward Euler: atom drift max|c_A + c_B - 1| measured 2.22e-16  tol 1e-14  PASS
+ROS2: err(N=50) 1.9030e-04, err(N=100) 4.9018e-05; ratio measured 3.8823  expected 4 tol 10%  PASS
+ROS2: atom drift max|c_A + c_B - 1| measured 5.55e-16  tol 1e-14  PASS
+ALL PASS

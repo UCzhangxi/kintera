@@ -15,6 +15,9 @@ it. The report is a Quarto book of 14 chapters and appendices A to F (OUTLINE.md
   execution, 13 Tests and validation, 14 Coupling to snapy and paddle; appendices A notation, B derivation index,
   C test index, D topic index, E task map, F glossary.
 - `READING.md`: the reading list for chapters 2-5, pairing published sources with the kintera code they explain.
+- `DERIVATION_SPEC.md`: the derivation each chapter's Derivation layer must carry (chapters 2-6 and 9 and a
+  proposed overview), entry by entry: question, start, end at the code's file:line, steps, check, home and
+  status. Its checks are the scripts in `derivation-checks/`, each with its committed output `<name>.out`.
 - `AUTHOR-CHECKLIST.md`: the gates to run before opening a chapter PR, with the command for each and what it must
   say, and what belongs in the PR body.
 - `REVIEW-RECORD.md`: the template a reviewer fills when a review is requested (head/tree/base shas with read

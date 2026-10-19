@@ -1,0 +1,11 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+(a) T = 80.0 K, K = 3.157972e+00 mol/m^3, kappa = 7.392000e+01 1/s, c_p = 0.7
+(a1) c_v = 0.5K: |rate - kappa c_p (K - c_v)|/ref: measured 1.739e-16  tol 1e-10  PASS
+(a2) c_v = K: |rate| / (kappa c_p K): measured 1.406e-16  tol 1e-12  PASS
+(a3) c_v = 1.5K: |rate| (must be exactly 0): measured 0.000e+00  tol 0e+00  PASS
+    T = 200.0, c1 = 1.0e-03, c2 = 2.0e-03: K = 3.616362e-05, x = 4.534370e-03, |(c1+x)(c2+x) - K|/K = 3.75e-16
+    T = 190.0, c1 = 1.0e-06, c2 = 5.0e-02: K = 2.491868e-05, x = 4.925124e-04, |(c1+x)(c2+x) - K|/K = 4.08e-16
+    T = 210.0, c1 = 0.0e+00, c2 = 1.0e-02: K = 5.029339e-05, x = 3.677176e-03, |(c1+x)(c2+x) - K|/K = 2.69e-16
+    T = 205.0, c1 = 3.0e-02, c2 = 1.0e-08: K = 4.285740e-05, x = 1.366340e-03, |(c1+x)(c2+x) - K|/K = 2.53e-15
+(b) two-product extent, worst |(c1+x)(c2+x) - K|/K: measured 2.530e-15  tol 1e-12  PASS
+ALL PASS

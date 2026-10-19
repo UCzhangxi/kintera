@@ -1,0 +1,13 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+== a. two-phase vapour-liquid, T=300 K, p=1e5 Pa, n0=(1, .05, .05)
+  n_v=3.66933196081383e-02 analytic=3.66933196082227e-02 rel=2.3e-12 tol 1e-10 PASS
+  status=0 (0 = converged) PASS; iterations=4; reported error=2.2e-12 <= ftol=1e-08 PASS
+  water conservation rel=0.0e+00 tol 1e-14 PASS
+== b. Newton Jacobian at the converged state vs central FD along the reaction direction
+  J=2.628831174589e+01 FD=2.628831174035e+01 rel=2.1e-10 tol 1e-8 PASS  (returned gain 2.628837e+01 is from the last Newton iterate)
+== c. 2 H2 + O2 <=> 2 H2O, Nasa9LogK, T=3500 K, p=p0=1e5 Pa
+  lnK=3.3267652907 status=0 n=['3.282195e-01', '6.410976e-02', '4.717805e-01']
+  |residual|=8.0e-12 tol 1e-10 PASS
+  H rel=0.0e+00 tol 1e-14 PASS; O rel=2.2e-16 tol 1e-14 PASS
+  table parse: Delta g/RT table=-3.326765290687 library=-3.326765290687 rel=0.0e+00 tol 1e-12 PASS
+  van 't Hoff: FD dlnK/dT=-4.9501006409e-03 Delta h/(R T^2)=-4.9501006385e-03 rel=4.7e-10 tol 1e-6 PASS

@@ -307,7 +307,8 @@ void ThermoXImpl::_entropy_to_temp(torch::Tensor pres, torch::Tensor xfrac,
     out.copy_(torch::where(
         active, out * torch::exp((entropy - entropy_vol) / slope), out));
     forward(out, pres, xfrac);
-    active &= (1. - temp_pre / out).abs() >= options->ftol();
+    // a NaN step fails the comparison and keeps its column active
+    active &= ~((1. - temp_pre / out).abs() < options->ftol());
     if (!active.any().item<bool>()) {
       converged = true;
       break;

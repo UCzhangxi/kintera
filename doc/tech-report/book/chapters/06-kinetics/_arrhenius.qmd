@@ -108,6 +108,7 @@ before the formula is evaluated.
 The check compares the stored $A$ with @eq-ch06-arrhenius-unit for $n = 1, 2, 3$ and the rate constant with
 @eq-ch06-arrhenius-rate; both agree to $2.2 \times 10^{-16}$.[^ch06-check-b]
 <!-- equation-check: eq-ch06-arrhenius-unit check_ch6_rates.py [b] -->
+<!-- equation-check: eq-ch06-arrhenius-rate check_ch6_rates.py [b] -->
 
 ### Numerical method
 

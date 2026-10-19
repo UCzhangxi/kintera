@@ -71,6 +71,7 @@ for j, n in enumerate(names):
           f"  | FD(fixed T) {fd_t:.10e}  (feedback share {abs(fd_u - fd_t) / abs(fd_u):.2e})")
 tag = "PASS" if worst <= tol else "FAIL"
 print(f"T-feedback Jacobian vs fixed-U FD, worst rel err: measured {worst:.3e}  tol {tol:.0e}  {tag}")
+fails = int(tag == "FAIL")
 
 # Reversible reaction O + O2 <=> O3 (K_c from the NASA-9 data of the species, as in check_ch6_rates.py [d]),
 # cv_R 2.5/2.5/3.5, u0_R 0/0/-1000, Tref 0; T = 300 K, c = (1e-3, 0.2, 0.1), step 1e-5 c_j. The reverse column's feedback term uses rc_ddT, which at
@@ -121,6 +122,8 @@ for k, what in ((0, "forward"), (1, "reverse")):
         worst = max(worst, err)
         print(f"  {what} dr/dc_{n}: jacobian {J:.10e}  FD(fixed U) {fd_u:.10e}  rel err {err:.2e}")
     tag = "PASS" if worst <= tol else ("EXPECTED-FAIL" if k == 1 else "FAIL")
+    fails += int(tag == "FAIL")
     note = "  (D65: reverse rc_ddT is a copy of dk_f/dT)" if k == 1 else ""
     print(f"reversible O + O2 <=> O3, {what} column T-feedback Jacobian vs fixed-U FD, worst rel err: "
           f"measured {worst:.3e}  tol {tol:.0e}  {tag}{note}")
+sys.exit(1 if fails else 0)  # a FAIL line also fails the process; EXPECTED-FAIL does not

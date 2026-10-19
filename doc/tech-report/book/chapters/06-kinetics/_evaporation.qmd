@@ -103,14 +103,20 @@ K = \exp\!\Big(\ln p_{\mathrm{sat}} - \Big(\sum_g \nu_g\Big) \ln(\mathcal R T)\B
 $$ {#eq-ch06-evaporation-ksat}
 
 and for a single vapour this is $K = p_{\mathrm{sat}}/(\mathcal R T)$. @eq-ch06-evaporation-ksat is computed in
-`forward` ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}) from the same `LogSVPFunc` that the
-phase-equilibrium solvers use.
+`forward` ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}) through `LogSVPFunc`, the evaluator
+that the phase-equilibrium solvers also use. The evaluator is shared, the curve is not: evaporation takes
+$\ln p_{\mathrm{sat}}$ from the formula and parameters of its own evaporation reaction, the phase solvers from those of
+the nucleation reaction, and no code ties the two.
 
 **Zero rate exactly at saturation, and never negative.** For one vapour $\eta = K - c_v = K(1 - \mathrm{RH})$, with
-$\mathrm{RH} = c_v/K$ the relative humidity of @sec-ch03-relative-humidity. The rate therefore vanishes exactly where
-the phase solver of @sec-ch04 puts the parcel, at $\mathrm{RH} = 1$, because both use the same saturation function.
-The code clamps $\eta$ at zero: in supersaturated air the column contributes nothing, rather than a negative rate
-that would run it backwards. Supersaturation is relieved by the condensation path of the phase equilibrium.
+$\mathrm{RH} = c_v/K$ the relative humidity of @sec-ch03-relative-humidity. The rate therefore vanishes
+where the phase solver of @sec-ch04 puts the parcel, at $\mathrm{RH} = 1$, provided the deck gives the evaporation
+reaction the same formula and parameters as the nucleation reaction of the same condensate; with a different curve the
+rate at the phase equilibrium is not zero. Phase equilibrium implies a zero rate under that
+condition, but a zero rate does not imply phase equilibrium. The code clamps $\eta$ at zero, so in supersaturated
+air the column contributes nothing, rather than a negative rate that would run it backwards; and a column with no
+condensate ($c_p = 0$) is zero at any humidity. Supersaturation is relieved by the condensation path of the phase
+equilibrium.
 
 **Two products.** For `X(s) => A + B` evaporation stops when $(c_1 + x)(c_2 + x) = K$, where $x$ is the extent still
 to evaporate. Expanding gives the quadratic $x^2 + (c_1 + c_2) x + (c_1 c_2 - K) = 0$, whose non-negative root for
@@ -126,8 +132,10 @@ $(c_1 + c_2)^2 - 4 c_1 c_2 = (c_1 - c_2)^2$. @eq-ch06-evaporation-extent is comp
 ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}) and replaces $\eta$ for such columns.
 
 The check evaluates the one-vapour rate at $c_v = 0.5K$, $K$ and $1.5K$. It finds @eq-ch06-evaporation-kappa to
-$1.7 \times 10^{-16}$, a rate of $1.4 \times 10^{-16}$ of its scale at saturation, and exactly zero above it. The
+$1.7 \times 10^{-16}$, a rate of $1.4 \times 10^{-16}$ of its scale at $c_v = K$ with $K = p_{\mathrm{sat}}/(\mathcal R T)$
+from @eq-ch06-evaporation-ksat computed in the script, and exactly zero above it. The
 two-product root satisfies its quadratic to $2.5 \times 10^{-15}$ at four states, including $c_1 = 0$.[^ch06-check-e]
+<!-- equation-check: eq-ch06-evaporation-ksat check_ch6_evaporation.py (a2) -->
 <!-- equation-check: eq-ch06-evaporation-extent check_ch6_evaporation.py (b) -->
 
 ### Numerical method

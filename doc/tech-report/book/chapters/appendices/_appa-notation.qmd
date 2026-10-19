@@ -54,6 +54,9 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | $K_r$ | saturation constant of condensation reaction $r$: the product of reactant partial pressures, each to its stoichiometric magnitude, on the saturation curve | [Pa$^{m}$, $m$ the sum of the gas magnitudes] | {{< generated appa first-fe5d8cb48530 >}} | `logsvp` (its logarithm) |
 | $L_r$ | latent heat of reaction $r$ at constant volume, internal energy released per unit extent | [J mol$^{-1}$] | {{< generated appa first-44500c09e735 >}} |  |
 | $\mathrm{RH}_r$ | relative humidity of reaction $r$, reactant partial-pressure product over $K_r$ | [-] | {{< generated appa first-3b8ee286f6f7 >}} | `relative_humidity` |
+| $\nu_{nr}$ | stoichiometric coefficient of species $n$ in reaction $r$, negative for a reactant, positive for a product | [-] | {{< generated appa first-5c6271b56873 >}} | `stoich` |
+| $\xi_r$ | extent of reaction $r$ in one step of a saturation solve, in the units of the amounts it moves or | [-], [mol m$^{-3}$] | {{< generated appa first-66c6c16e140f >}} | `rhs` (after the least-squares solve) |
+| $\Delta_r$ | saturation deficit of reaction $r$, $\ln K_r(T) + \sum_{n<N_{\mathrm g}} \nu_{nr} \ln p_n$, positive when subsaturated | [-] | {{< generated appa first-0bb2d6dc342f >}} | `logsvp - log_frac_sum` |
 
 : Species thermodynamics, phase change and reactions. {#tbl-appa-2a}
 

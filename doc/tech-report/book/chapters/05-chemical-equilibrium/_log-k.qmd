@@ -13,7 +13,8 @@ reviewer:
 
 The solver takes $\ln K^\circ_r$ as an input. `Nasa9LogK` computes it from the NASA-9 polynomials bundled with
 kintera: it evaluates each component's $g^\circ_n/\mathcal R T$ and contracts it with the stoichiometric matrix of the
-options. The data file holds 293 species with two temperature ranges, 200 to 1000 K and 1000 to 6000 K. Besides
+options. The data file, described in @sec-ch02-nasa9, holds 293 species with two temperature ranges, 200 to 1000 K
+and 1000 to 6000 K. Besides
 gases it has a few condensed entries, such as liquid and solid water, which a component can be mapped to by name. The
 constants are those at the standard pressure; the pressure of a cell enters only through the gas activities.
 
@@ -31,26 +32,22 @@ constants are those at the standard pressure; the pressure of a cell enters only
 **Evidence.** See the Tests layer below.
 :::
 
-Symbols as in @sec-ch05-conditions; $h_n$ and $s_n$ of the notation table, here at $p^\circ$. Local symbols:
-$a_{0..6}$, $a_8$, $a_9$, the nine NASA-9 coefficients of one species in one range [-].
+Symbols as in @sec-ch05-conditions; $h_n$ and $s_n$ of the notation table, here at $p^\circ$.
 
 ### Derivation
 
-In each range the NASA-9 form gives the enthalpy and entropy of a species, and the Gibbs energy follows:
+The NASA-9 forms of $h_n/\mathcal R T$ and $s_n/\mathcal R$ in each range are @eq-ch02-nasa9-forms
+(@sec-ch02-nasa9). The Gibbs energy and the constant follow:
 
 $$
 \begin{aligned}
-\frac{h_n}{\mathcal R T} &= -\frac{a_0}{T^2} + \frac{a_1 \ln T}{T} + a_2 + \frac{a_3 T}{2} + \frac{a_4 T^2}{3}
-  + \frac{a_5 T^3}{4} + \frac{a_6 T^4}{5} + \frac{a_8}{T} , \\
-\frac{s_n}{\mathcal R} &= -\frac{a_0}{2T^2} - \frac{a_1}{T} + a_2 \ln T + a_3 T + \frac{a_4 T^2}{2}
-  + \frac{a_5 T^3}{3} + \frac{a_6 T^4}{4} + a_9 , \\
-\frac{g^\circ_n}{\mathcal R T} &= \frac{h_n}{\mathcal R T} - \frac{s_n}{\mathcal R} , \qquad
-\ln K^\circ_r = -\sum_n \nu_{nr}\, \frac{g^\circ_n}{\mathcal R T} .
+\frac{g^\circ_n}{\mathcal R T} &= \frac{h_n}{\mathcal R T} - \frac{s_n}{\mathcal R} , \\
+\ln K^\circ_r &= -\sum_n \nu_{nr}\, \frac{g^\circ_n}{\mathcal R T} .
 \end{aligned}
 $$ {#eq-ch05-log-k-gibbs}
 
-The first three lines are `nasa9_gibbs_RT` ({{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}), which takes the low
-coefficients below the mid-point temperature and the high ones above it. The last line is `Nasa9LogK.__call__`
+The first line is `nasa9_gibbs_RT` ({{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}), which takes the low
+coefficients below the mid-point temperature and the high ones above it. The second line is `Nasa9LogK.__call__`
 ({{< code python/equilibrium/nasa9.py Nasa9LogK >}}), `-(gibbs_rt @ stoich)`, with the `stoich` buffer of an
 `EquilibriumTP` built from the same options.
 

@@ -51,31 +51,6 @@ skips the CUDA instances when `torch::cuda::is_available()` is false.
 
 TODO: a figure of the registration (source files to executables and `ctest` entries).
 
-### Code
-
-| what | code link | symbol | switch |
-|---|---|---|---|
-| test registration | {{< code tests/CMakeLists.txt >}} | `setup_test`, `test_python_subprocess` | always |
-| C++ test target | {{< code cmake/macros/macro_setup_test.cmake >}} | `setup_test` | always |
-| device fixture | {{< code tests/device_testing.hpp DeviceTest >}} | `DeviceTest` | device available |
-
-: Code map of the test suite. {#tbl-ch13-suite-code}
-
-At configure time, `tests/CMakeLists.txt` links every `*.inp`, `*.dat` and `*.yaml` file of `tests/` into
-`build/tests` with `ln -sf`, because the C++ tests read their inputs from there.
-
-### Tests
-
-| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
-|---|---|---|---|
-| all 49 entries | the registration itself | exact count | `ctest -N` |
-
-: Tests of the suite layout. {#tbl-ch13-suite-tests}
-
-`ctest -N` in the build's test directory lists 49 entries at the pin.[^ch13-suite-count] The tree holds 23 C++ test
-files and 40 Python test files: 16 C++ programs are built, 8 Python files run in the grouped entry and 32 run as
-single-file entries.
-
 **Running the tests and reading the counts.** In the build's test directory, `ctest -N` lists the registered
 entries without running them, `ctest --output-on-failure` runs them all, and `ctest -R <regex>` runs those whose
 names match; the exact entry names are in Appendix C (@sec-appc). A Python file can also be run directly from the
@@ -97,14 +72,15 @@ Listing an entry is not running it, and running a file is not running every case
 
 **Which tests verify conservation in the equilibrium solvers.** Being registered does not make a test a verification
 of conservation; this map gives, for the two equilibrium solvers, which test asserts which conserved quantity, to
-what tolerance, and what it leaves open:
+what tolerance, and what it leaves open. The NASA-9 case is `test_nasa9_yaml_equilibrium_case`, the ideal-gas case
+the gtest `IdealGasReaction`:
 
-| test | solver | quantity | assertion | tolerance | what it does not establish |
-|---|---|---|---|---|---|
-| `test_saturation_adjustment_nh4sh.py` | fixed $U$, $V$ (@sec-ch04-equilibrate-uv) | N and S atoms of 2000 random cells | element sums before and after | `rtol=1e-12`, `atol=0` | energy; the fixed-$T$ solver |
-| `test_reaction_equilibrium.py` | fixed $T$, $p$ and $U$, $V$; 13 reactions, 8 cases each | amounts along the reaction, $n - n_0 - \nu\,\xi$ | against an independent extent solve | $2\times10^{-6}$ (double), $2\times10^{-3}$ (single), relative | energy: its energy error is recomputed at the temperature read back from $U$, so it holds by construction |
-| `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | log-K solver (@sec-ch05-conditions) | H and O atoms of one gas cell at 4000 K | element sums before and after | `assert_close` defaults for double, `rtol=1e-7`, `atol=1e-7` | several phases |
-| `test_equilibrium.release` (`IdealGasReaction`) | log-K solver | total amount of A $\rightleftharpoons$ B | sum equals 1 | `rtol=1e-6`, `atol=1e-6` | element balance of other reactions |
+| test (solver) | quantity | assertion | tolerance | what it does not establish |
+|---|---|---|---|---|
+| `test_saturation_adjustment_nh4sh.py` (fixed $U$, $V$, @sec-ch04-equilibrate-uv) | N and S atoms of 2000 random cells | element sums before and after | `rtol=1e-12`, `atol=0` | energy; the fixed-$T$ solver |
+| `test_reaction_equilibrium.py` (fixed $T$, $p$ and $U$, $V$; 13 reactions, 8 cases each) | amounts along the reaction, $n - n_0 - \nu\,\xi$ | against an independent extent solve | $2\times10^{-6}$ (double), $2\times10^{-3}$ (single), relative | energy: its energy error is recomputed at the temperature read back from $U$, so it holds by construction |
+| `test_equilibrium.py`, NASA-9 case (log-K solver, @sec-ch05-conditions) | H and O atoms of one gas cell at 4000 K | element sums before and after | `assert_close` defaults for double, `rtol=1e-7`, `atol=1e-7` | several phases |
+| `test_equilibrium.release`, ideal-gas case (log-K solver) | total amount of A $\rightleftharpoons$ B | sum equals 1 | `rtol=1e-6`, `atol=1e-6` | element balance of other reactions |
 
 : Conservation tests of the equilibrium solvers. {#tbl-ch13-suite-conservation}
 
@@ -141,6 +117,31 @@ shows agreement to that bound, not that the bound is the accuracy of the code.
 `tests/test_equilibrium.cpp`, rebuilt in Python; run: `python -P src/kintera_report/ch13/runs/tolerance_example.py`,
 CPU, single and double precision, status 0 in every cell; kintera 2.6.5 source build, Python 3.11.13, torch
 2.10.0+cu126.]
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| test registration | {{< code tests/CMakeLists.txt >}} | `setup_test`, `test_python_subprocess` | always |
+| C++ test target | {{< code cmake/macros/macro_setup_test.cmake >}} | `setup_test` | always |
+| device fixture | {{< code tests/device_testing.hpp DeviceTest >}} | `DeviceTest` | device available |
+
+: Code map of the test suite. {#tbl-ch13-suite-code}
+
+At configure time, `tests/CMakeLists.txt` links every `*.inp`, `*.dat` and `*.yaml` file of `tests/` into
+`build/tests` with `ln -sf`, because the C++ tests read their inputs from there.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| all 49 entries | the registration itself | exact count | `ctest -N` |
+
+: Tests of the suite layout. {#tbl-ch13-suite-tests}
+
+`ctest -N` in the build's test directory lists 49 entries at the pin.[^ch13-suite-count] The tree holds 23 C++ test
+files and 40 Python test files: 16 C++ programs are built, 8 Python files run in the grouped entry and 32 run as
+single-file entries.
 
 [^ch13-suite-count]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `ctest -N` in `build/tests` of a
 Release build, which prints `Total Tests: 49`; CMake 3.31.8. The file counts are from `ls tests/test*.cpp` and

@@ -1,0 +1,58 @@
+## Photolysis networks from KINETICS-base input (`from_kinetics_base`) {#sec-ch07-kinetics-base}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/photochem/photochem.cpp, src/photochem/kinetics_base_reader.cpp
+status: draft
+author: XinyueWang05
+reviewer: requested
+-->
+
+### Summary
+
+kintera can build its photochemistry options from the input files of the KINETICS-base model: a master input, a
+photolysis catalog and a directory of cross-section files. The same reader also builds the thermal kinetics of
+@sec-ch06-kinetics-base. This section is a skeleton: only the entry points are filled in.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** `PhotoChemOptions` from KINETICS-base files.
+
+**Data.** File paths in; options out.
+
+**Placement.** Setup only.
+
+**Activation.** API `PhotoChemOptions.from_kinetics_base(master, catalog, cross_dir)`.
+
+**Guarantee / limits.** Not drafted.
+
+**Evidence.** See the Tests layer.
+:::
+
+### Derivation
+
+No derivation: this is an input reader. The mapping of catalog entries to branches and cross sections is not drafted.
+
+### Numerical method
+
+Not drafted.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| entry | {{< code src/photochem/photochem.cpp PhotoChemOptionsImpl::from_kinetics_base >}} | `from_kinetics_base` | API |
+| reader | {{< code src/photochem/kinetics_base_reader.cpp photochem_options_from_kinetics_base >}} | `photochem_options_from_kinetics_base` | API |
+
+: Code map of the KINETICS-base photolysis reader. {#tbl-ch07-kinetics-base-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_kinetics_base` | photochemistry needs a catalog; load with cross sections | missing evidence | not yet read |
+
+: Tests of the KINETICS-base photolysis reader. {#tbl-ch07-kinetics-base-tests}
+
+### Limits
+
+Not drafted.

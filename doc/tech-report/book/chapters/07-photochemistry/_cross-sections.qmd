@@ -1,0 +1,126 @@
+## Photolysis cross sections and their branches (`cross-section`, `branches`) {#sec-ch07-cross-sections}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/photochem/photolysis.cpp, src/photochem/load_xsection_yaml.cpp, src/photochem/load_xsection_kin7.cpp, src/math/interpolation.cpp, tests/test_photolysis_options.cpp
+status: draft
+author: XinyueWang05
+reviewer: requested
+-->
+
+### Summary
+
+A photolysis reaction needs the cross section of each of its product channels as a function of wavelength. The
+reader builds a list of branches for every reaction and fills one cross-section column per branch, from rows of
+inline YAML or from a KINETICS7 file. Branch 0 is always the photoabsorption that dissociates nothing; the other
+branches are the dissociation channels. Several blocks of the same reaction, each at one temperature, give a
+temperature-dependent cross section.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Per-branch cross sections $\sigma_b(\lambda, T)$ on one wavelength grid, @eq-ch07-cross-sections-interp.
+
+**Data.** Wavelength [nm], cross section [$\mathrm{cm^2\,molecule^{-1}}$], optional temperature [K] per block.
+
+**Placement.** Setup: `PhotolysisOptionsImpl::from_yaml`, then `PhotolysisImpl::reset`.
+
+**Activation.** `type: photolysis` with `cross-section` blocks (`format: YAML` default, or `KINETICS7`) and optional `branches`.
+
+**Guarantee / limits.** Linear in $T$ between slabs, held constant outside; one wavelength grid for all reactions.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\lambda$, wavelength [nm]; $\sigma_b$, cross section of branch $b$ [$\mathrm{cm^2\,molecule^{-1}}$];
+$b = 0$ is photoabsorption and $b \ge 1$ are dissociation channels; $T_k$, the temperature of slab $k$ [K].
+
+The branch list is built from the equation: branch 0 is the reactant composition. When a `branches` list is given,
+each entry is appended as a further branch. Without it, the product side of the equation is the single
+dissociation branch, unless the products equal the reactants (an absorption-only reaction).
+
+### Derivation
+
+Between two temperature slabs $T_k \le T \le T_{k+1}$ the reader's tables are interpolated linearly,
+
+$$
+\sigma_b(\lambda, T) = \sigma_b(\lambda, T_k) + \frac{T - T_k}{T_{k+1} - T_k}
+\left[\sigma_b(\lambda, T_{k+1}) - \sigma_b(\lambda, T_k)\right] ,
+$$ {#eq-ch07-cross-sections-interp}
+
+and a temperature outside the grid takes the nearest slab, because `interpn` is called without extrapolation
+({{< code src/math/interpolation.cpp interpn >}}). @eq-ch07-cross-sections-interp is computed in
+`interp_cross_section` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::interp_cross_section >}}). When no
+block gives a temperature, `reset` stores the grid $\{0, 1000\}$ K with two identical slabs, so the cross section
+does not depend on $T$.
+
+A KINETICS7 file lists the total absorption cross section first and then one table per product channel. The reader
+turns the first column into the absorption that dissociates nothing,
+
+$$
+\sigma_0 \leftarrow \max\!\left(\sigma_0 - \sum_{b \ge 1} \sigma_b,\ 0\right) ,
+$$ {#eq-ch07-cross-sections-absorption}
+
+and converts the wavelength from Angstrom to nm. @eq-ch07-cross-sections-absorption is computed in
+`load_xsection_kin7` ({{< code src/photochem/load_xsection_kin7.cpp load_xsection_kin7 >}}). The YAML reader does
+neither: its columns are used as given.
+
+### Numerical method
+
+`from_yaml` ({{< code src/photochem/photolysis.cpp PhotolysisOptionsImpl::from_yaml >}}) appends every block's
+values to one flat `cross_section` list and records the number of blocks per reaction. `reset`
+({{< code src/photochem/photolysis.cpp PhotolysisImpl::reset >}}) cuts the list into one
+(temperature, wavelength, branch) tensor per reaction. A reaction with one block is copied to every temperature of
+the shared grid. The figure of the table layout is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| YAML reader | {{< code src/photochem/photolysis.cpp PhotolysisOptionsImpl::from_yaml >}} | `from_yaml` | `type: photolysis` |
+| inline rows | {{< code src/photochem/load_xsection_yaml.cpp load_xsection_yaml >}} | `load_xsection_yaml` | `format: YAML` |
+| KINETICS7 file | {{< code src/photochem/load_xsection_kin7.cpp load_xsection_kin7 >}} | `load_xsection_kin7` | `format: KINETICS7` |
+| tables | {{< code src/photochem/photolysis.cpp PhotolysisImpl::reset >}} | `reset` | always |
+| interpolation | {{< code src/photochem/photolysis.cpp PhotolysisImpl::interp_cross_section >}} | `interp_cross_section` | always |
+
+: Code map of the cross-section readers. {#tbl-ch07-cross-sections-code}
+
+Refused at setup: a reaction without `type`[^rg-5a0ce8082ce9] or `equation`[^rg-1203f05957b1]; an unknown `format`; several blocks of one reaction
+without a `temperature` on each; multi-temperature reactions with different temperature lists; a slab count that
+is neither 1 nor the size of the shared grid; too few values for a reaction.
+
+Behaviour verified by a run against kintera 2.6.5 built from the pin[^ch07-probe-src]:
+
+- the key `temperature-range`, used by the decks under `data/`, is not read; only `temperature` is, so those
+  reactions have no temperature dependence;
+- a YAML row with fewer columns than branches fills the missing branches with its first cross-section value;
+- the wavelength grid of the first reaction is used for all reactions; a later reaction's own wavelength column is
+  discarded without a check, so its rows are read as if they were on the first grid.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_photolysis_options` | inline data, branches and multi-temperature blocks parse | exact | structural |
+| `test_photolysis_options` | blocks without `temperature` and mismatched grids are refused | exact | error messages |
+| `test_photolysis_options` | interpolation in $T$ gives 1.5e-18 and 3.5e-18 | $10^{-24}$ abs. | the test |
+| `test_ch4_photolysis` | KINETICS7 cross section lies in (1e-18, 3e-18) | bounds | the test |
+
+: Tests of the cross-section readers. {#tbl-ch07-cross-sections-tests}
+
+No test checks @eq-ch07-cross-sections-absorption, the column fill, or the single-grid rule.
+
+### Limits
+
+Untested hypothesis: a deck whose photolysis reactions use different wavelength grids produces wrong rates without
+an error. A `branches` list that repeats the reactant composition (as `data/ch4_photolysis.yaml` does) creates a
+second absorption branch; in the KINETICS7 reader the data go to the first matching branch, so the repeat stays
+zero (from reading `load_xsection_kin7`, not run).
+
+[^ch07-probe-src]: [source: a three-species deck with two `type: photolysis` reactions loaded with
+    `PhotoChemOptions.from_yaml`, then `Photolysis.update_xs_diss_stacked` and `forward` on CPU in float64;
+    kintera 2.6.5 built from the pin, torch 2.10.0, Python 3.12.10.]
+
+<!-- reader glossary notes -->
+[^rg-5a0ce8082ce9]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
+
+[^rg-1203f05957b1]: equation — reaction string; => irreversible, <=> or = reversible; required; parsed by `Reaction`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L64-L68)
+<!-- end reader glossary notes -->

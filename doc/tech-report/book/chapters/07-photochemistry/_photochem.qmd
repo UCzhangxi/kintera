@@ -1,0 +1,115 @@
+## Photolysis reaction rates and their Jacobian (`PhotoChem`) {#sec-ch07-photochem}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/photochem/photochem.cpp, src/photochem/photolysis.cpp, src/photochem/jacobian_photolysis.cpp, tests/test_ch4_photolysis.cpp, tests/test_photolysis_kinetics.cpp
+status: draft
+author: XinyueWang05
+reviewer: requested
+-->
+
+### Summary
+
+`PhotoChem` turns photolysis rate constants into reaction rates and gives the caller the derivative it needs for an
+implicit step. Each rate is the rate constant times the reactant concentrations, as in the mass-action law of
+@sec-ch06. The stoichiometric matrix comes from the reaction equations, not from the branches. Two further helpers
+weight the branches by their share of the rate, or map rates into a species-space Jacobian.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $r_j = J_j \prod_i c_i^{\nu_{ij}}$ and $\partial r_j/\partial c_k$, @eq-ch07-photochem-rate.
+
+**Data.** $T$ [K], $c$ [$\mathrm{mol\,m^{-3}}$], $F$; returns $r$ [$\mathrm{mol\,m^{-3}\,s^{-1}}$] per reaction.
+
+**Placement.** Called by the driver once per step, like `Kinetics` (@sec-ch06).
+
+**Activation.** `PhotoChemOptions.from_yaml` on a file with `type: photolysis` reactions; API `PhotoChem`.
+
+**Guarantee / limits.** Concentrations floored at $10^{-300}$; stoichiometry from the equation.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $r_j$, rate of reaction $j$ [$\mathrm{mol\,m^{-3}\,s^{-1}}$]; $c_i$, concentration of species $i$
+[$\mathrm{mol\,m^{-3}}$]; $\nu_{ij}$, reactant coefficient of species $i$ in reaction $j$ [-]; $f_b$, share of branch
+$b$ in the branch-weighted rate [-].
+
+### Derivation
+
+The reaction rate and its reaction-space Jacobian are
+
+$$
+\begin{aligned}
+r_j &= J_j \prod_i c_i^{\nu_{ij}} ,\\
+\frac{\partial r_j}{\partial c_k} &= \nu_{kj}\, \frac{r_j}{c_k} .
+\end{aligned}
+$$ {#eq-ch07-photochem-rate}
+
+@eq-ch07-photochem-rate is computed in `forward` and `jacobian`
+({{< code src/photochem/photochem.cpp PhotoChemImpl::forward >}},
+{{< code src/photochem/photochem.cpp PhotoChemImpl::jacobian >}}). $J_j$ does not depend on $c$, so the Jacobian has no
+rate-constant term; it has no temperature term either.
+
+The branch-weighted stoichiometry of one reaction is
+
+$$
+\begin{aligned}
+f_b &= \frac{\int \sigma_b F\, \mathrm d\lambda}{\sum_{b'} \int \sigma_{b'} F\, \mathrm d\lambda + 10^{-30}} ,\\
+\bar s_i &= \sum_b f_b\, s_{bi} ,
+\end{aligned}
+$$ {#eq-ch07-photochem-effective}
+
+with $s_{bi}$ the composition of branch $b$. @eq-ch07-photochem-effective is computed in `get_effective_stoich`
+({{< code src/photochem/photolysis.cpp PhotolysisImpl::get_effective_stoich >}}). The sum over $b'$ includes the
+absorption branch 0, whose composition is the reactant. Verified by a run[^ch07-eff-src]: for `O2 => O + O` with the
+rows of @sec-ch07-rate, the result is $\bar s = (0.727, 0.545, 0)$ for $(\mathrm{O_2}, \mathrm{O}, \mathrm{O_3})$. Only a
+test calls this function; `PhotoChem` does not.
+
+### Numerical method
+
+`reset` ({{< code src/photochem/photochem.cpp PhotoChemImpl::reset >}}) builds `stoich` (products minus reactants of
+the equation) and the reactant orders, then creates the `Photolysis` module. `forward` calls `Photolysis.forward`
+and multiplies by the floored concentration product; it does not refresh the cross-section cache, so the caller
+calls `update_xs_diss_stacked` first. The species-space helper `jacobian_photolysis_species`
+({{< code src/photochem/jacobian_photolysis.cpp jacobian_photolysis_species >}}) returns
+$\sum_r S_{ir}\, x_r\, \nu_{kr} / c_k$ for an input $x_r$ that its comment calls the rate constant.
+
+The figure of the call order is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/photochem/photochem.cpp PhotoChemOptionsImpl::from_yaml overload=2 >}} | `from_yaml` | `type: photolysis` |
+| stoichiometry | {{< code src/photochem/photochem.cpp PhotoChemImpl::reset >}} | `reset` | always |
+| rates | {{< code src/photochem/photochem.cpp PhotoChemImpl::forward >}} | `forward` | always |
+| Jacobian | {{< code src/photochem/photochem.cpp PhotoChemImpl::jacobian >}} | `jacobian` | always |
+| branch weights | {{< code src/photochem/photolysis.cpp PhotolysisImpl::get_effective_stoich >}} | `get_effective_stoich` | API |
+
+: Code map of photolysis reaction rates. {#tbl-ch07-photochem-code}
+
+`PhotoChemOptions.from_yaml` registers every species of the file as a vapor, not only the photolysis species.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_photolysis_kinetics` | options, module, stoichiometry and forward | structural | the test |
+| `test_ch4_photolysis` | effective stoichiometry has one entry per species | exact | shape only |
+| `test_ch4_photolysis` | species Jacobian signs for $A \to B$ | sign | the test |
+| `test_chapman_cycle` | forward rates and Jacobian are consistent | missing evidence | not yet read |
+
+: Tests of photolysis reaction rates. {#tbl-ch07-photochem-tests}
+
+### Limits
+
+Open questions, not tested:
+
+- For a branched reaction, `stoich` comes from the equation. `data/ch4_photolysis.yaml` lists every branch product in
+  one equation, so one photolysis event would produce all of them. Whether the branch weights of
+  @eq-ch07-photochem-effective should replace `stoich` is a chemistry question.
+- `jacobian_photolysis_species` equals $\partial (\mathrm d c_i/\mathrm dt)/\partial c_k$ only if its input is the
+  reaction rate $J c$; with the rate constant, as its comment says, the result is too small by a factor $c_k$. The
+  only test checks signs.
+
+[^ch07-eff-src]: [source: the run of @sec-ch07-rate, `Photolysis.get_effective_stoich(0, wavelength, F, T)`;
+    kintera 2.6.5 built from the pin, torch 2.10.0, Python 3.12.10.]

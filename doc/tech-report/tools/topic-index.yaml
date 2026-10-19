@@ -117,7 +117,7 @@ sections:
     - equation of state: [ideal gas law, Dalton's law, compressibility factor]
     - concentration from mole fraction
   sec-ch03-species-functions:
-    - heat capacity, per species: [cv_R, cp]
+    - heat capacity, per species: [cv_R, cp, mixture heat capacity, Cv and Cp units]
     - internal energy, per species
     - enthalpy, per species
     - entropy, gas and condensate

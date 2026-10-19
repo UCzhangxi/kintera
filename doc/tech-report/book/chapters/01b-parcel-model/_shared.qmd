@@ -161,10 +161,20 @@ $\lvert \mathrm{RH} - 1\rvert \le 2.1 \times 10^{-7}$ (15 cell and reaction pair
 default limit of 10 iterations, 6 of those cells do not converge; this is an informational line of the same
 check. The evaporation rate at $c_v = K$ is $1.4 \times 10^{-16}$ of its scale.[^ch01b-evap] These two lines check
 the two halves of Step 2 on different decks. The composed check runs the evaporation kinetics on the state that
-the phase solver returns, with the deck's own evaporation reactions.[^ch01b-fp] On the TP path
-(`tests/jupiter.yaml`, 10 cloudy cell and reaction pairs) the rate is at most $2.0 \times 10^{-7}$ of its value with
-the vapour removed, equal to $1 - \mathrm{RH}$ cell by cell. On the UV path (one-vapour card, $T$ from
-`compute("VU->T")`) it is 0 with $\lvert \mathrm{RH} - 1\rvert \le 5.3 \times 10^{-15}$. An informational line gives
+the phase solver returns, with the deck's own evaporation reactions.[^ch01b-fp] To make the evaporation column
+non-vacuous, the script gives the precipitating species (`H2O(l,p)`, `NH3(s,p)`) the amount of the cloud the solver
+returned and leaves the cloud in place. The vapour and $K$ are those of the returned state, so this tests the deficit,
+but the evaluated state is not literally the returned one, and no coupled time step is taken. On the TP path
+(`tests/jupiter.yaml`, 10 cloudy cell and reaction pairs, all converged) the rate is at most $2.1 \times 10^{-7}$ of
+its value with the vapour removed, equal to $1 - \mathrm{RH}$ cell by cell. On the UV path (one-vapour card, three
+cloudy cases, $T$ from `compute("VU->T")`) it is 0 with $\lvert \mathrm{RH} - 1\rvert \le 5.4 \times 10^{-15}$.
+Coverage is one-vapour reactions only (H$_2$O and NH$_3$ on the TP path, H$_2$O on the UV path); the multi-vapour
+NH$_4$SH reaction has no evaporation reaction in the deck and is not covered.
+<!-- equation-check: eq-ch01b-shared-rh check_ch3_species_functions.py (1d) -->
+<!-- equation-check: eq-ch01b-shared-deficit check_ch6_evaporation.py (a2) -->
+<!-- equation-check: eq-ch01b-shared-deficit check_ch1b_fixed_point.py (a) -->
+<!-- equation-check: eq-ch01b-shared-deficit check_ch1b_fixed_point.py (b) -->
+An informational line gives
 the H$_2$O evaporation reaction the inline liquid-branch curve instead of `h2o_ideal`. Every cloudy cell is below
 273.16 K, where the two curves differ, and the rate at the equilibrium state then reaches 0.72 of its dry value:
 the deck requirement of Step 2 is real. Step 3 has no direct check; its kinetics half is checked in

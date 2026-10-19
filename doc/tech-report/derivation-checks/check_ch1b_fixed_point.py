@@ -7,12 +7,15 @@ a. TP path: ThermoX.forward on tests/jupiter.yaml (max_iter 100, T = 130..280 K,
    present.
 b. UV path: ThermoY.forward on a one-vapour card (dry, H2O, H2O(l), H2O(l,p); h2o_ideal in both reactions), T from
    compute("VU->T"), then the same measure.
-   Both (a) and (b) also gate |RH - 1|, because the rate is clamped at zero above saturation.
+   Both (a) and (b) also gate |RH - 1|, because the rate is clamped at zero above saturation, and gate coverage
+   (at least one cloudy pair; every UV case cloudy) and convergence (diag >= 0). A FAIL line makes the exit status 1.
 c. INFO: as (a), but the H2O evaporation reaction is given the inline `ideal` formula with the liquid-branch
    parameters of h2o_ideal. Below 273.16 K (every cloudy cell of (a)) the two curves differ, so the kinetic fixed
    point is not the equilibrium: nothing in the code ties the two reactions' formulas.
 """
+import math
 import os
+import sys
 import tempfile
 import warnings
 
@@ -25,7 +28,7 @@ TOL = 1e-6  # the solver tolerance of check_ch3_species_functions.py line 1d
 
 
 def report(name, val, tol, ok, tag=None):
-    tag = tag or ("PASS" if ok else "FAIL")
+    tag = tag or ("PASS" if ok and math.isfinite(val) else "FAIL")
     RES.append(tag)
     print(f"{name}: measured {val:.3e}  tol {tol:.0e}  {tag}")
 
@@ -90,7 +93,7 @@ def check_tp(deck, label, info=False):
             worst = max(worst, abs(r))
             worst_rh = max(worst_rh, abs(rh[k, j].item() - 1))
     print(f"   {label}: {n} (cell, reaction) pairs with condensate; {nfail} cells report non-convergence")
-    return worst, worst_rh
+    return worst, worst_rh, n, nfail
 
 
 def check_uv():
@@ -119,7 +122,7 @@ reactions:
     kop = kintera.KineticsOptions.from_yaml(path)
     kin = kintera.Kinetics(kop)
     names = kop.species()
-    worst, worst_rh = 0.0, 0.0
+    worst, worst_rh, n, nfail = 0.0, 0.0, 0, 0
     for T0, yv in [(280.0, 0.02), (250.0, 0.01), (220.0, 0.005)]:
         rho = torch.tensor([1.0])
         y = torch.zeros(len(sp) - 1, 1)
@@ -133,9 +136,11 @@ reactions:
         T1 = th.compute("VU->T", [V1, U])
         c1 = (V1 * inv_mu)[0]
         c = {s: c1[i].reshape(1) for i, s in enumerate(sp)}
+        nfail += int(diag.item() < 0)
         if c["H2O(l)"].item() <= 0:
-            print(f"   UV T0={T0:.0f}: no condensate after forward; skipped")
+            print(f"   UV T0={T0:.0f}: no condensate after forward (counted as missing coverage)")
             continue
+        n += 1
         ratio, _ = deficit_ratio(kin, names, T1.reshape(1), c, {"H2O(l,p)": "H2O(l)"})["H2O"]
         cv = torch.stack([c[s] for s in sp], -1)
         rh = kintera.relative_humidity(T1.reshape(1), cv, th.buffer("stoich"), top.nucleation(),
@@ -143,16 +148,21 @@ reactions:
         print(f"   UV T0={T0:.0f} yv={yv}: diag={diag.item():.0f} T={T1.item():.6f}, RH - 1 = {rh - 1:+.3e}, "
               f"rate / rate(c_v = 0) = {ratio.item():.3e}")
         worst, worst_rh = max(worst, abs(ratio.item())), max(worst_rh, abs(rh - 1))
-    return worst, worst_rh
+    return worst, worst_rh, n, nfail, 3
 
 
 if __name__ == "__main__":
     print(version_line())
     # the rate is clamped at zero above saturation, so |RH - 1| is gated too: a zero rate alone could be supersaturation
-    w, wr = check_tp(DECK, "TP")
+    # coverage and convergence are gated as well: an empty set or an unconverged cell would make the maxima vacuous
+    w, wr, n, nfail = check_tp(DECK, "TP")
+    report("(a) TP: cloudy (cell, reaction) pairs (must be > 0) and non-converged cells (must be 0); missing",
+           float((n == 0) + nfail), 0, n > 0 and nfail == 0)
     report("(a) TP: worst |rate| / rate(c_v = 0) on the phase solver's output, same formulas", w, TOL, w <= TOL)
     report("(a) TP: worst |RH - 1| at the same states", wr, TOL, wr <= TOL)
-    w, wr = check_uv()
+    w, wr, n, nfail, ncase = check_uv()
+    report("(b) UV: cases without condensate or not converged (must be 0)", float(ncase - n + nfail), 0,
+           n == ncase and nfail == 0)
     report("(b) UV: worst |rate| / rate(c_v = 0) on the phase solver's output, same formula", w, TOL, w <= TOL)
     report("(b) UV: worst |RH - 1| at the same states, T from VU->T", wr, TOL, wr <= TOL)
     with open(DECK) as f:
@@ -162,8 +172,9 @@ if __name__ == "__main__":
     path = os.path.join(TMP, "mismatch.yaml")
     with open(path, "w") as f:
         f.write(text.replace(old, "formula: ideal, T3: 273.16, P3: 611.7, beta: 24.845, gamma: 4.986009, diff_c"))
-    w, _ = check_tp(path, "mismatch")
+    w, _, _, _ = check_tp(path, "mismatch")
     print(f"(c) H2O evaporation with the inline liquid-branch curve (all cloudy cells are below 273.16 K): "
           f"worst rate / rate(c_v = 0) {w:.3e}  INFO")
     RES.append("INFO")
     print("SUMMARY: " + ", ".join(f"{RES.count(k)} {k}" for k in ("PASS", "FAIL", "INFO")))
+    sys.exit(1 if "FAIL" in RES else 0)

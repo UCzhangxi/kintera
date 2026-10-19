@@ -1,0 +1,13 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+(a) A + B -> C: E_A amount 0.7000000000 -> 0.7000000000; element-weighted fraction 0.7000000000 -> 0.7777777778
+(a) E_A amount change: measured 1.110e-16  tol 1e-15  PASS
+(a) E_A element-weighted mole fraction change (not a conserved quantity): 7.777778e-02  INFO
+(b) cells not converged (diag < 0) at max_iter 100: measured 0.000e+00  tol 0e+00  PASS
+(b) cells with condensate: 3 of 3 (must be > 0)  PASS
+   T=160: diag=27 xi=[0.00250722, 0.0, 8.023e-05]; |dN - S xi|/|dN| 3.67e-16; element/dry 5.19e-16; element-weighted fraction 8.00e-05; dV/V -2.660e-03; sum u dN -9.890696e+01 J, -sum L xi -9.890696e+01 J per mol dry
+   T=200: diag=15 xi=[0.00250561, 0.0, 7.14e-05]; |dN - S xi|/|dN| 2.45e-16; element/dry 3.46e-16; element-weighted fraction 7.12e-05; dV/V -2.641e-03; sum u dN -9.239498e+01 J, -sum L xi -9.239498e+01 J per mol dry
+   T=250: diag=6 xi=[0.00174429, 0.0, 0.0]; |dN - S xi|/|dN| 2.20e-17; element/dry 1.80e-16; element-weighted fraction 1.81e-16; dV/V -1.739e-03; sum u dN -5.445798e+01 J, -sum L xi -5.445798e+01 J per mol dry
+(b) worst |dN - S xi| / |dN| (amounts per mole of dry gas): measured 3.670e-16  tol 1e-12  PASS
+(b) worst element/dry ratio change O, N, S (rel): measured 5.189e-16  tol 1e-14  PASS
+(b) worst element-weighted mole fraction change O, N, S (rel; not a conserved quantity): 8.000639e-05  INFO
+SUMMARY: 5 PASS, 0 FAIL, 2 INFO

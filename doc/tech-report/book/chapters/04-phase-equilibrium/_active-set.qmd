@@ -12,7 +12,7 @@ reviewer:
 
 Each step of both solvers asks for reaction extents that reduce the saturation deficits of the active reactions,
 without making any mole fraction or concentration negative. That is a linear least-squares problem with inequality
-constraints. kintera solves it with an active-set method on the Karush-Kuhn-Tucker (KKT[^rg-99d77c21e9c3]) conditions: it keeps a
+constraints. kintera solves it with an active-set method on the Karush-Kuhn-Tucker (KKT) conditions: it keeps a
 working set of constraints held as equalities, drops every working constraint whose multiplier is negative, adds the
 most violated independent one, and stops when the working set no longer changes. The standard theory of such methods
 is in the literature;[^ch04-active-set-refs] the general solver and its scaling are described in @sec-ch10-kkt.
@@ -32,7 +32,9 @@ is in the literature;[^ch04-active-set-refs] the general solver and its scaling 
 :::
 
 Local symbols: $\mathsf A$ the gain matrix $\mathsf W\mathsf S$ of @sec-ch04-equilibrate-tp; $\mathbf b$ the deficits;
-$\mathsf C$ the constraint matrix; $\mathbf d$ the current amounts (mole fractions or concentrations).
+$\mathsf C$ the constraint matrix; $\mathbf d$ the current amounts (mole fractions or concentrations); $f$ the
+objective $\tfrac12\lVert\mathsf A\boldsymbol\xi - \mathbf b\rVert_2^2$; $\boldsymbol\mu$ the multipliers of the
+constraint rows; $\mathcal W$ the working set, the rows held as equalities.
 
 ### Derivation
 
@@ -49,7 +51,108 @@ $$
 $$ {#eq-ch04-active-set-problem}
 
 Because $\mathbf d$ holds the current amounts, which are non-negative, $\boldsymbol\xi = 0$ is feasible. The solver
-relies on that and checks it on entry. @eq-ch04-active-set-problem is assembled in `equilibrate_tp`
+relies on that and checks it on entry, accepting $d_i \ge -64\,\epsilon_{\mathrm{mach}}\max_j |d_j|$ so that the
+rounding residue of a used-up stock still counts as zero.
+
+**Step 1: the optimality conditions.** Minimising $\lVert\mathsf A\boldsymbol\xi - \mathbf b\rVert_2$ and minimising
+$f(\boldsymbol\xi) = \tfrac12\lVert\mathsf A\boldsymbol\xi - \mathbf b\rVert_2^2$ give the same $\boldsymbol\xi$. The
+function $f$ is a convex quadratic, with gradient $\nabla f = \mathsf A^{\mathsf T}(\mathsf A\boldsymbol\xi - \mathbf b)$
+and Hessian $\mathsf A^{\mathsf T}\mathsf A$, which is positive semidefinite. Give each inequality row $i$ a multiplier
+$\mu_i$ and form the Lagrangian
+
+$$
+\mathcal L(\boldsymbol\xi, \boldsymbol\mu) = \tfrac12\lVert\mathsf A\boldsymbol\xi - \mathbf b\rVert_2^2
+  + \boldsymbol\mu^{\mathsf T}(\mathsf C\boldsymbol\xi - \mathbf d) .
+$$
+
+The constraints are linear, so the Karush–Kuhn–Tucker conditions are necessary at a minimum without any further
+qualification. Because $f$ is convex they are also sufficient, and any point that satisfies them is a global
+minimum:[^ch04-active-set-kkt-refs]
+
+$$
+\begin{aligned}
+&\text{(i) stationarity:} && \mathsf A^{\mathsf T}\mathsf A\,\boldsymbol\xi + \mathsf C^{\mathsf T}\boldsymbol\mu
+  = \mathsf A^{\mathsf T}\mathbf b , \\
+&\text{(ii) primal feasibility:} && \mathsf C\boldsymbol\xi \le \mathbf d , \\
+&\text{(iii) dual feasibility:} && \boldsymbol\mu \ge 0 , \\
+&\text{(iv) complementarity:} && \mu_i\,(\mathsf C\boldsymbol\xi - \mathbf d)_i = 0 \ \text{for every row } i .
+\end{aligned}
+$$ {#eq-ch04-active-set-kkt}
+
+Condition (i) is $\partial\mathcal L/\partial\boldsymbol\xi = 0$. Condition (iv) says that a row that is not tight,
+$(\mathsf C\boldsymbol\xi)_i < d_i$, has $\mu_i = 0$. So only tight rows (species driven exactly to zero) carry a
+multiplier.
+
+**Step 2: the working-set system.** If we knew which rows are tight at the solution, we could hold those rows as
+equalities, set the multipliers of the others to zero, and (i)–(iv) would reduce to a linear system. Call the guessed
+set of tight rows the working set $\mathcal W$, with rows $\mathsf C_{\mathcal W}$, bounds $\mathbf d_{\mathcal W}$ and
+multipliers $\boldsymbol\mu_{\mathcal W}$. Conditions (i) and "row $i \in \mathcal W$ is tight" give
+
+$$
+\begin{bmatrix} \mathsf A^{\mathsf T}\mathsf A & \mathsf C_{\mathcal W}^{\mathsf T} \\
+  \mathsf C_{\mathcal W} & 0 \end{bmatrix}
+\begin{bmatrix} \boldsymbol\xi \\ \boldsymbol\mu_{\mathcal W} \end{bmatrix}
+= \begin{bmatrix} \mathsf A^{\mathsf T}\mathbf b \\ \mathbf d_{\mathcal W} \end{bmatrix} .
+$$ {#eq-ch04-active-set-block}
+
+This block matrix is non-singular when $\mathsf C_{\mathcal W}$ has independent rows and $\mathsf A^{\mathsf T}\mathsf A$
+is positive definite on the directions that keep the working rows tight, the null space of $\mathsf C_{\mathcal W}$.
+The first requirement is why only independent rows may enter $\mathcal W$ (Step 5). The second holds whenever the gain
+$\mathsf A$ is non-singular. The solution of @eq-ch04-active-set-block satisfies (i) and (iv) by construction. It is
+the answer if it also satisfies (ii) for the rows outside $\mathcal W$ and (iii) for the rows inside. The working-set
+iteration repairs whichever of these fails.
+
+**Step 3: what a negative multiplier means.** Let $(\boldsymbol\xi, \boldsymbol\mu_{\mathcal W})$ solve
+@eq-ch04-active-set-block, with $\mu_i < 0$ for some $i \in \mathcal W$. Take a direction $\mathbf p$ that keeps the
+other working rows tight, $(\mathsf C\mathbf p)_j = 0$ for $j \in \mathcal W$, $j \ne i$, and moves off row $i$ into
+the feasible side, $(\mathsf C\mathbf p)_i < 0$. Such a direction exists because the working rows are independent. By
+(i), the rate of change of $f$ along $\mathbf p$ is
+
+$$
+\nabla f^{\mathsf T}\mathbf p = (\mathsf A^{\mathsf T}\mathsf A\boldsymbol\xi - \mathsf A^{\mathsf T}\mathbf b)^{\mathsf T}\mathbf p
+  = -\boldsymbol\mu_{\mathcal W}^{\mathsf T}\mathsf C_{\mathcal W}\mathbf p = -\mu_i\,(\mathsf C\mathbf p)_i < 0 .
+$$
+
+So the objective decreases when the species of row $i$ is allowed to be positive again: holding it at zero was a
+mistake, and the row is released. With $\mu_i \ge 0$ the same product is $\ge 0$ for every feasible direction, and the
+bound is genuinely holding the solution. In the same way, $\mu_i$ is the rate at which the minimum of $f$ falls as the
+bound $d_i$ is loosened, $\partial f_{\min}/\partial d_i = -\mu_i$.
+
+**Step 4: the direct form for a square gain.** Both callers pass a square $\mathsf A$ (one row per active reaction).
+The block of @eq-ch04-active-set-block contains $\mathsf A^{\mathsf T}\mathsf A$, whose condition number is the square
+of that of $\mathsf A$, because its singular values are the squares of those of $\mathsf A$. When $\mathsf A$ is
+non-singular, multiply the first block row by $\mathsf A^{-\mathsf T}$:
+$\mathsf A^{-\mathsf T}(\mathsf A^{\mathsf T}\mathsf A\boldsymbol\xi + \mathsf C_{\mathcal W}^{\mathsf T}\boldsymbol\mu_{\mathcal W})
+= \mathsf A^{-\mathsf T}\mathsf A^{\mathsf T}\mathbf b$ gives
+
+$$
+\begin{bmatrix} \mathsf A & \mathsf A^{-\mathsf T}\mathsf C_{\mathcal W}^{\mathsf T} \\
+  \mathsf C_{\mathcal W} & 0 \end{bmatrix}
+\begin{bmatrix} \boldsymbol\xi \\ \boldsymbol\mu_{\mathcal W} \end{bmatrix}
+= \begin{bmatrix} \mathbf b \\ \mathbf d_{\mathcal W} \end{bmatrix} ,
+$$ {#eq-ch04-active-set-direct}
+
+with the same unknowns and multipliers, and a conditioning that follows $\mathsf A$ rather than its square.
+`kkt_solve_direct` ({{< code src/math/leastsq_kkt.h kkt_solve_direct >}}) forms
+$\mathsf A^{-\mathsf T}\mathsf C_{\mathcal W}^{\mathsf T}$ column by column from an LU factorisation of
+$\mathsf A^{\mathsf T}$. It works on the scaled matrices of @sec-ch10-kkt: columns are divided by their largest entry,
+the right side by the largest $|b_i|$, and each constraint row by its largest scaled entry or $|d_i|$.
+
+**Step 5: dependent rows.** A row whose scaled vector lies within $\sqrt{\epsilon_{\mathrm{mach}}}$ of the span of
+the working rows would make $\mathsf C_{\mathcal W}$ nearly rank-deficient. The multipliers would then lose all their
+digits, since the block's condition number grows like the inverse square of the smallest singular value of
+$\mathsf C_{\mathcal W}$. Such a row is never added. There is one row per species but only one unknown per active
+reaction, so the rows are dependent whenever there are more species than active reactions. For example, take ammonia shared by ammonia ice (extent $\xi_1$) and ammonium hydrosulfide ($\xi_2$). The
+non-negativity rows of ammonia, hydrogen sulfide and the two condensates are $(1, 1)$, $(0, 1)$, $(-1, 0)$ and
+$(0, -1)$ in the unknowns $(\xi_1, \xi_2)$. At most two of them can be independent, so a third violated row cannot be
+held. The returned step may then violate it, and both callers clip each reaction's extent to the stock of the species
+it consumes.
+
+**Step 6: the constraint in amounts.** With $\mathsf C = -\mathsf S$ and $\mathbf d = \mathbf x$ (mole fractions at
+fixed $T, p$, concentrations at fixed $U, V$), row $i$ of $\mathsf C\boldsymbol\xi \le \mathbf d$ reads
+$-(\mathsf S\boldsymbol\xi)_i \le x_i$, that is $x_i + (\mathsf S\boldsymbol\xi)_i \ge 0$: the amount of species $i$
+after the step is not negative. The callers build $\mathsf C$ by negating the active columns of the stoichiometry
+matrix in place (`stoich_active` in `equilibrate_tp`). @eq-ch04-active-set-problem is assembled in `equilibrate_tp`
 ({{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}) and solved by `leastsq_kkt_feasible_origin`
 ({{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}}).
 
@@ -115,9 +218,26 @@ No test in the tree calls the solver directly. Its dependent-constraint policy i
 `test_saturation_adjustment_nh4sh.py` uses two condensates that share a vapour (ammonia ice and ammonium
 hydrosulfide), so each step has two reaction extents and four non-negativity rows, any three of them linearly
 dependent, as the test's docstring states. It requires every adjusted cell to be non-negative, unsupersaturated and
-atom-conserving, and it passes in both builds of @sec-ch13-results, on the CPU device. A direct test would solve a
-two-unknown
-problem with a dependent row against its closed-form answer; it is proposed, not present.
+atom-conserving, and it passes in both builds of @sec-ch13-results, on the CPU device.
+
+The derivation check is indirect as well. `check_ch4_tp.py` line a runs the fixed-temperature solver on
+`tests/jupiter.yaml`, where ammonia is shared by ammonia ice and ammonium hydrosulfide, which are the dependent rows of
+Step 5. At 200 and 160 K, with ammonium hydrosulfide present, the conditions of @sec-ch04-conditions hold to
+$1.3\times10^{-7}$ (tolerance $10^{-6}$), and nitrogen and sulfur change by at most $3.3\times10^{-16}$ (relative,
+tolerance $10^{-14}$). The line does not assert non-negativity; the condensate amounts it prints are non-negative
+(run record in @sec-ch04-conditions).
+
+A direct test is proposed, not present: a C++ test that calls `leastsq_kkt_feasible_origin` on a problem with a
+closed-form KKT solution. For $\mathsf A = \mathsf I_2$, $\mathbf b = (1, -1)$ and the single row $-\xi_2 \le 1/2$,
+the unconstrained minimum $(1, -1)$ violates the row. By @eq-ch04-active-set-kkt the answer is
+$\boldsymbol\xi = (1, -1/2)$ with $\mu = 1/2$. Adding the dependent row $-2\xi_2 \le 1$, the same bound written twice, must leave the answer
+unchanged with only one of the two rows in the working set. Adding a row that is tight at the start, $\xi_1 \le 0$ with $d = 0$, exercises
+the feasible-origin check and gives $\boldsymbol\xi = (0, -1/2)$.
+
+[^ch04-active-set-kkt-refs]: [source: J. Nocedal and S. J. Wright, Numerical Optimization, 2nd ed., Springer (2006),
+<https://doi.org/10.1007/978-0-387-40065-5>, section 12.3 (first-order conditions; linear constraints satisfy the
+constraint qualification), section 16.1 (non-singularity of the equality-constrained block) and section 16.5
+(active-set methods for convex quadratic programs, including the meaning of a negative multiplier).]
 
 [^ch04-active-set-refs]: [source: J. Nocedal and S. J. Wright, Numerical Optimization, 2nd ed., Springer (2006),
 <https://doi.org/10.1007/978-0-387-40065-5>, chapter 16; C. L. Lawson and R. J. Hanson, Solving Least Squares
@@ -128,7 +248,3 @@ Problems, SIAM (1995), <https://doi.org/10.1137/1.9781611971217>, chapter 23.]
 - Constraints dependent on the working set are not enforced (see above); the caller's clip covers them.
 - On a near-singular gain matrix the regularised fallback is used. The code then checks that the working rows hold
   (feasibility), as above; it does not check how close the objective is to its minimum, and that is not measured.
-
-<!-- reader glossary notes -->
-[^rg-99d77c21e9c3]: KKT — Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134)
-<!-- end reader glossary notes -->

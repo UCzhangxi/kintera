@@ -37,10 +37,128 @@ $\nu_{nr}$, $\Delta_r$; reaction
 $r$ and species $n$, gases $n < N_{\mathrm g}$ first. Local symbols: $\hat\nu_{nr} = -\nu_{nr}$, the stoichiometric
 coefficient of species $n$ in reaction $r$ with the sign turned, so positive for a species the reaction consumes and
 negative for one it produces [-]; $p_n = p\,x_n/x_{\mathrm g}$ the partial pressure of gas $n$ [Pa]; $m_r$ the
-condensate that reaction $r$ produces, so $c_{m_r}$ is its concentration [mol m$^{-3}$]. The saturation deficit
+condensate that reaction $r$ produces, so $c_{m_r}$ is its concentration [mol m$^{-3}$]; $\mathcal N_n$ and
+$g^\circ_n$ of the notation table, $\mu_n$ the chemical potential of species $n$ [J mol$^{-1}$], $\Delta_r G^\circ$ the
+standard Gibbs energy of reaction $r$ written from gases to condensate [J mol$^{-1}$], $q_r$ the coefficient of the
+condensate in reaction $r$ [-] and $\lambda_r$ the multiplier of its non-negativity constraint [J mol$^{-1}$]. The saturation deficit
 $\Delta_r$ is defined below. $K_r(T)$ has units Pa$^{\sum_{n<N_{\mathrm g}} \hat\nu_{nr}}$.
 
 ### Derivation
+
+**Why these are the conditions: a constrained minimum of the Gibbs energy.** The conditions below are the optimality
+conditions of one problem: at fixed temperature and pressure, the parcel's Gibbs energy is minimised over the reaction
+extents, subject to no condensate amount going negative. The derivation rests on four assumptions, each a property of
+the code:
+
+1. $T$ and $p$ are held fixed during the solve (`equilibrate_tp` receives them as constants,
+   {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}).
+2. The gases form an ideal mixture: the partial pressure of gas $n$ is $p_n = p\,x_n/x_{\mathrm g}$. The solvers never
+   use a compressibility factor in these tests (Limits).
+3. Each condensate is a pure phase whose chemical potential depends on $T$ only: it has unit activity and does not
+   appear in the quotient (`equilibrate_tp` keeps species $n \ge N_{\mathrm g}$ out of `log_frac_sum`).
+4. Each nucleation reaction $r$ consumes gases and produces one condensate $m_r$ with coefficient
+   $q_r = \nu_{m_r r} > 0$ (the readers check for a condensed product, `ThermoYImpl::reset`,
+   {{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}), and no condensate is produced by two reactions.
+
+*Step 1, the Gibbs energy.* With $\mathcal N_n$ the amount of species $n$ in the parcel and $\mu_n$ its chemical
+potential, the ideal-gas and pure-condensate potentials are
+
+$$
+\begin{aligned}
+G &= \sum_n \mathcal N_n\, \mu_n , \\
+\mu_n &= g^\circ_n(T) + \mathcal R T \ln\frac{p_n}{p^\circ} , \qquad p_n = p\,\frac{x_n}{x_{\mathrm g}}
+  = p\,\frac{\mathcal N_n}{\mathcal N_{\mathrm g}} \qquad (n < N_{\mathrm g}), \\
+\mu_n &= g^\circ_n(T) \qquad (n \ge N_{\mathrm g}),
+\end{aligned}
+$$
+
+where $\mathcal N_{\mathrm g} = \sum_{k<N_{\mathrm g}} \mathcal N_k$ is the total gas amount and $p^\circ$ a standard
+pressure. The ratio $x_n/x_{\mathrm g}$ equals $\mathcal N_n/\mathcal N_{\mathrm g}$ because both mole fractions share
+the denominator $\sum_k \mathcal N_k$.
+
+*Step 2, the slope along a reaction extent.* An extent $\xi_r$ changes every amount by $\mathcal N_n = \mathcal N^0_n +
+\sum_r \nu_{nr}\,\xi_r$. Differentiating $G$ gives two sums,
+
+$$
+\frac{\partial G}{\partial \xi_r} = \sum_n \nu_{nr}\,\mu_n + \sum_n \mathcal N_n\,\frac{\partial \mu_n}{\partial \xi_r} .
+$$
+
+The second sum is zero. Condensate potentials do not depend on the amounts. For the gases,
+$\partial \mu_n/\partial \xi_r = \mathcal R T\, \partial \ln(\mathcal N_n/\mathcal N_{\mathrm g})/\partial \xi_r$, and
+
+$$
+\sum_{n<N_{\mathrm g}} \mathcal N_n\,\frac{\partial}{\partial \xi_r}\ln\frac{\mathcal N_n}{\mathcal N_{\mathrm g}}
+ = \sum_{n<N_{\mathrm g}} \frac{\partial \mathcal N_n}{\partial \xi_r}
+   - \frac{\sum_{n<N_{\mathrm g}} \mathcal N_n}{\mathcal N_{\mathrm g}}\,\frac{\partial \mathcal N_{\mathrm g}}{\partial \xi_r}
+ = \frac{\partial \mathcal N_{\mathrm g}}{\partial \xi_r} - \frac{\partial \mathcal N_{\mathrm g}}{\partial \xi_r} = 0 ,
+$$
+
+which is the Gibbs–Duhem relation of the gas mixture at fixed $T$ and $p$. With the standard reaction Gibbs energy
+$\Delta_r G^\circ = \sum_n \nu_{nr}\, g^\circ_n$, in the direction the code writes the reaction (gases to condensate),
+and with $\nu_{nr} = -\hat\nu_{nr}$ for the gases, the first sum is
+
+$$
+\begin{aligned}
+\frac{\partial G}{\partial \xi_r}
+ &= \Delta_r G^\circ + \mathcal R T \sum_{n<N_{\mathrm g}} \nu_{nr} \ln\frac{p_n}{p^\circ}
+  = \Delta_r G^\circ - \mathcal R T \sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln p_n
+    + \mathcal R T \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln p^\circ \\
+ &= \mathcal R T \Big[\ln K_r(T) - \sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln p_n\Big] = \mathcal R T\, \Delta_r , \\
+\ln K_r(T) &\equiv \frac{\Delta_r G^\circ(T)}{\mathcal R T} + \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln p^\circ .
+\end{aligned}
+$$ {#eq-ch04-conditions-gibbs}
+
+$K_r$ defined this way is the product of the gas partial pressures, each to its power $\hat\nu_{nr}$, at which
+$\partial G/\partial \xi_r = 0$. That is the saturation constant of the notation table, in Pa$^{m}$ with
+$m = \sum_{n<N_{\mathrm g}} \hat\nu_{nr}$. Its sign convention is that of evaporation:
+$\ln K_r = -\Delta_{\mathrm{evap}} G^\circ/(\mathcal R T) + m \ln p^\circ$ with $\Delta_{\mathrm{evap}} G^\circ =
+-\Delta_r G^\circ$. So the slope of $G$ along the condensation extent is $\mathcal R T$ times the saturation deficit
+$\Delta_r$ defined below. Subsaturated gases ($\Delta_r > 0$) raise $G$ when they condense; supersaturated gases lower it.
+
+*Step 3, the minimum with non-negative condensate.* By assumption 4, extent $\xi_r$ is the only one that changes
+condensate $m_r$, so $\mathcal N_{m_r} = \mathcal N^0_{m_r} + q_r\,\xi_r$. Gas amounts need no constraint: as a gas amount
+goes to zero, $\ln p_n \to -\infty$ and $\partial G/\partial \xi_r$ turns against any step that would empty it. The
+problem $\min_{\boldsymbol\xi} G$ subject to $\mathcal N_{m_r} \ge 0$ has the Lagrangian
+$\mathcal L = G - \sum_r \lambda_r \mathcal N_{m_r}$. Its Karush–Kuhn–Tucker (KKT[^rg-99d77c21e9c3]) conditions[^ch04-conditions-refs] are
+stationarity, primal feasibility, dual feasibility and complementarity:
+
+$$
+\begin{aligned}
+\frac{\partial G}{\partial \xi_r} - \lambda_r q_r &= 0 , &
+\mathcal N_{m_r} &\ge 0 , &
+\lambda_r &\ge 0 , &
+\lambda_r\,\mathcal N_{m_r} &= 0 .
+\end{aligned}
+$$
+
+Substituting @eq-ch04-conditions-gibbs into stationarity gives $\lambda_r = \mathcal R T\,\Delta_r/q_r$: the multiplier
+is the saturation deficit, in energy per unit of condensate. Since $q_r > 0$ and the condensate concentration
+$c_{m_r} = \mathcal N_{m_r}/V$ has the sign of its amount, the four conditions become the three of
+@eq-ch04-conditions-saturation below.
+
+*Step 4, the minimum is unique.* The second derivatives are
+
+$$
+\frac{\partial^2 G}{\partial \xi_r\, \partial \xi_s}
+ = \mathcal R T \Big[\sum_{n<N_{\mathrm g}} \frac{\hat\nu_{nr}\,\hat\nu_{ns}}{\mathcal N_n}
+   - \frac{\big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\big)\big(\sum_{n<N_{\mathrm g}} \hat\nu_{ns}\big)}{\mathcal N_{\mathrm g}}\Big] .
+$$
+
+For any vector $\mathbf y$, put $a_n = \sum_r \hat\nu_{nr}\, y_r$. The quadratic form is
+$\mathcal R T\,[\sum_n a_n^2/\mathcal N_n - (\sum_n a_n)^2/\mathcal N_{\mathrm g}]$, which is non-negative by the
+Cauchy–Schwarz inequality, $(\sum_n a_n)^2 \le (\sum_n a_n^2/\mathcal N_n)(\sum_n \mathcal N_n)$. So $G$ is convex in the
+extents, the KKT point is the global minimum, and a solver that satisfies the conditions has found it. In mole-fraction
+units this matrix is minus the gain $\mathsf W\mathsf S$ of the fixed-temperature step
+(@eq-ch04-equilibrate-tp-weight), which is why that step is a Newton step on $G$.
+
+*Step 5, the cases.* A condensate present ($c_{m_r} > 0$) forces $\Delta_r = 0$. For one vapour with $\hat\nu = 1$ this
+is $p_v = K_r(T) = p_{\mathrm{sat}}(T)$; for ammonium hydrosulfide it is $p_{\mathrm{NH_3}}\,p_{\mathrm{H_2S}} = K(T)$
+(`nh3_h2s_lewis`, {{< code src/vapors/vapor_functions.h nh3_h2s_lewis >}}). A condensate absent allows
+$\Delta_r \ge 0$: subsaturated air without cloud. A supersaturated state, $\Delta_r < 0$, is never an equilibrium. The
+check `check_ch4_tp.py` (line a) confirms these conditions on the returned states of `tests/jupiter.yaml` cells from
+160 to 300 K.[^ch04-conditions-check]
+
+**The conditions in the code's variables.**
 
 The saturation constant of a reaction is the product of the partial pressures of its gases on the saturation curve,
 each raised to its coefficient: gases consumed with a positive power, gases produced with a negative one. Condensed
@@ -162,6 +280,23 @@ make_fig()
 hydrosulfide, so the pressure exponent 2 of the second reaction is exercised. It also requires that no cell is left
 unadjusted with a non-negative diagnostic, and that at most 10 of 2000 random cells fail.
 
+The derivation of @eq-ch04-conditions-gibbs is checked by `check_ch4_tp.py` (line a): at the returned states every
+present condensate is on its curve to $1.3\times10^{-7}$ in $\Delta_r$ (tolerance $10^{-6}$), every absent one is
+subsaturated, and the element ratios change by at most $5.6\times10^{-16}$ (run record in the Derivation layer).
+
+[^ch04-conditions-refs]: [source: W. R. Smith and R. W. Missen, Chemical Reaction Equilibrium Analysis: Theory and
+Algorithms, Wiley (1982), chapters 2 and 3, for the Gibbs-minimum formulation and convexity of ideal mixtures; J.
+Nocedal and S. J. Wright, Numerical Optimization, 2nd ed., Springer (2006), <https://doi.org/10.1007/978-0-387-40065-5>,
+section 12.3, for the KKT conditions.]
+
+[^ch04-conditions-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, cells
+at 300, 250, 200 and 160 K and $10^5$ Pa from $x_{\mathrm{H_2O}} = 2.5\times10^{-3}$, $x_{\mathrm{NH_3}} =
+3\times10^{-4}$, $x_{\mathrm{H_2S}} = 8\times10^{-5}$; run: `python derivation-checks/check_ch4_tp.py` from a scratch
+directory with `KINTERA_WT` set to a build tree at the pin, line a: worst $|\Delta_r|$ at a present condensate
+$1.3\times10^{-7}$ (tol $10^{-6}$), every absent condensate subsaturated (7 cases), element ratios changed by at most
+$5.6\times10^{-16}$ (tol $10^{-14}$), PASS; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch
+2.10.0+cu126.]
+
 [^ch04-conditions-lio18]: [source: C. Li, A. P. Ingersoll and F. Oyafuso, "Moist adiabats with multiple condensing
 species: a new theory with application to giant-planet atmospheres", J. Atmos. Sci. 75, 1063-1072 (2018),
 <https://doi.org/10.1175/JAS-D-17-0257.1>, sections 2 and 3.]
@@ -185,3 +320,7 @@ committed check.]
 :::
 
 - Condensates are pure phases with unit activity. Solutions of condensates are not modelled.
+
+<!-- reader glossary notes -->
+[^rg-99d77c21e9c3]: KKT — Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134)
+<!-- end reader glossary notes -->

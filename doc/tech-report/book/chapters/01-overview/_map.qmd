@@ -23,7 +23,7 @@ own scheme table, which lists its sections with their options, defaults and test
 
 **Activation.** Not applicable: this is a reading guide.
 
-**Guarantee / limits.** Chapters 5 and 9 are being written; their sections are forthcoming.
+**Guarantee / limits.** Chapter 9 is being written; its sections are forthcoming.
 
 **Evidence.** Not applicable; see the Tests layer.
 :::
@@ -46,7 +46,7 @@ own scheme table, which lists its sections with their options, defaults and test
 
 : Chapters of the report and the code they describe. {#tbl-ch01-map-chapters}
 
-Chapters 5 and 9 have no sections yet; the table points to their chapter labels only. The library is built from
+Chapter 9 has no sections yet; the table points to its chapter label only. The library is built from
 the directories that `src/CMakeLists.txt` lists ({{< code src/CMakeLists.txt >}}). The Python package re-exports the
 compiled module and adds the `atm2d`, `equilibrium` and `kinetics_base_titan` subpackages
 ({{< code python/__init__.py >}}).
@@ -84,6 +84,6 @@ The test suite as a whole is described in @sec-ch13-suite.
 
 ### Limits
 
-- Chapters 5 and 9 are forthcoming; this map points to their chapter labels only.
+- Chapter 9 is forthcoming; this map points to its chapter label only.
 - The README of kintera at the pin describes the photochemistry module under `src/photolysis/`; the tree at the pin
   has `src/photochem/` and no `src/photolysis/` ({{< code README.md >}}).

@@ -153,7 +153,7 @@ def chapter_of(rel: str) -> str:
             return m.group(1)
     if top.startswith("app"):
         return top[:4]
-    m = re.match(r"(\d\d)-", top)
+    m = re.match(r"(\d\d[a-z]?)-", top)  # a split chapter (STYLE 10.1) keeps its letter: 01b -> ch01b
     return f"ch{m.group(1)}" if m else top
 
 

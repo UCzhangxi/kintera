@@ -30,7 +30,11 @@
 
 **coupling, saturation adjustment**: Saturation adjustment inside a snapy stage (thermodynamics card), @sec-ch14-saturation.
 
+*CPU-only tests*, see **test coverage by device**.
+
 *CPU or GPU*, see **device dispatch**.
+
+*ctest*, see **test suite**.
 
 **CUDA build**: Building the CUDA library, @sec-ch12-build.
 
@@ -72,6 +76,8 @@
 
 *evolve_kinetics*, see **coupling, kinetics**.
 
+**example scripts**: Example scripts as quick-start runs, @sec-ch13-examples.
+
 ## F {.unnumbered .unlisted}
 
 *failed cells*, see **coupling, saturation adjustment**.
@@ -83,6 +89,8 @@
 **`formula`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
 ## G {.unnumbered .unlisted}
+
+*GoogleTest*, see **test suite**.
 
 *GPU architectures*, see **CUDA build**.
 
@@ -99,6 +107,8 @@
 ## K {.unnumbered .unlisted}
 
 *k3*, see **evaporation, Kessler form**.
+
+**KINETICS-base comparison**: Validation of the KINETICS-base reader, @sec-ch13-kinetics-base.
 
 **KINETICS-base reader**: Reading KINETICS-base reaction networks, @sec-ch06-kinetics-base.
 
@@ -133,6 +143,8 @@
 **pressure switch**: Pressure switch on Arrhenius-form rates, @sec-ch06-pressure-switch.
 
 *pybind11*, see **Python bindings**.
+
+*pytest*, see **test suite**.
 
 *Python API*, see **Python bindings**.
 
@@ -216,6 +228,14 @@
 
 *temperature bands*, see **Arrhenius rate constant**.
 
+*test counts*, see **test results, CPU and CUDA builds**.
+
+**test coverage by device**: What the suite covers on CPU only (device coverage), @sec-ch13-device-coverage.
+
+**test results, CPU and CUDA builds**: Results of the suite on a CPU build and a CUDA build, @sec-ch13-results.
+
+**test suite**: How the test suite is organised and run, @sec-ch13-suite.
+
 *ThermoOptions*, see **options objects, C++**.
 
 *three-body reaction*, see **fall-off rate constant**.
@@ -235,6 +255,8 @@
 *version number*, see **package version**.
 
 **`vm`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
+
+**VULCAN comparison, scoped out**: Comparison scripts against VULCAN (scoped out: they need a VULCAN tree outside the repository), @sec-ch13-vulcan.
 
 ## W {.unnumbered .unlisted}
 

@@ -40,7 +40,11 @@
 
 *backward Euler*, see **implicit time step**.
 
+**batch dimension**: Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
+
 *BDF*, see **steady state, Newton**.
+
+*benchmark protocol*, see **GPU timing**.
 
 **binary diffusion**: Molecular (binary) diffusion and the exponential vertical schemes, @sec-ch09-molecular.
 
@@ -49,6 +53,8 @@
 **bounded Newton step**: The bounded Newton step, @sec-ch10-newton.
 
 *branches*, see **photolysis cross section**.
+
+*broadcasting*, see **batch dimension**.
 
 *building kintera*, see **installation**.
 
@@ -133,6 +139,8 @@
 *data files*, see **resource lookup**.
 
 **dense linear solve**: Dense helpers and the pivoted Gaussian solve, @sec-ch10-dense.
+
+*device and precision contract*, see **moving a module to the GPU**.
 
 **device dispatch**: Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
 
@@ -230,6 +238,8 @@
 
 **GPU kernels**: CUDA element loops and per-thread workspaces, @sec-ch12-kernels.
 
+**GPU timing**: Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
+
 *gravitational separation*, see **binary diffusion**.
 
 ## H {.unnumbered .unlisted}
@@ -322,6 +332,8 @@
 
 *mixture heat capacity*, see **heat capacity, per species**.
 
+*module.to*, see **moving a module to the GPU**.
+
 **moist adiabat**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
 
 **molar mass**: Molar masses from composition strings, @sec-ch02-molar-mass.
@@ -333,6 +345,8 @@
 *molecular diffusion*, see **binary diffusion**; **eddy diffusion, two-dimensional**.
 
 *molecular weight*, see **molar mass**.
+
+**moving a module to the GPU**: Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
 
 *mr_exp*, see **binary diffusion**.
 
@@ -516,6 +530,8 @@
 
 **species registry**: The species registry: names, phases and per-species data, @sec-ch02-species-registry.
 
+*speedup*, see **GPU timing**.
+
 *SRI*, see **fall-off rate constant**.
 
 *standard pressure*, see **chemical equilibrium, options**.
@@ -565,6 +581,8 @@
 **temperature from entropy**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
 
 **temperature from internal energy**: Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
+
+*tensor shapes*, see **batch dimension**.
 
 *test counts*, see **test results, CPU and CUDA builds**.
 

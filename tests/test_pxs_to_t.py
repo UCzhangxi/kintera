@@ -99,3 +99,32 @@ def test_pxs_to_t_batched(thermo, device):
     bad = [(grid[i], T[i].item()) for i in range(n)
            if not relerr[i].item() < 1e-5]
     assert bad == []
+
+
+@pytest.mark.parametrize("device", DEVICES)
+@pytest.mark.parametrize("batched", [False, True], ids=["single", "batched"])
+def test_pxs_to_t_nan_entropy_is_reported(thermo, device, batched, tmp_path,
+                                          monkeypatch, capfd):
+    """A NaN entropy never converges: the call must reach max-iter, warn and
+    write its diagnostic dump, as base does, also inside a batch."""
+    op, op_ref, sp = thermo
+    th = _thermo_x(op, device)
+    monkeypatch.chdir(tmp_path)
+
+    n = 3 if batched else 1
+    x = torch.zeros(n, len(sp), dtype=torch.float64, device=device)
+    x[:, 0] = 1.0
+    pres = torch.full((n,), P, dtype=torch.float64, device=device)
+    tstar = torch.full((n,), 300.0, dtype=torch.float64, device=device)
+    conc = th.compute("TPX->V", [tstar, pres, x])
+    entropy = th.compute("TPV->S", [tstar, pres, conc])
+    entropy[0] = float("nan")
+
+    T = th.compute("PXS->T", [pres, x.clone(), entropy])
+
+    err = capfd.readouterr().err
+    assert "_entropy_to_temp: max iteration reached" in err
+    assert list(tmp_path.glob("thermo_x_entropy_to_temp_*.pt"))
+    assert T[0].isnan().item()
+    if batched:
+        assert torch.allclose(T[1:], tstar[1:], rtol=1e-5)

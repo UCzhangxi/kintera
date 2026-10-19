@@ -34,16 +34,54 @@ Local symbols: $\mathcal L$, a scalar loss a caller differentiates [-]; $\bar g_
 
 ### Derivation
 
-By the chain rule, the gradient of a loss with respect to the temperature of one cell, through reaction $r$, is
+The question: what does the backward pass of `LogSVPFunc` return, and why are second derivatives through it not
+available? Two facts from the code set it up. `forward` saves the temperature and the formula names (and, for inline
+forms, the parameters) and returns $L_r = \ln K_r(T_r)$, one column per reaction, from a temperature tensor that
+already has that column ({{< code src/thermo/log_svp.cpp LogSVPFunc::forward >}}). `backward` multiplies the
+incoming gradient by $\mathrm d \ln K_r / \mathrm d T$, which it evaluates with the `_ddT` functions of @sec-ch02-svp
+through the same kernels as the values, outside autograd ({{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}).
+
+*Step 1: the forward map is column by column.* Column $r$ of the output depends only on column $r$ of the input
+temperature, so its Jacobian is diagonal:
 
 $$
-\frac{\partial \mathcal L}{\partial T} = \bar g_r \, \frac{\mathrm d \ln K_r}{\mathrm d T} .
+\frac{\partial L_r}{\partial T_s} = \delta_{rs}\, \frac{\mathrm d \ln K_r}{\mathrm d T}(T_r) .
+$$ {#eq-ch02-svp-autograd-jacobian}
+
+*Step 2: the vector-Jacobian product.* Reverse-mode differentiation hands `backward` the gradient of a loss with
+respect to the outputs, $\bar g_r = \partial \mathcal L / \partial L_r$, and asks for the gradient with respect to the
+inputs, $\sum_r \bar g_r\, \partial L_r / \partial T_s$. With @eq-ch02-svp-autograd-jacobian the sum has one term:
+
+$$
+\frac{\partial \mathcal L}{\partial T_r} = \bar g_r \, \frac{\mathrm d \ln K_r}{\mathrm d T}(T_r) .
 $$ {#eq-ch02-svp-autograd-backward}
 
-`backward` ({{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}) returns this product, evaluating the
-derivative by the `_ddT` functions of @sec-ch02-svp at the temperature saved in `forward`
-({{< code src/thermo/log_svp.cpp LogSVPFunc::forward >}}). The temperature passed to `apply` must already be
-expanded to one column per reaction, so each column's gradient goes to its own temperature entry.
+This is the element-by-element product `backward` returns ({{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}).
+No finite difference is taken.
+
+*Step 3: why the temperature is expanded.* Because the input already has one column per reaction, each column's
+gradient goes to its own temperature entry. A caller that starts from one temperature per cell and expands it, as
+`forward_with_rate_constants` does when the temperature evolves
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), gets the cell's total
+$\sum_r \bar g_r\, \mathrm d \ln K_r/\mathrm d T$ from the backward pass of that expansion, which is ordinary autograd.
+
+*Step 4: second derivatives.* Differentiating once more, with the graph of the first backward pass recorded, needs
+the derivative of @eq-ch02-svp-autograd-backward with respect to $T_r$. The derivative factor was computed by a kernel
+that autograd does not record, so it enters that graph as a constant, and the term with $\mathrm d^2 \ln K_r/\mathrm d
+T^2$ is lost. For a function $w(T) = h(L(T), T)$ of the saturation constant, the true and the autograd second
+derivatives are
+
+$$
+\begin{aligned}
+w'' &= h_{LL} L'^2 + 2 h_{LT} L' + h_{TT} + h_L\, L'' , \\
+w''_{\mathrm{autograd}} &= h_{LL} L'^2 + 2 h_{LT} L' + h_{TT} ,
+\end{aligned}
+$$ {#eq-ch02-svp-autograd-second}
+
+with $L = \ln K_r$ and primes for $\mathrm d/\mathrm d T$; the missing term is the one `backward`
+({{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}) cannot supply. The result is not an error message but a
+wrong value, unless $L'' = 0$ or $h_L = 0$. For the ideal form, $L'' = (\gamma/t^2 - 2\beta/t^3)/T_3^2$,
+which is not zero.
 
 ### Numerical method
 
@@ -52,7 +90,9 @@ parameters into static members of the class. `call` and `grad` evaluate the valu
 `forward` saves the formula names and the inline parameters in the autograd context, so a later `init` with another
 reaction set does not change what an earlier graph's backward pass uses. Evaluation goes through a tensor iterator
 over the reaction dimension, on CPU or CUDA; inline forms are evaluated by the same scalar `eval_logsvp` as the
-saturation kernels.
+saturation kernels. The backward pass costs one more pass of the same kind, over the `_ddT` names: the numerical
+scheme is closed-form evaluation of each fit and of its hand-written derivative, with no iteration and no difference
+quotient.
 
 The autograd figure is not provided: the figure module is not written yet.
 
@@ -82,12 +122,34 @@ Setup checks a user can hit: an inline formula without its parameters is refused
 
 The tolerances are read from `tests/test_svp_autograd.py` at the pin.
 
+The derivation is checked by the derivation check `check_ch2_svp_autograd.py`.[^ch02-autograd-check] It reaches
+`LogSVPFunc::apply` through its one caller, the evaporation module (`kintera.Evaporation`), for `CH4(s,p) => CH4` with
+the ideal form ($\beta = 12.87$, $\gamma = 1.5$, below $T_3$) and a temperature-independent prefactor $\kappa$, so the
+rate constant is $w(T) = \kappa\,(K(T) - c_v)$ with $K = e^{L}/(\mathcal R T)$. That is
+@eq-ch02-svp-autograd-second with $h = \kappa(e^{L}/(\mathcal R T) - c_v)$. All six lines pass:
+
+- @eq-ch02-svp-autograd-backward: autograd $\mathrm d w/\mathrm d T$ against $\kappa K (L' - 1/T)$ at 70, 75, 80
+  and 85 K, worst $1.332 \times 10^{-15}$ relative (tolerance $10^{-12}$, round-off); `torch.autograd.gradcheck` at
+  78 K ($\epsilon = 10^{-6}$, relative tolerance $10^{-7}$) passes.
+- Step 3: with two evaporation reactions and the temperature expanded to two columns, the gradient of one reaction
+  lands on its own column (relative error $2.2 \times 10^{-16}$) and is exactly 0 on the other.
+- @eq-ch02-svp-autograd-second: the autograd second derivative equals the prediction without $L''$ to
+  $1.776 \times 10^{-15}$ relative (tolerance $10^{-12}$). It differs from the true value by up to 25.7% at these
+  temperatures (the line requires more than 1%). `torch.autograd.gradgradcheck` returns false, without an error.
+
+[^ch02-autograd-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: evaporation cards built in
+    the script; run: `python doc/tech-report/derivation-checks/check_ch2_svp_autograd.py` from a scratch directory,
+    with `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13,
+    torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch2_svp_autograd.out`, 6 PASS, 0 FAIL.]
+
 ### Limits
 
 The reaction set lives in static class members, so every caller must call `init` right before `call` or `grad`;
 two threads using different reaction sets at once could interleave (a hypothesis; no lock is present, verified by
 reading; not run). The backward pass multiplies the incoming gradient by $\mathrm d \ln K_r / \mathrm d T$ computed
 outside autograd (verified by reading `backward`). A second derivative taken through `LogSVPFunc` would therefore
-treat $\mathrm d \ln K_r / \mathrm d T$ as a constant and miss the $\mathrm d^2 \ln K_r / \mathrm d T^2$ term; that it
-returns a silently wrong value rather than an error is a hypothesis, not run. The first derivatives are checked against
+treat $\mathrm d \ln K_r / \mathrm d T$ as a constant and miss the $\mathrm d^2 \ln K_r / \mathrm d T^2$ term
+(@eq-ch02-svp-autograd-second). It returns a silently wrong value, not an error: 25.7% off on the check's card, and
+`gradgradcheck` returns false.[^ch02-autograd-check] The first derivatives are checked against
 finite differences for the named fits (@sec-ch02-svp) and against analytic values in `test_svp_autograd.py`.

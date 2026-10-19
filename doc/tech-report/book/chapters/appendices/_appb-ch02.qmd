@@ -15,7 +15,9 @@
 | @sec-ch02-svp | @eq-ch02-svp-latent | The latent heat a fit implies at any temperature, $\mathcal R(\beta T_3 - \gamma T)$. | code: {{< code src/vapors/vapor_functions.h logsvp_ideal_ddT >}}; check: none | re-derived |
 | @sec-ch02-svp | @eq-ch02-svp-ideal-ddT | The temperature derivative of the ideal form; $\mathcal R T^2$ times it returns the latent heat. | code: {{< code src/vapors/vapor_functions.h logsvp_ideal_ddT >}}; check: none | re-derived |
 | @sec-ch02-svp | @eq-ch02-svp-antoine | The Antoine equation, $\log_{10}$ of the pressure in bar, converted to $\ln$ of the pressure in Pa. | code: {{< code src/vapors/vapor_functions.h logsvp_antoine >}}; check: none | re-derived |
-| @sec-ch02-svp-autograd | @eq-ch02-svp-autograd-backward | By the chain rule, the gradient of a loss with respect to the temperature of one cell, through reaction $r$, is | code: {{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}; check: none | re-derived |
+| @sec-ch02-svp-autograd | @eq-ch02-svp-autograd-jacobian | *Step 1: the forward map is column by column.* Column $r$ of the output depends only on column $r$ of the input temperature, so its Jacobian is diagonal: | code: {{< code src/thermo/log_svp.cpp LogSVPFunc::forward >}}; check: none | re-derived |
+| @sec-ch02-svp-autograd | @eq-ch02-svp-autograd-backward | With @eq-ch02-svp-autograd-jacobian the sum has one term: | code: {{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}; check: none | re-derived |
+| @sec-ch02-svp-autograd | @eq-ch02-svp-autograd-second | For a function $w(T) = h(L(T), T)$ of the saturation constant, the true and the autograd second derivatives are | code: {{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}; check: none | re-derived |
 | @sec-ch02-units | @eq-ch02-units-factor | Its factor to SI is the product | code: {{< code src/units/units.cpp Units::Units overload=2 >}}; check: none | re-derived |
 
 : Derivations of @sec-ch02. {#tbl-appb-ch02}

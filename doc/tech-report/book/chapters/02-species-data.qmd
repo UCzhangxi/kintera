@@ -9,7 +9,7 @@ equation of state are the subject of @sec-ch03.
 | scheme | YAML key or option | default | order | main test |
 |---|---|---|---|---|
 | @sec-ch02-species-registry | `species`[^rg-e2c86a33eac7] | none | exact | `test_species_registry.py` |
-| @sec-ch02-molar-mass | `composition`[^rg-e540c1be9eba] | none | exact | `test_species` |
+| @sec-ch02-molar-mass | `composition`[^rg-e540c1be9eba] | none | exact | `test_equilibrium` |
 | @sec-ch02-nasa9 | `use-nasa9-cp` | off | exact | `test_nasa9_cp.py` |
 | @sec-ch02-svp | `rate-constant: formula` | none | exact | `test_vapor_functions` |
 | @sec-ch02-svp-autograd | `LogSVPFunc` (API) | always | exact | `test_svp_autograd.py` |

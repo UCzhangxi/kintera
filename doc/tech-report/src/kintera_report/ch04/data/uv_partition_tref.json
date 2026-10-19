@@ -1,9 +1,9 @@
 {
  "provenance": {
   "sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
-  "deck": "self-written card: dry, H2O, H2O(l); h2o_ideal; Tref 300 K; max-iter 50",
+  "deck": "ONE_VAPOUR card of src/kintera_report/ch04/runs/common.py: dry, H2O, H2O(l); h2o_ideal; Tref 300 K; max-iter 50",
   "cells": "start T = 297..303 K step 0.25, p = 1e5 Pa, x_v = 5e-2",
-  "command": "python -P fig_partition.py <out.json>",
+  "command": "python -P src/kintera_report/ch04/runs/fig_partition.py <out.json>",
   "device": "CPU, double",
   "versions": "kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126"
  },

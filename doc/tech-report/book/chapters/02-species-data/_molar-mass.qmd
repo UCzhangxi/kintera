@@ -12,7 +12,7 @@ reviewer:
 
 kintera never takes a molar mass from the user. It computes each species' molar mass from its elemental
 composition, written in the YAML file as a map from element symbol to count. This keeps mass and moles consistent
-across every conversion between mass fractions and mole fractions (@sec-ch03).
+across every conversion between mass fractions and mole fractions (@sec-ch03-thermo-y).
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** $\mu_n = \sum_e a_{en} m_e$, @eq-ch02-molar-mass-sum.

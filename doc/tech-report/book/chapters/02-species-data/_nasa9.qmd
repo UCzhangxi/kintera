@@ -16,7 +16,9 @@ in two ranges. The table is looked up by species name when the registry is fille
 places: the temperature-dependent heat capacity of @sec-ch03-species-functions when `use-nasa9-cp` is on; the
 dimensionless Gibbs energy of the multiphase equilibrium solver (@sec-ch05); and the equilibrium constant of every
 reversible reaction in the kinetics (@sec-ch06), whenever any species of the kinetics options has NASA-9 data, whatever
-`use-nasa9-cp` says.
+`use-nasa9-cp` says. NASA-9 is the only temperature-dependent heat-capacity form kintera reads; other forms, such as the
+Shomate polynomials, are neither read nor converted at the pin, so their coefficients must be converted to NASA-9 or to
+a constant `cv_R` by the user.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** $c_p/\mathcal R$, $h/(\mathcal R T)$, $s/\mathcal R$ from nine coefficients per range,

@@ -14,6 +14,8 @@ Every kintera module refers to species by position in one list. That list, with 
 constant thermodynamic data, is read once from the `species` block of the YAML file into a process-wide registry.
 The thermodynamics and kinetics options then copy the entries they need. A second YAML file with a different
 `species` block refills the registry, so two configurations in one process each see their own species.
+Two orders matter: the registry keeps the card's order, while the thermodynamics orders the species gases first, then
+condensates, each group in card order, with the card's first species (the "dry" species) always the first gas.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** One table of species: name, phase, molar mass, `cv_R`[^rg-69a0a493850f], `u0_R`[^rg-fa067cae2716], `s0_R`, NASA-9 coefficients.
@@ -63,6 +65,25 @@ with an explicit `phase` (verified by reading at the pin). A species with no `ph
 reactions is in the registry but not in the thermodynamics; for example the `H2O(s)` and `NH3(l)` entries of
 `tests/jupiter.yaml`.
 
+**Two orders.** The registry keeps the order of the `species` list in the card. `ThermoOptions.from_yaml` classifies each
+selected species as a gas (the first species; a nucleation reactant; a nucleation product declared `phase: gas`; an
+evaporation product or a gaseous evaporation reactant; any `phase: gas`) or a condensate (a nucleation product not
+declared gas; a coagulation species; the condensed reactant of an evaporation reaction; any `phase: liquid` or `solid`),
+refusing a species classified both ways (verified by reading the `add_to_vapor_cloud` functions), then stores
+the gas registry indices sorted, followed by the condensate registry indices sorted. So with registry indices
+$0, 1, \dots$:
+
+$$
+\text{thermodynamic order} = \left(\operatorname{sort} I_{\mathrm{gas}},\ \operatorname{sort} I_{\mathrm{cond}}\right) ,
+$$ {#eq-ch02-species-registry-order}
+
+and because the first species of the card has registry index 0 and is always a gas, it is always the first entry of the
+thermodynamic order: the "dry" species of @sec-ch03-eos, whose mass fraction is implicit. For `tests/jupiter.yaml` the
+registry order is `dry`, `H2O`, `NH3`, `H2S`, `H2O(l)`, ..., and the thermodynamic order is `dry`, `H2O`, `NH3`,
+`H2S`, then `H2O(l)`, `H2O(l,p)`, `NH3(s)`, `NH3(s,p)`, `NH4SH(s)` (gases, then the condensates the reactions name, in
+card order). @eq-ch02-species-registry-order is the construction in `from_yaml`; the keys that decide the class are
+listed in @sec-ch11-yaml-input, and the arrays that use the order in @sec-ch03-eos.
+
 ### Numerical method
 
 No numerical method. The procedure is:
@@ -73,6 +94,24 @@ No numerical method. The procedure is:
 2. `init_species_from_yaml` clears the registry, then appends one row per species, checking the phase string.
 3. Only after every species is read does it record the block and mark the registry initialised. On any exception
    it clears the registry and rethrows, so a failed card leaves neither partial data nor a cache hit.
+
+**Adding a species.** To add one species to a configuration:
+
+1. Add an item to `species` with `name` (unique) and `composition` (element counts; the molar mass follows,
+   @sec-ch02-molar-mass).
+2. Give `phase: gas`, `liquid` or `solid` if the species is in no reaction that classifies it; otherwise it is left out
+   of the thermodynamics (above).
+3. Give `cv_R` [-], `u0_R` [K] and, for a gas, `s0_R` [-] at the reference state (@sec-ch03-reference-state); the
+   defaults are 5/2, 0 and 0. For a condensate, `u0_R` sets the latent heat and the sign check of
+   @sec-ch03-reference-state warns if it is not below the vapour's.
+4. NASA-9 data are looked up by the exact `name` in `data/nasa9.dat` (@sec-ch02-nasa9); a name that is not in the table
+   gets zero coefficients, which means "no NASA-9 data" for the heat capacity and $g/(\mathcal R T) = 0$ in reverse
+   kinetics.
+5. Add the reactions that use it (@sec-ch11-yaml-reactions).
+6. Check what was loaded: `kintera.species_names()` and `kintera.species_weights()` give the registry;
+   `ThermoOptions.from_yaml(card).species()` gives the thermodynamic order; `vapor_ids()` and `cloud_ids()` give the
+   classification; `cref_R()`, `uref_R()` and `sref_R()` give the stored values (offsets are shifted only when a
+   `ThermoX` or `ThermoY` is built, @sec-ch03-reference-state).
 
 The registry figure is not provided: the figure module is not written yet.
 

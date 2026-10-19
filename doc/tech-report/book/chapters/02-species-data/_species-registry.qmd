@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src
+sources: src/species.cpp, src/species.hpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,100 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Every kintera module refers to species by position in one list. That list, with each species' phase, molar mass and
+constant thermodynamic data, is read once from the `species` block of the YAML file into a process-wide registry.
+The thermodynamics and kinetics options then copy the entries they need. A second YAML file with a different
+`species` block refills the registry, so two configurations in one process each see their own species.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** One table of species: name, phase, molar mass, `cv_R`[^rg-69a0a493850f], `u0_R`[^rg-fa067cae2716], `s0_R`, NASA-9 coefficients.
+
+**Data.** YAML `species` list in; global vectors indexed by species position out; molar mass in kg mol$^{-1}$.
+
+**Placement.** Filled when options are read from YAML (`ThermoOptions.from_yaml`, `KineticsOptions.from_yaml`).
+
+**Activation.** The `species` block is required; `phase` is optional (`gas`, `liquid`, `solid`).
+
+**Guarantee / limits.** Exact copy of the card; a failed load leaves an empty registry.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\mu_n$, molar mass of species $n$ [kg mol$^{-1}$]; $c^{\star}_n$, $u^{\star}_n$, $s^{\star}_n$ as
+in the notation table (@sec-appa), the YAML keys `cv_R` [-], `u0_R` [K] and `s0_R` [-].
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+None: the registry stores data and derives nothing except the molar mass, which @sec-ch02-molar-mass gives. Each
+species entry yields one row:
+
+| YAML key | registry entry | default when omitted |
+|---|---|---|
+| `name`[^rg-e6bf2057e7b8] | `species_names` | required |
+| `phase` | `species_phases` | empty (phase inferred from reactions) |
+| `composition` | `species_weights`, through $\mu_n$ | required |
+| `cv_R` | `species_cref_R` | $5/2$ |
+| `u0_R` | `species_uref_R` | 0 |
+| `s0_R` | `species_sref_R` | 0 |
+| (name lookup) | `species_nasa9_low`, `species_nasa9_high`, `species_nasa9_Tmid` | zeros, 1000 K |
+
+: Registry entries filled from one YAML species item. {#tbl-ch02-species-registry-entries}
+
+The rows are read in `init_species_from_yaml`
+({{< code src/species.cpp init_species_from_yaml overload=2 >}}). The default $c^{\star}_n = 5/2$ is $c_v/\mathcal R$ of a
+diatomic ideal gas with frozen vibration (a monatomic gas has 3/2). The same default applies to condensates unless
+`cv_R` is given (verified by reading the reader at the pin).
 
 ### Numerical method
 
-Pending.
+No numerical method. The procedure is:
+
+1. `ensure_species_initialized` ({{< code src/species.cpp ensure_species_initialized overload=2 >}}) compares the
+   card's `species` block, dumped to text, with the block that filled the registry; if they differ or the
+   registry is empty it reloads.
+2. `init_species_from_yaml` clears the registry, then appends one row per species, checking the phase string.
+3. Only after every species is read does it record the block and mark the registry initialised. On any exception
+   it clears the registry and rethrows, so a failed card leaves neither partial data nor a cache hit.
+
+The registry figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| reader | {{< code src/species.cpp init_species_from_yaml overload=2 >}} | `init_species_from_yaml` | `species` |
+| reload test | {{< code src/species.cpp ensure_species_initialized overload=2 >}} | `ensure_species_initialized` | `species` |
+| reset | {{< code src/species.cpp clear_species_registry >}} | `clear_species_registry` | always |
+| per-options copy | {{< code src/species.hpp SpeciesThermoImpl >}} | `SpeciesThermoImpl` | API |
+
+: Code map of the species registry. {#tbl-ch02-species-registry-code}
+
+Setup checks a user can hit: a file without `species` is refused ("'species' is not defined"); a `phase` other than
+`gas`, `liquid` or `solid` is refused.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_species.release` (`SpeciesInit.clear_invalidates_success_and_same_card_reloads`) | clearing empties the registry; the same card reloads | exact | equality |
+| `test_species.release` (`SpeciesInit.failed_parse_clears_partial_state_and_never_caches_success`) | a bad card leaves the registry empty and uninitialised | exact | equality |
+| `test_species_registry.py` | a second card uses its own molar masses and species | $10^{-12}$ rel. | not yet derived |
+
+: Tests of the species registry. {#tbl-ch02-species-registry-tests}
+
+The tolerances are read from the test files at the pin. `test_species_registry.py` also has CUDA variants that
+run when a GPU is present.
 
 ### Limits
 
-Pending.
+The registry is process-wide state: two configurations used alternately in one process reload it on every switch.
+Whether concurrent use from several threads is safe is a hypothesis to test (no lock guards the vectors, verified by
+reading; not run).
+
+<!-- reader glossary notes -->
+[^rg-69a0a493850f]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)
+
+[^rg-fa067cae2716]: u0_R — reference internal energy divided by the gas constant, in K; default 0; stored in `species_uref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L178-L182)
+
+[^rg-e6bf2057e7b8]: name — species name, the key every other block uses; required; stored in `species_names`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L156)
+<!-- end reader glossary notes -->

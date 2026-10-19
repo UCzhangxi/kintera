@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src
+sources: src/thermo/svp_eval.h, src/vapors/vapor_functions.h, src/thermo/nucleation.cpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,129 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Saturation adjustment (@sec-ch04) needs, for every condensation reaction, the value its reactant partial pressures
+take on the saturation curve. kintera attaches this saturation constant to the reaction, not to a species, so that
+a reaction with two gaseous reactants (ammonium hydrosulfide from ammonia and hydrogen sulfide) has one constant.
+The constant is given in YAML either by the name of a built-in fit or by one of two inline forms with their
+parameters. Every form returns the natural logarithm of the constant in Pa units, together with its temperature
+derivative.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\ln K_r(T)$ and $\mathrm d \ln K_r / \mathrm d T$; the inline forms are @eq-ch02-svp-ideal and
+@eq-ch02-svp-antoine.
+
+**Data.** $T$ [K] in; $\ln K_r$ with $K_r$ in Pa$^{m}$, $m$ the sum of gas reactant coefficients, out.
+
+**Placement.** Evaluated inside the saturation solvers and by `LogSVPFunc` (@sec-ch02-svp-autograd).
+
+**Activation.** `rate-constant: {formula: <name> | ideal | antoine, ...}` on each `type: nucleation` reaction.
+
+**Guarantee / limits.** Exact closed forms; no range check at evaluation.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $K_r$, saturation constant of reaction $r$, as in the notation table (@sec-appa); $T_3$, $p_3$,
+reference (triple-point) temperature [K] and pressure [Pa]; $\beta$, $\gamma$, dimensionless fit coefficients [-];
+$A$, $B$, $C$, Antoine coefficients [-], [K], [K]; $L$, molar latent heat [J mol$^{-1}$]; $\Delta c$, heat-capacity
+difference, condensate minus vapor [J mol$^{-1}$ K$^{-1}$].
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+**Ideal form.** The Clausius-Clapeyron relation for an ideal vapor over a condensate of negligible volume is
+$\mathrm d \ln p / \mathrm d T = L(T) / (\mathcal R T^2)$. Let the latent heat vary linearly,
+$L(T) = L_3 + \Delta c\,(T_3 - T)$, with the sign chosen so that $L$ grows as $T$ falls for $\Delta c > 0$.
+Integrating from $(T_3, p_3)$:
+
+$$
+\begin{aligned}
+\ln \frac{p}{p_3} &= \int_{T_3}^{T} \frac{L_3 + \Delta c\, T_3 - \Delta c\, T'}{\mathcal R T'^2}\, \mathrm d T' \\
+&= \frac{L_3 + \Delta c\, T_3}{\mathcal R}\left(\frac{1}{T_3} - \frac{1}{T}\right)
+- \frac{\Delta c}{\mathcal R} \ln \frac{T}{T_3} .
+\end{aligned}
+$$
+
+With $t = T/T_3$, $\beta = (L_3 + \Delta c\, T_3)/(\mathcal R T_3)$ and $\gamma = \Delta c / \mathcal R$, the first
+term is $\beta (1 - 1/t)$, so
+
+$$
+\ln p = \beta \left(1 - \frac{1}{t}\right) - \gamma \ln t + \ln p_3 .
+$$ {#eq-ch02-svp-ideal}
+
+Its derivative is $\mathrm d \ln p / \mathrm d T = (\beta/t^2 - \gamma/t)/T_3$. Both are computed by
+`logsvp_ideal` ({{< code src/vapors/vapor_functions.h logsvp_ideal >}}) and `logsvp_ideal_ddT`
+({{< code src/vapors/vapor_functions.h logsvp_ideal_ddT >}}), and assembled with $\ln p_3$ in `eval_logsvp`
+({{< code src/thermo/svp_eval.h eval_logsvp >}}). The inline `ideal` form has a second pair $\beta_s$, $\gamma_s$
+(`betas`, `gammas`) used for $T \le T_3$; they default to $\beta$, $\gamma$.
+
+**Antoine form.** The Antoine equation gives $\log_{10}$ of the pressure in bar; converting to Pa and to the natural
+logarithm:
+
+$$
+\ln p = \ln 10^5 + \left(A - \frac{B}{T + C}\right) \ln 10 ,
+$$ {#eq-ch02-svp-antoine}
+
+with derivative $B \ln 10 / (T + C)^2$, computed by `logsvp_antoine`
+({{< code src/vapors/vapor_functions.h logsvp_antoine >}}).
+
+**Named fits.** The built-in functions in `src/vapors/vapor_functions.h` are instances of these two forms with fixed
+constants (for example `h2o_ideal`, `nh3_ideal`, `ch4_ideal`, `h2s_ideal`, `h2s_antoine`, `so2_antoine`,
+`co2_antoine`), or fits of the form $\ln K = (a - b/T)\ln 10$ plus a unit conversion: `nh3_h2s_lewis`
+({{< code src/vapors/vapor_functions.h nh3_h2s_lewis >}}) adds $2 \ln 101325$ to turn atm$^2$ into Pa$^2$;
+`kcl_lodders` ({{< code src/vapors/vapor_functions.h kcl_lodders >}}) adds $\ln 10^5$ to turn bar into Pa. Each
+named function `f` has a derivative `f_ddT` written out by hand.
 
 ### Numerical method
 
-Pending.
+Pointwise evaluation per cell and reaction. `make_svp_spec` packs each reaction's form into a kind code (0 named,
+1 `ideal`, 2 `antoine`) and a block of six parameters (`T3, P3, beta, gamma, betas, gammas` or `A, B, C`), copied to
+the device. The scalar function `eval_logsvp` is the one place both the CPU and CUDA kernels and the tensor
+path evaluate a constant, so an inline curve with the same constants as a named one gives bit-identical values.
+
+The vapor-pressure figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| per-reaction dispatch | {{< code src/thermo/svp_eval.h eval_logsvp >}} | `eval_logsvp` | `formula`[^rg-20a032d46e8f] |
+| its derivative | {{< code src/thermo/svp_eval.h eval_logsvp_ddT >}} | `eval_logsvp_ddT` | `formula` |
+| ideal form | {{< code src/vapors/vapor_functions.h logsvp_ideal >}} | `logsvp_ideal` | `ideal` |
+| Antoine form | {{< code src/vapors/vapor_functions.h logsvp_antoine >}} | `logsvp_antoine` | `antoine` |
+| water, two branches | {{< code src/vapors/vapor_functions.h h2o_ideal >}} | `h2o_ideal` | `h2o_ideal` |
+| YAML reader | {{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant`[^rg-7e0330505dc9] |
+
+: Code map of the saturation vapor pressure fits. {#tbl-ch02-svp-code}
+
+Setup checks a user can hit: a nucleation reaction without `rate-constant` or `formula` is refused; `ideal` without
+`T3`, `P3`, `beta` or `gamma`, or with $T_3 \le 0$ or $p_3 \le 0$, is refused; `antoine` without `A`[^rg-6570f873f97b], `B` or `C`
+is refused; an inline form set from Python without its parameters is refused.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_vapor_functions.release` | named fits and derivatives equal reference fits | $10^{-10}$ abs. | not yet derived |
+| `test_vapor_functions.release` | derivatives match finite differences | $10^{-9}$ abs. | not yet derived |
+| `test_vapor_functions.release` | `kcl_lodders`, `na_h2s_visscher` convert bar to Pa | $10^{-12}$ rel. | not yet derived |
+| `test_inline_svp.py` | inline `ideal` equals the named twin bit for bit; `antoine` matches its formula | exact; $10^{-12}$ | bitwise by design; not yet derived |
+
+: Tests of the saturation vapor pressure fits. {#tbl-ch02-svp-tests}
+
+The tolerances are read from the test files at the pin. `test_vapor_functions.release` has a CUDA dispatch case
+that runs when a GPU is present.
 
 ### Limits
 
-Pending.
+The `minT` and `maxT` keys of `rate-constant` are read but not used by any solver, so a fit is evaluated outside its
+stated range without warning (verified by reading the reader and the solvers; the same finding is reported for
+@sec-ch04). The named fits' constants are hard-coded; their sources are not cited in the code at the pin, and this
+section does not assess their accuracy.
+
+<!-- reader glossary notes -->
+[^rg-20a032d46e8f]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)
+
+[^rg-7e0330505dc9]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
+
+[^rg-6570f873f97b]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
+<!-- end reader glossary notes -->

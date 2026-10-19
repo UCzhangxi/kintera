@@ -20,7 +20,7 @@
 | @sec-ch03-thermo-x | @eq-ch03-thermo-x-entropy-factor | At a root $T^{\ast}$, $S = S_{\mathrm{given}}$, so | code: not tagged; check: none | re-derived |
 | @sec-ch03-relative-humidity | @eq-ch03-relative-humidity-rh | The ratio of the actual product to $K_r$ is | code: {{< code src/thermo/relative_humidity.cpp relative_humidity >}}; check: none | re-derived |
 | @sec-ch03-adiabat | @eq-ch03-adiabat-cpeff | Saturation is kept: each active reaction's log quotient, formed from the gas mole fractions $x_n / x_{\mathrm g}$ with sums over gases only (@sec-ch04), follows its log saturation constant at fixed $p$, so with $\mathsf G$ the derivative of the log quotients with respect to the extents, | code: {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::effective_cp >}}; check: none | re-derived |
-| @sec-ch03-adiabat | @eq-ch03-adiabat-target | A reversible step keeps $\bar s$; a user-supplied rate adds a prescribed change: | code: {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}}; check: none | re-derived |
+| @sec-ch03-adiabat | @eq-ch03-adiabat-target | The targets are: | code: {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}}; check: none | re-derived |
 | @sec-ch03-adiabat | @eq-ch03-adiabat-hydrostatic | **Hydrostatic step in $z$.** For a step $\Delta z$, the pressure follows the trapezoidal rule of $\mathrm d p / \mathrm d z = -\rho g$: | code: {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dz >}}; check: none | re-derived |
 
 : Derivations of @sec-ch03. {#tbl-appb-ch03}

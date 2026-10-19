@@ -104,8 +104,10 @@ conversions use it:
 2. `VT->P` (`ThermoY`): pressure from concentrations by @eq-ch03-eos-pressure, in one evaluation.
 3. `PV->T` (`ThermoY`): temperature from pressure and concentrations. The starting guess is
    $T = p / (\mathcal R \sum_{n<N_{\mathrm g}} c_n)$, exact for $z_n = 1$. The update is
-   $T \leftarrow T - f / \sum_n (c_{p,n} - c_{v,n}) c_n$ with $f = T \sum_n z_n c_n - p/\mathcal R$, a damped
-   Newton step that uses the heat-capacity difference as the slope.
+   $T \leftarrow T - f / \sum_n \left[(c_{p,n} - c_{v,n})/\mathcal R\right] c_n$ with
+   $f = T \sum_n z_n c_n - p/\mathcal R$, a damped Newton step that uses the heat-capacity difference, in units of
+   $\mathcal R$ as `eval_cp_R` and `eval_cv_R` return it, as the slope. For an ideal gas the bracket is 1 and the
+   slope is $\sum_n c_n$, the exact derivative of $f$.
 
 The equation-of-state figure is not provided: the figure module is not written yet.
 
@@ -160,4 +162,4 @@ $p\, x_n / x_{\mathrm g}$ in `equilibrate_tp` ({{< code src/thermo/equilibrate_t
 holds for the relative humidity (@sec-ch03-relative-humidity). A non-ideal state would then be adjusted to an
 ideal-gas saturation; that it would be inconsistent with this section's pressure is a hypothesis (not run).
 
-[^ch03-x0-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 6, quoted in the description of [UCzhangxi/kintera#PRNUM](https://github.com/UCzhangxi/kintera/pull/PRNUM).
+[^ch03-x0-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 6, quoted in the description of [UCzhangxi/kintera#23](https://github.com/UCzhangxi/kintera/pull/23).

@@ -8,12 +8,12 @@ adjustment of @sec-ch04, the kinetics of @sec-ch06 and the coupling of @sec-ch14
 | scheme | YAML key or option | default | order | main test |
 |---|---|---|---|---|
 | @sec-ch03-eos | `compute` (API) | always | exact | `test_thermo` |
-| @sec-ch03-species-functions | `cv_R`[^rg-4630a13a9883], `u0_R`[^rg-5d6bd36f1041], `s0_R` | 5/2, 0, 0 | exact | `test_nasa9_cp.py` |
+| @sec-ch03-species-functions | `cv_R`[^rg-4630a13a9883], `u0_R`[^rg-5d6bd36f1041], `s0_R` | 5/2, 0, 0 | exact; condensate entropy needs a full-rank nucleation block | `test_nasa9_cp.py` |
 | @sec-ch03-reference-state | `reference-state`[^rg-5d34b8be2a13] | 300 K, $10^5$ Pa | exact | `test_reference_state_keys.py` |
 | @sec-ch03-thermo-y | `ThermoY` (API) | caller | exact | `test_thermo` |
-| @sec-ch03-thermo-x | `ThermoX` (API) | caller | exact | `test_thermo` |
+| @sec-ch03-thermo-x | `ThermoX` (API) | caller | exact; `PXS->T` can be wrong (Limits) | `test_thermo` |
 | @sec-ch03-relative-humidity | `relative_humidity` (API) | caller | exact | `test_inline_svp.py` |
-| @sec-ch03-adiabat | `extrapolate_dlnp`, `extrapolate_dz` (API) | caller | reversible: exact in $\ln p$; `rainout`: first in $\ln p$; second in $z$ (not measured) | `test_thermo` |
+| @sec-ch03-adiabat | `extrapolate_dlnp`, `extrapolate_dz` (API) | caller | reversible: $\bar s$ held exactly in $\ln p$; `rainout`: first in $\ln p$ (review measurement); second in $z$ (not measured) | `test_thermo` |
 
 : Schemes of the thermodynamics chapter. "Order" is the order of the scheme's discretization; a function
 evaluated pointwise is exact. {#tbl-ch03-schemes}

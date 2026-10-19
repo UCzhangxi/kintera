@@ -27,7 +27,7 @@ computed from the condition that each condensation reaction is in equilibrium on
 **Activation.** Always. Optional per-species extra functions; `use-nasa9-cp` and `use-h2-cp` replace $c_v$, $c_p$
 and $u$ for the species they cover.
 
-**Guarantee / limits.** Exact closed forms; condensate entropy is set only for condensates with a nucleation reaction.
+**Guarantee / limits.** Exact closed forms; condensate entropy exact only for a full-rank nucleation block (Derivation).
 
 **Evidence.** See the Tests layer.
 :::
@@ -105,8 +105,11 @@ $$
 $$
 
 Split the gas entropy into its pressure-free part $\tilde s_n$ and the partial-pressure term,
-$s_n = \tilde s_n - \mathcal R \ln p_n$. At saturation the product of the reactant partial pressures is the
-saturation constant, $\sum_{n<N_{\mathrm g}} (-\nu_{nr}) \ln p_n = \ln K_r(T)$, with $p_n$ in Pa. Substituting and
+$s_n = \tilde s_n - \mathcal R \ln p_n$. At saturation the reaction quotient over the gases equals the saturation
+constant, $\sum_{n<N_{\mathrm g}} (-\nu_{nr}) \ln p_n = \ln K_r(T)$, with $p_n$ in Pa. The sum runs over every gas
+of the reaction: gaseous reactants enter with positive exponents and gaseous products, which nucleation reactions
+may have, with negative ones, so $K_r$ is a product of reactant partial pressures only when the reaction has no gas
+product. Substituting and
 dividing by $\mathcal R T$:
 
 $$
@@ -137,7 +140,9 @@ constants `s0_R`, `Tref`[^rg-3024f877ff0c] and `Pref`[^rg-b6de325e7bca] (@sec-ch
 would remove the dependence; that is a code change, not made here.
 
 The four energy-type functions are exact closed forms. The condensate entropy is exact up to round-off for the
-condensates that have a nucleation reaction and a full-rank block; for the others it is the zero above. The
+condensates that have a nucleation reaction when the transposed condensate block (nucleation reactions by
+condensates) has full column rank, so that the system fixes every condensate entropy; for the others it is the zero
+above. The
 executable check is not written yet: it should assert $\sum_n \nu_{nr}(h_n - T s_n) = 0$ for every nucleation
 reaction at a saturated state, and record the cloud-to-copy invariance as an expected failure.
 
@@ -216,7 +221,7 @@ the specific entropy by $+36.2$ J kg$^{-1}$ K$^{-1}$, and $2 \times 10^{-4}$ fro
 and 0.5 bar by $+32.0$ J kg$^{-1}$ K$^{-1}$, while $C_p$ and $H$ change by at most a relative
 $1.5 \times 10^{-16}$; with `Tref` = 0 the sign reverses. These are the review's measurements, not rerun here.
 
-[^ch03-copy-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 3, quoted in the description of [UCzhangxi/kintera#PRNUM](https://github.com/UCzhangxi/kintera/pull/PRNUM).
+[^ch03-copy-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 3, quoted in the description of [UCzhangxi/kintera#23](https://github.com/UCzhangxi/kintera/pull/23).
 
 <!-- reader glossary notes -->
 [^rg-3024f877ff0c]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)

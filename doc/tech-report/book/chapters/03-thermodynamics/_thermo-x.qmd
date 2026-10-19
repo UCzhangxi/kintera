@@ -175,4 +175,4 @@ adjustment leaves unconverged gives `PXS->T` a composition off saturation, and `
 count (verified by reading `ThermoXImpl::forward`, {{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}}). The
 file written on non-convergence lands in the working directory of the caller.
 
-[^ch03-pxs-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), items 1 and 2, quoted in the description of [UCzhangxi/kintera#PRNUM](https://github.com/UCzhangxi/kintera/pull/PRNUM).
+[^ch03-pxs-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), items 1 and 2, quoted in the description of [UCzhangxi/kintera#23](https://github.com/UCzhangxi/kintera/pull/23).

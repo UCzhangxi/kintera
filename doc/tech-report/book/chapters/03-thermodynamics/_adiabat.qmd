@@ -30,7 +30,7 @@ condensation that keeps the parcel saturated. This follows the multi-condensable
 **Activation.** `extrapolate_dlnp(temp, pres, xfrac, dlnp, ...)`, `extrapolate_dz(temp, pres, xfrac, dz, grav,
 ...)`; `rainout` default off.
 
-**Guarantee / limits.** Reversible step: no step error in $\ln p$. Rain-out: first order in $\Delta \ln p$. In $z$:
+**Guarantee / limits.** Reversible: $\bar s$ held, no step error in $\ln p$. Rain-out: first order in $\Delta \ln p$. In $z$:
 trapezoidal hydrostatics.
 
 **Evidence.** See the Tests layer.
@@ -68,7 +68,14 @@ and a pseudo-inverse with absolute tolerance $10^{-6}$ on CUDA. Inactive reactio
 $\mathrm d\xi_r/\mathrm d T$. Without a gain matrix (no reactions) the function returns $\bar c_p$.
 
 **Entropy target.** The parcel's molar entropy is $\bar s = S / \sum_n c_n$, with $S$ of
-@eq-ch03-thermo-x-totals. A reversible step keeps $\bar s$; a user-supplied rate adds a prescribed change:
+@eq-ch03-thermo-x-totals, the entropy per mole of mixture, gas and condensate together. The reversible step keeps
+$\bar s$; a user-supplied rate adds a prescribed change. Holding $\bar s$ is holding the total entropy only when the
+total number of moles is unchanged by the condensation. That is true for a reaction with one mole of vapour per
+mole of condensate, such as H$_2$O to H$_2$O(l), but not for NH$_3$ + H$_2$S to NH$_4$SH(s), which turns two moles
+into one. For a closed parcel with conserved dry gas, the total entropy per mole of dry gas, $\bar s / x_0$, is the
+conserved quantity, so the reversible target would be $\bar s_0\, x_0^{\mathrm{new}} / x_0^{\mathrm{old}}$; the
+code applies that factor only in the rain-out branch below (verified by reading `extrapolate_dlnp` at the pin). The
+resulting error has not been measured. The targets are:
 
 $$
 \begin{aligned}
@@ -125,7 +132,8 @@ on the step size.
 
 What is exact and what is truncated: the reversible step of `extrapolate_dlnp` (no `rainout`) has no truncation error
 in $\Delta \ln p$; its end state satisfies $\bar s(T, p_1) = \bar s_{\mathrm{target}}$ to within 10 times `ftol`, in
-J mol$^{-1}$ K$^{-1}$, whatever the step. With `rainout` the step has the first-order error of the rectangle rule
+J mol$^{-1}$ K$^{-1}$, whatever the step; $\bar s$ is the parcel's total entropy only when the condensation leaves
+the number of moles unchanged (see the entropy target above). With `rainout` the step has the first-order error of the rectangle rule
 above. The content review of this chapter measured[^ch03-rainout-review] it against an independent fine-step
 integration, for a dry gas with water from saturation at 1 bar to 0.5 bar: the pseudo-adiabatic end temperature was
 off by $+6.27 \times 10^{-3}$, $+3.18 \times 10^{-3}$, $+1.63 \times 10^{-3}$, $+8.3 \times 10^{-4}$ and
@@ -187,4 +195,4 @@ ill-conditioned gain matrices is not measured. The entropy target uses the const
 @sec-ch03-species-functions, so with `use-nasa9-cp` the step conserves that entropy, not the NASA-9 one (verified by
 reading `eval_entropy_R`; the size of the effect is not measured).
 
-[^ch03-rainout-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 4, quoted in the description of [UCzhangxi/kintera#PRNUM](https://github.com/UCzhangxi/kintera/pull/PRNUM).
+[^ch03-rainout-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 4, quoted in the description of [UCzhangxi/kintera#23](https://github.com/UCzhangxi/kintera/pull/23).

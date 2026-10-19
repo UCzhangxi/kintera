@@ -60,7 +60,10 @@ $$
 $$
 
 with $T$ in K and $p$ in Pa. The code replaces `s0_R` of each gas by the bracket, using
-$\max(T_\star, 1)$ and $\max(p_\star, 1)$, and sets `s0_R` of each condensate to 0 (its entropy comes from
+$\max(T_\star, 1)$ and $\max(p_\star, 1)$ in place of $T_\star$ and $p_\star$ (verified by reading `reset` at the
+pin). So for $T_\star < 1$ K, `s0_R` is the entropy at 1 K, not at $T_\star$, and for $p_\star < 1$ Pa it is the
+entropy at 1 Pa; with `Tref` 0, the energy `u0_R` is still the value at $T_\star = 0$ while `s0_R` is the value at
+1 K. The code then sets `s0_R` of each condensate to 0 (its entropy comes from
 @eq-ch03-species-functions-scond). Both shifts are done once per options object: a flag `offset_zero` records that
 they are done, so a second module built from the same options does not shift again.
 

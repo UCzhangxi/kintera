@@ -16,7 +16,8 @@ reviewer:
 A kintera solver is written once as a per-cell function, and two thin drivers run it: one loops over cells on the
 CPU, the other launches a CUDA kernel. The choice between them is made at run time from the device of the input
 tensors, through torch's dispatch-stub mechanism. The user never selects a device by option. Moving the module and
-its inputs to a CUDA device selects the CUDA driver.
+its inputs to a CUDA device selects the CUDA driver; the call that does it, and which tensors must share the device
+and the precision, are given in the Numerical method below.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** Route one solver call to its CPU or CUDA driver by the inputs' device.
@@ -66,6 +67,83 @@ Each solver follows the same four steps:
 
 TODO: a figure of the call path (public function, tensor iterator, stub, CPU or CUDA driver, per-cell function).
 
+**Moving a module and its inputs.** A CUDA run needs a library built with `-DCUDA=ON` (@sec-ch12-build); a CPU-only
+build raises `DispatchStub: missing kernel for cuda` on CUDA inputs (Limits). The module's buffers, such as its
+stoichiometric matrix `stoich`, move with the module; the call arguments are moved by the caller:
+
+```python
+import torch, kintera
+kin = kintera.Kinetics(kintera.KineticsOptions.from_yaml("jupiter.yaml"))
+cuda = torch.device("cuda")
+kin.to(cuda)                  # moves every buffer in place; returns None
+kin.to(torch.float32)         # optional: buffers to single precision, in place
+temp, pres, conc = temp.to(cuda), pres.to(cuda), conc.to(cuda)   # same precision as the buffers
+rate, rc_ddc, rc_ddt = kin.forward(temp, pres, conc)
+```
+
+`.to` of a kintera module takes a `torch.device` or a `torch.dtype` and changes the module in place. It returns
+`None`, so `kin = kin.to(cuda)` loses the module, and a device given as a string (`kin.to("cuda")`) raises
+`TypeError: Expected dtype`. The same holds for `ThermoX`, `ThermoY` and `EquilibriumTP`.[^ch12-dispatch-move]
+
+**What each stub requires.** Inputs packed into the tensor iterator are checked by torch to share one device. Inputs
+read through a raw pointer outside the iterator are not: a module buffer left on the host is then read from the
+wrong memory. Every stub dispatches on `float32` and `float64` only; `float16` raises
+`not implemented for 'Half'`. A raw-pointer input of another precision than the iterator raises
+`expected scalar type`. The measured outcomes are in the last column:[^ch12-dispatch-move]
+
+| stub | public entry | in the iterator | read outside the iterator | measured mismatch |
+|---|---|---|---|---|
+| `call_evolve_implicit` | `evolve_implicit(rate, stoich, jacobian, dt)` | `rate`, `jacobian` | `stoich` (argument) | `stoich` on the host with CUDA rates: illegal memory access (Limits) |
+| `call_equilibrate_tp` | `ThermoX.forward(temp, pres, xfrac)` | `temp`, `pres`, `xfrac`, warm-start buffers | buffer `stoich` | module on the host, inputs on CUDA: illegal memory access; `float32` inputs with a `float64` module: `expected scalar type Float but found Double` |
+| `call_equilibrate_uv` | `ThermoY.forward(rho, intEng, yfrac)` | `rho`, `intEng`, concentrations, warm-start buffers | buffer `stoich`, energy offsets and heat capacities | module on the host, inputs on CUDA: torch's device error, raised before the stub |
+| `call_logsvp_inline` | saturation curves, inside the two above | temperature, result | curve tables | none: the tables are copied to the inputs' device first |
+| `call_equilibrium` | `EquilibriumTP.forward(temp, pres, moles, log_k)` | all four, checked to share device and precision | buffers `stoich`, `phase_ids` | none: both are converted to the inputs' device and precision; mixed input devices raise a clear error |
+| `call_func1` to `call_func3` | named saturation functions | arguments, result | function table | per-device tables (@sec-ch12-device-functions) |
+
+: Device and precision contract of each dispatch stub. {#tbl-ch12-dispatch-contract}
+
+`Kinetics.forward` itself runs torch operations on its buffers before any stub, so a module left on the host with
+CUDA inputs raises torch's `Expected all tensors to be on the same device`. The sparse CUDA solve is not a dispatch
+stub: it takes one system of `int32` indices and `float32` or `float64` values on one CUDA device, with no batching
+(@sec-ch10-sparse).
+
+**Batch dimensions.** In kintera's API, a batch dimension is a leading axis of a call's inputs over which the call
+repeats the same per-cell computation, each cell independent of the others. The species or reaction axis is the last axis, except
+where noted:
+
+| call | inputs | batch rule |
+|---|---|---|
+| `Kinetics.forward` | `temp` (…), `pres` (…), `conc` (…, species) | batch shapes must be equal; no broadcasting |
+| `ThermoX.forward` | `temp` (…), `pres` (…), `xfrac` (…, species) | equal batch shapes; `xfrac` is updated in place, the gain is (…, reactions, reactions) |
+| `ThermoY.forward` | `rho` (…), `intEng` (…), `yfrac` (species − 1, …) | species axis first |
+| `EquilibriumTP.forward` | `temp`, `pres`, `moles` (…, species), `log_k` (…, reactions) | batch shapes broadcast against each other |
+| `evolve_implicit` | `rate` (…, reactions), `jacobian` (…, reactions, species) | equal batch shapes |
+
+: Batch axes of the public calls. {#tbl-ch12-dispatch-batch}
+
+For example, `temp` of shape (3,) with `moles` of shape (2,) gives `EquilibriumTP` results of shape (3, 2), while
+`Kinetics.forward` with `temp` of shape (3,) and `conc` of shape (2, 3, species) raises a shape error. Three
+interfaces do not follow this rule: the photolysis cache has its own (batch, wavelength, reaction) layout
+(@sec-ch07-rate), the eddy-diffusion operator takes one column at a time (@sec-ch08-operator), and the sparse solve
+takes one system (@sec-ch10-sparse).[^ch12-dispatch-batch]
+
+**Timing the two drivers.** This report gives no speedup measurement; the CPU-CUDA comparisons of the Tests layer are
+of accuracy, not of time. A comparison of the two drivers is reproducible when it follows these steps, which the
+script `src/kintera_report/ch12/runs/time_dispatch.py` implements for the implicit kinetics step:
+
+1. Fix the workload, the number of cells, the precision and the CPU thread count, and use the same inputs on both
+   devices.
+2. Move the module and the inputs to the device before timing, so host-device transfers are not counted; time them
+   separately if they matter to the application.
+3. Run a few untimed calls first, to absorb library loading, kernel set-up and caches.
+4. On CUDA, synchronize before each sample and bracket it with CUDA events, because kernel launches return before the
+   work ends; on the CPU, use a wall clock.
+5. Repeat each measurement, at least 20 times, and report the median with its spread.
+6. Report the GPU and CPU models, the build, torch and CUDA versions, the thread count and the precision with the
+   numbers.
+
+A number from another workload, precision or cell count says nothing about this one.
+
 ### Code
 
 | what | code link | symbol | switch |
@@ -83,7 +161,7 @@ The same pattern carries the stubs `call_equilibrate_tp`, `call_equilibrate_uv` 
 ({{< code src/equilibrium/equilibrium_dispatch.cpp >}})
 and `call_func1` to `call_func3` ({{< code src/utils/utils_dispatch.cpp >}}).
 
-TODO: the full walk-through, one numbered step per stub, with the checks each public entry makes on its inputs.
+@tbl-ch12-dispatch-contract lists, per stub, the public entry and the checks its inputs get.
 
 ### Tests
 
@@ -147,10 +225,18 @@ each device, double precision, and prints the largest difference over the larges
   error.[^ch12-dispatch-stoich]
 :::
 
-TODO: list, per stub, which inputs stay outside the tensor iterator. The saturation-adjustment drivers also read
-`stoich` through a raw pointer (`call_equilibrate_tp_cuda`,
-{{< code src/thermo/thermo_dispatch.cu call_equilibrate_tp_cuda >}}); whether a mismatched device fails there in the
-same way is not measured.
+- The saturation-adjustment drivers also read `stoich` through a raw pointer (`call_equilibrate_tp_cuda`,
+  {{< code src/thermo/thermo_dispatch.cu call_equilibrate_tp_cuda >}}). A `ThermoX` left on the host with CUDA inputs
+  ends the process with the same illegal memory access (@tbl-ch12-dispatch-contract).
+
+[^ch12-dispatch-move]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and a
+two-species gas `A <=> B`; run: `python -P src/kintera_report/ch12/runs/device_probe.py <case>` with `KINTERA_REPO`
+set to a kintera checkout at the pin, one case per process, on a `-DCUDA=ON` Release build with one compute
+capability 6.1 GPU; CUDA 12.6.85, torch 2.10.0+cu126, Python 3.11.13.]
+
+[^ch12-dispatch-batch]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and a
+two-species gas `A <=> B`; run: `python -P src/kintera_report/ch12/runs/batch_probe.py` with `KINTERA_REPO` set to a
+kintera checkout at the pin, CPU, double; torch 2.10.0+cu126, Python 3.11.13.]
 
 [^ch12-dispatch-missing]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML input of
 `tests/test_coagulation_pressure_switch.py`; run: `python -P ei_case.py cuda ok` against a `-DCUDA=OFF` build, which

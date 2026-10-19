@@ -111,8 +111,10 @@ $$
 \ln p = \beta \left(1 - \frac{1}{t}\right) - \gamma \ln t + \ln p_3 .
 $$ {#eq-ch02-svp-ideal}
 
-This is `logsvp_ideal` ({{< code src/vapors/vapor_functions.h logsvp_ideal >}}), with $\ln p_3$ added in
-`eval_logsvp` ({{< code src/thermo/svp_eval.h eval_logsvp >}}).
+For the inline `ideal` form this is `logsvp_ideal` ({{< code src/vapors/vapor_functions.h logsvp_ideal >}}),
+with $\ln p_3$ added in `eval_logsvp` ({{< code src/thermo/svp_eval.h eval_logsvp >}}). A named fit such as
+`h2o_ideal` ({{< code src/vapors/vapor_functions.h h2o_ideal >}}) calls the same `logsvp_ideal` and adds
+$\ln p_3$ itself, and `eval_logsvp` only dispatches to it.
 
 Read backwards, @eq-ch02-svp-beta-gamma says what a fit's coefficients mean: $\beta \mathcal R T_3$ is the latent
 heat extrapolated to $T = 0$, $\gamma \mathcal R$ is the heat-capacity difference, and the latent heat the curve
@@ -137,8 +139,12 @@ $$ {#eq-ch02-svp-ideal-ddT}
 Multiplying by $\mathcal R T^2 = \mathcal R T_3^2 t^2$ gives $\mathcal R T_3 (\beta - \gamma t) =
 \mathcal R(\beta T_3 - \gamma T)$, which is @eq-ch02-svp-latent: the derivative returns to Clausius-Clapeyron,
 @eq-ch02-svp-cc, as it must. @eq-ch02-svp-ideal-ddT is what `logsvp_ideal_ddT`
-({{< code src/vapors/vapor_functions.h logsvp_ideal_ddT >}}) computes, before `eval_logsvp_ddT`
-({{< code src/thermo/svp_eval.h eval_logsvp_ddT >}}) divides it by $T_3$.[^ch02-svp-check]
+({{< code src/vapors/vapor_functions.h logsvp_ideal_ddT >}}) computes. For the inline form `eval_logsvp_ddT`
+({{< code src/thermo/svp_eval.h eval_logsvp_ddT >}}) divides it by $T_3$; a named fit such as `h2o_ideal_ddT`
+divides by $T_3$ inside its own function. That these hand-written derivatives equal the slope of the values is
+tested by `test_vapor_functions.release` (named fits against finite differences, $10^{-9}$ absolute) and by
+`tests/test_svp_autograd.py` (the backward pass against an analytic Antoine gradient, $10^{-12}$ relative, and a
+named-fit finite difference, $2 \times 10^{-8}$ relative); see the Tests layer.
 
 *Step 7: two branches.* A substance with a triple point has two curves through $(T_3, p_3)$: over the liquid above
 $T_3$ and over the solid below it. The inline `ideal` form carries a second pair $\beta_s$, $\gamma_s$ (`betas`,
@@ -180,8 +186,9 @@ Pointwise evaluation per cell and reaction. `make_svp_spec` packs each reaction'
 the device. The scalar function `eval_logsvp` is the one place both the CPU and CUDA kernels and the tensor
 path evaluate a constant, so an inline curve with the same constants as a named one gives bit-identical values.
 
-The scheme is a closed form, so there is no iteration, table or interpolation: per cell and reaction it costs one
-logarithm and one division for @eq-ch02-svp-ideal and two divisions for @eq-ch02-svp-ideal-ddT. The branch test is
+The scheme is a closed form, so there is no iteration, table or interpolation: per cell and reaction it costs two
+logarithms ($\ln t$ and $\ln p_3$) and a few divisions ($T/T_3$, $1/t$) for @eq-ch02-svp-ideal, and divisions only
+for @eq-ch02-svp-ideal-ddT. The branch test is
 `T > T3`, so the liquid pair is used strictly above $T_3$ and the solid pair at and below it; at $T = T_3$ exactly the
 value is $\ln p_3$ from either pair and the derivative returned is the solid-branch slope. The derivative is
 therefore discontinuous at $T_3$ by $[(\beta_s - \gamma_s) - (\beta - \gamma)]/T_3$ (step 7); how the saturation
@@ -239,29 +246,40 @@ that runs when a GPU is present.
 
 The derivation of the ideal form is checked by the derivation check `check_ch2_svp.py`, which reads kintera's
 $\ln K_r$ back through `relative_humidity` (every vapor at 1 Pa, so $\mathrm{RH}_r = 1/K_r$) for the three
-reactions of `tests/jupiter.yaml` (`h2o_ideal`, `nh3_ideal`, `nh3_h2s_lewis`) at nine temperatures from 150 to
-350 K, and passes all seven of its lines:[^ch02-svp-check]
+reactions of `tests/jupiter.yaml` (`h2o_ideal`, `nh3_ideal`, `nh3_h2s_lewis`), and passes all 15 of its
+lines.[^ch02-svp-check] What each group shows:
 
-- @eq-ch02-svp-ideal: kintera's value against an independent copy of the formula and constants, below $10^{-12}$
-  absolute for each reaction (round-off of a sum of terms of size $\sim\!30$ in double precision);
-- @eq-ch02-svp-ideal-ddT: the analytic derivative against a central difference with $h = 10^{-3}$ K, at most
-  $7.3 \times 10^{-11}$ relative, tolerance $10^{-7}$ (the truncation error is $O(h^2/T^2) \sim 10^{-11}$);
-- @eq-ch02-svp-cc with @eq-ch02-svp-latent (and so @eq-ch02-svp-kirchhoff and @eq-ch02-svp-beta-gamma, from which
-  @eq-ch02-svp-latent follows): $\mathcal R T^2\, \mathrm d \ln p / \mathrm d T = \mathcal R(\beta T_3 -
-  \gamma T)$ on both branches, including $T_3 \pm 10^{-6}$ K, and the constant $\mathcal R\, b \ln 10$ for
-  `nh3_h2s_lewis`, below $10^{-12}$ relative (round-off).
+- Lines 1-6, kintera at nine temperatures from 150 to 350 K: its $\ln K_r$ equals an independent copy of
+  @eq-ch02-svp-ideal (and of the Lewis fit) to below $10^{-12}$ absolute for each reaction (round-off of a sum of
+  terms of size $\sim\!30$ in double precision). A central difference of kintera's values with $h = 10^{-3}$ K equals
+  @eq-ch02-svp-ideal-ddT to at most $7.3 \times 10^{-11}$ relative, tolerance $10^{-7}$ (the truncation error is
+  $O(h^2/T^2) \sim 10^{-11}$). So kintera evaluates @eq-ch02-svp-ideal, and its slope is @eq-ch02-svp-ideal-ddT.
+  These lines test the values; they do not call the hand-written `_ddT` functions (that evidence is
+  `test_vapor_functions.release` and `tests/test_svp_autograd.py` in the table above).
+- Line 7 is the algebraic identity of step 6, $\mathcal R T^2\, \mathrm d \ln p / \mathrm d T =
+  \mathcal R(\beta T_3 - \gamma T)$, evaluated on the script's copy of the formula on both branches, and the constant
+  $\mathcal R\, b \ln 10$ for `nh3_h2s_lewis`, below $10^{-12}$ relative (round-off). It turns the slope of lines 1-6
+  into @eq-ch02-svp-latent. It does not test the physical assumptions behind @eq-ch02-svp-cc and
+  @eq-ch02-svp-kirchhoff, which no fit can test.
+- Lines 8-15, kintera across the branch switch (step 7). At $T_3 \mp 10^{-6}$ K kintera's $\ln K_r$ equals the solid,
+  respectively liquid, branch of the formula exactly (0 against $10^{-12}$), while the other branch's formula is
+  $9.5 \times 10^{-9}$ (`h2o_ideal`) or $2.4 \times 10^{-8}$ (`nh3_ideal`) away. A central difference ($h = 10^{-6}$ K)
+  of kintera's values at $T_3 \mp 3 \times 10^{-6}$ K equals that branch's slope to at most $3.9 \times 10^{-8}$
+  relative (tolerance $10^{-6}$, the round-off $\epsilon \lvert \ln K \rvert / h$ with margin), while the other branch's
+  slope is 12% to 33% away. This measures the branch test `T > T3` of the named fits and the kink in the slope.
+  The point $T = T_3$ itself, where both branches give $\ln p_3$, is not distinguishable by value.
 
 It also prints the extrapolated latent heats $\beta \mathcal R T_3$ of @eq-ch02-svp-beta-gamma: 56427.415 J mol$^{-1}$
 (water, liquid branch) and 52191.668 (ice), 32622.881 (ammonia, liquid) and 33532.683 (solid), and
 $\mathcal R \cdot 4705 \ln 10 = 90076.057$ J mol$^{-1}$ for `nh3_h2s_lewis`.[^ch02-svp-check] These are the
-numbers a condensate card of @sec-ch03-reference-state has to reproduce. The check covers the named two-branch fits
-through `eval_logsvp`; the inline `ideal` path is the same function with its constants read from YAML, and its
-agreement with the named twin is `test_inline_svp.py`.
+numbers a condensate card of @sec-ch03-reference-state has to reproduce. The check covers the named two-branch fits,
+which `eval_logsvp` dispatches to their own functions. The inline `ideal` path evaluates the same `logsvp_ideal` in
+`eval_logsvp` with its constants read from YAML; its agreement with the named twin is `test_inline_svp.py`.
 
 [^ch02-svp-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `python doc/tech-report/derivation-checks/check_ch2_svp.py` from a scratch directory, with `KINTERA_WT` set to
     the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
-    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch2_svp.out`, 7 PASS,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch2_svp.out`, 15 PASS,
     0 FAIL.]
 
 ### Limits

@@ -2,7 +2,7 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
 nucleation formulas: ['h2o_ideal', 'nh3_ideal', 'nh3_h2s_lewis']
 2 h2o_ideal: kintera ln p_sat vs Python copy, max abs over 150..350 K: measured 1.776e-15  tol 1e-12  PASS
 2 h2o_ideal: analytic d ln p_sat/dT vs central FD (h = 1e-3 K), max rel: measured 5.090e-11  tol 1e-07  PASS
-2 nh3_ideal: kintera ln p_sat vs Python copy, max abs over 150..350 K: measured 1.776e-15  tol 1e-12  PASS
+2 nh3_ideal: kintera ln p_sat vs Python copy, max abs over 150..350 K: measured 4.441e-16  tol 1e-12  PASS
 2 nh3_ideal: analytic d ln p_sat/dT vs central FD (h = 1e-3 K), max rel: measured 7.276e-11  tol 1e-07  PASS
 2 nh3_h2s_lewis: kintera ln p_sat vs Python copy, max abs over 150..350 K: measured 1.243e-14  tol 1e-12  PASS
 2 nh3_h2s_lewis: analytic d ln p_sat/dT vs central FD (h = 1e-3 K), max rel: measured 5.454e-11  tol 1e-07  PASS
@@ -13,4 +13,20 @@ T = 0 extrapolated latent heat beta*R*T3 (J/mol) and gamma:
    nh3_ideal solid  branch (T <= 195.4): beta*R*T3 = 33532.683  gamma = 1.43
    nh3_h2s_lewis (2 gases -> 1 solid): R*4705*ln10 = 90076.057 (T-independent)
 2 R T^2 dln p/dT = R (beta T3 - gamma T), worst rel over T and branches: measured 4.441e-16  tol 1e-12  PASS
-SUMMARY: 7 PASS, 0 FAIL
+   h2o_ideal at T3 - 1e-6 K: kintera ln K - solid-branch formula = 0.000e+00, distance to the other branch's formula = 9.522e-09
+2 h2o_ideal: kintera ln K at T3 - 1e-6 K on the solid branch, abs: measured 0.000e+00  tol 1e-12  PASS
+   h2o_ideal at T3 + 1e-6 K: kintera ln K - liquid-branch formula = 0.000e+00, distance to the other branch's formula = 9.522e-09
+2 h2o_ideal: kintera ln K at T3 + 1e-6 K on the liquid branch, abs: measured 0.000e+00  tol 1e-12  PASS
+   h2o_ideal slope at T3 - 3e-6 K: kintera FD 8.22228716e-02, solid formula 8.22228749e-02, other branch 7.27009500e-02 (rel distance 1.310e-01)
+2 h2o_ideal: kintera slope just below T3 vs solid-branch formula, rel: measured 3.948e-08  tol 1e-06  PASS
+   h2o_ideal slope at T3 + 3e-6 K: kintera FD 7.27009466e-02, liquid formula 7.27009464e-02, other branch 8.22228712e-02 (rel distance 1.158e-01)
+2 h2o_ideal: kintera slope just above T3 vs liquid-branch formula, rel: measured 3.181e-09  tol 1e-06  PASS
+   nh3_ideal at T3 - 1e-6 K: kintera ln K - solid-branch formula = 0.000e+00, distance to the other branch's formula = 2.431e-08
+2 nh3_ideal: kintera ln K at T3 - 1e-6 K on the solid branch, abs: measured 0.000e+00  tol 1e-12  PASS
+   nh3_ideal at T3 + 1e-6 K: kintera ln K - liquid-branch formula = 0.000e+00, distance to the other branch's formula = 2.431e-08
+2 nh3_ideal: kintera ln K at T3 + 1e-6 K on the liquid branch, abs: measured 0.000e+00  tol 1e-12  PASS
+   nh3_ideal slope at T3 - 3e-6 K: kintera FD 9.83111610e-02, solid formula 9.83111597e-02, other branch 7.40020498e-02 (rel distance 3.285e-01)
+2 nh3_ideal: kintera slope just below T3 vs solid-branch formula, rel: measured 1.278e-08  tol 1e-06  PASS
+   nh3_ideal slope at T3 + 3e-6 K: kintera FD 7.40020436e-02, liquid formula 7.40020444e-02, other branch 9.83111535e-02 (rel distance 2.473e-01)
+2 nh3_ideal: kintera slope just above T3 vs liquid-branch formula, rel: measured 1.034e-08  tol 1e-06  PASS
+SUMMARY: 15 PASS, 0 FAIL

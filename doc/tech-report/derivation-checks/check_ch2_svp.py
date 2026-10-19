@@ -1,4 +1,4 @@
-"""Ch.2 saturation vapour pressure: analytic d ln p_sat/dT vs FD, and the T = 0 latent heat.
+"""Ch.2 saturation vapour pressure: analytic d ln p_sat/dT vs FD, the T = 0 latent heat, and the branch switch at T3.
 
 No Python binding returns ln p_sat directly, so kintera's value is read back through
 relative_humidity at p_i = 1 Pa for every reactant (c_i = 1/(R T)): RH_j = exp(-ln K_j).
@@ -83,4 +83,35 @@ if __name__ == "__main__":
         worst = max(worst, abs(R * t * t * logsvp_ddT("nh3_h2s_lewis", t) / (R * LEWIS_B) - 1))
     report("2 R T^2 dln p/dT = R (beta T3 - gamma T), worst rel over T and branches", worst, 1e-12,
            worst < 1e-12)
+    # kintera itself across the branch switch: values at T3 -+ 1e-6 K, slopes by a central difference whose
+    # stencil (T3 -+ 2e-6 .. 4e-6 K) stays on one side of T3
+    for f in IDEAL:
+        j = forms.index(f)
+        T3, P3, bl, gl, bs, gs = IDEAL[f]
+        d = 1e-6
+        Tb = torch.tensor([T3 - d, T3 + d])
+        Lb = kintera_logsvp(op, th, Tb)[:, j]
+        for k, (Tq, side, own, other) in enumerate([(T3 - d, "solid", (bs, gs), (bl, gl)),
+                                                    (T3 + d, "liquid", (bl, gl), (bs, gs))]):
+            t = Tq / T3
+            f_own = (1.0 - 1.0 / t) * own[0] - own[1] * math.log(t) + math.log(P3)
+            f_oth = (1.0 - 1.0 / t) * other[0] - other[1] * math.log(t) + math.log(P3)
+            e = abs(Lb[k].item() - f_own)
+            print(f"   {f} at T3 {'-' if k == 0 else '+'} 1e-6 K: kintera ln K - {side}-branch formula = {e:.3e},"
+                  f" distance to the other branch's formula = {abs(Lb[k].item() - f_oth):.3e}")
+            report(f"2 {f}: kintera ln K at T3 {'-' if k == 0 else '+'} 1e-6 K on the {side} branch, abs", e, 1e-12,
+                   e < 1e-12 and abs(Lb[k].item() - f_oth) > 1e3 * 1e-12)
+        h = 1e-6
+        for k, (Tc, side, own, other) in enumerate([(T3 - 3e-6, "solid", (bs, gs), (bl, gl)),
+                                                    (T3 + 3e-6, "liquid", (bl, gl), (bs, gs))]):
+            Ls = kintera_logsvp(op, th, torch.tensor([Tc - h, Tc + h]))[:, j]
+            fd = (Ls[1] - Ls[0]).item() / (2 * h)
+            t = Tc / T3
+            s_own = (own[0] / t ** 2 - own[1] / t) / T3
+            s_oth = (other[0] / t ** 2 - other[1] / t) / T3
+            e = abs(fd / s_own - 1)
+            print(f"   {f} slope at T3 {'-' if k == 0 else '+'} 3e-6 K: kintera FD {fd:.8e}, {side} formula {s_own:.8e},"
+                  f" other branch {s_oth:.8e} (rel distance {abs(fd / s_oth - 1):.3e})")
+            report(f"2 {f}: kintera slope just {'below' if k == 0 else 'above'} T3 vs {side}-branch formula, rel",
+                   e, 1e-6, e < 1e-6 and abs(fd / s_oth - 1) > 1e3 * 1e-6)
     print("SUMMARY: " + ", ".join(f"{RES.count(k)} {k}" for k in ("PASS", "FAIL")))

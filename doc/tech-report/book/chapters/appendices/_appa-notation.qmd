@@ -25,10 +25,37 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | $p$ | pressure | [Pa] | {{< generated appa first-516b9783fca5 >}} |  |
 | $T$ | temperature | [K] | {{< generated appa first-c2c53d669482 >}} |  |
 | $\mathcal R$ | universal gas constant; a molar quantity | [J mol$^{-1}$ K$^{-1}$] | {{< generated appa first-e97b0da65299 >}} |  |
+| $c_n$ | molar concentration of species $n$ per unit volume of the whole mixture; gases $n < N_{\mathrm g}$ first, then condensates | [mol m$^{-3}$] | {{< generated appa first-b147b0351db5 >}} | `conc` |
+| $N_{\mathrm g}$ | number of gas species [count] |  | {{< generated appa first-6694b89d61c7 >}} | `vapor_ids().size()` |
+| $x_n$ | mole fraction of species $n$ among all species, gas and condensed; molar | [-] | {{< generated appa first-608bb9a4bf7e >}} | `xfrac` |
+| $x_{\mathrm g}$ | sum of the gas mole fractions; molar | [-] | {{< generated appa first-e7d1a832b1c0 >}} |  |
+| $y_n$ | mass fraction of species $n$; specific | [-] | {{< generated appa first-e2bcc2dd94a2 >}} | `yfrac` |
+| $\rho$ | total density of the mixture | [kg m$^{-3}$] | {{< generated appa first-c77a25750c58 >}} | `rho` |
+| $\rho_n$ | partial density of species $n$, mass per unit volume of the mixture | [kg m$^{-3}$] | {{< generated appa first-dfee02157e4a >}} | `ivol` |
+| $z_n$ | compressibility factor of gas $n$ (source notes: $Z$) | [-] | {{< generated appa first-c2aa0766dbc2 >}} | `czh` |
+| $U$ | internal energy per unit volume of the mixture | [J m$^{-3}$] | {{< generated appa first-b2c7c0caa10a >}} | `intEng` |
+| $H$ | enthalpy per unit volume of the mixture | [J m$^{-3}$] | {{< generated appa first-7cf184f4c67a >}} |  |
+| $C_V$ | heat capacity at constant volume per unit volume | [J m$^{-3}$ K$^{-1}$] | {{< generated appa first-fbc796cb70a9 >}} |  |
+| $C_p$ | heat capacity at constant pressure per unit volume | [J m$^{-3}$ K$^{-1}$] | {{< generated appa first-ae45432b4e79 >}} |  |
 
 : State, thermodynamics and species. {#tbl-appa-2}
 
 ## 2a. Species thermodynamics, phase change and reactions {#sec-appa-2a .unnumbered}
+
+| symbol | meaning | units/shape | first used | code |
+|--------------|--------------------------------------------|--------------|--------------|--------------|
+| $c_{v,n}$ | molar heat capacity at constant volume of species $n$ | [J mol$^{-1}$ K$^{-1}$] | {{< generated appa first-e4e7cc14f317 >}} | `eval_cv_R` |
+| $u_n$ | molar internal energy of species $n$ | [J mol$^{-1}$] | {{< generated appa first-7ed80017069c >}} | `eval_intEng_R` |
+| $h_n$ | molar enthalpy of species $n$ | [J mol$^{-1}$] | {{< generated appa first-1105ea89a308 >}} | `eval_enthalpy_R` |
+| $s_n$ | molar entropy of species $n$ | [J mol$^{-1}$ K$^{-1}$] | {{< generated appa first-38b1f4c4fc09 >}} | `eval_entropy_R` |
+| $c^{\star}_n$ | constant heat-capacity coefficient of species $n$, $c_{v,n}/\mathcal R$ without extra terms | [-] | {{< generated appa first-0233e875a62d >}} | `cref_R` (YAML `cv_R`) |
+| $u^{\star}_n$ | internal energy of species $n$ at $T_\star$, divided by $\mathcal R$ | [K] | {{< generated appa first-6a5f3ce640f7 >}} | `uref_R` (YAML `u0_R`) |
+| $s^{\star}_n$ | entropy of gas $n$ at $T_\star$ and $p_\star$, divided by $\mathcal R$ | [-] | {{< generated appa first-15b4343b3313 >}} | `sref_R` (YAML `s0_R`) |
+| $K_r$ | saturation constant of condensation reaction $r$: the product of reactant partial pressures, each to its stoichiometric magnitude, on the saturation curve | [Pa$^{m}$, $m$ the sum of the gas magnitudes] | {{< generated appa first-fe5d8cb48530 >}} | `logsvp` (its logarithm) |
+| $L_r$ | latent heat of reaction $r$ at constant volume, internal energy released per unit extent | [J mol$^{-1}$] | {{< generated appa first-44500c09e735 >}} |  |
+| $\mathrm{RH}_r$ | relative humidity of reaction $r$, reactant partial-pressure product over $K_r$ | [-] | {{< generated appa first-3b8ee286f6f7 >}} | `relative_humidity` |
+
+: Species thermodynamics, phase change and reactions. {#tbl-appa-2a}
 
 ## 3. Fluxes and transport {#sec-appa-3 .unnumbered}
 
@@ -37,6 +64,13 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 ## 5. Gravity and potential energy {#sec-appa-5 .unnumbered}
 
 ## 6. Reference states {#sec-appa-6 .unnumbered}
+
+| symbol | meaning | units/shape | first used | code |
+|--------------|--------------------------------------------|--------------|--------------|--------------|
+| $T_\star$ | thermodynamic reference temperature | [K] | {{< generated appa first-be6a803c01b1 >}} | `Tref` |
+| $p_\star$ | thermodynamic reference pressure | [Pa] | {{< generated appa first-ac579ab2b6aa >}} | `Pref` |
+
+: Reference states. {#tbl-appa-6}
 
 ## 7. Time integration and the implicit solver {#sec-appa-7 .unnumbered}
 

@@ -41,8 +41,8 @@ heat capacity per mole of mixture [J mol$^{-1}$ K$^{-1}$]; $\bar c_p^{\mathrm{ef
 mole of mixture [J mol$^{-1}$ K$^{-1}$]; $\xi_r$, extent of reaction $r$ per mole of mixture [-]; $\mathsf G$, the
 gain matrix of the saturation adjustment at fixed $T$ and $p$ (@sec-ch04) [-]; $\Delta h_r = \sum_n \nu_{nr} h_n$
 [J mol$^{-1}$]; $\bar\mu$, mean molar mass of the mixture [kg mol$^{-1}$]; $g$, gravitational acceleration,
-positive [m s$^{-2}$]; $\Delta z$, height change, positive upward [m]. $\nu_{nr}$, $K_r$, $h_n$ and $c_{p,n}$ are
-those of @sec-ch03-species-functions.
+positive [m s$^{-2}$]; $\Delta z$, height change, positive upward [m]; $\nu_{nr}$ and $c_{p,n}$ as in
+@sec-ch03-species-functions. Symbols of the notation table (@sec-appa): $K_r$, $h_n$, $x_n$, $c_n$, $x_{\mathrm g}$, $N_{\mathrm g}$.
 
 ### Derivation
 

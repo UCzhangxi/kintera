@@ -32,8 +32,9 @@ $10^5$ Pa.
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $L_r$, latent heat of reaction $r$ at constant volume [J mol$^{-1}$]. $T_\star$, $p_\star$,
-$c^{\star}_n$, $u^{\star}_n$, $s^{\star}_n$ and $\nu_{nr}$ are those of @sec-ch03-species-functions.
+Symbols of the notation table (@sec-appa): $L_r$, latent heat of reaction $r$ at constant volume [J mol$^{-1}$]; $T_\star$,
+$p_\star$, $c^{\star}_n$, $u^{\star}_n$, $s^{\star}_n$ as in @sec-ch03-species-functions. Local symbols: $\nu_{nr}$ as
+in @sec-ch03-species-functions.
 
 Species defaults when a key is omitted: `cv_R` is $5/2$, `u0_R` is 0 and `s0_R` is 0, for gases and condensates
 alike (read by `init_species_from_yaml`). The block also carries the switches `use-nasa9-cp`, `use-h2-cp` and

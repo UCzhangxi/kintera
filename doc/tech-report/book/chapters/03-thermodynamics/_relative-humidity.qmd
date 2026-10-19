@@ -31,9 +31,9 @@ sulfide) has one well-defined value. It is a diagnostic: nothing else in the lib
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $\mathrm{RH}_r$, relative humidity of reaction $r$ [-]; $a_{nr}$, the exponent of species $n$ in
-reaction $r$ [-]. $\nu_{nr}$ and $K_r$ are those of @sec-ch03-species-functions; $c_n$ and $N_{\mathrm g}$ those of
-@sec-ch03-eos.
+Symbols of the notation table (@sec-appa): $\mathrm{RH}_r$, relative humidity of reaction $r$ [-]; $K_r$, $c_n$, $N_{\mathrm g}$ as
+in @sec-ch03-species-functions and @sec-ch03-eos. Local symbols: $a_{nr}$, the exponent of species $n$ in reaction
+$r$ [-]; $\nu_{nr}$ as in @sec-ch03-species-functions.
 
 ### Derivation
 

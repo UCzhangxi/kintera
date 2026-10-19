@@ -32,13 +32,12 @@ and $u$ for the species they cover.
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $c^{\star}_n$, constant heat-capacity coefficient of species $n$, the YAML key `cv_R` [-];
-$u^{\star}_n$, internal energy of species $n$ at the reference temperature $T_\star$ over $\mathcal R$, the YAML key
-`u0_R` [K]; $s^{\star}_n$, entropy of gas $n$ at $T_\star$ and $p_\star$ over $\mathcal R$, the YAML key `s0_R`
-[-]; $c_{v,n}$, $c_{p,n}$ [J mol$^{-1}$ K$^{-1}$], $u_n$, $h_n$ [J mol$^{-1}$], $s_n$ [J mol$^{-1}$ K$^{-1}$],
-the molar functions; $\nu_{nr}$, stoichiometric coefficient of species $n$ in reaction $r$, negative for a
-reactant [-]; $K_r$, saturation constant of reaction $r$ in Pa units; $T_\star$, $p_\star$, reference temperature
-[K] and pressure [Pa] of @sec-ch03-reference-state. $c_n$, $z_n$ and $N_{\mathrm g}$ are those of @sec-ch03-eos.
+Symbols of the notation table (@sec-appa): $c^{\star}_n$, $u^{\star}_n$, $s^{\star}_n$, the YAML keys `cv_R` [-], `u0_R` [K] and
+`s0_R` [-]; $c_{v,n}$ [J mol$^{-1}$ K$^{-1}$], $u_n$, $h_n$ [J mol$^{-1}$], $s_n$ [J mol$^{-1}$ K$^{-1}$], the molar
+functions; $K_r$, saturation constant of reaction $r$ in Pa units; $T_\star$ [K], $p_\star$ [Pa], the reference state
+of @sec-ch03-reference-state; $c_n$, $z_n$, $N_{\mathrm g}$ as in @sec-ch03-eos. Local symbols: $c_{p,n}$, molar heat
+capacity at constant pressure [J mol$^{-1}$ K$^{-1}$]; $\nu_{nr}$, stoichiometric coefficient of species $n$ in
+reaction $r$, negative for a reactant [-].
 
 ### Derivation
 

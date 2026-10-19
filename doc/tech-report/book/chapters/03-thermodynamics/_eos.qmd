@@ -31,11 +31,10 @@ this one relation.
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $n$, species index, gases $n < N_{\mathrm g}$ first, then condensates; $N_{\mathrm g}$, number of
-gas species (count); $c_n$, molar concentration of species $n$ per unit volume of the whole mixture
-[mol m$^{-3}$]; $x_n$, mole fraction of species $n$ among all species, gas and condensed [-]; $x_{\mathrm g}$,
-sum of the gas mole fractions [-]; $z_n$, compressibility factor of gas $n$ [-]. Species $n = 0$ is the first gas,
-which the code treats as the reference ("dry") species.
+Symbols of the notation table (@sec-appa): $c_n$, molar concentration [mol m$^{-3}$]; $x_n$, mole fraction among all species [-];
+$x_{\mathrm g}$, sum of the gas mole fractions [-]; $z_n$, compressibility factor [-]; $N_{\mathrm g}$, number of gas
+species. Local symbols: $n$, species index, gases $n < N_{\mathrm g}$ first, then condensates. Species $n = 0$ is the
+first gas, which the code treats as the reference ("dry") species.
 
 ### Derivation
 

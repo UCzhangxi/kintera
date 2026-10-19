@@ -28,7 +28,7 @@ every reaction has exactly one vapour and one condensate and no species appears 
 
 **Activation.** YAML `dynamics: equation-of-state: uv-solver:` `auto` (default), `kkt` or `partition`.
 
-**Guarantee / limits.** `partition` is refused for sets that do not qualify and can fail near `Tref`.
+**Guarantee / limits.** `partition` is refused for sets that do not qualify and can fail near `Tref`[^rg-9ae8cd00fe8f].
 
 **Evidence.** See the Tests layer below.
 :::
@@ -164,3 +164,7 @@ measurement outside the suite, not a committed check.]
 gas, one vapour and its condensate, `Tref` 0, with and without `use-h2-cp: true`; run: `python -P uv_h2cp.py nh3_160
 on` and the other five cases, which call `ThermoY.forward`, `VU->T` and `relative_humidity`, CPU, double; Python
 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed check.]
+
+<!-- reader glossary notes -->
+[^rg-9ae8cd00fe8f]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
+<!-- end reader glossary notes -->

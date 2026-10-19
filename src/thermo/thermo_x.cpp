@@ -217,24 +217,19 @@ torch::Tensor ThermoXImpl::forward(torch::Tensor temp, torch::Tensor pres,
   vec[xfrac.dim() - 1] = reactions.size() * reactions.size();
   auto gain = torch::zeros(vec, xfrac.options());
 
-  // A warm start is valid only for the shape and device that produced it.
-  auto active_shape = temp.sizes().vec();
-  active_shape.push_back(static_cast<int64_t>(reactions.size()));
-  bool reuse = warm_start && reaction_set.defined() && nactive.defined() &&
-               reaction_set.device() == temp.device() &&
-               nactive.device() == temp.device() &&
-               nactive.sizes().equals(temp.sizes()) &&
-               reaction_set.sizes().equals(active_shape);
-  if (!reuse) {
-    auto vec2 = temp.sizes().vec();
-    vec2.push_back(reactions.size());
-    reaction_set = torch::arange(0, (int)reactions.size(),
-                                 temp.options().dtype(torch::kInt));
-    for (int i = 0; i < temp.dim(); ++i)
-      reaction_set = reaction_set.unsqueeze(0);
-    reaction_set = reaction_set.expand(vec2).contiguous();
-    nactive = torch::zeros_like(temp, temp.options().dtype(torch::kInt));
-  }
+  // Each call starts from the full reaction set. equilibrate_tp re-tests every
+  // reaction against the current composition in each outer iteration and
+  // never reads the incoming nactive, so a kept active set could not save
+  // iterations; it only reordered the reactions. warm_start has no effect.
+  (void)warm_start;
+  auto vec2 = temp.sizes().vec();
+  vec2.push_back(reactions.size());
+  reaction_set = torch::arange(0, (int)reactions.size(),
+                               temp.options().dtype(torch::kInt));
+  for (int i = 0; i < temp.dim(); ++i)
+    reaction_set = reaction_set.unsqueeze(0);
+  reaction_set = reaction_set.expand(vec2).contiguous();
+  nactive = torch::zeros_like(temp, temp.options().dtype(torch::kInt));
 
   // diagnostic array
   vec[xfrac.dim() - 1] = 1;

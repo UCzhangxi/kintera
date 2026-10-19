@@ -1,0 +1,87 @@
+## The sparse linear solve on CUDA (`cuda_csr_solve_cusolver`) {#sec-ch10-sparse}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/sparse_solver.hpp, src/math/sparse_solver.cu, python/csrc/pysparsesolver.cpp, tests/test_atm2d.py
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+The implicit step of the two-dimensional atmosphere solver couples every species in every cell, which gives one
+large sparse linear system per step. On a CUDA device kintera hands that system, stored in compressed sparse row
+(CSR[^rg-ae97af8e8ad8]) form, to the QR solver of the cuSOLVER library. This section describes the call contract; how the call fits
+the GPU execution model is in @sec-ch12-sparse-solver.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Solve $\mathsf M x = r$ for a CSR matrix on one CUDA device.
+
+**Data.** `crow_indices`, `col_indices` (int32), `values`, `rhs` (float32 or float64), all on one device.
+
+**Placement.** The implicit step of the 2-D solver (@sec-ch09).
+
+**Activation.** CUDA builds only; Python `tol` 0, `reorder` 0 by default.
+
+**Guarantee / limits.** Errors out on a detected singularity; no batching.
+
+**Evidence.** `test_atm2d.py`, CUDA only; see the Tests layer.
+:::
+
+Local symbols: $\mathsf M$, the $n \times n$ sparse matrix; $r$, the right-hand side; $x$, the solution. The
+`tol` is the tolerance argument of the library's QR solve, and `reorder` its ordering switch; kintera hands both
+through unchanged.
+
+### Derivation
+
+No derivation: the factorization is the library's sparse QR, called through `cusolverSpDcsrlsvqr` or
+`cusolverSpScsrlsvqr` in `cuda_csr_solve_cusolver` ({{< code src/math/sparse_solver.cu cuda_csr_solve_cusolver >}}).
+kintera adds the argument checks and the context handling.
+
+### Numerical method
+
+1. The call checks device, dimension and dtype of all four tensors, the CSR length $n + 1$, the equal lengths of
+   column indices and values, and the stored nonzero count.
+2. It guards the device, uses the current CUDA stream, and takes a solver handle and matrix descriptor from a cache
+   that is kept per thread and per device (`get_cached_solver_context`).
+3. The QR solve runs with the given `tol` and `reorder`. A singularity reported by the library raises an error naming
+   the row.
+
+The figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| solve | {{< code src/math/sparse_solver.cu cuda_csr_solve_cusolver >}} | `cuda_csr_solve_cusolver` | `tol`, `reorder` |
+| declaration and C symbol | {{< code src/math/sparse_solver.hpp >}} | `kintera_cuda_csr_solve_cusolver` | CUDA build |
+| Python binding | {{< code python/csrc/pysparsesolver.cpp bind_sparse_solver >}} | `bind_sparse_solver` | always |
+
+: Code map of the CUDA sparse solve. {#tbl-ch10-sparse-code}
+
+The Python binding finds the C symbol `kintera_cuda_csr_solve_cusolver` with `dlsym` at the first call. If the
+library was built without CUDA, the call raises an error saying so; the Python module itself still imports.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_atm2d.py` | `test_cuda_cusolver_binding_matches_dense_solution`: a 4 by 4 system equals `torch.linalg.solve` | rtol and atol $10^{-12}$ | `assert_close` arguments |
+| `test_atm2d.py` | a CUDA steady 1-D advection-diffusion case matches its analytic solution | not read | missing evidence |
+
+: Tests of the CUDA sparse solve. {#tbl-ch10-sparse-tests}
+
+The cases are in {{< code tests/test_atm2d.py >}}, skipped when the library has no CUDA sparse-solver support. No run
+record is attached in this draft (missing evidence).
+
+### Limits
+
+- One system per call; batched or multi-device solves are not supported.
+- Only int32 indices are accepted, which bounds the number of nonzeros to $2^{31} - 1$.
+- The checks read the last CSR offset with `.item()`, which copies one value from the device.
+- `tol` is passed as a float for float32 systems; its meaning is the library's and is not restated here.
+
+<!-- reader glossary notes -->
+[^rg-ae97af8e8ad8]: CSR — compressed sparse row; the sparse-matrix layout passed to `cuda_csr_solve_cusolver`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92)
+<!-- end reader glossary notes -->

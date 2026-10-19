@@ -159,6 +159,21 @@ sections:
     - photolysis reaction rate: [PhotoChem]
   sec-ch07-kinetics-base:
     - KINETICS-base reader, photolysis
+  # Chapter 10. Numerical solvers
+  sec-ch10-dense:
+    - dense linear solve: [Gaussian elimination, partial pivoting, dsolve_lu]
+  sec-ch10-lu:
+    - LU decomposition: [back substitution, matrix inverse, ludcmp]
+  sec-ch10-kkt:
+    - constrained least squares: [KKT system, active set, leastsq_kkt]
+  sec-ch10-newton:
+    - bounded Newton step: [constrained Newton, line search]
+  sec-ch10-pseudo-inverse:
+    - pseudo-inverse solve: [minimum-norm solution, Jacobi eigenvalues, psolve]
+  sec-ch10-interpolation:
+    - table interpolation: [multilinear interpolation, interpn]
+  sec-ch10-sparse:
+    - sparse linear solve: [cuSOLVER, CSR matrix]
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd

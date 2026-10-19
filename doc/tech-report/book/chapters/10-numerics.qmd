@@ -1,3 +1,55 @@
 # Numerical solvers {#sec-ch10}
 
-pending
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/core.h, src/math/swap.h, src/math/ludcmp.h, src/math/lubksb.h, src/math/luminv.h,
+  src/math/leastsq.h, src/math/leastsq_kkt.h, src/math/constrained_newton.h, src/math/psolve.h,
+  src/math/interpolation.hpp, src/math/interpolation.cpp, src/math/sparse_solver.hpp, src/math/sparse_solver.cu,
+  python/csrc/pysparsesolver.cpp
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+The schemes of the other chapters reduce, at their core, to a few numerical tasks. They solve a small dense
+linear system, solve a least-squares problem under linear constraints, take a Newton step that must respect bounds,
+interpolate a table, or solve a large sparse system. This chapter describes the kernels in `src/math` that do these
+tasks. The dense kernels are written for one small system per thread, on raw row-major arrays, so the same template
+runs in a CPU loop and inside a CUDA kernel (@sec-ch12). The interpolation and sparse kernels work on whole `torch`
+tensors.
+
+The dependency map of the schemes (a figure) is not drawn yet. In words: the least-squares solvers and the Newton step
+are built on the LU kernels; the pseudo-inverse solve is the fallback of the pivoted Gaussian solve in the implicit
+kinetics step of @sec-ch06; interpolation and the sparse solver stand alone.
+
+| scheme | entry point | default | main test |
+|---|---|---|---|
+| @sec-ch10-dense | `dsolve_lu` | always | `test_thermo` (indirect) |
+| @sec-ch10-lu | `ludcmp`, `lubksb` | always | `test_thermo` (indirect) |
+| @sec-ch10-kkt | `leastsq_kkt` | `reg`[^rg-95aa86ee8f56] 0 | `test_thermo`, `test_alloc_space` |
+| @sec-ch10-newton | `constrained_newton_step` | `reg` 0 | `test_thermo` |
+| @sec-ch10-pseudo-inverse | `psolve` | always | missing evidence |
+| @sec-ch10-interpolation | `interpn` | no extrapolation | missing evidence |
+| @sec-ch10-sparse | `cuda_csr_solve_cusolver` | `tol`[^rg-a8da237dabba] 0, `reorder` 0 | `test_atm2d.py` |
+
+: Schemes of this chapter. {#tbl-ch10-schemes}
+
+{{< include 10-numerics/_dense.qmd >}}
+
+{{< include 10-numerics/_lu.qmd >}}
+
+{{< include 10-numerics/_kkt.qmd >}}
+
+{{< include 10-numerics/_newton.qmd >}}
+
+{{< include 10-numerics/_pseudo-inverse.qmd >}}
+
+{{< include 10-numerics/_interpolation.qmd >}}
+
+{{< include 10-numerics/_sparse.qmd >}}
+
+<!-- reader glossary notes -->
+[^rg-95aa86ee8f56]: reg — diagonal perturbation of the KKT multiplier block in scaled units; default 0, argument of `leastsq_kkt`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L520-L525)
+
+[^rg-a8da237dabba]: tol — tolerance argument handed unchanged to the cuSOLVER QR solve; Python default 0, argument of `cuda_csr_solve_cusolver`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92)
+<!-- end reader glossary notes -->

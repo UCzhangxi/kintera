@@ -161,6 +161,41 @@
       "meaning": "distances between neighbouring level centres on the N-1 inner faces, argument of `diffusion_coefficients`",
       "section": "sec-ch08-operator",
       "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/diffusion/diffusion.cpp#L12-L20"
+    },
+    {
+      "kind": "acronym",
+      "term": "KKT",
+      "meaning": "Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`",
+      "section": "sec-ch10-kkt",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134"
+    },
+    {
+      "kind": "acronym",
+      "term": "CSR",
+      "meaning": "compressed sparse row; the sparse-matrix layout passed to `cuda_csr_solve_cusolver`",
+      "section": "sec-ch10-sparse",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92"
+    },
+    {
+      "kind": "key",
+      "term": "reg",
+      "meaning": "diagonal perturbation of the KKT multiplier block in scaled units; default 0, argument of `leastsq_kkt`",
+      "section": "sec-ch10-kkt",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L520-L525"
+    },
+    {
+      "kind": "key",
+      "term": "extrapolate",
+      "meaning": "flag of the table interpolation; when `extrapolate` is false, queries outside a grid take the end values",
+      "section": "sec-ch10-interpolation",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/interpolation.cpp#L51-L55"
+    },
+    {
+      "kind": "key",
+      "term": "tol",
+      "meaning": "tolerance argument handed unchanged to the cuSOLVER QR solve; Python default 0, argument of `cuda_csr_solve_cusolver`",
+      "section": "sec-ch10-sparse",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92"
     }
   ]
 }

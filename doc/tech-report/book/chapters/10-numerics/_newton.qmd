@@ -1,0 +1,95 @@
+## The bounded Newton step (`constrained_newton_step`) {#sec-ch10-newton}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/math/constrained_newton.h, src/equilibrium/phase_equilibrate_tp.h, tests/test_thermo.cpp
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+A Newton iteration on mole amounts must not drive an amount negative. kintera first solves the square Newton system
+directly, which keeps full precision. It keeps that direction unless the direction leaves a bound that is already
+active, and only then falls back to the constrained least squares of @sec-ch10-kkt. A second function forms the
+trial state along the step and rejects it if a bound or a step-size limit is broken, so that the caller can shorten
+the step.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** A Newton direction that respects active bounds, @eq-ch10-newton-usable.
+
+**Data.** Square $\mathsf J$ ($n \times n$), right-hand side, constraint rows $\mathsf C$ and bounds $d$.
+
+**Placement.** The phase-equilibrium Newton loop (@sec-ch05).
+
+**Activation.** Always; `reg` defaults to 0.
+
+**Guarantee / limits.** Direct solve when usable; otherwise status of `leastsq_kkt`.
+
+**Evidence.** `test_thermo`; see the Tests layer.
+:::
+
+Local symbols: $\mathsf J$, the Newton matrix; $g$, its right-hand side; $p$, the direction; $c_i$, row $i$ of the
+constraint matrix; $d_i$, its bound; $s$, the step scale; $z$, the state; $\theta$, the floor; $r$, `max_ratio`.
+
+### Derivation
+
+The direct direction is $p = \mathsf J^{-1} g$, from `dsolve_lu` of @sec-ch10-dense. It is kept when it is finite and,
+for every constraint $i$ with $d_i \le 0$,
+
+$$
+c_i\, p \le 0 ,
+$$ {#eq-ch10-newton-usable}
+
+that is, unless it points out of a bound with no slack left. A bound with slack ($d_i > 0$) does not reject the
+direction, because a positive step scale can still keep it. @eq-ch10-newton-usable is tested in
+`constrained_newton_step` ({{< code src/math/constrained_newton.h constrained_newton_step >}}). Otherwise the step
+solves $\min \lVert \mathsf J p - g \rVert$ with $\mathsf C p \le d$ by `leastsq_kkt` with no equality rows.
+
+The trial state uses the same sign convention as the constraints:
+
+$$
+z_i^{\mathrm{trial}} = z_i - s \sum_j c_{ij}\, p_j .
+$$ {#eq-ch10-newton-trial}
+
+@eq-ch10-newton-trial is computed in `constrained_newton_trial`
+({{< code src/math/constrained_newton.h constrained_newton_trial >}}).
+
+### Numerical method
+
+1. `constrained_newton_step` copies $\mathsf J$ and $g$, calls `dsolve_lu`, and checks finiteness and
+   @eq-ch10-newton-usable. If the direction is usable, it is returned with `max_iter` set to 1.
+2. Otherwise `leastsq_kkt` runs on the original arrays with $n_1 = n_2 = n$ and `neq` 0.
+3. `constrained_newton_trial` rejects the trial if any entry is non-finite or negative. It also rejects it if one of
+   the first `npositive` entries is not above the floor. When $r > 0$, it rejects a change by more than a factor $r$
+   in either direction of the first `nlimited` positive entries.
+
+The step scale and its reduction belong to the caller. The figure is not provided: the figure module is not written
+yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| direction | {{< code src/math/constrained_newton.h constrained_newton_step >}} | `constrained_newton_step` | `reg` |
+| trial state | {{< code src/math/constrained_newton.h constrained_newton_trial >}} | `constrained_newton_trial` | `floor`, `max_ratio` |
+| caller | {{< code src/equilibrium/phase_equilibrate_tp.h >}} | `phase_equilibrate_tp` | always |
+
+: Code map of the bounded Newton step. {#tbl-ch10-newton-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_thermo` | `LeastSquaresKkt.DirectlySolvesIllConditionedSquareSystem`: direct path, one iteration | absolute $10^{-6}$ | the test |
+| `test_thermo` | `LeastSquaresKkt.LineSearchCanScaleNewtonDirectionToBound`: unit trial rejected, half step accepted | exact | the test |
+
+: Tests of the bounded Newton step. {#tbl-ch10-newton-tests}
+
+The cases are in {{< code tests/test_thermo.cpp >}}. No run record is attached in this draft (missing evidence).
+
+### Limits
+
+- A direction may leave a bound with slack; only the caller's step reduction keeps the state feasible.
+- The fallback ignores the direct solution and starts the active-set solve from scratch.

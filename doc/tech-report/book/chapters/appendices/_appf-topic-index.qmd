@@ -4,6 +4,8 @@
 
 **`A`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
+**actinic flux**: Actinic flux on the photolysis grid, @sec-ch07-actinic-flux.
+
 *ADD_ARG*, see **options objects, C++**.
 
 *Antoine equation*, see **saturation vapor pressure**.
@@ -19,6 +21,8 @@
 **`b`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
 *backward Euler*, see **implicit time step**.
+
+*branches*, see **photolysis cross section**.
 
 ## C {.unnumbered .unlisted}
 
@@ -148,6 +152,8 @@
 
 ## J {.unnumbered .unlisted}
 
+*J value*, see **photolysis rate constant**.
+
 **Jacobian, reaction space**: Reaction-space Jacobian, @sec-ch06-jacobian.
 
 ## K {.unnumbered .unlisted}
@@ -157,6 +163,10 @@
 **KINETICS-base comparison**: Validation of the KINETICS-base reader, @sec-ch13-kinetics-base.
 
 **KINETICS-base reader**: Reading KINETICS-base reaction networks, @sec-ch06-kinetics-base.
+
+**KINETICS-base reader, photolysis**: Photolysis networks from KINETICS-base input, @sec-ch07-kinetics-base.
+
+*KINETICS7*, see **photolysis cross section**.
 
 *KineticsOptions*, see **options objects, C++**.
 
@@ -216,6 +226,14 @@
 
 *phase*, see **species registry**.
 
+*PhotoChem*, see **photolysis reaction rate**.
+
+**photolysis cross section**: Photolysis cross sections and their branches, @sec-ch07-cross-sections.
+
+**photolysis rate constant**: Photolysis rate constants, @sec-ch07-rate.
+
+**photolysis reaction rate**: Photolysis reaction rates and their Jacobian, @sec-ch07-photochem.
+
 *physical constants*, see **units**.
 
 **`Pref`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
@@ -231,6 +249,10 @@
 *Python API*, see **Python bindings**.
 
 **Python bindings**: The Python bindings, @sec-ch11-python-api.
+
+## Q {.unnumbered .unlisted}
+
+*quadrature_weights*, see **photolysis rate constant**.
 
 ## R {.unnumbered .unlisted}
 

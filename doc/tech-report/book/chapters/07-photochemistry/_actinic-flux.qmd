@@ -1,0 +1,76 @@
+## Actinic flux on the photolysis grid (`ActinicFluxOptions`) {#sec-ch07-actinic-flux}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/photochem/actinic_flux.hpp, tests/test_actinic_flux.cpp, tests/test_photolysis.py
+status: draft
+author: XinyueWang05
+reviewer: requested
+-->
+
+### Summary
+
+The photolysis rate needs the actinic flux on the module's wavelength grid. kintera does not compute it: the caller
+passes it in. Four helpers build one: interpolation of a tabulated flux, construction from options, a uniform
+flux and a solar-like Gaussian for tests.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $F(\lambda)$ on the photolysis grid, @eq-ch07-actinic-flux-solar for the test spectrum.
+
+**Data.** Wavelength [nm]; flux [$\mathrm{photons\,cm^{-2}\,s^{-1}\,nm^{-1}}$].
+
+**Placement.** Caller side, before `Photolysis.forward`.
+
+**Activation.** API only: `create_actinic_flux`, `interpolate_actinic_flux`, `create_uniform_flux`, `create_solar_flux`.
+
+**Guarantee / limits.** Linear interpolation, held constant outside the source grid.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $F$, actinic flux [$\mathrm{photons\,cm^{-2}\,s^{-1}\,nm^{-1}}$]; $F_{\mathrm{peak}}$, its peak value.
+
+### Derivation
+
+The solar-like test spectrum is a Gaussian centred at 500 nm with a width of 200 nm,
+
+$$
+F(\lambda) = F_{\mathrm{peak}} \exp\!\left[-\left(\frac{\lambda - 500\ \mathrm{nm}}{200\ \mathrm{nm}}\right)^{2}\right] ,
+$$ {#eq-ch07-actinic-flux-solar}
+
+computed in `create_solar_flux` ({{< code src/photochem/actinic_flux.hpp create_solar_flux >}}), with
+$F_{\mathrm{peak}} = 10^{14}$ by default. It is a test spectrum, not a solar model.
+
+### Numerical method
+
+`interpolate_actinic_flux` ({{< code src/photochem/actinic_flux.hpp interpolate_actinic_flux >}}) calls `interpn`
+along wavelength. `create_actinic_flux` ({{< code src/photochem/actinic_flux.hpp create_actinic_flux >}}) returns
+ones when `default_flux` is empty, the values as given when they already match the target grid, and an
+interpolation from the option's `wavelength` otherwise. The options `wave_min` and `wave_max` are stored but not
+read by these helpers (from reading the header).
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/photochem/actinic_flux.hpp ActinicFluxOptionsImpl >}} | `ActinicFluxOptionsImpl` | API |
+| from options | {{< code src/photochem/actinic_flux.hpp create_actinic_flux >}} | `create_actinic_flux` | API |
+| interpolation | {{< code src/photochem/actinic_flux.hpp interpolate_actinic_flux >}} | `interpolate_actinic_flux` | API |
+| test spectra | {{< code src/photochem/actinic_flux.hpp create_uniform_flux >}} | `create_uniform_flux` | API |
+
+: Code map of the actinic-flux helpers. {#tbl-ch07-actinic-flux-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_actinic_flux` | uniform flux has mean $10^{14}$ | $10^{-6}$ abs. | the test |
+| `test_actinic_flux` | the solar spectrum peaks near 500 nm | 20 nm | the test |
+| `test_actinic_flux` | options on the target grid and the unit default | $10^{-6}$ abs. | the test |
+| `test_photolysis.py` | Python helpers build and interpolate flux | missing evidence | not yet read |
+
+: Tests of the actinic-flux helpers. {#tbl-ch07-actinic-flux-tests}
+
+### Limits
+
+No radiative transfer, no optical depth and no solar zenith angle: all of that is the caller's.

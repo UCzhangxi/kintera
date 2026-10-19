@@ -1,3 +1,46 @@
 # Photochemistry {#sec-ch07}
 
-pending
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/photochem/photolysis.hpp, src/photochem/photolysis.cpp, src/photochem/photochem.hpp,
+  src/photochem/photochem.cpp, src/photochem/actinic_flux.hpp, src/photochem/jacobian_photolysis.cpp,
+  src/photochem/load_xsection_kin7.cpp, src/photochem/load_xsection_yaml.cpp, src/math/interpolation.cpp,
+  python/csrc/pyphotolysis.cpp, data/chapman_cycle.yaml, data/ch4_photolysis.yaml
+status: draft
+author: XinyueWang05
+reviewer: chemistry and content reviews requested
+-->
+
+This chapter describes how kintera computes photolysis rates. A photolysis reaction is listed in the `reactions`[^rg-8146dd1c4e5b]
+block with `type: photolysis`. Its cross sections are read per branch, from inline YAML or from a KINETICS7 file,
+on a wavelength grid and optionally on several temperatures. The rate constant of each reaction is the
+dissociative cross section times the actinic flux, integrated over wavelength. The `PhotoChem` module multiplies
+the rate constants by the reactant concentrations and returns the reaction rates and their Jacobian, in the same
+reaction-space form as the thermal kinetics of @sec-ch06. The actinic flux itself is an input: kintera supplies
+helpers to build or interpolate one, but no radiative transfer.
+
+The dependency map of the schemes is not provided: the figure module is not written yet.
+
+| scheme | YAML key or option | default | main test |
+|---|---|---|---|
+| @sec-ch07-cross-sections | `cross-section`, `branches` | YAML format | `test_photolysis_options` |
+| @sec-ch07-actinic-flux | `ActinicFluxOptions` (API) | unit flux | `test_actinic_flux` |
+| @sec-ch07-rate | `type: photolysis` | trapezoidal rule | `test_photolysis_options` |
+| @sec-ch07-photochem | `PhotoChem` (API) | always | `test_photolysis_kinetics` |
+| @sec-ch07-kinetics-base | `from_kinetics_base` (API) | caller | `test_kinetics_base` |
+
+: Schemes of the photochemistry chapter. {#tbl-ch07-schemes}
+
+{{< include 07-photochemistry/_cross-sections.qmd >}}
+
+{{< include 07-photochemistry/_actinic-flux.qmd >}}
+
+{{< include 07-photochemistry/_rate.qmd >}}
+
+{{< include 07-photochemistry/_photochem.qmd >}}
+
+{{< include 07-photochemistry/_kinetics-base.qmd >}}
+
+<!-- reader glossary notes -->
+[^rg-8146dd1c4e5b]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+<!-- end reader glossary notes -->

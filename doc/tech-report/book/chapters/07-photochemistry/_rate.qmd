@@ -1,0 +1,113 @@
+## Photolysis rate constants (`type: photolysis`) {#sec-ch07-rate}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/photochem/photolysis.hpp, src/photochem/photolysis.cpp, python/csrc/pyphotolysis.cpp
+status: draft
+author: XinyueWang05
+reviewer: requested
+-->
+
+### Summary
+
+The photolysis rate constant of a reaction is the number of dissociations per molecule per second. It is the
+cross section of the dissociation channels times the actinic flux, integrated over wavelength. kintera evaluates the
+integral with the trapezoidal rule on the cross-section grid, or as a weighted sum when quadrature weights are given
+(for a flux already integrated over each bin). The absorption branch does not count towards the rate.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $J = \int \sigma_d(\lambda, T)\, F(\lambda)\, \mathrm d\lambda$, @eq-ch07-rate-integral.
+
+**Data.** $T$ [K], $F$ on the grid; returns $J$ [$\mathrm{s^{-1}}$] per reaction.
+
+**Placement.** `update_xs_diss_stacked(T)` when $T$ changes, then `forward(T, F)`.
+
+**Activation.** `type: photolysis`; the option `quadrature_weights` (API, no YAML key) selects a weighted sum; default trapezoidal.
+
+**Guarantee / limits.** Second-order trapezoidal rule in $\lambda$; no unit conversion inside.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $J$, photolysis rate constant [$\mathrm{s^{-1}}$]; $\sigma_d$, dissociative cross section
+[$\mathrm{cm^2\,molecule^{-1}}$]; $w_i$, quadrature weight of grid point $i$ [-]; $\lambda_i$, grid wavelengths [nm].
+
+### Derivation
+
+The dissociative cross section is the sum of the dissociation branches,
+
+$$
+\sigma_d(\lambda, T) = \sum_{b \ge 1} \sigma_b(\lambda, T) ,
+$$ {#eq-ch07-rate-dissociative}
+
+or the single branch when a reaction has only one. @eq-ch07-rate-dissociative is computed in
+`update_xs_diss_stacked` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::update_xs_diss_stacked >}}). The
+rate constant is
+
+$$
+J = \int \sigma_d(\lambda, T)\, F(\lambda)\, \mathrm d\lambda
+\approx \sum_{i} \frac{\lambda_{i+1} - \lambda_i}{2}
+\left[\sigma_d(\lambda_i) F(\lambda_i) + \sigma_d(\lambda_{i+1}) F(\lambda_{i+1})\right] ,
+$$ {#eq-ch07-rate-integral}
+
+computed in `forward` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::forward >}}). With weights the sum is
+
+$$
+J = \sum_i w_i\, \sigma_d(\lambda_i)\, F(\lambda_i) ,
+$$ {#eq-ch07-rate-weighted}
+
+also computed in `forward` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::forward >}}). The units close only
+if $\sigma$ is in $\mathrm{cm^2\,molecule^{-1}}$, $F$ in $\mathrm{photons\,cm^{-2}\,s^{-1}\,nm^{-1}}$ and $\lambda$ in
+nm; the code converts none of them. With unit weights, @eq-ch07-rate-weighted is the per-bin sum of a flux already
+integrated over each bin.
+
+### Numerical method
+
+`update_xs_diss_stacked` interpolates every reaction to the current temperature and caches $\sigma_d$ as one
+(batch, wavelength, reaction) tensor. `forward` refuses to run on an empty or mismatched cache, multiplies by the
+flux (moving a leading wavelength dimension of the flux to the back) and integrates over the wavelength dimension.
+The trapezoidal rule is second order in the grid spacing for a smooth integrand; the grid is the cross-section grid,
+so its accuracy depends on how well that grid resolves $\sigma F$ (not measured).
+
+Verified by a run against kintera 2.6.5 built from the pin[^ch07-rate-src]: for a reaction with dissociation
+branch $\sigma_1 = (1, 2, 4) \times 10^{-18}$ on $\lambda = (100, 150, 200)$ nm and a uniform $F = 10^{14}$, `forward`
+returns $J = 0.0225\ \mathrm{s^{-1}}$, the trapezoidal value of the dissociation branch alone; unit weights return
+$7.0 \times 10^{-4}\ \mathrm{s^{-1}} = \sum_i \sigma_1 F$.
+
+The figure of the integrand is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| options | {{< code src/photochem/photolysis.hpp PhotolysisOptionsImpl >}} | `quadrature_weights` | `quadrature_weights` |
+| cache | {{< code src/photochem/photolysis.cpp PhotolysisImpl::update_xs_diss_stacked >}} | `update_xs_diss_stacked` | always |
+| rate constant | {{< code src/photochem/photolysis.cpp PhotolysisImpl::forward >}} | `forward` | always |
+| Python binding | {{< code python/csrc/pyphotolysis.cpp bind_photolysis >}} | `bind_photolysis` | always |
+
+: Code map of the photolysis rate constants. {#tbl-ch07-rate-code}
+
+Refused: `forward` before `update_xs_diss_stacked`; a flux whose first dimension is not the grid size; a cache built
+for another grid or reaction count; weights whose size differs from the grid.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_photolysis_options` | forward with simple and multi-dimensional flux | shape and sign | the test |
+| `test_ch4_photolysis` | rates are positive and change with the flux | sign | the test |
+| `test_chapman_cycle` | photolysis rates lie in a range | missing evidence | not yet read |
+
+: Tests of the photolysis rate constants. {#tbl-ch07-rate-tests}
+
+No registered test compares $J$ with a closed form or checks the weighted sum; the run above is the only
+quantitative check here.
+
+### Limits
+
+An absorption-only reaction (one branch) gets $J$ from its absorption branch; its products equal its reactants, so
+the net tendency is zero, but the rate is not (from reading `update_xs_diss_stacked`).
+
+[^ch07-rate-src]: [source: `PhotoChemOptions.from_yaml` on a deck with `O2 => O + O` (rows `[100, 5e-18, 1e-18]`,
+    `[150, 6e-18, 2e-18]`, `[200, 7e-18, 4e-18]`), `create_uniform_flux(wavelength, 1e14)`, $T = 250$ K, CPU,
+    float64; kintera 2.6.5 built from the pin, torch 2.10.0, Python 3.12.10.]

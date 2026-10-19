@@ -148,6 +148,17 @@ sections:
     - saturation vapor pressure, derivative: [autograd, LogSVPFunc]
   sec-ch02-units:
     - units: [unit conversion, physical constants]
+  # Chapter 7. Photochemistry
+  sec-ch07-cross-sections:
+    - photolysis cross section: [KINETICS7, branches]
+  sec-ch07-actinic-flux:
+    - actinic flux
+  sec-ch07-rate:
+    - photolysis rate constant: [J value, quadrature_weights]
+  sec-ch07-photochem:
+    - photolysis reaction rate: [PhotoChem]
+  sec-ch07-kinetics-base:
+    - KINETICS-base reader, photolysis
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd

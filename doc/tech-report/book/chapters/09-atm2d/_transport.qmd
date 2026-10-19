@@ -58,7 +58,13 @@ a boundary row (below) or a boundary source (@sec-ch09-sources) is added (verifi
 $-F/\Delta x_{1,i+1}$ to cell $i+1$, so $\sum_i \Delta x_{1,i}\, \mathrm d c_i / \mathrm d t$ telescopes to the
 boundary fluxes and the interior conserves the column content exactly. The horizontal term is the same along $x_2$.
 
-**Mixing-ratio form.** Diffusing the mixing ratio $c / n$ instead of $c$ gives the face flux
+**Mixing-ratio form.** The reason for this form is one line of physics. An eddy carries a parcel up or down without
+changing its composition, so what turbulence mixes down-gradient is the mixing ratio $c/n$, not the concentration. The
+flux of molecules is therefore $-K_{zz}\, n\, \partial_{x_1}(c/n)$ (mixing-length closure), and
+$\partial c/\partial t = \partial_{x_1}\!\left(K_{zz}\, n\, \partial_{x_1}(c/n)\right)$. A species with uniform
+$c/n$ then has no flux even where $n$ falls with height, while $-K_{zz} \partial_{x_1} c$ would push it downward.
+Diffusing the mixing ratio $c / n$ instead of $c$, with the same cell integral and centred face gradient, gives the
+face flux
 
 $$
 F_{i+1/2} = s_n K_{zz,i+1/2}\, n_{i+1/2}\, \frac{c_{i+1}/n_{i+1} - c_i/n_i}{\delta x_{1,i+1/2}} ,
@@ -120,6 +126,18 @@ weights; a boundary kind other than `none`, `dirichlet` or `neumann`.
 | run `[R1]` | the derivative a Neumann row imposes on each side | exact | linear solve of a linear profile |
 
 : Tests of the transport operator. {#tbl-ch09-transport-tests}
+
+The derivation check `check_ch9_atm2d.py`, lines `a1` and `a2`, tests @eq-ch09-transport-mr on a random non-uniform
+30-layer grid with random $n$ and $K_{zz}$.[^ch09-transport-check] With a uniform mixing ratio, the largest tendency is
+below $10^{-13}$ of $\max K_{zz} c/\delta x_1^2$ (round-off; PASS). For a random $c$, the column sum
+$\sum_i \Delta x_{1,i}\, \mathrm d c_i/\mathrm d t$ is below $10^{-13}$ of $\sum_i \lvert \Delta x_{1,i}\, \mathrm d
+c_i/\mathrm d t \rvert$ (the telescoping sum; PASS).
+
+[^ch09-transport-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: built in the script (seed
+    9); run: `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with
+    `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
+    numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, lines `a1`, `a2`, PASS.]
 
 The tolerances are read from `tests/test_atm2d.py` at the pin. `test_steady_1d_advection_diffusion_dirichlet_matches_analytic_solution`
 builds its advection-diffusion operator by hand and uses atm2d only for the boundary rows and the solve, so it is not

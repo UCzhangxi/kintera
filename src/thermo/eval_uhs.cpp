@@ -426,8 +426,7 @@ torch::Tensor eval_entropy_R(torch::Tensor temp, torch::Tensor pres,
   // std::cout << "logsvp = " << logsvp << std::endl;
 
   // (2) Evaluate enthalpies (..., R)
-  auto species_enthalpy_R = eval_enthalpy_R(temp, conc, op);
-  auto enthalpy_R = species_enthalpy_R.matmul(stoich);
+  auto enthalpy_R = eval_enthalpy_R(temp, conc, op).matmul(stoich);
   // std::cout << "enthalpy_R = " << enthalpy_R << std::endl;
 
   // (3) Evaluate equilibrium vapor entropies (..., V)
@@ -455,20 +454,16 @@ torch::Tensor eval_entropy_R(torch::Tensor temp, torch::Tensor pres,
   entropy_R.narrow(-1, ngas, ncloud) =
       sp_inv.view(vec2).matmul(b.unsqueeze(-1)).squeeze(-1);
 
-  // (7) A condensate copy in no nucleation reaction has the chemical
-  // potential of its source: s_copy = s_src + (h_copy - h_src) / T
+  // (7) A condensate copy in no nucleation reaction, with the thermodynamic
+  // data of its source, has the entropy of its source
   auto column = [&](int id) {
     auto const& clouds = op->cloud_ids();
     return ngas + static_cast<int>(std::find(clouds.begin(), clouds.end(), id) -
                                    clouds.begin());
   };
   for (size_t k = 0; k < op->copy_ids().size(); ++k) {
-    int dst = column(op->copy_ids()[k]);
-    int src = column(op->copy_src_ids()[k]);
-    entropy_R.select(-1, dst) =
-        entropy_R.select(-1, src) + (species_enthalpy_R.select(-1, dst) -
-                                     species_enthalpy_R.select(-1, src)) /
-                                        temp;
+    entropy_R.select(-1, column(op->copy_ids()[k])) =
+        entropy_R.select(-1, column(op->copy_src_ids()[k]));
   }
 
   // std::cout << "entropy_R = " << entropy_R << std::endl;

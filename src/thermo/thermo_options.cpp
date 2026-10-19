@@ -258,8 +258,9 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
     thermo->mu().push_back(species_weights[id]);
   }
 
-  // condensate copies: a copy is in no nucleation reaction and its source is
-  // a nucleating condensate or a copy registered before it
+  // condensate copies: a copy is in no nucleation reaction, has the same
+  // thermodynamic data as its source, and its source is a nucleating
+  // condensate or a copy registered before it
   std::set<std::string> resolved;
   if (thermo->nucleation() != nullptr) {
     for (auto const& rxn : thermo->nucleation()->reactions()) {
@@ -279,8 +280,18 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
             std::find(species_names.begin(), species_names.end(), name) -
             species_names.begin());
       };
-      thermo->copy_ids().push_back(id(dst));
-      thermo->copy_src_ids().push_back(id(src));
+      int i = id(src), j = id(dst);
+      if (species_cref_R[i] != species_cref_R[j] ||
+          species_uref_R[i] != species_uref_R[j] ||
+          species_sref_R[i] != species_sref_R[j] ||
+          species_nasa9_low[i] != species_nasa9_low[j] ||
+          species_nasa9_high[i] != species_nasa9_high[j] ||
+          species_nasa9_Tmid[i] != species_nasa9_Tmid[j] ||
+          species_weights[i] != species_weights[j]) {
+        continue;
+      }
+      thermo->copy_ids().push_back(j);
+      thermo->copy_src_ids().push_back(i);
       resolved.insert(dst);
       added = true;
     }

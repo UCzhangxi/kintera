@@ -51,6 +51,7 @@ No numerical method and no figure: this scheme is an interface.
 
 : Code map of the options objects. {#tbl-ch11-options-code}
 
+The `ADD_ARG` is a preprocessor macro that declares one option field together with its setter and getter.
 `ADD_ARG(T, name)` ({{< code src/add_arg.h >}}) expands to a private member `name_` and four public functions:
 `name(const T&)` and `name(T&&)` set the member and return `*this`, so calls chain; `name() const` and `name()`
 return a reference to it. Under the CUDA compiler the getters are marked host and device. A default is given by
@@ -105,6 +106,36 @@ The kinetics module `KineticsImpl` ({{< code src/kinetics/kinetics.hpp KineticsI
 The free function `evolve_implicit(rate, stoich, jacobian, dt)`
 ({{< code src/kinetics/evolve_implicit.hpp evolve_implicit >}}) returns the concentration change of shape
 `(..., nspecies)` from one backward-Euler step; the system it solves is @sec-ch10's subject.
+
+#### How to add an option
+
+A new option travels from the C++ options struct through the YAML reader to Python. The steps below follow one
+existing option, the solver choice `uv_solver` of the thermodynamics options, whose YAML key is
+`dynamics/equation-of-state/uv-solver`.
+
+1. Declare the field with its default in the options struct:
+   `ADD_ARG(std::string, uv_solver) = "auto";` in `ThermoOptionsImpl`
+   ({{< code src/thermo/thermo.hpp ThermoOptionsImpl >}}). If the struct's `report` prints its fields, add the new
+   one there; `ThermoOptionsImpl` prints `uv_solver`.
+2. Read it in `from_yaml` with the same default, and refuse values the code cannot handle.
+   `ThermoOptionsImpl::from_yaml`
+   ({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}})
+   reads `uv-solver` with default `auto` and refuses anything but `auto`, `kkt` or `partition` with a
+   `TORCH_CHECK` ("Invalid UV solver"). The YAML key is hyphenated; the field name uses an underscore.
+3. Bind the getter and setter for Python with one `ADD_OPTION` line in the binding function, here
+   `.ADD_OPTION(std::string, kintera::ThermoOptionsImpl, uv_solver)` in `bind_thermo`
+   ({{< code python/csrc/pythermo.cpp bind_thermo >}}); the macro is in {{< code python/csrc/pyoptions.hpp >}}.
+4. Add the two overloads to the type stub, a getter returning the value and a setter returning the options
+   object, as `kintera.pyi` does for `uv_solver` ({{< code python/kintera.pyi >}}). The stub is kept by hand.
+5. Test three inputs: a card that sets the key, a card without it (the default), and a card with a refused value.
+   At the pin, `uv-solver: kkt` and `uv-solver: partition` are set from cards in
+   {{< code tests/test_equilibrate_uv_gain.py >}} and {{< code tests/test_reaction_equilibrium.py >}}, and the
+   values are set from C++ in {{< code tests/test_thermo.cpp >}}. No test at the pin checks the default or the
+   refusal (searched for `uv-solver`, `uv_solver` and "Invalid UV solver" in `tests`); those two are the cases a
+   new option should add.
+
+Options are plain values on the host: they carry no device or dtype. The module copies what it needs into its
+buffers when it is built (see Limits).
 
 ### Tests
 

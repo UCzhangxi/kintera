@@ -72,6 +72,10 @@ returned amounts and writes:
 `max-iter` for status 2. `diagnostics[..., 2]` is $\varepsilon$ at the returned amounts, 0 for status 1. The gain is the
 Jacobian @eq-ch05-newton-jacobian of the last iteration that built one, evaluated before that iteration's step. It is
 all zeros when no iteration built one, that is, for status 1 and for a cell already at equilibrium.
+`check_ch5_equilibrium.py` line b evaluates @eq-ch05-newton-jacobian at the converged state of the vapour-liquid
+case of @sec-ch05-conditions and matches central differences of the residual to $2.1\times10^{-10}$ (tolerance
+$10^{-8}$). The returned gain, 26.28837, differs from that converged-state value, 26.28831, in the seventh significant digit. That
+difference is the one-step lag.[^ch05-diagnostics-check]
 
 **A phase that should vanish.** If the equilibrium has no amount of some phase, the iteration drives that phase
 towards `mole-floor` and the cell ends with status 4. The mechanism is a hypothesis we have not instrumented: near the
@@ -122,6 +126,10 @@ agree to $1.4\times10^{-8}$, within the tolerance.[^ch05-cuda-run]
 No test produces status 1, 2, 3 or 4, checks the iteration count, or checks the gain beyond its shape. The runs above
 show each status except 3. A suite test would build the water card of @fig-ch05-diagnostics-water and assert status 1,
 2 and 4 for the three inputs listed.
+
+[^ch05-diagnostics-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase, 300 K, $10^5$ Pa; run:
+`python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
+the pin: line b PASS; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
 
 [^ch05-water-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`, the cases of `water_condensation.json`; run: `python -P

@@ -82,6 +82,29 @@ check `newton_check.py` confirms the element balance of a step (`[C2]`), and tha
 $\ln K^\circ_r = \ln(p^\circ/p_{\mathrm{sat}})$ the condition is Raoult's law, liquid mole fraction times
 $p_{\mathrm{sat}}$ equals gas mole fraction times $p$ (`[C4]`).
 
+**A pure condensed phase.** A phase that holds one species has $\mathcal N_\pi = \mathcal N_n$, so
+@eq-ch05-conditions-activity gives $a_n = 1$ whatever its amount. Its amount then drops out of every residual, and
+the condition of a reaction between gases and that condensate involves only the gas activities. This is the
+saturation condition of @sec-ch04-conditions. For example, take $\mathrm{H_2O} \rightleftharpoons
+\mathrm{H_2O(l)}$, written towards the liquid as in the check below, with $\ln K^\circ = \ln(p^\circ/p_{\mathrm{sat}})$
+and a gas of N$_2$ and water vapour. The residual is
+
+$$
+r = \ln 1 - \ln\Big(\frac{\mathcal N_{\mathrm v}}{\mathcal N_{\mathrm v} + \mathcal N_{\mathrm{N_2}}}\,\frac{p}{p^\circ}\Big)
+  - \ln\frac{p^\circ}{p_{\mathrm{sat}}}
+  = -\ln\frac{\mathcal N_{\mathrm v}\, p}{(\mathcal N_{\mathrm v} + \mathcal N_{\mathrm{N_2}})\, p_{\mathrm{sat}}} ,
+$$
+
+and $r = 0$ gives $\mathcal N_{\mathrm v}/(\mathcal N_{\mathrm v} + \mathcal N_{\mathrm{N_2}}) = p_{\mathrm{sat}}/p$,
+that is $\mathcal N_{\mathrm v} = \mathcal N_{\mathrm{N_2}}\,p_{\mathrm{sat}}/(p - p_{\mathrm{sat}})$. Unlike
+@sec-ch04-conditions, this solver has no complementarity branch: every amount must stay above `mole-floor`, so a phase
+that should vanish cannot (@sec-ch05-diagnostics). `check_ch5_equilibrium.py` line a solves this case at 300 K and
+$10^5$ Pa, with $p_{\mathrm{sat}}$ from the formula of `h2o_ideal`. The vapour amount matches the closed form to
+$2.3\times10^{-12}$ (relative, tolerance $10^{-10}$) after 4 iterations, with status 0, a reported error of
+$2.2\times10^{-12}$, and the water total unchanged to the last bit. Line c checks the element balance of
+@eq-ch05-conditions-extent on a gas reaction: H and O change by at most $2.2\times10^{-16}$ (relative, tolerance
+$10^{-14}$).[^ch05-conditions-check]
+
 ### Numerical method
 
 `equilibrium_max_error` ({{< code src/equilibrium/phase_equilibrate_tp.h equilibrium_max_error >}}) evaluates the
@@ -140,6 +163,10 @@ The four cases of `tests/test_equilibrium.py` pass on a CPU build and on a CUDA 
 both. `IdealGasReaction` passes for CPU float and double on both builds and for CUDA float and double on the CUDA
 build.[^ch05-tests-run] No test compares a multiphase result with an independent solution; the flash above does, and
 it is a measurement outside the suite.
+
+[^ch05-conditions-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase, $\ln K^\circ = \ln(p^\circ/p_{\mathrm{sat}})$, 300 K, $10^5$ Pa, start amounts 1, 0.05, 0.05 mol (line a); 2 H$_2$ + O$_2$ $\rightleftharpoons$ 2 H$_2$O with `Nasa9LogK` at 3500 K (line c); run:
+`python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
+the pin: lines a and c PASS; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
 
 [^ch05-flash-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `BINARY` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`, the cells of `flash_binary.json`; run: `python -P

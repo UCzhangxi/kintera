@@ -12,5 +12,6 @@
 | @sec-ch05-diagnostics | @eq-ch05-diagnostics-error | The code stops on the largest residual magnitude and reports it transformed into a relative mismatch: | code: {{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}; check: `newton_check.py`, `[C5]` | re-derived |
 | @sec-ch05-options | none | No derivation: this scheme maps an input to the matrices $\mathsf S$ and $\mathsf E$ and the phase map $\pi(n)$ of @sec-ch05-conditions. | code: ; check: none | n/a |
 | @sec-ch05-log-k | @eq-ch05-log-k-gibbs | The Gibbs energy and the constant follow: | code: {{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}; check: none | re-derived |
+| @sec-ch05-log-k | @eq-ch05-log-k-vant-hoff | Gibbs–Helmholtz on the NASA-9 forms gives the van 't Hoff equation $\mathrm d\ln K^\circ_r/\mathrm dT = \Delta_r h^\circ/(\mathcal R T^2)$; checked by `derivation-checks/check_ch5_equilibrium.py`, line c. | code: {{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}; check: none | re-derived |
 
 : Derivations of @sec-ch05. {#tbl-appb-ch05}

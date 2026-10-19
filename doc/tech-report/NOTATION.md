@@ -51,6 +51,9 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | $K_r$ | saturation constant of condensation reaction $r$: the product of reactant partial pressures, each to its stoichiometric magnitude, on the saturation curve [Pa$^{m}$, $m$ the sum of the gas magnitudes] | `logsvp` (its logarithm) |
 | $L_r$ | latent heat of reaction $r$ at constant volume, internal energy released per unit extent [J mol$^{-1}$] | |
 | $\mathrm{RH}_r$ | relative humidity of reaction $r$, reactant partial-pressure product over $K_r$ [-] | `relative_humidity` |
+| $\nu_{nr}$ | stoichiometric coefficient of species $n$ in reaction $r$, negative for a reactant, positive for a product [-] | `stoich` |
+| $\xi_r$ | extent of reaction $r$ in one step of a saturation solve, in the units of the amounts it moves [-] or [mol m$^{-3}$] | `rhs` (after the least-squares solve) |
+| $\Delta_r$ | saturation deficit of reaction $r$, $\ln K_r(T) + \sum_{n<N_{\mathrm g}} \nu_{nr} \ln p_n$, positive when subsaturated [-] | `logsvp - log_frac_sum` |
 
 ## 3. Fluxes and transport
 

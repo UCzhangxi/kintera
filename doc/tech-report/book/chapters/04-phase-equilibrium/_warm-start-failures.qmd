@@ -57,11 +57,12 @@ solve, stores a count of zero.
 | solver | value | meaning |
 |---|---|---|
 | both | $n \ge 1$ | success after $n$ outer passes; a cell already at equilibrium gives 1 |
+| fixed energy, partition | $n \ge 1$ | success after $n$ Newton passes of the temperature search, the start included; capped by `max-iter` |
 | both | $-100$ | input rejected before iterating |
 | both | $-(100\,s + n)$, $s = 20$ | not converged within `max-iter` |
 | both | $-(100\,s + n)$, $s = 1,2,3$ | the least-squares step returned code $s$ (@sec-ch04-active-set) |
 | both | $-(100\cdot 4 + n)$ | step factor underflow; fixed energy also: temperature solve failed |
-| fixed energy, partition | $-1$ | partition method failed; input state kept |
+| fixed energy, partition | $-1$ | partition method failed, including when its Newton passes reach `max-iter`; input state kept |
 
 : Diagnostic codes of the saturation-adjustment solvers. {#tbl-ch04-warm-start-failures-diag}
 
@@ -78,6 +79,32 @@ prints a warning with the count. On CUDA it does not synchronise, and the caller
 ({{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}}). `ThermoX` keeps no count: a
 non-converged fixed-temperature solve prints a line and sets the cell's diagnostic, and the caller must read the
 diagnostic.
+
+**The gain matrix.** Both forwards also return a gain matrix, reactions by reactions, which a caller may use: the
+effective heat capacity of @sec-ch03-adiabat solves it for $\mathrm d\xi_r/\mathrm dT$. What it holds depends on the
+solver and on the outcome:
+
+| solver | outcome | gain returned |
+|---|---|---|
+| fixed $T$, $p$ | any | $\mathsf W\mathsf S$ at the final state for the reactions within $\pm\epsilon$ of saturation; zero rows and columns elsewhere |
+| fixed $U$, $V$, general | converged | all zeros |
+| fixed $U$, $V$, general | failed | $\mathsf W\mathsf S$ of @eq-ch04-equilibrate-uv-weight for the last active set |
+| fixed $U$, $V$, partition | any | all zeros |
+
+: The gain matrix returned by the saturation solvers. {#tbl-ch04-warm-start-failures-gain}
+
+Only the fixed-temperature gain is therefore the matrix @sec-ch03-adiabat needs. On the one-vapour card of
+@sec-ch04-equilibrate-uv at 300 K, the converged fixed-temperature solve returns $-27.7$, the converged general
+fixed-energy solve and the partition solve return 0, a fixed-energy solve stopped by `max-iter: 1` returns $-1.32$, and
+a fixed-temperature solve stopped the same way returns 0, because its one reaction is not yet within $\pm\epsilon$ of
+saturation.[^ch04-gain-run]
+
+[^ch04-gain-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `ONE_VAPOUR` of
+`src/kintera_report/ch04/runs/common.py` with $T_\star$ = 300 K for the fixed-temperature runs and 0 for the
+fixed-energy runs, $x_{\mathrm v} = 5\times10^{-2}$, $10^5$ Pa, start 300 K; run: `python -P
+src/kintera_report/ch04/runs/gain_zeros.py`, which calls `ThermoX.forward` and `ThermoY.forward` and prints the
+returned gain, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed
+check.]
 
 @fig-ch04-warm-start-flow summarises what the buffers do.
 
@@ -116,7 +143,8 @@ No test asserts that a warm start leaves the result unchanged.
 
 [^ch04-warm-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` with `max-iter:
 50`,
-the cold-start cells of @sec-ch04-equilibrate-tp; run: `python -P item1_warm_start.py <card>`, a cold `ThermoX.forward`
+the cold-start cells of @sec-ch04-equilibrate-tp; run: `python -P src/kintera_report/ch04/runs/warm_start.py` with
+`KINTERA_REPO` set to a kintera checkout at the pin, a cold `ThermoX.forward`
 followed by a warm one on a fresh copy of the input, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement
 outside the suite, not a committed check.]
 

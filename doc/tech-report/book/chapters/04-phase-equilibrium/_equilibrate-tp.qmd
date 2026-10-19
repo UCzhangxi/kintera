@@ -90,12 +90,21 @@ The linearisation is exact only for an infinitesimal step, so the outer loop rep
    needed.
 6. **Backtracking.** The whole step is halved until no gas mole fraction is negative and no gas that was present
    reaches exactly zero. If the factor underflows the smallest normal number, the solve stops with status 4.
-7. **Renormalisation.** All mole fractions are divided by their sum, so they again add up to 1. This is where a change
-   in the total number of moles enters. For example, forming ammonium hydrosulfide removes two gas moles per mole of
-   condensate. The extents of the next iteration are therefore in units of the new total.
+7. **Renormalisation.** With $\xi_r$ the extents actually applied, after the clip and the backtracking, the step
+   changes the sum of the mole fractions from $\sum_n x_n$ (1 for a normalised input) to
+   $s = \sum_n x_n + \sum_r \xi_r \sum_n \nu_{nr}$, because a reaction need not conserve the number of moles: forming
+   ammonium hydrosulfide, for example, turns two moles of gas into one of condensate, so $\sum_n \nu_{nr} = -1$. Every
+   mole fraction is then divided by $s$, $x_n \leftarrow x_n / s$, so that they add up to 1 again. The extents
+   $\xi_r$ of a step are fractions of the total amount before that step; after the division, the next step's extents
+   are fractions of the new total.
 8. **Repeat** from step 3, up to `max-iter` outer iterations.
 9. **Exit.** After the loop the reaction list is re-sorted once more, now putting first the reactions within
-   $\pm\epsilon$ of saturation, and the gain matrix of those reactions is returned to the caller.
+   $\pm\epsilon$ of saturation, and the gain matrix of those reactions is returned to the caller: $\mathsf W\mathsf S$
+   of @eq-ch04-equilibrate-tp-step with the weights of @eq-ch04-equilibrate-tp-weight evaluated at the final state,
+   in the full reaction order, with zero rows and columns for every other reaction. It is the matrix that
+   @sec-ch03-adiabat inverts for $\mathrm d\xi_r/\mathrm dT$. A reaction left off its curve by a failed solve is not
+   in it, so a failed cell can return a zero gain; the fixed-energy solver returns a different gain
+   (@sec-ch04-warm-start-failures).
 
 The per-cell scratch arrays come from a workspace sized by `equilibrate_tp_space`
 ({{< code src/utils/alloc.h equilibrate_tp_space >}}); on CUDA they live in shared memory, as @sec-ch12 explains.
@@ -130,16 +139,16 @@ The options are read from the YAML block `dynamics: equation-of-state:` with the
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_equilibrate_tp_max_nter.release` | success on the last allowed iteration; failure reported when not converged | exact status | the return code |
+| `test_equilibrate_tp_max_iter.release` | success on the last allowed iteration; failure reported when not converged | exact status | the return code |
 | `test_saturation_adjustment_nh4sh.py` | ThermoX keeps condensates non-negative | exact sign | non-negativity |
-| `test_cuda_workspace.py` | the solve on CUDA matches the CPU | `rtol=1e-10`, `atol=1e-14` | not stated in the test |
+| `test_cuda_workspace.py` | the solve on CUDA matches the CPU; skipped when CUDA is absent, so on a CPU build it asserts nothing | `rtol=1e-10`, `atol=1e-14` | not stated in the test |
 
 : Tests of saturation adjustment at fixed temperature and pressure. {#tbl-ch04-equilibrate-tp-tests}
 
 The two cases `equilibrate_tp.converges_on_its_last_allowed_iteration` and
 `equilibrate_tp.returns_failure_when_it_does_not_converge` pass on a CPU build and a CUDA build.[^ch04-tp-run]
 
-[^ch04-tp-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_equilibrate_tp_max_nter.cpp`;
+[^ch04-tp-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_equilibrate_tp_max_iter.cpp`;
 run: `ctest --output-on-failure --timeout 1800` in `build/tests`, Release builds with `-DCUDA=OFF` and `-DCUDA=ON`;
 GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
 
@@ -164,7 +173,8 @@ GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
 [^ch04-tp-maxiter]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` with
 `dynamics: {equation-of-state: {max-iter: 10}}` or `60`, cells from 130 to 250 K in steps of 10 K at $10^5$ Pa with
 $x_{\mathrm{H_2O}} = 3\times10^{-3}$, $x_{\mathrm{NH_3}} = 3\times10^{-4}$, $x_{\mathrm{H_2S}} = 10^{-4}$, rest dry, no
-condensate; run: `python -P fig_tp_sweep.py tp_coldstart.json`, which calls `ThermoX.forward` and `relative_humidity`
+condensate; run: `python -P src/kintera_report/ch04/runs/fig_tp_sweep.py tp_coldstart.json` with `KINTERA_REPO` set to
+a kintera checkout at the pin, which calls `ThermoX.forward` and `relative_humidity`
 and writes the data file of the figure, `src/kintera_report/ch04/data/tp_coldstart.json` (its `provenance` field
 repeats this record); CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126; a measurement
 outside the suite, not a committed check.]

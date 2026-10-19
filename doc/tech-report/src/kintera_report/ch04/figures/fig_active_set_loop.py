@@ -4,7 +4,7 @@ from kintera_report.ch04.flow import flow
 
 
 def make_fig():
-    return flow(["working set\nas equalities", "solve the\nKKT system", "drop: negative\nmultiplier",
-                 "add: most\nviolated row", "stop"],
+    return flow(["working set\nas equalities", "solve the\nKKT system", "drop every row\nwith $\\mu < 0$",
+                 "add: most\nviolated row", "stop: working\nset unchanged"],
                 notes=[(1, "direct, then\nregularised"), (3, "independent\nto sqrt(eps)"), (4, "codes\n0, 1, 2, 3")],
                 height=1.9, loop_back=(3, 1, "repeat"))

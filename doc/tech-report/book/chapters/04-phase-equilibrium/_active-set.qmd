@@ -13,9 +13,9 @@ reviewer:
 Each step of both solvers asks for reaction extents that reduce the saturation deficits of the active reactions,
 without making any mole fraction or concentration negative. That is a linear least-squares problem with inequality
 constraints. kintera solves it with an active-set method on the Karush-Kuhn-Tucker (KKT[^rg-99d77c21e9c3]) conditions: it keeps a
-working set of constraints held as equalities, adds the most violated one, and drops one whose multiplier has the
-wrong sign, until no constraint is violated. The standard theory of such methods is in the
-literature.[^ch04-active-set-refs]
+working set of constraints held as equalities, drops every working constraint whose multiplier is negative, adds the
+most violated independent one, and stops when the working set no longer changes. The standard theory of such methods
+is in the literature;[^ch04-active-set-refs] the general solver and its scaling are described in @sec-ch10-kkt.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** Solve @eq-ch04-active-set-problem for the extents of one outer step.
@@ -60,12 +60,14 @@ relies on that and checks it on entry. @eq-ch04-active-set-problem is assembled 
 1. **Solve with the working set as equalities.** When $\mathsf A$ is square it first tries the KKT system in a direct
    form, which avoids squaring the condition number. On a zero pivot or a non-finite solution it falls back to the
    normal equations with a small diagonal regularisation.
-2. **Drop.** A working constraint whose multiplier is negative is removed.
+2. **Drop.** Every working inequality whose multiplier is negative is removed, all in one pass.
 3. **Add.** Of the constraints the current solution violates, it adds the single most violated one that is linearly
    independent of the working set: the part of its scaled row orthogonal to the working rows must keep more than
    $\sqrt{\epsilon_{\mathrm{mach}}}$ of its norm. This keeps the working set full rank when several rows share a
    direction, for example two condensates drawing on one vapour.
-4. **Stop** when nothing is violated and no multiplier is negative.
+4. **Stop** when the working set is the same as in the previous iteration. With independent rows this means that no
+   multiplier is negative and no constraint is violated. A violated row that depends on the working set is never
+   added, so the loop can also stop with such a row still violated.
 
 A violated constraint that depends linearly on the working set is never added, so the returned step may still violate
 it. That is why both solvers clip each reaction's extent to its reactants' stock afterwards. A working constraint with a
@@ -75,8 +77,8 @@ single non-zero coefficient is a bound on one unknown, and the solution is retur
 
 ```{python}
 #| label: fig-ch04-active-set-loop
-#| fig-cap: "Working-set iteration of the constrained least-squares step. Boxes are the steps in order; the green arrow is the repeat until no row is violated and no multiplier is negative; grey notes give the solve forms, the independence test and the return codes."
-#| fig-alt: "Five boxes left to right: working set as equalities, solve the KKT system, drop rows with negative multipliers, add the most violated independent row, stop; an arrow loops from the add step back to the solve."
+#| fig-cap: "Working-set iteration of the constrained least-squares step. Boxes are the steps in order; the green arrow is the repeat until the working set no longer changes; grey notes give the solve forms, the independence test and the return codes."
+#| fig-alt: "Five boxes left to right: working set as equalities, solve the KKT system, drop every row with a negative multiplier, add the most violated independent row, stop when the working set is unchanged; an arrow loops from the add step back to the solve."
 #| echo: false
 from kintera_report.ch04.figures.fig_active_set_loop import make_fig
 make_fig()
@@ -93,7 +95,10 @@ make_fig()
 : Code map of the constrained least-squares step. {#tbl-ch04-active-set-code}
 
 The return codes are 0 on success; 1 on invalid input or when $\boldsymbol\xi = 0$ is not feasible; 2 when the
-iteration bound is reached; 3 when the KKT system stays singular. The bound is the larger of the number of species
+iteration bound is reached; 3 when the KKT system stays singular, or when a solve that needed the regularised fallback
+ends with a working row that does not hold. After such a solve the code checks every working row, scaled as in
+@sec-ch10-kkt, against $64\,\epsilon_{\mathrm{mach}} + 10\,r$, with $r$ the fallback regularisation, and returns 3 if
+one misses it. The bound is the larger of the number of species
 plus one and `max-iter`. A non-zero code ends the outer solve, which then reports it through the diagnostic
 (@sec-ch04-warm-start-failures).
 
@@ -121,7 +126,8 @@ Problems, SIAM (1995), <https://doi.org/10.1137/1.9781611971217>, chapter 23.]
 ### Limits
 
 - Constraints dependent on the working set are not enforced (see above); the caller's clip covers them.
-- The behaviour on a near-singular gain matrix is set by the regularised fallback. Its accuracy is not measured.
+- On a near-singular gain matrix the regularised fallback is used. The code then checks that the working rows hold
+  (feasibility), as above; it does not check how close the objective is to its minimum, and that is not measured.
 
 <!-- reader glossary notes -->
 [^rg-99d77c21e9c3]: KKT — Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134)

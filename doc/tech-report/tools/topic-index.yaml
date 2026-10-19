@@ -188,6 +188,17 @@ sections:
     - saturation adjustment, failures: [diagnostic code]
   sec-ch04-nucleation:
     - nucleation reactions
+  # Chapter 5. Multiphase chemical equilibrium
+  sec-ch05-conditions:
+    - chemical equilibrium, conditions: [equilibrium constant, activity, element balance]
+  sec-ch05-newton:
+    - chemical equilibrium, Newton iteration: [phase_equilibrate_tp, reaction extent]
+  sec-ch05-diagnostics:
+    - chemical equilibrium, failures: [status code, vanishing phase]
+  sec-ch05-options:
+    - chemical equilibrium, options: [EquilibriumOptions, standard pressure, mole floor]
+  sec-ch05-log-k:
+    - NASA-9 polynomials: [Nasa9LogK, Gibbs energy]
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd

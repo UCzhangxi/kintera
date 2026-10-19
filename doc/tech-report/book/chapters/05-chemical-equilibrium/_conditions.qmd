@@ -1,0 +1,162 @@
+## Equilibrium conditions in logarithmic form, with element balance and several phases {#sec-ch05-conditions}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/equilibrium/phase_equilibrate_tp.h, src/equilibrium/equilibrium.cpp, src/equilibrium/equilibrium.hpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+Each reaction is at equilibrium when the sum of its species' log-activities, weighted by the stoichiometric
+coefficients, equals $\ln K^\circ_r$. A species' activity is its mole fraction within its own phase, and for the gas
+also the pressure over the standard pressure. So a species in a one-species condensed phase has unit activity, and
+species in a condensed mixture follow Raoult's law. The solver does not track elements. It changes the amounts only
+along the reactions, which conserves every element whenever each reaction is balanced. Unlike the saturation conditions
+of @sec-ch04-conditions, these are equalities for every reaction: a phase that should be absent at equilibrium cannot
+satisfy them.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** The conditions every log-K solve aims for, @eq-ch05-conditions-residual.
+
+**Data.** Amounts [mol], phase of each species, $T$ [K], $p$ [Pa], $\ln K^\circ_r$ [-].
+
+**Placement.** Inside `phase_equilibrate_tp`, per cell.
+
+**Activation.** Every reaction of the options, always.
+
+**Guarantee / limits.** Elements conserved by construction; ideal mixtures; no phase can vanish.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Symbols of the notation table (@sec-appa): $\mathcal N_n$, $a_n$, $p$, $p^\circ$, $T$, $\mathcal R$, $g^\circ_n$,
+$K^\circ_r$, $\nu_{nr}$, $\xi_r$. Local symbols: $\pi(n)$, the phase of species $n$; $\mathcal N_\pi$, the total
+amount of phase $\pi$ [mol]; $r_r$, the residual of reaction $r$ [-]; $\mathsf S$, the stoichiometric matrix with
+entries $\nu_{nr}$ (species by reactions); $\mathsf E$, the composition matrix, the number of atoms of element $e$ in
+species $n$ (elements by species).
+
+### Derivation
+
+In an ideal mixture the chemical potential of species $n$ is $g^\circ_n + \mathcal R T \ln a_n$, with
+
+$$
+\begin{aligned}
+a_n &= \frac{\mathcal N_n}{\mathcal N_{\pi(n)}}\,\frac{p}{p^\circ} \quad \text{($n$ in the gas phase)}, \qquad
+a_n = \frac{\mathcal N_n}{\mathcal N_{\pi(n)}} \quad \text{(otherwise)}, \\
+\mathcal N_\pi &= \sum_{n:\,\pi(n) = \pi} \mathcal N_n .
+\end{aligned}
+$$ {#eq-ch05-conditions-activity}
+
+Reaction $r$ is at equilibrium when the chemical potentials weighted by $\nu_{nr}$ add up to zero:
+$\sum_n \nu_{nr} (g^\circ_n + \mathcal R T \ln a_n) = 0$. Dividing by $\mathcal R T$ and moving the standard part to
+the right gives one condition per reaction, which the code writes as a residual:
+
+$$
+\begin{aligned}
+r_r &= \sum_n \nu_{nr} \ln a_n - \ln K^\circ_r = 0 , \\
+\ln K^\circ_r &= -\sum_n \nu_{nr}\, \frac{g^\circ_n}{\mathcal R T} .
+\end{aligned}
+$$ {#eq-ch05-conditions-residual}
+
+@eq-ch05-conditions-activity and @eq-ch05-conditions-residual are computed in `equilibrium_max_error`
+({{< code src/equilibrium/phase_equilibrate_tp.h equilibrium_max_error >}}): the phase totals, then `log(moles[i] /
+phase_totals[phase_ids[i]])` plus `log(pres / standard_pressure)` for the gas, weighted by `stoich` and offset by
+`-log_k`.
+
+The unknowns are the reaction extents. Starting from the input amounts $\boldsymbol{\mathcal N}^0$,
+
+$$
+\begin{aligned}
+\boldsymbol{\mathcal N} &= \boldsymbol{\mathcal N}^0 + \mathsf S\,\boldsymbol\xi , \\
+\mathsf E\,\boldsymbol{\mathcal N} &= \mathsf E\,\boldsymbol{\mathcal N}^0 + \mathsf E\,\mathsf S\,\boldsymbol\xi
+  = \mathsf E\,\boldsymbol{\mathcal N}^0 \quad \text{when } \mathsf E\,\mathsf S = 0 .
+\end{aligned}
+$$ {#eq-ch05-conditions-extent}
+
+$\mathsf E\mathsf S = 0$ says that every reaction is balanced in every element, so any extents conserve the elements
+exactly, and the element totals need not be stored. There are as many unknowns as conditions, one per reaction. The
+check `newton_check.py` confirms the element balance of a step (`[C2]`), and that for a vapour-liquid pair with
+$\ln K^\circ_r = \ln(p^\circ/p_{\mathrm{sat}})$ the condition is Raoult's law, liquid mole fraction times
+$p_{\mathrm{sat}}$ equals gas mole fraction times $p$ (`[C4]`).
+
+### Numerical method
+
+`equilibrium_max_error` ({{< code src/equilibrium/phase_equilibrate_tp.h equilibrium_max_error >}}) evaluates the
+residuals of one cell:
+
+1. sum the amounts of each phase;
+2. for each species, take the logarithm of its mole fraction within its phase, adding $\ln(p/p^\circ)$ for the gas;
+3. accumulate $\nu_{nr}$ times that into each reaction's residual, starting from $-\ln K^\circ_r$;
+4. return the largest $|r_r|$, which the Newton iteration of @sec-ch05-newton uses as its convergence measure.
+
+The logarithm needs every amount positive. The solver therefore rejects an input amount that is not above
+`mole-floor` (@sec-ch05-diagnostics) and keeps every iterate strictly above it. The conditions hold for every
+reaction at once. When the composition at equilibrium has no amount of some phase, as in a subsaturated cell with a
+pure liquid, no positive state satisfies them. The iteration then drives that phase to the floor and stops with a
+failure status (@sec-ch05-diagnostics). The saturation conditions of @sec-ch04-conditions are inequalities for exactly
+this case; these are not.
+
+@fig-ch05-conditions-flash tests the conditions on a two-component ideal solution: gases A and B over a liquid holding
+both, with $p_{\mathrm{sat}}$ of 0.4 and 1.6 bar and equal totals, against the closed-form flash. In the 15 cells of
+the two-phase window, between 0.65 and 1.0 bar, every solve converges in at most 23 iterations. The liquid fraction
+agrees with the closed form to $1.4\times10^{-8}$, and the liquid mole fraction of A to $4.1\times10^{-9}$. In the 22
+cells outside the window, where one phase should vanish, every solve stops with status 4 and a reported error between
+0.026 and 0.77.[^ch05-flash-run]
+
+```{python}
+#| label: fig-ch05-conditions-flash
+#| fig-cap: "Two-component ideal solution (gases A and B over a liquid holding both; p_sat 0.4 and 1.6 bar; equal totals; 300 K) against the closed-form flash. (a) Liquid fraction from EquilibriumTP (open green circles) and the closed form (blue line). (b) Reported error; dashed line: ftol. Grey bands: status 4, where one phase should vanish."
+#| fig-alt: "Left: the liquid fraction rises from 0 near 0.64 bar to 1 at 1 bar, and the solver's points lie on the closed-form line; outside that window the points sit at 0 or 1 in grey bands. Right: errors below 1e-8 inside the window and between 0.03 and 0.8 outside."
+#| echo: false
+from kintera_report.ch05.figures.fig_flash_binary import make_fig
+make_fig()
+```
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| residuals and their maximum | {{< code src/equilibrium/phase_equilibrate_tp.h equilibrium_max_error >}} | `equilibrium_max_error` | always |
+| stoichiometric matrix and its rank | {{< code src/equilibrium/equilibrium.cpp EquilibriumTPImpl::reset >}} | `EquilibriumTPImpl::reset` | always |
+| phase of each species | {{< code src/equilibrium/equilibrium.hpp EquilibriumOptionsImpl >}} | `phase_ids`, `gas_phase` | options |
+
+: Code map of the equilibrium conditions. {#tbl-ch05-conditions-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_equilibrium.py` (`test_python_core_binding_is_functional`) | A ⇌ B with $\ln K^\circ = 0$ ends at equal amounts; the input is not modified | `atol=1e-7`, `rtol=1e-7` | not stated in the test |
+| `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | H and O are conserved by the H$_2$, O$_2$, H$_2$O solve at 4000 K | `assert_close` defaults for double | the PyTorch defaults |
+| `test_equilibrium.py` (`test_ill_conditioned_multiphase_newton_step`) | a silicate, metal and gas system of 25 components and 18 reactions converges with every amount positive | error $< 10^{-8}$ | the `ftol` of the case |
+| `test_equilibrium.release` (`IdealGasReaction`) | A ⇌ B at two temperatures ends at 0.5 each, summing to 1, status 0 | `rtol=1e-5`, `atol=1e-6` | not stated in the test |
+
+: Tests of the equilibrium conditions. {#tbl-ch05-conditions-tests}
+
+The four cases of `tests/test_equilibrium.py` pass on a CPU build and on a CUDA build; they run on the CPU device in
+both. `IdealGasReaction` passes for CPU float and double on both builds and for CUDA float and double on the CUDA
+build.[^ch05-tests-run] No test compares a multiphase result with an independent solution; the flash above does, and
+it is a measurement outside the suite.
+
+[^ch05-flash-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `BINARY` in
+`src/kintera_report/ch05/runs/run_equilibrium.py`, the cells of `flash_binary.json`; run: `python -P
+src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>`, lines `[R1]`-`[R3]`, which call `EquilibriumTP` and
+compare with a bisection root of the Rachford-Rice equation; CPU, double; kintera 2.6.5 source build, Python 3.11.13,
+torch 2.10.0+cu126, numpy 2.4.6; a measurement outside the suite, not a committed check.]
+
+[^ch05-tests-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_equilibrium.py`,
+`tests/test_equilibrium.cpp`; run: `python -m pytest -q tests/test_equilibrium.py -p no:cacheprovider` (4 passed on
+each build) and `ctest -R test_equilibrium.release --output-on-failure` in `build/tests` (CPU build with the GPUs
+hidden: 6 passed, the 2 CUDA instances skipped; CUDA build: 8 passed); Release builds with `-DCUDA=OFF` and
+`-DCUDA=ON`; GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.]
+
+### Limits
+
+- **Ideal mixtures only.** Activities are mole fractions within a phase; no activity coefficients, and the gas is
+  ideal.
+- **No phase can vanish.** Every amount must stay above `mole-floor`; a cell whose equilibrium lacks a phase ends with
+  status 4 (@sec-ch05-diagnostics).
+- **Condensed activities do not depend on pressure.** Only the gas activities carry $p/p^\circ$.

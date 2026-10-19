@@ -1,3 +1,76 @@
 # Multiphase chemical equilibrium {#sec-ch05}
 
-pending
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/equilibrium/equilibrium.hpp, src/equilibrium/equilibrium.cpp, src/equilibrium/equilibrium_options.cpp,
+  src/equilibrium/equilibrium_dispatch.cpp, src/equilibrium/equilibrium_dispatch.cu, src/equilibrium/phase_equilibrate_tp.h,
+  python/equilibrium/nasa9.py, src/species.cpp, src/thermo/nasa9.hpp, src/kinetics/kinetics.cpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+`EquilibriumTP` finds the composition at which a set of reactions is at chemical equilibrium, at a given temperature
+and pressure. The species may sit in several phases: one ideal gas and any number of condensed phases, each an ideal
+mixture. The caller gives the equilibrium constants as $\ln K^\circ_r$, either its own or from the bundled NASA-9 data.
+The solver writes one condition per reaction in logarithms of activities (@sec-ch05-conditions). It moves the
+composition only along the reactions, so every element is conserved by construction, and solves the conditions by a
+bounded Newton iteration in the reaction extents (@sec-ch05-newton). It reports a status, an iteration count and the
+remaining error per cell instead of raising (@sec-ch05-diagnostics). The options come from a YAML file or from the
+API (@sec-ch05-options), and the constants from `Nasa9LogK` (@sec-ch05-log-k). @fig-ch05-dependency-map shows how the
+schemes depend on each other.
+
+```{python}
+#| label: fig-ch05-dependency-map
+#| fig-cap: "Schemes of this chapter and how they depend on each other. Arrows read 'requires'."
+#| fig-alt: "Five boxes: options and log K on the left both feed the equilibrium conditions in the middle; the Newton iteration on the right solves the conditions, and the convergence and failure report below it reports on the Newton iteration."
+#| echo: false
+from kintera_report.ch05.figures.fig_dependency_map import make_fig
+make_fig()
+```
+
+| scheme | option | default | main test |
+|---|---|---|---|
+| @sec-ch05-conditions | `phases`, `reactions`[^rg-68e2b4731605] | from YAML or API | `test_equilibrium.py` |
+| @sec-ch05-newton | `max-iter`, `mole-floor` | 50, $10^{-30}$ | `test_equilibrium.py` |
+| @sec-ch05-diagnostics | `ftol` | $10^{-8}$ | `test_equilibrium.release` |
+| @sec-ch05-options | `equilibrium:` block | see the scheme | `test_equilibrium.release` |
+| @sec-ch05-log-k | `Nasa9LogK` (API) | component names | `test_equilibrium.py` |
+
+: Schemes of this chapter. {#tbl-ch05-schemes}
+
+**Relation to the other solvers.** The saturation adjustment of @sec-ch04 and this solver both look for an
+equilibrium at fixed $T$ and $p$, but they answer different questions, and neither calls the other:
+
+| | saturation adjustment (@sec-ch04) | log-K solver (this chapter) |
+|---|---|---|
+| reactions | condensation (`type: nucleation`) | any balanced set (`type: equilibrium`) |
+| constants | saturation curves $K_r(T)$ in Pa$^{m}$ | $\ln K^\circ_r$ supplied by the caller, dimensionless |
+| condensed phases | pure, unit activity | ideal mixtures; a one-species phase has unit activity |
+| a phase may vanish | yes: complementarity, @eq-ch04-conditions-saturation | no: every amount stays above `mole-floor` |
+| state | mole fractions or concentrations, also fixed $U$, $V$ | amounts in mol, fixed $T$, $p$ only |
+| used by | `ThermoX`, `ThermoY` | the caller only |
+
+: The two equilibrium solvers. {#tbl-ch05-relation}
+
+The kinetics of @sec-ch06 relax a composition towards equilibrium in time. Its reverse rate constants use the forward
+rate constant divided by an equilibrium constant built from NASA-9 Gibbs energies by the same function,
+`nasa9_gibbs_RT`, in concentration units
+(`KineticsImpl::forward_with_rate_constants`,
+{{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}). A reversible gas-phase network
+that reaches a steady state therefore meets the gas-phase form of @eq-ch05-conditions-residual, with the same
+constants when the two read the same NASA-9 coefficients. No code in kintera checks that the two agree.
+
+{{< include 05-chemical-equilibrium/_conditions.qmd >}}
+
+{{< include 05-chemical-equilibrium/_newton.qmd >}}
+
+{{< include 05-chemical-equilibrium/_diagnostics.qmd >}}
+
+{{< include 05-chemical-equilibrium/_options.qmd >}}
+
+{{< include 05-chemical-equilibrium/_log-k.qmd >}}
+
+<!-- reader glossary notes -->
+[^rg-68e2b4731605]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+<!-- end reader glossary notes -->

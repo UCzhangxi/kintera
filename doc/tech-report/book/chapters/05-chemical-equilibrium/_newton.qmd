@@ -1,0 +1,161 @@
+## Newton iteration in the reaction extents (`phase_equilibrate_tp`) {#sec-ch05-newton}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/equilibrium/phase_equilibrate_tp.h, src/math/constrained_newton.h, src/equilibrium/equilibrium.cpp,
+  src/equilibrium/equilibrium_dispatch.cpp, src/equilibrium/equilibrium_dispatch.cu
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+The solver applies Newton's method to the residuals of @sec-ch05-conditions, with the reaction extents as unknowns.
+Each iteration builds the exact Jacobian of the residuals with respect to the extents and takes the bounded Newton step
+of @sec-ch10-newton, which keeps every amount above `mole-floor`. The step is then halved until the largest residual
+decreases. It stops when the largest residual is below the target, or reports why it could not
+(@sec-ch05-diagnostics). One cell is solved per thread, on the CPU or on CUDA, and every cell of a batch is
+independent.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Solve @eq-ch05-conditions-residual for the extents, @eq-ch05-newton-jacobian.
+
+**Data.** Amounts in and out [mol]; $T$, $p$ and $\ln K^\circ_r$ per cell; gain and diagnostics out.
+
+**Placement.** `EquilibriumTP` forward, per cell, on CPU or CUDA.
+
+**Activation.** Always; YAML `max-iter` (50), `mole-floor` ($10^{-30}$).
+
+**Guarantee / limits.** Amounts stay above the floor and elements are conserved; convergence is not guaranteed.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Symbols as in @sec-ch05-conditions. Local symbols: $\mathsf J$, the Jacobian of the residuals with respect to the
+extents [mol$^{-1}$]; $\boldsymbol\delta$, the Newton direction in extents [mol]; $\lambda$, the step scale [-];
+$\mathcal N_{\mathrm{floor}}$, the value of `mole-floor` [mol]; $\nu_{\pi r} = \sum_{n:\,\pi(n)=\pi} \nu_{nr}$, the
+change of phase $\pi$'s total per unit extent of reaction $r$ [-].
+
+### Derivation
+
+With $\boldsymbol{\mathcal N} = \boldsymbol{\mathcal N}^0 + \mathsf S\boldsymbol\xi$, a change of extent $\xi_k$
+changes $\mathcal N_n$ by $\nu_{nk}$ and the phase total $\mathcal N_\pi$ by $\nu_{\pi k}$. The pressure factor of the
+gas activities is constant. Differentiating @eq-ch05-conditions-residual:
+
+$$
+\begin{aligned}
+\frac{\partial \ln a_n}{\partial \xi_k} &= \frac{\nu_{nk}}{\mathcal N_n} - \frac{\nu_{\pi(n) k}}{\mathcal N_{\pi(n)}} , \\
+\mathsf J_{rk} = \frac{\partial r_r}{\partial \xi_k}
+  &= \sum_n \nu_{nr} \Big( \frac{\nu_{nk}}{\mathcal N_n} - \frac{\nu_{\pi(n) k}}{\mathcal N_{\pi(n)}} \Big) .
+\end{aligned}
+$$ {#eq-ch05-newton-jacobian}
+
+`phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}) builds
+`phase_stoich` ($\nu_{\pi k}$) once and then `jac[j * nreaction + k]` exactly as in @eq-ch05-newton-jacobian. The check
+`newton_check.py` compares it with central differences of the residual on a three-phase example (`[C1]`), and shows
+that a one-species phase contributes nothing: its activity is 1 whatever its amount (`[C3]`). The Newton direction
+solves $\mathsf J\boldsymbol\delta = -\mathbf r$. The amounts after a step of scale $\lambda$ must stay above the floor:
+
+$$
+\begin{aligned}
+\mathcal N_n + \lambda \sum_k \nu_{nk}\,\delta_k &> \mathcal N_{\mathrm{floor}} \quad \text{for every } n , \\
+-\sum_k \nu_{nk}\,\delta_k &\le \mathcal N_n - \mathcal N_{\mathrm{floor}} .
+\end{aligned}
+$$ {#eq-ch05-newton-bounds}
+
+The second line, at $\lambda = 1$, is the constraint form $\mathsf C\boldsymbol\delta \le \mathbf d$ of
+@sec-ch10-newton, with $\mathsf C = -\mathsf S$ and $\mathbf d = \boldsymbol{\mathcal N} - \mathcal N_{\mathrm{floor}}$.
+The code sets these rows as `constraints` and `bounds`.
+
+### Numerical method
+
+`phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}) runs these steps in
+each cell:
+
+1. **Input checks.** A non-positive temperature or pressure, an empty species or reaction list, a gas phase index out
+   of range, or any input amount not above `mole-floor` returns status 1 at once, with the input copied to the output.
+2. **Target.** The stop test is $\max_r |r_r| \le \max(\ln(1 + \texttt{ftol}), 4\,\epsilon_{\mathrm{mach}})$; see
+   @sec-ch05-diagnostics.
+3. **Residuals.** Evaluate @eq-ch05-conditions-residual (@sec-ch05-conditions). If the target is met, stop with
+   status 0.
+4. **Jacobian.** Build @eq-ch05-newton-jacobian at the current amounts.
+5. **Direction.** Call `constrained_newton_step` ({{< code src/math/constrained_newton.h constrained_newton_step >}})
+   with the rows of @eq-ch05-newton-bounds. It solves $\mathsf J\boldsymbol\delta = -\mathbf r$ directly and keeps that
+   direction unless it leaves a bound with no slack, and only then solves the constrained least-squares problem
+   (@sec-ch10-newton, @sec-ch10-kkt), with regularisation $10^{-12}$ and at most `max-iter` inner iterations. A
+   failure there stops the solve with status 3.
+6. **Line search.** Try $\lambda = 1, \tfrac12, \tfrac14, \dots$ down to $10^{-12}$. A trial is formed by
+   `constrained_newton_trial` ({{< code src/math/constrained_newton.h constrained_newton_trial >}}) and accepted when
+   every amount is finite and above the floor and the largest residual is smaller than before. If no scale is
+   accepted, the solve stops with status 4.
+7. **Repeat** from step 3, up to `max-iter` iterations; reaching the cap gives status 2.
+
+The amounts change only by $\mathsf S\lambda\boldsymbol\delta$, so the elements are conserved to round-off
+(@eq-ch05-conditions-extent). The per-cell scratch arrays come from a memory pool: on CUDA the driver sizes it with
+`equilibrium_space`, including the workspace of the least-squares fallback
+(`call_equilibrium_cuda`, {{< code src/equilibrium/equilibrium_dispatch.cu call_equilibrium_cuda >}}). On the CPU the
+cells are split over threads by `call_equilibrium_cpu`
+({{< code src/equilibrium/equilibrium_dispatch.cpp call_equilibrium_cpu >}}). @fig-ch05-newton-loop gives the order
+of the steps.
+
+```{python}
+#| label: fig-ch05-newton-loop
+#| fig-cap: "One iteration of the log-K solver. Boxes are the steps in order; the green arrow repeats an accepted step up to max-iter; grey notes give the status each exit sets."
+#| fig-alt: "Four boxes left to right: residuals and stop test, Jacobian in reaction extents, bounded Newton step, halve until the error falls; an arrow loops from the last box back to the first."
+#| echo: false
+from kintera_report.ch05.figures.fig_newton_loop import make_fig
+make_fig()
+```
+
+On a hot H-O gas of six species and four reactions, solved from 2 H$_2$ + O$_2$ with traces of the others at 15
+temperatures between 1500 and 5000 K, every solve converges in 11 to 14 iterations. The largest reported error is
+$2.0\times10^{-9}$, and H and O are conserved to $4.4\times10^{-16}$ relative. The same runs on CUDA take the same
+iteration counts and agree with the CPU to $1.1\times10^{-16}$ in mole fraction.[^ch05-ho-run]
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| per-cell solver | {{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}} | `phase_equilibrate_tp` | always |
+| Newton direction and trial | {{< code src/math/constrained_newton.h constrained_newton_step >}} | `constrained_newton_step` | always |
+| caller and broadcasting | {{< code src/equilibrium/equilibrium.cpp EquilibriumTPImpl::forward >}} | `EquilibriumTPImpl::forward` | always |
+| CPU driver | {{< code src/equilibrium/equilibrium_dispatch.cpp call_equilibrium_cpu >}} | `call_equilibrium_cpu` | CPU inputs |
+| CUDA driver | {{< code src/equilibrium/equilibrium_dispatch.cu call_equilibrium_cuda >}} | `call_equilibrium_cuda` | CUDA inputs |
+
+: Code map of the Newton iteration. {#tbl-ch05-newton-code}
+
+`EquilibriumTPImpl::forward` broadcasts $T$, $p$, the amounts and $\ln K^\circ_r$ against each other, so one set of
+constants can serve many cells or each cell can have its own. Inputs must share a device and a floating type. The
+`warm_start` argument is accepted and ignored.
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_equilibrium.py` (`test_ill_conditioned_multiphase_newton_step`) | an ill-conditioned three-phase state converges, with every amount positive | error $< 10^{-8}$ | the `ftol` of the case |
+| `test_equilibrium.release` (`IdealGasReaction`) | the solve converges on CPU and CUDA, in float and double | error $< 10^{-5}$ | not stated in the test |
+
+: Tests of the Newton iteration. {#tbl-ch05-newton-tests}
+
+The docstring of `test_ill_conditioned_multiphase_newton_step` describes it as a regression for precision loss in
+the normal equations, which the direct solve of step 5 avoids; which path each of its iterations takes is not
+recorded by the test (hypothesis: the direct one). Both tests pass on both builds (@sec-ch05-conditions,
+Tests). No test makes the line search or the least-squares fallback run, and no test checks element conservation on
+a multiphase case.
+
+[^ch05-ho-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `HO` in
+`src/kintera_report/ch05/runs/run_equilibrium.py`, the cases of `h2o_dissociation.json`; run: `python -P
+src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>` (lines `[R7]`, `[R8]`) on the CPU build, the same with
+`--device cuda` on the CUDA build, and `python -P src/kintera_report/ch05/runs/run_equilibrium.py --compare <cpu_dir>
+<cuda_dir>` (line `[X3]`); double; kintera 2.6.5 source builds, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6,
+CUDA 12.6.85; a measurement outside the suite, not a committed check.]
+
+### Limits
+
+- **Convergence is not guaranteed.** The line search only asks that the largest residual decrease; a cell can stop
+  with status 4 for reasons other than a vanishing phase. How often that happens on hard systems is not measured.
+- **At most 64 components** (`EquilibriumOptionsImpl::validate`), and the reactions must be linearly independent
+  (@sec-ch05-options).
+- **The constraint rows are fixed at the floor.** A species that should reach zero stays at about the floor and blocks
+  convergence (@sec-ch05-diagnostics).

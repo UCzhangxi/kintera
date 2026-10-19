@@ -1,0 +1,128 @@
+## Options and the YAML reader (`EquilibriumOptions`) {#sec-ch05-options}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/equilibrium/equilibrium_options.cpp, src/equilibrium/equilibrium.hpp, src/equilibrium/equilibrium.cpp,
+  python/csrc/pyequilibrium.cpp
+status: draft
+author: gitlinffff
+reviewer:
+-->
+
+### Summary
+
+`EquilibriumOptions` lists the components, the phase of each, the reactions as equation strings, which phase is the
+ideal gas, and four numerical options. It can be built field by field through the API or read from a YAML file whose
+`phases`, `species`[^rg-065f0144b433] and `reactions` blocks give the same information. The YAML reader also checks that every reaction
+conserves every element. The API path cannot, because it carries no compositions. Building `EquilibriumTP` from the
+options forms the stoichiometric matrix and refuses linearly dependent reactions.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Define the system of @eq-ch05-conditions-residual and the options of @sec-ch05-newton.
+
+**Data.** Components, phases, phase of each component, reaction equations; four numerical options.
+
+**Placement.** Before the first solve; `EquilibriumTP` reads the options when it is built.
+
+**Activation.** `EquilibriumOptions.from_yaml(path)` or the API setters.
+
+**Guarantee / limits.** Element balance is checked only by the YAML reader; at most 64 components.
+
+**Evidence.** See the Tests layer below.
+:::
+
+Symbols as in @sec-ch05-conditions.
+
+### Derivation
+
+No derivation: this scheme maps an input to the matrices $\mathsf S$ and $\mathsf E$ and the phase map $\pi(n)$ of
+@sec-ch05-conditions.
+
+### Numerical method
+
+`EquilibriumOptionsImpl::from_yaml`
+({{< code src/equilibrium/equilibrium_options.cpp EquilibriumOptionsImpl::from_yaml >}}) reads the file in order:
+
+1. **Phases.** Each entry of `phases` has a name and a list of species, which become the components in the order
+   listed. The phase whose `thermo` (or `type`[^rg-9292dca86f77]) is `ideal-gas` is the gas phase. Exactly one phase must be, and a
+   component may belong to only one phase. Any other `thermo` value makes a condensed ideal mixture.
+2. **Species.** Each entry of `species` has a name and a `composition`[^rg-54a1072b5f2c] map. Every component must have one, and a
+   species defined twice is refused. The elements are the union of the composition keys.
+3. **Reactions.** Each entry of `reactions` with no `type`, or with `type: equilibrium`, is kept; every other type is
+   skipped, so a file can also hold the kinetics of @sec-ch06. Every kept reaction must name only components and must
+   balance every element to $10^{-10}$; otherwise the reader raises "does not conserve element".
+4. **Numerical options.** An optional `equilibrium` block sets the four values below.
+5. **Validation.** `EquilibriumOptionsImpl::validate`
+   ({{< code src/equilibrium/equilibrium.cpp EquilibriumOptionsImpl::validate >}}) requires non-empty lists, one phase
+   index per component and in range, at most 64 components, a gas phase in range, and positive standard pressure,
+   `max-iter` and `ftol`, and a non-negative `mole-floor`.
+
+| key | meaning | default | read by |
+|---|---|---|---|
+| `standard-pressure` | $p^\circ$ of @eq-ch05-conditions-activity [Pa] | $10^5$ | `from_yaml` |
+| `max-iter` | Newton iterations, also the inner bound of the least-squares fallback | 50 | `from_yaml` |
+| `ftol` | relative tolerance of @eq-ch05-diagnostics-error | $10^{-8}$ | `from_yaml` |
+| `mole-floor` | lower bound on every amount [mol] | $10^{-30}$ | `from_yaml` |
+
+: Keys of the `equilibrium` block. {#tbl-ch05-options-keys}
+
+The same defaults apply when the block is absent or the options are built through the API
+(`EquilibriumOptionsImpl`, {{< code src/equilibrium/equilibrium.hpp EquilibriumOptionsImpl >}}). Building
+`EquilibriumTP` runs `EquilibriumTPImpl::reset`
+({{< code src/equilibrium/equilibrium.cpp EquilibriumTPImpl::reset >}}), which validates again, forms the
+stoichiometric matrix from the equation strings in component order, and refuses it unless its rank equals the number
+of reactions. A reaction that is a combination of others would make the Jacobian of @sec-ch05-newton singular.
+@fig-ch05-options-path follows a YAML file to the solver.
+
+```{python}
+#| label: fig-ch05-options-path
+#| fig-cap: "From a YAML input to the buffers of EquilibriumTP. Boxes in reading order; grey notes give the checks made at each stage."
+#| fig-alt: "Five boxes left to right: phases, species, reactions, validate, EquilibriumTP; notes under them: one ideal-gas phase, each reaction balanced in every element, at most 64 components, reactions independent."
+#| echo: false
+from kintera_report.ch05.figures.fig_options_path import make_fig
+make_fig()
+```
+
+The kintera example `examples/equilibrium_nasa9.yaml` is such a file: one `ideal-gas` phase with H$_2$, O$_2$ and
+H$_2$O, the reaction H$_2$ + ½ O$_2$ ⇌ H$_2$O, and an `equilibrium` block with `max-iter: 100`. The runs of this chapter
+use small inputs of the same form written by `run_equilibrium.py`. The two-phase ones give a second phase with
+`thermo: ideal-solution` or `thermo: pure`; any value other than `ideal-gas` gives a condensed ideal mixture.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| YAML reader | {{< code src/equilibrium/equilibrium_options.cpp EquilibriumOptionsImpl::from_yaml >}} | `EquilibriumOptionsImpl::from_yaml` | YAML input |
+| validation | {{< code src/equilibrium/equilibrium.cpp EquilibriumOptionsImpl::validate >}} | `EquilibriumOptionsImpl::validate` | always |
+| stoichiometry and rank | {{< code src/equilibrium/equilibrium.cpp EquilibriumTPImpl::reset >}} | `EquilibriumTPImpl::reset` | always |
+| Python binding | {{< code python/csrc/pyequilibrium.cpp >}} | `EquilibriumOptions`, `EquilibriumTP` | always |
+
+: Code map of the options. {#tbl-ch05-options-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_equilibrium.release` (`EquilibriumOptions.ReadsSpeciesAndReactionsFromYaml`) | components, phase ids, only the `equilibrium` reaction kept, `standard-pressure` and `max-iter` read, stoichiometry signs | exact | parsed values |
+| `test_equilibrium.release` (`EquilibriumOptions.RejectsUnbalancedYamlReaction`) | A ⇌ B with A = H and B = H$_2$ is refused | exception | the reader's check |
+| `test_equilibrium.py` (`test_python_core_binding_is_functional`) | options built through the Python API solve a reaction | `atol=1e-7` | not stated in the test |
+
+: Tests of the options. {#tbl-ch05-options-tests}
+
+Both `EquilibriumOptions` cases pass on both builds (@sec-ch05-conditions, Tests). No test covers the one-gas-phase
+rule, a component in two phases, the 64-component limit or the rank check.
+
+### Limits
+
+- **The API path does not check element balance.** Options built with the setters carry no compositions, so an
+  unbalanced reaction is accepted and the solve conserves whatever the equation strings conserve.
+- **At most 64 components**, a limit of the active-set solver used as the fallback.
+- **One gas phase.** A file with no `ideal-gas` phase, or with two, is refused.
+
+<!-- reader glossary notes -->
+[^rg-065f0144b433]: species — list of species maps; required; its order fixes the species index; read by `init_species_from_yaml`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L148-L155)
+
+[^rg-9292dca86f77]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
+
+[^rg-54a1072b5f2c]: composition — map from element symbol to count; the molar mass is computed from it; passed to `molar_mass`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L165-L170)
+<!-- end reader glossary notes -->

@@ -32,6 +32,9 @@ unreasonably large, and halving and retrying.
 
 Local symbols: $\gamma = 1 + 1/\sqrt2$; $f(c) = \mathsf T c + S(c)$; $\mathsf A$, the stage matrix; $k_1$, $k_2$, the
 stage increments; $y_2$, the intermediate state. $\mathsf L$ and $\Delta t$ are those of @sec-ch09-assembly.
+$\mathsf F = \partial f/\partial c$, the exact Jacobian; $\kappa_1$, $\kappa_2$, the stage increments scaled by
+$1/(\gamma\Delta t)$; $b_1$, $b_2$, $\gamma_{21}$, the weights and the stage coupling; $z = \lambda\Delta t$ and
+$R(z)$, the stability function for an eigenvalue $\lambda$.
 
 ### Derivation
 
@@ -50,8 +53,86 @@ $$ {#eq-ch09-rosenbrock-ros2}
 
 with the embedded error $\lvert c^{1} - y_2 \rvert$. @eq-ch09-rosenbrock-ros2 is computed in `rosenbrock2_step`
 ({{< code python/atm2d/rosenbrock.py rosenbrock2_step >}}); both solves use one matrix, so its factorization is
-computed once. The method is second order for any Jacobian $\mathsf L$, exact or not (the cited paper); run `[R3]`
-measures the order on a linear decay.
+computed once. Four questions remain: what the scaled stages mean, why the step is second order whatever matrix
+$\mathsf L$ is used, why this $\gamma$, and why $\lvert c^{1} - y_2 \rvert$ measures the error. Below,
+$\mathsf F = \partial f / \partial c$ at $c^{0}$ is the exact Jacobian of the right side and $\mathsf L$ is the matrix
+the code assembles (@sec-ch09-assembly), which may differ from $\mathsf F$: a source that returns an approximate or
+partial Jacobian makes $\mathsf L \ne \mathsf F$.
+
+*Step 1: the textbook form.* Write $k_s = \gamma \Delta t\, \kappa_s$. Multiplying each solve by $\gamma\Delta t$ turns
+$\mathsf A$ into $\mathsf I - \gamma \Delta t\, \mathsf L$, and @eq-ch09-rosenbrock-ros2 becomes
+
+$$
+\begin{aligned}
+(\mathsf I - \gamma \Delta t\, \mathsf L)\, \kappa_1 &= f(c^{0}) , \qquad y_2 = c^{0} + \Delta t\, \kappa_1 , \\
+(\mathsf I - \gamma \Delta t\, \mathsf L)\, \kappa_2 &= f(y_2) - 2 \kappa_1 , \\
+c^{1} &= c^{0} + \Delta t \left(\tfrac32 \kappa_1 + \tfrac12 \kappa_2\right) ,
+\end{aligned}
+$$ {#eq-ch09-rosenbrock-std}
+
+the form of Verwer et al. The code's scaling divides by $\gamma\Delta t$ once, in $\mathsf A$, instead of multiplying
+$\mathsf L$ by $\gamma \Delta t$ in every entry.
+
+*Step 2: expand one step.* For small $\Delta t$, $(\mathsf I - \gamma \Delta t\, \mathsf L)^{-1} = \mathsf I + \gamma
+\Delta t\, \mathsf L + O(\Delta t^2)$, and $f(y_2) = f + \Delta t\, \mathsf F \kappa_1 + O(\Delta t^2)$ with
+$f = f(c^{0})$. Write the stage-2 coefficient $-2$ as $\gamma_{21}$ and the weights $\tfrac32$, $\tfrac12$ as $b_1$,
+$b_2$, to see which conditions fix them. Then
+
+$$
+\begin{aligned}
+\kappa_1 &= f + \gamma \Delta t\, \mathsf L f + O(\Delta t^2) , \\
+\kappa_2 &= (1 + \gamma_{21}) f + \Delta t\, \mathsf F f
++ \gamma (1 + 2\gamma_{21}) \Delta t\, \mathsf L f + O(\Delta t^2) , \\
+c^{1} - c^{0} &= \left[b_1 + b_2 (1 + \gamma_{21})\right] \Delta t\, f + b_2 \Delta t^2\, \mathsf F f
++ \gamma \left[b_1 + b_2 (1 + 2\gamma_{21})\right] \Delta t^2\, \mathsf L f + O(\Delta t^3) .
+\end{aligned}
+$$ {#eq-ch09-rosenbrock-expansion}
+
+*Step 3: order conditions.* The exact solution has $c'' = \mathsf F c' = \mathsf F f$, so
+$c(\Delta t) - c^{0} = \Delta t\, f + \tfrac12 \Delta t^2\, \mathsf F f + O(\Delta t^3)$. Matching
+@eq-ch09-rosenbrock-expansion term by term gives three conditions:
+
+$$
+b_1 + b_2 (1 + \gamma_{21}) = 1 , \qquad b_2 = \tfrac12 , \qquad b_1 + b_2 (1 + 2\gamma_{21}) = 0 .
+$$ {#eq-ch09-rosenbrock-order}
+
+The third removes every $\mathsf L$ term at order $\Delta t^2$. Their unique solution is $b_2 = \tfrac12$,
+$\gamma_{21} = -2$, $b_1 = \tfrac32$, the coefficients of @eq-ch09-rosenbrock-std. No condition involves $\mathsf L$
+or $\gamma$. So the local error is $O(\Delta t^3)$ and the global error $O(\Delta t^2)$ for any $\mathsf L$, exact or
+not, and for any $\gamma$. A Rosenbrock method with this property is called a W-method. An inexact $\mathsf L$
+changes the error constant, and the stability analysis of step 4 (which takes $\mathsf L$ exact) no longer applies to
+it, but the order stays 2.[^ch09-ros2-check]
+
+*Step 4: stability and the choice of $\gamma$.* Apply the step to $c' = \lambda c$ with $\mathsf L = \lambda$ and
+write $z = \lambda \Delta t$. With $\kappa_1 = \lambda c^{0}/(1 - \gamma z)$ and $y_2 = c^{0}(1 + z/(1 - \gamma z))$,
+step 1 gives $c^{1} = R(z)\, c^{0}$ with
+
+$$
+R(z) = \frac{1 + (1 - 2\gamma) z + \left(\gamma^2 - 2\gamma + \tfrac12\right) z^2}{(1 - \gamma z)^2} .
+$$ {#eq-ch09-rosenbrock-stability}
+
+A very stiff mode, $z \to -\infty$, is multiplied by $R(-\infty) = (\gamma^2 - 2\gamma + \tfrac12)/\gamma^2$. This is
+zero, so stiff modes are damped in one step (L-stability), exactly when $\gamma^2 - 2\gamma + \tfrac12 = 0$, that is
+$\gamma = 1 \pm 1/\sqrt2$. With the root the code takes, $\gamma = 1 + 1/\sqrt2$ (`GAMMA`,
+{{< code python/atm2d/rosenbrock.py GAMMA >}}), $1 - 2\gamma = -(1 + \sqrt2)$, and for real $z = -x \le 0$,
+$R = (1 + (1 + \sqrt2)\, x)/(1 + \gamma x)^2$, which lies in $(0, 1]$ because
+$(1 + \gamma x)^2 \ge 1 + 2\gamma x$ and $2\gamma = 2 + \sqrt2 > 1 + \sqrt2$.
+A decaying mode therefore decays monotonically and never
+changes sign. With the other root, $1 - 2\gamma = \sqrt2 - 1 > 0$, and $R$ turns negative for $x > 1 + \sqrt2$:
+stiff modes overshoot through zero.
+
+*Step 5: the error estimate.* From step 2, the first stage alone is $y_2 = c^{0} + \Delta t\, f + \gamma \Delta t^2\,
+\mathsf L f + O(\Delta t^3)$, a linearly implicit Euler step that is first order. Subtracting it from the
+second-order $c^{1}$:
+
+$$
+c^{1} - y_2 = \Delta t^2 \left(\tfrac12 \mathsf F - \gamma \mathsf L\right) f + O(\Delta t^3) ,
+$$ {#eq-ch09-rosenbrock-error}
+
+the leading local error of $y_2$, which `rosenbrock2_step` returns, after the clip at zero, as `error`
+({{< code python/atm2d/rosenbrock.py Ros2Result >}}). It is $O(\Delta t^2)$, one order larger than the $O(\Delta t^3)$
+local error of $c^{1}$, so it overestimates the error of $c^{1}$: a cautious estimate, which is how embedded pairs
+are used for step control.
 
 The controller `adaptive_advance` ({{< code python/atm2d/timestep.py adaptive_advance >}}) advances a total
 $\Delta t_{\mathrm{target}}$: it tries $\min(\Delta t_{\mathrm{next}}, \mathrm{remaining})$, accepts the result if
@@ -109,6 +190,22 @@ one cell from $c = 1$ to $t = 1$ with 8, 16, 32 and 64 steps gives errors $5.624
 $1.648 \times 10^{-3}$, $4.496 \times 10^{-4}$ and $1.177 \times 10^{-4}$, observed orders 1.771, 1.874 and 1.934,
 approaching 2. `[R2]`: advancing 8 time units from a first attempt of 1, with only that first attempt rejected,
 accepts 16 steps all of size 0.5; the step never grows back to 1.
+
+The order derivation, @eq-ch09-rosenbrock-std to @eq-ch09-rosenbrock-order, is checked by the derivation check
+`check_ch9_atm2d.py`, line `c`.[^ch09-ros2-check] It integrates $\mathrm d c/\mathrm d t = -c$ from $c = 1$ to $t = 1$
+with $\mathsf L$ equal to the exact Jacobian and with half of it. Halving $\Delta t$ from $1/40$ to $1/80$ divides the
+error by 3.855 (exact $\mathsf L$, errors $2.930 \times 10^{-4}$ and $7.602 \times 10^{-5}$) and by 3.819 (half
+$\mathsf L$, $8.739 \times 10^{-6}$ and $2.288 \times 10^{-6}$). Both are within 10% of the 4 that order 2 predicts,
+so the PASS confirms step 3: an inexact $\mathsf L$ changes the error constant, not the order. The stability function
+@eq-ch09-rosenbrock-stability and the error estimate @eq-ch09-rosenbrock-error have no executable check: missing
+evidence.
+
+[^ch09-ros2-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: one cell,
+    $\mathrm d c/\mathrm d t = -c$, built in the script; run:
+    `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with `KINTERA_WT` set to
+    the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, line `c`,
+    PASS.]
 
 ### Limits
 

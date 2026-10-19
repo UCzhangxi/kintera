@@ -40,7 +40,28 @@ cell centres of the face.
 
 ### Derivation
 
-**Centred scheme.** For each face the solver adds the molecular block $D_{ij}$ (averaged to the face) to the
+The question: why is a species' own-scale-height profile, $c_i \propto e^{-z/H_i}$, an equilibrium of the mixing-ratio
+forms but not of the concentration form, and how exactly does each discrete scheme hold it? Here $z$ is the height
+$x_1$.
+
+*Step 1: the textbook flux.* For a minor species $i$ diffusing through a background gas, the upward molecular flux is
+(Chamberlain and Hunten, *Theory of Planetary Atmospheres*, 2nd ed., 1987, ch. 7; Banks and Kockarts, *Aeronomy*,
+1973, part B)
+
+$$
+F_i = -D \left(\frac{\partial c_i}{\partial z} + \frac{c_i}{H_i} + (1 + \alpha_T)\, \frac{c_i}{T}
+\frac{\partial T}{\partial z}\right) ,
+$$ {#eq-ch09-molecular-textbook}
+
+with $\alpha_T$ the thermal-diffusion factor. It vanishes when the species is in hydrostatic equilibrium with its
+own scale height. In an isothermal column the last term is zero, and $F_i = -D(\partial c_i/\partial z + c_i/H_i)$.
+The code keeps no $\alpha_T$ term in any form, and it uses $T$ only at faces, inside the scale heights. In a
+non-isothermal column the mixing-ratio forms still contain the part with coefficient 1, $(c_i/T)\,
+\partial T/\partial z$, through the density $n$ the caller supplies, provided that $n$ is the ideal-gas hydrostatic
+density ($\partial \ln n/\partial z = -1/H - \partial \ln T/\partial z$). The exponential face flux below uses
+the face temperature only. These statements come from reading the code; no check runs a non-isothermal column.
+
+*Step 2: the centred scheme.* For each face the solver adds the molecular block $D_{ij}$ (averaged to the face) to the
 diffusion of @eq-ch09-transport-flux, in the concentration or the mixing-ratio form, and a gravitational-separation flux
 
 $$
@@ -52,8 +73,10 @@ $$ {#eq-ch09-molecular-centred}
 
 with $T$ and $\bar\mu$ taken at the face. @eq-ch09-molecular-centred is assembled in
 `_assemble_vertical_matrix_diffusion` ({{< code python/atm2d/transport.py _assemble_vertical_matrix_diffusion >}})
-from the term `build_binary_diffusion_matrix` forms. For one species with a diagonal coefficient $D$, the
-mixing-ratio form gives, in an isothermal hydrostatic column with $n \propto \exp(-z/H)$,
+from the term `build_binary_diffusion_matrix` forms. For one species with a diagonal coefficient $D$, use
+$\partial \ln n / \partial z = -1/H$ (isothermal and hydrostatic, $n \propto e^{-z/H}$) in
+$-D n\, \partial(c_i/n)/\partial z = -D(\partial c_i/\partial z - c_i\, \partial \ln n/\partial z)$, and
+$1/H_i - 1/H = (\mu_i - \bar\mu) g/(R T)$ in the separation flux. The mixing-ratio form then gives
 
 $$
 \begin{aligned}
@@ -63,8 +86,13 @@ F_i &= -D\left(\frac{\partial c_i}{\partial z} + \frac{c_i}{H_i}\right),
 \end{aligned}
 $$
 
-with $H_i = R T / (\mu_i g)$ the scale height of species $i$: the standard molecular-diffusion flux, which vanishes for $c_i \propto \exp(-z/H_i)$. In the concentration form the
-first term is $-D\, \partial c_i/\partial z$ with no $c_i/H$, so the flux misses the background scale-height term.
+with $H_i = R T / (\mu_i g)$ the scale height of species $i$. This is @eq-ch09-molecular-textbook without the
+thermal term.
+
+*Step 3: the equilibrium profile.* $F_i = 0$ is $\partial c_i/\partial z = -c_i/H_i$, so $c_i \propto e^{-z/H_i}$.
+In the concentration form the first term is $-D\, \partial c_i/\partial z$ with no $c_i/H$, so
+$F_i = -D(\partial c_i/\partial z + c_i/H_i - c_i/H)$. Its equilibrium is $c_i \propto e^{-z(1/H_i - 1/H)}$, not
+the own-scale-height profile, because the form misses the background scale-height term.
 
 **Exponential scheme.** `mr_exp` writes one flux for eddy plus molecular diffusion of species $i$ through a face:
 
@@ -85,6 +113,31 @@ the centred diffusion plus a settling term. @eq-ch09-molecular-exp is assembled 
 ({{< code python/atm2d/transport.py _assemble_vertical_kb_exponential >}}), with $S$ clamped to $[-50, 50]$. Only the
 diagonal $D_{ii}$ enters. `mr_hybrid` uses @eq-ch09-molecular-exp for species with $\mu_i < 0.6\, \bar\mu$ and the
 centred mixing-ratio scheme with @eq-ch09-molecular-centred (diagonal) for all others.
+
+*Step 4: which discrete scheme holds the profile exactly.* For the exponential scheme with $K = 0$, the denominator of
+$H_{\mathrm{eff}}$ is $D_{ii}\mu_i/\bar\mu$, so $H_{\mathrm{eff}} = H\bar\mu/\mu_i = H_i$. With $K > 0$,
+$H_{\mathrm{eff}}$ is the scale height at which the continuous eddy plus molecular flux,
+$-K(\partial c_i/\partial z + c_i/H) - D_{ii}(\partial c_i/\partial z + c_i/H_i)$, vanishes: setting it to zero
+gives $-\partial \ln c_i/\partial z = (K/H + D_{ii}/H_i)/D_{\mathrm{tot}} = 1/H_{\mathrm{eff}}$. The discrete flux
+@eq-ch09-molecular-exp is zero exactly when $c_{i,\mathrm R}/c_{i,\mathrm L} = e^{-\delta z/H_{\mathrm{eff}}}$, so
+the exponential scheme holds the profile to round-off on any grid.
+
+For the centred mixing-ratio scheme, put the exact profile $c_i \propto e^{-z/H_i}$, $n \propto e^{-z/H}$ into the
+discrete face flux: the mixing-ratio difference over the face plus @eq-ch09-molecular-centred, with the cell centres at
+$z_f \pm \delta z/2$. Expanding $n_f = n(z_f)\cosh(\delta z/2H)$, $\bar c_i = c_i(z_f)\cosh(\delta z/2H_i)$ and
+the sinh of the mixing-ratio difference in $\delta z$ gives
+
+$$
+F_{i,f} = -D\, c_i(z_f)\, \delta z^2\, \frac{(H - H_i)^2 (H + 2 H_i)}{12\, H^3 H_i^3} + O(\delta z^4) .
+$$ {#eq-ch09-molecular-centred-error}
+
+This is the truncation error of the face flux that `_assemble_vertical_matrix_diffusion`
+({{< code python/atm2d/transport.py _assemble_vertical_matrix_diffusion >}}) assembles. It is zero for every
+$\delta z$ when $H_i = H$ (the species has the mean mass, its mixing ratio is uniform and both
+terms vanish separately), and $O(\delta z^2)$ otherwise. An interior cell's tendency is the difference of two such face
+errors divided by its width. The face errors vary smoothly with $z_f$, so the tendency error is $O(\delta z^2)$:
+second order. A boundary cell has one face, because the domain edge carries no flux (@sec-ch09-transport). Its
+tendency is one face error divided by $\delta z$, which is $O(\delta z)$: first order.
 
 ### Numerical method
 
@@ -135,6 +188,24 @@ Run `[R8]`[^ch09-r8] (pinned `python/atm2d` source, torch 2.10.0, CPU, float64; 
 $g = 980.665$ cm s$^{-2}$, $H = 6.056 \times 10^{5}$ cm, ten 1-km layers, $D = 10^{5}$ cm$^2$ s$^{-1}$): the largest
 interior tendency divided by $D c / H^{2}$ is $8.7 \times 10^{-15}$ in `mr_diffusion`, $8.4 \times 10^{-15}$ in
 `mr_exp`, and $1.002$ in `c_diffusion`. No kintera test checks either scheme against a hydrostatic profile.
+
+The derivation is checked by the derivation check `check_ch9_atm2d.py`, lines `b1` and `b2` (isothermal, 200 K,
+$K = 0$, diagonal $D = 10^{5}$ cm$^2$ s$^{-1}$; tendencies divided by $D c_i/H_i^2$).[^ch09-molecular-check]
+Line `b1` tests step 3: one species of mass 2 with $c = e^{-z/H}$ on a coarse grid, $\delta z = H/2$. The tendency is
+below $10^{-12}$ in the centred mixing-ratio and the exponential schemes (round-off; PASS) and 2.595 in the
+concentration form, which is not an equilibrium (PASS when $> 0.1$). Line `b2` tests step 4: a minor species twice the
+mean mass, $c_i = e^{-z/H_i}$ with $H_i = H/2$, on grids with $\delta z = H/4$, $H/8$ and $H/16$. The exponential
+scheme holds it to $7.354 \times 10^{-14}$ on all three grids (tolerance $10^{-12}$; PASS). The centred interior
+error is $1.059 \times 10^{-2}$, $2.615 \times 10^{-3}$ and $6.517 \times 10^{-4}$, falling by 4.050 and 4.013 per
+halving, which is second order as @eq-ch09-molecular-centred-error predicts (tolerance 10% of 4; PASS). With the
+boundary cells included, the worst error falls by only 2.277 and 2.131, which is the first order of the one-sided
+boundary rows (information line).
+
+[^ch09-molecular-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: isothermal columns built in
+    the script; run: `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with
+    `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
+    numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, lines `b1`, `b2`, PASS.]
 
 ### Limits
 

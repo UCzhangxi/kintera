@@ -1,0 +1,12 @@
+{
+  "eq-ch09-molecular-textbook": "Textbook molecular flux of a minor species: gradient, own scale height and thermal-diffusion terms.",
+  "eq-ch09-molecular-centred-error": "Truncation error of the centred mixing-ratio face flux on the own-scale-height profile: zero only for $H_i = H$, else $O(\\delta z^2)$.",
+  "eq-ch09-rosenbrock-std": "Ros2 in the textbook scaling $k_s = \\gamma \\Delta t\\, \\kappa_s$.",
+  "eq-ch09-rosenbrock-expansion": "Taylor expansion of one Ros2 step with an arbitrary matrix $\\mathsf L$, with general weights and stage coupling.",
+  "eq-ch09-rosenbrock-order": "Order-2 conditions: they fix $b_1 = 3/2$, $b_2 = 1/2$, $\\gamma_{21} = -2$ and involve neither $\\mathsf L$ nor $\\gamma$.",
+  "eq-ch09-rosenbrock-stability": "Stability function of Ros2; $R(-\\infty) = 0$ for $\\gamma = 1 \\pm 1/\\sqrt2$.",
+  "eq-ch09-rosenbrock-error": "The embedded estimate $c^{1} - y_2$ is the $O(\\Delta t^2)$ local error of the first stage.",
+  "eq-ch09-conservation-trim": "Corrected budget trim: hogs lose atoms in proportion to their share, which removes exactly the excess.",
+  "eq-ch09-conservation-exact": "Condition for the budget to be met exactly: the excess does not exceed the hogs' atoms.",
+  "eq-ch09-conservation-code": "The trim at the pin: the hog total is floored at 1, so below 1 only part of the excess is removed."
+}

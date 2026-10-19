@@ -24,11 +24,33 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | $p$ | pressure [Pa] | | |
 | $T$ | temperature [K] | | |
 | $\mathcal R$ | universal gas constant [J mol$^{-1}$ K$^{-1}$]; a molar quantity | | |
+| $c_n$ | molar concentration of species $n$ per unit volume of the whole mixture [mol m$^{-3}$]; gases $n < N_{\mathrm g}$ first, then condensates | `conc` | |
+| $N_{\mathrm g}$ | number of gas species [count] | `vapor_ids().size()` | |
+| $x_n$ | mole fraction of species $n$ among all species, gas and condensed [-]; molar | `xfrac` | |
+| $x_{\mathrm g}$ | sum of the gas mole fractions [-]; molar | | |
+| $y_n$ | mass fraction of species $n$ [-]; specific | `yfrac` | |
+| $\rho$ | total density of the mixture [kg m$^{-3}$] | `rho` | |
+| $\rho_n$ | partial density of species $n$, mass per unit volume of the mixture [kg m$^{-3}$] | `ivol` | |
+| $z_n$ | compressibility factor of gas $n$ [-] | `czh` | $Z$ |
+| $U$ | internal energy per unit volume of the mixture [J m$^{-3}$] | `intEng` | |
+| $H$ | enthalpy per unit volume of the mixture [J m$^{-3}$] | | |
+| $C_V$ | heat capacity at constant volume per unit volume [J m$^{-3}$ K$^{-1}$] | | |
+| $C_p$ | heat capacity at constant pressure per unit volume [J m$^{-3}$ K$^{-1}$] | | |
 
 ## 2a. Species thermodynamics, phase change and reactions
 
 | symbol | meaning | code |
 |---|---|---|
+| $c_{v,n}$ | molar heat capacity at constant volume of species $n$ [J mol$^{-1}$ K$^{-1}$] | `eval_cv_R` |
+| $u_n$ | molar internal energy of species $n$ [J mol$^{-1}$] | `eval_intEng_R` |
+| $h_n$ | molar enthalpy of species $n$ [J mol$^{-1}$] | `eval_enthalpy_R` |
+| $s_n$ | molar entropy of species $n$ [J mol$^{-1}$ K$^{-1}$] | `eval_entropy_R` |
+| $c^{\star}_n$ | constant heat-capacity coefficient of species $n$, $c_{v,n}/\mathcal R$ without extra terms [-] | `cref_R` (YAML `cv_R`) |
+| $u^{\star}_n$ | internal energy of species $n$ at $T_\star$, divided by $\mathcal R$ [K] | `uref_R` (YAML `u0_R`) |
+| $s^{\star}_n$ | entropy of gas $n$ at $T_\star$ and $p_\star$, divided by $\mathcal R$ [-] | `sref_R` (YAML `s0_R`) |
+| $K_r$ | saturation constant of condensation reaction $r$: the product of reactant partial pressures, each to its stoichiometric magnitude, on the saturation curve [Pa$^{m}$, $m$ the sum of the gas magnitudes] | `logsvp` (its logarithm) |
+| $L_r$ | latent heat of reaction $r$ at constant volume, internal energy released per unit extent [J mol$^{-1}$] | |
+| $\mathrm{RH}_r$ | relative humidity of reaction $r$, reactant partial-pressure product over $K_r$ [-] | `relative_humidity` |
 
 ## 3. Fluxes and transport
 
@@ -49,6 +71,8 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 
 | symbol | meaning | code |
 |---|---|---|
+| $T_\star$ | thermodynamic reference temperature [K] | `Tref` |
+| $p_\star$ | thermodynamic reference pressure [Pa] | `Pref` |
 
 ## 7. Time integration and the implicit solver
 

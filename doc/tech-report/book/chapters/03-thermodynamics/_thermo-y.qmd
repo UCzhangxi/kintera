@@ -31,10 +31,10 @@ $\rho_n$ [kg m$^{-3}$].
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $y_n$, mass fraction of species $n$ [-]; $\rho_n$, partial density of species $n$, mass per unit
-volume of the mixture [kg m$^{-3}$]; $\rho$, total density [kg m$^{-3}$]; $\mu_n$, molar mass [kg mol$^{-1}$]; $U$,
-$S$, $C_V$, internal energy [J m$^{-3}$], entropy [J m$^{-3}$ K$^{-1}$] and heat capacity at constant volume
-[J m$^{-3}$ K$^{-1}$] per unit volume. $c_n$, $x_n$ and $N_{\mathrm g}$ are those of @sec-ch03-eos.
+Symbols of the notation table (@sec-appa): $y_n$, mass fraction [-]; $\rho_n$, partial density [kg m$^{-3}$]; $\rho$, total
+density [kg m$^{-3}$]; $U$, internal energy [J m$^{-3}$] and $C_V$, heat capacity at constant volume
+[J m$^{-3}$ K$^{-1}$], both per unit volume; $c_n$, $x_n$, $N_{\mathrm g}$ as in @sec-ch03-eos. Local symbols:
+$\mu_n$, molar mass [kg mol$^{-1}$]; $S$, entropy per unit volume [J m$^{-3}$ K$^{-1}$].
 
 The `compute` keys are named by their inputs and output: `V` is the vector of partial densities $\rho_n$ (the
 code's "inverse specific volume", `ivol`), `D` the density, `Y` the mass fractions, `X` the mole fractions.

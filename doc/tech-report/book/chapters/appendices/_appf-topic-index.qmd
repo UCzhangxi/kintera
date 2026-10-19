@@ -22,6 +22,10 @@
 
 **`composition`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
+*compressibility factor*, see **equation of state**.
+
+**concentration from mole fraction**: The mixture equation of state: gas pressure from gas concentrations, @sec-ch03-eos.
+
 *configuration file*, see **YAML input file**.
 
 **coupling, equation of state**: Thermodynamics as the equation of state of snapy (thermodynamics card), @sec-ch14-thermo.
@@ -29,6 +33,8 @@
 **coupling, kinetics**: Kinetics after the dynamics step, @sec-ch14-kinetics.
 
 **coupling, saturation adjustment**: Saturation adjustment inside a snapy stage (thermodynamics card), @sec-ch14-saturation.
+
+*cp*, see **heat capacity, per species**.
 
 *CPU-only tests*, see **test coverage by device**.
 
@@ -42,7 +48,11 @@
 
 **`cv_R`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
+*cv_R*, see **heat capacity, per species**.
+
 ## D {.unnumbered .unlisted}
+
+*Dalton's law*, see **equation of state**.
 
 *data files*, see **resource lookup**.
 
@@ -74,7 +84,17 @@
 
 **eddy diffusion tendency**: The eddy-diffusion tendency of a column, @sec-ch08-tendency.
 
+**effective heat capacity**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
+
+*energy offset*, see **reference temperature and pressure, thermodynamic**.
+
+**enthalpy, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
+
+**entropy, gas and condensate**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
+
 **`equation`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
+
+**equation of state**: The mixture equation of state: gas pressure from gas concentrations, @sec-ch03-eos.
 
 **evaporation, diffusion form**: Evaporation of condensates by diffusion, @sec-ch06-evaporation.
 
@@ -104,9 +124,19 @@
 
 **GPU kernels**: CUDA element loops and per-thread workspaces, @sec-ch12-kernels.
 
+## H {.unnumbered .unlisted}
+
+**heat capacity, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
+
 ## I {.unnumbered .unlisted}
 
+*ideal gas law*, see **equation of state**.
+
 **implicit time step**: Linearly implicit time step, @sec-ch06-implicit.
+
+**internal energy, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
+
+*isentrope*, see **moist adiabat**.
 
 ## J {.unnumbered .unlisted}
 
@@ -122,11 +152,15 @@
 
 *KineticsOptions*, see **options objects, C++**.
 
+*Kirchhoff's law*, see **latent heat**.
+
 *Kzz*, see **eddy diffusion operator**.
 
 **`Kzz`**: The eddy-diffusion operator on a column, @sec-ch08-operator.
 
 ## L {.unnumbered .unlisted}
+
+**latent heat**: Reference state and latent heat, @sec-ch03-reference-state.
 
 *law of mass action*, see **reaction rate, mass action**.
 
@@ -134,7 +168,13 @@
 
 ## M {.unnumbered .unlisted}
 
+**mass fractions**: Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
+
 *mixing-ratio diffusion*, see **eddy diffusion operator**.
+
+**moist adiabat**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
+
+**mole fractions**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
 
 ## N {.unnumbered .unlisted}
 
@@ -154,9 +194,13 @@
 
 **package version**: Package version handling, @sec-ch11-version.
 
+*partial density*, see **mass fractions**.
+
 **`Pref`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
 **pressure switch**: Pressure switch on Arrhenius-form rates, @sec-ch06-pressure-switch.
+
+*pseudo-adiabat*, see **moist adiabat**.
 
 *pybind11*, see **Python bindings**.
 
@@ -167,6 +211,8 @@
 **Python bindings**: The Python bindings, @sec-ch11-python-api.
 
 ## R {.unnumbered .unlisted}
+
+*rainout*, see **moist adiabat**.
 
 **`rate-constant`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
@@ -186,6 +232,10 @@
 
 *reference state*, see **YAML input file**.
 
+**reference temperature and pressure, thermodynamic**: Reference state and latent heat, @sec-ch03-reference-state.
+
+**relative humidity**: Relative humidity of each condensation reaction, @sec-ch03-relative-humidity.
+
 *release floor*, see **package version**.
 
 **resource lookup**: Resource lookup for data files, @sec-ch11-resources.
@@ -196,7 +246,11 @@
 
 ## S {.unnumbered .unlisted}
 
+*s0_R*, see **reference temperature and pressure, thermodynamic**.
+
 *saturation deficit*, see **evaporation, diffusion form**.
+
+*saturation ratio*, see **relative humidity**.
 
 *search path*, see **resource lookup**.
 
@@ -213,6 +267,8 @@
 *SRI*, see **fall-off rate constant**.
 
 **stoichiometric matrix**: Reaction rates by mass action, @sec-ch06-mass-action.
+
+*supersaturation*, see **relative humidity**.
 
 *symbol table*, see **notation index**.
 
@@ -244,6 +300,10 @@
 
 *temperature bands*, see **Arrhenius rate constant**.
 
+**temperature from entropy**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
+
+**temperature from internal energy**: Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
+
 *test counts*, see **test results, CPU and CUDA builds**.
 
 **test coverage by device**: What the suite covers on CPU only (device coverage), @sec-ch13-device-coverage.
@@ -253,6 +313,10 @@
 **test suite**: How the test suite is organised and run, @sec-ch13-suite.
 
 *ThermoOptions*, see **options objects, C++**.
+
+*ThermoX*, see **mole fractions**.
+
+*ThermoY*, see **mass fractions**.
 
 *three-body reaction*, see **fall-off rate constant**.
 
@@ -265,6 +329,8 @@
 ## U {.unnumbered .unlisted}
 
 **`u0_R`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
+
+*u0_R*, see **reference temperature and pressure, thermodynamic**.
 
 ## V {.unnumbered .unlisted}
 

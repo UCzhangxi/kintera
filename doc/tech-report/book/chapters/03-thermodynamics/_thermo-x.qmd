@@ -30,9 +30,9 @@ and pressure, is the subject of @sec-ch04.
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $C_p$, heat capacity at constant pressure per unit volume [J m$^{-3}$ K$^{-1}$]; $H$, enthalpy per
-unit volume [J m$^{-3}$]; $S$, entropy per unit volume [J m$^{-3}$ K$^{-1}$]. $\rho$, $\mu_n$ and $y_n$ are those
-of @sec-ch03-thermo-y; $c_n$, $x_n$ and $N_{\mathrm g}$ those of @sec-ch03-eos.
+Symbols of the notation table (@sec-appa): $C_p$, heat capacity at constant pressure per unit volume [J m$^{-3}$ K$^{-1}$]; $H$,
+enthalpy per unit volume [J m$^{-3}$]; $\rho$, $y_n$, $c_n$, $x_n$, $N_{\mathrm g}$ as in @sec-ch03-thermo-y and
+@sec-ch03-eos. Local symbols: $S$, entropy per unit volume [J m$^{-3}$ K$^{-1}$]; $\mu_n$ as in @sec-ch03-thermo-y.
 
 The `compute` keys are named by inputs and output: `V` is the vector of concentrations $c_n$ here (not partial
 densities as in `ThermoY`), `D` the density, `X` the mole fractions, `Y` the mass fractions.

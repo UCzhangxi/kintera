@@ -7,5 +7,6 @@
 | @sec-ch14-thermo | none | No derivation: this section maps call sites. | code: ; check: none | n/a |
 | @sec-ch14-saturation | none | No derivation: the adjustment is derived in @sec-ch04. | code: ; check: none | n/a |
 | @sec-ch14-kinetics | @eq-ch14-kinetics-density | The driver converts it to a partial density with the molar mass, | code: `inv_mu` at `snapy run_hydro.cpp:175-193`; check: none | re-derived |
+| @sec-ch14-kinetics | @eq-ch14-kinetics-splitting | Expanding both to second order: | code: `inv_mu` at `snapy run_hydro.cpp:175-193`; check: none | re-derived |
 
 : Derivations of @sec-ch14. {#tbl-appb-ch14}

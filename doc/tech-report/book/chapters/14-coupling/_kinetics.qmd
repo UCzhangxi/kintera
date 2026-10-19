@@ -24,13 +24,15 @@ paddle's `evolve_kinetics` follow the same pattern. Content from source reading 
 
 **Activation.** The driver builds `Kinetics` from the `reactions` block of the same input file.
 
-**Guarantee / limits.** First-order operator splitting; requires kintera with the rate forms the input uses.
+**Guarantee / limits.** Sequential splitting, first order, @eq-ch14-kinetics-splitting; needs the input's rate forms.
 
 **Evidence.** No kintera test of the call site; see the Tests layer.
 :::
 
 Local symbols: $\delta_i$, concentration change of species $i$ over the step [$\mathrm{mol\,m^{-3}}$]; $M_i$, molar
-mass of species $i$ [$\mathrm{kg\,mol^{-1}}$]; $\rho_i$, partial density [$\mathrm{kg\,m^{-3}}$].
+mass of species $i$ [$\mathrm{kg\,mol^{-1}}$]; $\rho_i$, partial density [$\mathrm{kg\,m^{-3}}$]; $q$, the
+conserved state of the host model; $\mathcal D$, $\mathcal K$, the dynamics and kinetics tendencies; $\mathsf A$,
+$\mathsf B$, linear operators standing for them in the splitting estimate.
 
 ### Derivation
 
@@ -44,8 +46,32 @@ $$ {#eq-ch14-kinetics-density}
 where $M_i$ enters as the division by `inv_mu`, the inverse molar masses held by `ThermoY`.
 @eq-ch14-kinetics-density is computed in the snapy driver, where `inv_mu` divides the change ([`snapy run_hydro.cpp:175-193`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L175-L193)), and in
 paddle's `evolve_kinetics` ([`paddle evolve_kinetics.py:6-44`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/evolve_kinetics.py#L6-L44)).
-Splitting the kinetics from the dynamics is first order in the time step. Splitting error: not provided: its
-derivation is not written yet.
+**Operator splitting.** The driver solves $\mathrm d q/\mathrm d t = \mathcal D(q) + \mathcal K(q)$, with $\mathcal D$
+the dynamics and $\mathcal K$ the kinetics, by applying them one after the other over each step (sequential, or Lie,
+splitting): first the dynamics from $q^{n}$ to $q^{\ast}$ over $\Delta t$, then the kinetics from $q^{\ast}$ to
+$q^{n+1}$ over the same $\Delta t$. The kinetics never sees the state halfway through the dynamics, and the dynamics
+never sees the chemical tendency. For linear operators $\mathsf A$ (dynamics) and $\mathsf B$ (kinetics), the exact
+step is $e^{\Delta t(\mathsf A + \mathsf B)}$ and the split step is $e^{\Delta t \mathsf B} e^{\Delta t \mathsf A}$.
+Expanding both to second order:
+
+$$
+\begin{aligned}
+e^{\Delta t(\mathsf A + \mathsf B)} &= \mathsf I + \Delta t(\mathsf A + \mathsf B)
++ \tfrac12 \Delta t^2 (\mathsf A^2 + \mathsf A\mathsf B + \mathsf B\mathsf A + \mathsf B^2) + O(\Delta t^3), \\
+e^{\Delta t \mathsf B} e^{\Delta t \mathsf A} &= \mathsf I + \Delta t(\mathsf A + \mathsf B)
++ \tfrac12 \Delta t^2 (\mathsf A^2 + 2\mathsf B\mathsf A + \mathsf B^2) + O(\Delta t^3), \\
+e^{\Delta t \mathsf B} e^{\Delta t \mathsf A} - e^{\Delta t(\mathsf A + \mathsf B)} &=
+\tfrac12 \Delta t^2 (\mathsf B\mathsf A - \mathsf A\mathsf B) + O(\Delta t^3) .
+\end{aligned}
+$$ {#eq-ch14-kinetics-splitting}
+
+The local error is second order and proportional to the commutator $[\mathsf B, \mathsf A]$; summed over
+$t/\Delta t$ steps it gives a global error of first order in $\Delta t$, which vanishes only when the two operators
+commute (for example kinetics that do not depend on the state the dynamics changes). The kinetics step itself is
+the linearly implicit (backward-Euler) step of @sec-ch06, also first order, so the coupled step is first order
+overall. This is a property of the sequence above, derived for linear operators; the size of the splitting error in a
+snapy or paddle run is not measured. The same transport-then-chemistry sequence is offered inside kintera by the
+operator-split solver of @sec-ch09-newton.
 
 ### Numerical method
 

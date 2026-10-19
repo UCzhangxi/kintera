@@ -43,7 +43,7 @@ $X_e = \max\left(0, \sum_n A_n - B_e\right)$.
 
 *Step 2: the hogs.* The species above the mean share, $H = \{ n : A_n > \tfrac{1}{N_e} \sum_m A_m \}$, give up atoms;
 the others are untouched. The inequality is strict, so $H$ is empty when all $A_n$ are equal, in particular when
-$N_e = 1$, and then nothing is trimmed (verified by reading; not run).
+$N_e = 1$, and then nothing is trimmed (check line `x4`).
 
 *Step 3: proportional removal.* Each hog gives up atoms in proportion to the atoms it holds:
 
@@ -148,8 +148,41 @@ it.[^ch09-conservation-check] For element C over two carbon species and a fixed 
 above 1 and a budget of 0.8 times the current total, the total after the projection equals the budget to within
 $10^{-13}$ relative (printed 0; PASS). The information line `d'` shows the limit: with a hog total of 0.5 and a budget
 of 0.3, the total after is 0.4050. That is @eq-ch09-conservation-code, $0.51 - 0.21 \times 0.5$, and not the 0.3 of
-@eq-ch09-conservation-trim. The corrected rule in that regime, and the condition @eq-ch09-conservation-exact, have no
-passing check at the pin: missing evidence.
+@eq-ch09-conservation-trim.
+
+The condition @eq-ch09-conservation-exact is checked by `check_ch9_budget_exact.py`, for element C over three
+species and a fixed N2 in four cells whose hog totals are far above 1, so the code and the corrected rule coincide.
+All nine lines pass:[^ch09-budget-exact-check]
+
+- `x1`: with $X_e = \tfrac12 \sum_H A$ the total after equals the budget to $2.2 \times 10^{-16}$, and the code
+  equals the rule written in the script (`budget_theory.py`) exactly.
+- `x2`: with $X_e = \sum_H A$, every hog reaches zero and the budget is met, to $1.6 \times 10^{-15}$.
+- `x3`: with $X_e > \sum_H A$, the hogs are zero, the non-hogs are unchanged, and the total stays at twice the budget.
+- `x4`: one non-fixed carbon species, five times over budget, is not changed.
+- `x5` (step 5): for C and O over CO, CO2, C2 and O2, every budget is met in both element orders. The two results
+  differ by $7.7 \times 10^{-3}$ of the largest concentration, and in the order C, O the carbon total ends at 0.9847
+  of its budget.
+
+The corrected rule below a hog total of 1 is checked by `check_ch9_budget_below1.py`, which runs the corrected rule
+and the pinned code on the same states.[^ch09-budget-below1-check] For the case of line `d'` (hog total 0.5, excess
+0.21, budget 0.3), the corrected rule gives a total of exactly 0.3 with no hog negative (PASS), and the code gives
+0.405, equal to @eq-ch09-conservation-code (PASS). The line requiring the code to meet the budget is EXPECTED-FAIL
+(0.35 relative), as row K9 documents.[^ch09-k9] Scaling the concentration unit by $s = 10^{-3}$, $10^{3}$ and $10^{6}$
+leaves the corrected rule's result unchanged to $5.4 \times 10^{-17}$ (PASS). It changes the code's result by up to
+10.5% (EXPECTED-FAIL): at $s = 10^{-3}$ the code leaves 1.70 times the budget, and at $s \ge 10^{3}$ it meets it.
+These two lines are expected to pass when the fix lands.
+
+[^ch09-budget-exact-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: states built in the script
+    (seed 9); run: `python doc/tech-report/derivation-checks/check_ch9_budget_exact.py` from a scratch directory, with
+    `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
+    numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch9_budget_exact.out`, 9 PASS, 0 FAIL.]
+
+[^ch09-budget-below1-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: states built in the
+    script; run: `python doc/tech-report/derivation-checks/check_ch9_budget_below1.py` from a scratch directory, with
+    `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
+    numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch9_budget_below1.out`, 4 PASS, 2 EXPECTED-FAIL, 0 FAIL.]
 
 [^ch09-conservation-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: built in the script (seed
     9); run: `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with

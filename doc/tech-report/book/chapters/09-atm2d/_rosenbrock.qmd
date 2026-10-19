@@ -196,9 +196,45 @@ The order derivation, @eq-ch09-rosenbrock-std to @eq-ch09-rosenbrock-order, is c
 with $\mathsf L$ equal to the exact Jacobian and with half of it. Halving $\Delta t$ from $1/40$ to $1/80$ divides the
 error by 3.855 (exact $\mathsf L$, errors $2.930 \times 10^{-4}$ and $7.602 \times 10^{-5}$) and by 3.819 (half
 $\mathsf L$, $8.739 \times 10^{-6}$ and $2.288 \times 10^{-6}$). Both are within 10% of the 4 that order 2 predicts,
-so the PASS confirms step 3: an inexact $\mathsf L$ changes the error constant, not the order. The stability function
-@eq-ch09-rosenbrock-stability and the error estimate @eq-ch09-rosenbrock-error have no executable check: missing
-evidence.
+so the PASS confirms step 3: an inexact $\mathsf L$ changes the error constant, not the order.
+
+Step 4 is checked by `check_ch9_ros2_stability.py`, which runs one `rosenbrock2_step` with the clip off on
+$\mathrm d c/\mathrm d t = \lambda c$, $c^{0} = 1$, exact Jacobian. All seven lines pass:[^ch09-ros2-stab-check]
+
+- @eq-ch09-rosenbrock-stability: the code's $R(z)$ matches the formula for $z$ from $-10^{-2}$ to $-10^{6}$ to
+  $1.8 \times 10^{-16}$ absolute. The tolerance is absolute, $16\epsilon = 3.6 \times 10^{-15}$, because $c^{1}$ is
+  formed by cancelling terms of size $c^{0}$ when $R$ is small, so its round-off does not scale with $R$.
+- L-stability: $R(-10^{12}) = 8.284 \times 10^{-13}$, the formula's tail $(1 + \sqrt2)/(\gamma^2 x)$ to
+  $7.4 \times 10^{-18}$, so $R(-\infty) = 0$.
+- $0 < R(-x) \le 1$ at all 50 points of $[0, 10^{8}]$ (minimum $8.284 \times 10^{-9}$).
+- With the module constant set to the other root, $\gamma = 1 - 1/\sqrt2$: $R(-10^{12})$ is $4.8 \times 10^{-12}$
+  (also L-stable), and $R$ is negative exactly for the sampled $x > 1 + \sqrt2$ (for example $R(-10) = -0.2036$),
+  matching the formula. With $\gamma = \tfrac12$, which is neither root, $R(-10^{12}) = -1$ to $4 \times 10^{-12}$,
+  so stiff modes are not damped.
+
+Step 5 is checked by `check_ch9_ros2_error.py`, which compares the returned `error` with
+@eq-ch09-rosenbrock-error. All eight lines pass:[^ch09-ros2-err-check]
+
+- On $\mathrm d c/\mathrm d t = -c$ with $\mathsf L = \mathsf F$ and $\mathsf L = \tfrac12 \mathsf F$, the ratio of
+  `error` to $\Delta t^2 \lvert \tfrac12 - \gamma s \rvert c^{0}$ differs from 1 by $3.4 \times 10^{-4}$ and
+  $1.7 \times 10^{-4}$ at $\Delta t = 10^{-4}$ (tolerance $10^{-3}$). The deviation falls by 9.98 and 9.99 per
+  decade of $\Delta t$, the first-order correction.
+- On $\mathrm d c/\mathrm d t = -c^2$ with the exact $\mathsf L$, the ratio differs from 1 by $6.6 \times 10^{-4}$.
+- From $\Delta t = 10^{-2}$ to $10^{-3}$, the true error of $c^{1}$ against $1/(1 + \Delta t)$ falls by 935 (order 3)
+  and the estimate by 94 (order 2). The estimate exceeds the true error at $\Delta t = 10^{-1}$, $10^{-2}$ and
+  $10^{-3}$.
+
+[^ch09-ros2-stab-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: one cell built in the
+    script; run: `python doc/tech-report/derivation-checks/check_ch9_ros2_stability.py` from a scratch directory, with
+    `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
+    numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch9_ros2_stability.out`, 7 PASS, 0 FAIL.]
+
+[^ch09-ros2-err-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: one cell built in the script;
+    run: `python doc/tech-report/derivation-checks/check_ch9_ros2_error.py` from a scratch directory, with
+    `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
+    numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch9_ros2_error.out`, 8 PASS, 0 FAIL.]
 
 [^ch09-ros2-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: one cell,
     $\mathrm d c/\mathrm d t = -c$, built in the script; run:

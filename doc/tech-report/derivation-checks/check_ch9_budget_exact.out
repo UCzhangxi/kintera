@@ -1,0 +1,15 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+   4 cells: hog total sum_H A / cell total = 0.9166..0.9347; sum_H A >= 6.099e+10
+(x1) X = sum_H A / 2: max |total_after / budget - 1|: measured 2.220e-16  tol 1e-13  PASS
+(x1) code vs corrected rule, max rel: measured 0.000e+00  tol 1e-15  PASS
+(x2) X = sum_H A: |total_after / budget - 1| + max hog left / max c: measured 1.554e-15  tol 1e-13  PASS
+   (x3) total_after / budget = 2.000000 (> 1: budget not met), hogs left 0.0e+00, non-hog change 0.0e+00
+(x3) X > sum_H A: hogs zero and non-hogs unchanged (max abs): measured 0.000e+00  tol 0e+00  PASS
+(x3) X > sum_H A: total_after stays above the budget (min ratio - 1), must be > 0: measured 1.000e+00  tol 0e+00  PASS
+(x4) N_e = 1, five times over budget: species changed (max abs change): measured 0.000e+00  tol 0e+00  PASS
+   (x5) order C,O: total/budget  C 0.984694  O 1.000000
+   (x5) order O,C: total/budget  C 1.000000  O 0.928571
+(x5) every budget met in both orders (violations above 1 + 1e-13): measured 0.000e+00  tol 0e+00  PASS
+(x5) the result depends on the element order: max |c(C,O) - c(O,C)| / max c, must EXCEED tol: measured 7.714e-03  tol 1e-06  PASS
+(x5) order C,O: the first element (C) ends strictly below its budget, 1 - total/budget, must EXCEED tol: measured 1.531e-02  tol 1e-06  PASS
+ALL PASS

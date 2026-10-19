@@ -38,7 +38,13 @@ $n$ in reaction $r$; $\mathsf R$, the reaction-space Jacobian of @sec-ch06.
 
 ### Derivation
 
-Each term $t$ returns its tendency and Jacobian in every cell, and the solver adds them:
+The question: how do the source terms, and the Jacobian blocks of a kintera network, become the species Jacobian
+$\mathsf J$ the implicit steps use? Start from what the code holds: each term returns a tendency and a Jacobian in
+every cell (`LocalSourceTerm.linearize`, {{< code python/atm2d/sources/protocol.py LocalSourceTerm >}}), and a reaction
+network gives reaction rates $w_r(c)$ and their Jacobian $\mathsf R_{rm} = \partial w_r/\partial c_m$
+(@sec-ch06-jacobian).
+
+*Step 1: terms add.* The source of species $n$ is the sum of the terms' sources, and differentiation is linear, so
 
 $$
 \begin{aligned}
@@ -51,28 +57,67 @@ $$ {#eq-ch09-sources-sum}
 ({{< code python/atm2d/sources/combine.py build_source_linearization >}}). A term may also supply a non-local
 operator (`global_operator`), which `build_source_global_operator` sums into a sparse matrix.
 
-For kintera's kinetics, the species Jacobian is the reaction Jacobian mapped through the stoichiometry,
+*Step 2: chain rule through the stoichiometry.* A network changes species $n$ at the rate
+$S_n = \sum_r \nu_{nr}\, w_r(c)$, with $\nu_{nr}$ fixed numbers. Differentiating with respect to $c_m$ moves the
+derivative onto the rates:
 
 $$
-\mathsf J_{nm} = \sum_r \nu_{nr}\, \mathsf R_{rm} ,
+\mathsf J_{nm} = \sum_r \nu_{nr}\, \frac{\partial w_r}{\partial c_m} = \sum_r \nu_{nr}\, \mathsf R_{rm} .
 $$ {#eq-ch09-sources-stoich}
 
-computed in `build_chemistry_jacobian` ({{< code python/atm2d/chemistry.py build_chemistry_jacobian >}}) from
-`kinetics.forward` and `kinetics.jacobian`, and likewise for photochemistry in `build_photochemistry_jacobian`. Both
-return the Jacobian blocks only; the rates that `kinetics.forward` computes are discarded, and
+This is `build_chemistry_jacobian` ({{< code python/atm2d/chemistry.py build_chemistry_jacobian >}}), the product of
+`kinetics.stoich` with the output of `kinetics.jacobian`; `build_photochemistry_jacobian` does the same for
+photochemistry. Both return the Jacobian blocks only. The rates that `kinetics.forward` computes are discarded, and
 `build_implicit_operator` is their only caller in `python/atm2d` (verified by reading). To drive a step with a kintera
-network, a caller must wrap it as a `LocalSourceTerm` whose `linearize` returns both the species tendency
-$\sum_r \nu_{nr} w_r$ and @eq-ch09-sources-stoich.
+network, a caller must wrap it as a `LocalSourceTerm` whose `linearize` returns both $\sum_r \nu_{nr} w_r$ and
+@eq-ch09-sources-stoich.
 
-The built-in mass-action source of reactants $a$ with coefficients $p_a$ has rate $w = k \prod_a c_a^{p_a}$; it adds
-$+q_b w$ to each product $b$ and $-p_a w$ to each reactant, and its Jacobian column for reactant $m$ is
-$k\, p_m c_m^{p_m - 1} \prod_{a \ne m} c_a^{p_a}$ times the same coefficients. A first-order source is the case of one
-reactant with $p = 1$; a boundary flux $\Phi$ at the bottom or top cell adds $\pm \Phi / \Delta x_1$ to that cell; a
-boundary velocity $v$ adds $\pm (v / \Delta x_1)\, c$.
+*Step 3: the built-in mass-action column.* For reactants $a$ with coefficients $p_a$, products $b$ with coefficients
+$q_b$ and rate $w = k \prod_a c_a^{p_a}$, only one factor depends on $c_m$, so
+$\partial w / \partial c_m = k\, p_m c_m^{p_m - 1} \prod_{a \ne m} c_a^{p_a}$. With $S_b = q_b w$ and $S_a = -p_a w$,
+
+$$
+\mathsf J_{bm} = q_b\, \frac{\partial w}{\partial c_m} , \qquad
+\mathsf J_{am} = -p_a\, \frac{\partial w}{\partial c_m} , \qquad
+\frac{\partial w}{\partial c_m} = k\, p_m c_m^{p_m - 1} \prod_{a \ne m} c_a^{p_a} .
+$$ {#eq-ch09-sources-mass-action}
+
+`IndexedMassActionSource` ({{< code python/atm2d/sources/indexed.py IndexedMassActionSource >}}) writes the derivative
+in this product form, not as $p_m w / c_m$, so a reactant at zero concentration keeps a finite column. A first-order
+source is the case of one reactant with $p = 1$, where the column is $k$.
+
+*Step 4: boundary sources.* An upward flux $\Phi$ through the bottom face enters the bottom cell of width
+$\Delta x_1$ and changes its content per unit area by $\Phi$, so $\mathrm d c/\mathrm d t$ gains $+\Phi/\Delta x_1$; the
+same upward flux through the top face leaves the top cell, $-\Phi/\Delta x_1$. A constant $\Phi$ does not depend on $c$
+and adds nothing to $\mathsf J$. A velocity $v$ gives the flux $v c$ with the edge cell's own concentration:
+
+$$
+S = \pm \frac{\Phi}{\Delta x_1} , \quad \mathsf J = 0 ; \qquad
+S = \pm \frac{v}{\Delta x_1}\, c , \quad \mathsf J = \pm \frac{v}{\Delta x_1} ,
+$$ {#eq-ch09-sources-boundary}
+
+with $+$ at the bottom cell and $-$ at the top cell (`IndexedBoundaryFluxSource`,
+{{< code python/atm2d/sources/indexed.py IndexedBoundaryFluxSource >}}, and `IndexedBoundaryVelocitySource`).
+
+*Step 5: the charge-balance fold.* When the electron is not free but set by neutrality, $c_E = \sum_j c_j$ over the
+cations, the sources depend on a cation $j$ both directly and through $c_E$, with $\partial c_E / \partial c_j = 1$.
+The chain rule gives the column the implicit step needs:
+
+$$
+\frac{\mathrm d S}{\mathrm d c_j} = \mathsf J_{\cdot j} + \mathsf J_{\cdot E} \frac{\partial c_E}{\partial c_j}
+= \mathsf J_{\cdot j} + \mathsf J_{\cdot E} .
+$$ {#eq-ch09-sources-fold}
+
+That is `fold_charge_balance_into_jacobian`
+({{< code python/atm2d/sources/charge_balance.py fold_charge_balance_into_jacobian >}}), which
+`build_source_linearization` applies after the sum when a cation list and an electron index are given
+(@sec-ch09-conservation).
 
 ### Numerical method
 
-Every term is linearized at the current concentration; nothing is iterated inside a term. In the built-in sources the
+Every term is linearized at the current concentration; nothing is iterated inside a term. The linearization is the
+exact derivative of the term's tendency at that state, not a difference quotient, so its accuracy is round-off; the
+step that uses it (@sec-ch09-rosenbrock, @sec-ch09-newton) decides how often it is rebuilt. In the built-in sources the
 reactant concentrations are clamped at zero before the rate and its derivatives are formed (`IndexedMassActionSource`,
 {{< code python/atm2d/sources/indexed.py IndexedMassActionSource >}}). When a charge-balance pair (cations, electron)
 is given, the Jacobian column of the electron is added to every cation column (@sec-ch09-conservation).
@@ -133,8 +178,28 @@ Setup checks a user can hit: a term whose tendency or Jacobian has the wrong sha
 
 : Tests of the source terms. {#tbl-ch09-sources-tests}
 
-The tolerances are read from `tests/test_atm2d.py` at the pin. No test compares @eq-ch09-sources-stoich with a
-finite-difference Jacobian of a kintera network: missing evidence.
+The tolerances are read from `tests/test_atm2d.py` at the pin.
+
+The derivation is checked by the derivation check `check_ch9_sources.py`. Its Jacobians are compared with central
+differences of the tendencies ($h = 10^{-6} c$; tolerance $10^{-7}$ relative, the FD truncation plus its round-off
+$\epsilon/h$ with margin), and all eight lines pass:[^ch09-sources-check]
+
+- @eq-ch09-sources-mass-action, for `A + 2 B => C + D` on 5 cells: tendency exact (0 against $10^{-14}$), Jacobian
+  $6.870 \times 10^{-11}$;
+- @eq-ch09-sources-stoich, a four-reaction kintera network (H, O, H2, OH, H2O at 450 K) through
+  `build_chemistry_jacobian`: $1.099 \times 10^{-10}$ against the FD of `stoich @ rate` from `Kinetics.forward`;
+- @eq-ch09-sources-boundary: the flux source gives exactly $\pm\Phi/\Delta x_1$ and a zero Jacobian, and the velocity
+  source's Jacobian matches the FD to $1.323 \times 10^{-11}$;
+- @eq-ch09-sources-sum: the combined linearization equals the sum of three terms exactly;
+- @eq-ch09-sources-fold: the folded cation columns match an FD that moves each cation and the electron together,
+  $7.074 \times 10^{-11}$. The fold changes those columns by 79% of the Jacobian's scale, so the line is not
+  trivially satisfied.
+
+[^ch09-sources-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: states and a kinetics card
+    built in the script (seed 9); run: `python doc/tech-report/derivation-checks/check_ch9_sources.py` from a scratch
+    directory, with `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13,
+    torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch9_sources.out`, 8 PASS, 0 FAIL.]
 
 ### Limits
 

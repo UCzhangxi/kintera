@@ -1,0 +1,10 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+(a1) mass action A + 2B => C + D: max |S - nu k c_A c_B^2| / max|S|: measured 0.000e+00  tol 1e-14  PASS
+(a2) mass action: max |J - FD| / max |FD| (central, h = 1e-6 c): measured 6.870e-11  tol 1e-07  PASS
+(b) kintera network: max |stoich @ dR/dc - FD of stoich @ rate| / max |FD|: measured 1.099e-10  tol 1e-07  PASS
+(c1) flux source: +Phi/dz at the bottom cell, -Phi/dz at the top, zero elsewhere and zero J (rel): measured 0.000e+00  tol 1e-15  PASS
+(c2) velocity source: -(v/dz) c at the top cell, and J against FD (rel): measured 1.323e-11  tol 1e-07  PASS
+(d1) build_source_linearization equals the sum of the terms (rel, exact up to round-off): measured 0.000e+00  tol 1e-15  PASS
+(d2) folded cation column vs FD along c_E = sum of cations, worst rel: measured 7.074e-11  tol 1e-07  PASS
+(d3) the fold changes the cation column (info that the test is not trivial): rel change, must EXCEED tol: measured 7.902e-01  tol 1e-03  PASS
+ALL PASS

@@ -36,8 +36,24 @@ largest relative change of iteration $k$; $\theta$, the damping factor. Other sy
 
 ### Derivation
 
-Each Newton iteration rebuilds @eq-ch09-assembly-be with the source linearized at the current iterate and the start
-state $c^{0}$ held fixed, solves it, and then corrects the result:
+The question: why is re-linearizing the backward-Euler system and solving it again Newton's method, and what does it
+solve when $\Delta t$ is very large? Start from @eq-ch09-assembly-be. One step from $c^{0}$ seeks $c$ with
+$c - c^{0} = \Delta t\, f(c)$, where $f(c) = \mathsf T c + S(c)$ is the right side and $\mathsf L(c) = \mathsf T +
+\mathsf J(c)$ is its Jacobian (@sec-ch09-assembly).
+
+*Step 1: the residual and its Jacobian.* The step solves $G(c) = 0$ with
+
+$$
+G(c) = c - c^{0} - \Delta t \left[\mathsf T c + S(c)\right] , \qquad
+G'(c) = \mathsf I - \Delta t\, \mathsf L(c) .
+$$ {#eq-ch09-newton-residual}
+
+*Step 2: Newton's step is the linearized system.* Newton's method for $G = 0$ takes
+$\tilde c^{k+1} = c^{k} - G'(c^{k})^{-1} G(c^{k})$. Multiplying by $G'(c^{k})$ and using
+$\mathsf L c^{k} = \mathsf T c^{k} + \mathsf J c^{k}$, the terms in $\mathsf T c^{k}$ cancel:
+$(\mathsf I - \Delta t \mathsf L)\tilde c^{k+1} = (\mathsf I - \Delta t \mathsf L) c^{k} - c^{k} + c^{0} +
+\Delta t\, \mathsf T c^{k} + \Delta t\, S(c^{k}) = c^{0} + \Delta t\,[S(c^{k}) - \mathsf J c^{k}]$. That is the first
+line of the iteration the code runs:
 
 $$
 \begin{aligned}
@@ -48,10 +64,43 @@ c^{k+1} &= \mathrm{clip}\left(c^{k} + \theta\,(\tilde c^{k+1} - c^{k})\right), \
 $$ {#eq-ch09-newton-iterate}
 
 with $\theta = 1$ unless the raw change exceeds `damping_trigger`, in which case $\theta$ = `damping_factor` (0.5).
-The first line is exactly Newton's method for $c - c^{0} - \Delta t\,[\mathsf T c + S(c)] = 0$, because the linearized
-system is that residual's Newton step. @eq-ch09-newton-iterate is computed in `newton_implicit_step`
+@eq-ch09-newton-iterate is computed in `newton_implicit_step`
 ({{< code python/atm2d/newton/coupled.py newton_implicit_step >}}); the relative change in
 `per_species_relative_change` ({{< code python/atm2d/newton/result.py per_species_relative_change >}}).
+
+*Step 3: rate of convergence.* If $\mathsf J$ is the exact Jacobian of $S$ and is Lipschitz near the root $c^{\ast}$,
+and $G'(c^{\ast})$ is invertible, Newton's method converges quadratically from close enough:
+$\lVert G(c^{k+1}) \rVert \le C \lVert G(c^{k}) \rVert^2$ (Dennis and Schnabel, *Numerical Methods for Unconstrained
+Optimization and Nonlinear Equations*, 1983, ch. 5). Damping replaces the step by $\theta$ times it. Near
+the root, $G$ is linear to first order, so $G(c^{k+1}) \approx (1 - \theta)\, G(c^{k})$: convergence becomes linear
+with ratio $1 - \theta$, which is $\tfrac12$ for the default damping factor. Clipping at zero and the mass cap change
+the iterate whenever they act, and the result is then not a Newton step at all.
+
+*Step 4: the large-$\Delta t$ limit.* Divide the first line of @eq-ch09-newton-iterate by $\Delta t$, which is the
+form `build_implicit_step_system` assembles for $\Delta t \ge 1$ (@sec-ch09-assembly):
+$(\mathsf I/\Delta t - \mathsf L)\tilde c^{k+1} = c^{0}/\Delta t + S(c^{k}) - \mathsf J c^{k}$. As
+$\Delta t \to \infty$ the terms in $1/\Delta t$ vanish and
+
+$$
+-\mathsf L(c^{k})\, \tilde c^{k+1} = S(c^{k}) - \mathsf J(c^{k})\, c^{k}
+\quad\Longleftrightarrow\quad
+\tilde c^{k+1} = c^{k} - \mathsf L(c^{k})^{-1} \left[\mathsf T c^{k} + S(c^{k})\right] ,
+$$ {#eq-ch09-newton-steady}
+
+which is Newton's method for the steady state $f(c) = \mathsf T c + S(c) = 0$, with Jacobian $\mathsf L$.
+
+*Step 5: how close a finite step is.* The converged step satisfies $f(c) = (c - c^{0})/\Delta t$ exactly. Expanding
+$f$ about the steady state $c^{\ast}$, $f(c) \approx \mathsf L(c^{\ast})(c - c^{\ast})$, gives
+
+$$
+c(\Delta t) - c^{\ast} = \mathsf L(c^{\ast})^{-1}\, \frac{c^{\ast} - c^{0}}{\Delta t}
++ O\!\left(\Delta t^{-2}\right) ,
+$$ {#eq-ch09-newton-limit}
+
+so the distance to the steady state falls as $1/\Delta t$. This needs $\mathsf L(c^{\ast})$ to be invertible. For
+transport alone between zero-flux boundaries it is not: the column content is conserved and every uniform profile is
+steady. Then each backward-Euler step keeps the column content of $c^{0}$, and the limit is the steady state with that
+content.
 
 ### Numerical method
 
@@ -95,6 +144,29 @@ Setup checks a user can hit: an unknown `KINTERA_CHEM_SOLVER`; any error of the 
 | `test_atm2d.py` (`test_newton_implicit_step_restores_state_on_non_finite_iterate`) | the entry state is restored after a non-finite iterate | exact | equality |
 
 : Tests of the Newton solvers. {#tbl-ch09-newton-tests}
+
+The derivation is checked by the derivation check `check_ch9_newton.py`, on a 6-layer column with species A and B,
+eddy diffusion, `2 A => B`, `B => A` and a bottom flux of A. Its residual @eq-ch09-newton-residual and Jacobian are
+written in the script, independently of atm2d. All six lines pass:[^ch09-newton-check]
+
+- Step 2: one iteration of `newton_implicit_step` (no damping, clip or cap) equals $c^{0} - G'(c^{0})^{-1} G(c^{0})$
+  to $1.732 \times 10^{-16}$ relative, for $\Delta t = 0.5$ and $10^{3}$, so on both sides of the code's switch at
+  $\Delta t = 1$ (tolerance $10^{-12}$).
+- Step 3: undamped, with $\Delta t = 10^{5}$, $\max\lvert G \rvert / \max c^{0}$ falls from 59.8 to
+  $7.6 \times 10^{-16}$ in seven iterations. Once it is below 1, the observed orders are 1.608, 1.936 and 2.002
+  (the last two within 0.1 of 2). With $\theta = 0.5$ at every iteration the residual ratio tends to 0.5005, which
+  is linear convergence with ratio $1 - \theta$.
+- Steps 4 and 5: the converged step satisfies $f(c) = (c - c^{0})/\Delta t$ to $8.4 \times 10^{-12}$ relative. For
+  $\Delta t = 10^{9}$, $10^{10}$ and $10^{11}$ its distance to the steady state (found by Newton on $f = 0$ in the
+  script) is $4.256 \times 10^{-3}$, $4.283 \times 10^{-4}$ and $4.286 \times 10^{-5}$ relative: it falls by 10 per
+  decade within 0.6% (tolerance 5%). At $\Delta t = 10^{8}$ the distance is still 4%, so the $O(\Delta t^{-2})$ term
+  of @eq-ch09-newton-limit shows, and the check starts one decade later.
+
+[^ch09-newton-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the column built in the script;
+    run: `python doc/tech-report/derivation-checks/check_ch9_newton.py` from a scratch directory, with `KINTERA_WT` set
+    to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch9_newton.out`, 6 PASS,
+    0 FAIL.]
 
 No kintera test at the pin covers the chemistry-only Newton step, the SciPy integrators or the operator-split step.
 Run `[R6]`[^ch09-r6] (pinned `python/atm2d` source, torch 2.10.0, CPU, float64): one `operator_split_step` on a

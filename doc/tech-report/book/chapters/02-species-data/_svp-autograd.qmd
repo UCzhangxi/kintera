@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src
+sources: src/thermo/log_svp.cpp, src/thermo/log_svp.hpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,81 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+The thermodynamic functions of @sec-ch03 and the kinetics of @sec-ch06 need $\ln K_r(T)$ as a tensor over many
+cells, and some callers differentiate through it with PyTorch's automatic differentiation. `LogSVPFunc` wraps the
+fits of @sec-ch02-svp as a PyTorch autograd function: its forward pass evaluates $\ln K_r$ and its backward pass
+multiplies the incoming gradient by the hand-written derivative, so no finite differences are taken.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Tensor $\ln K_r(T)$ with the exact gradient, @eq-ch02-svp-autograd-backward.
+
+**Data.** $T$ [K], shape `(...)` or `(..., R)`; $\ln K_r$, shape `(..., R)` with one column per reaction.
+
+**Placement.** Called by `eval_entropy_R`, `effective_cp`, `relative_humidity` and the kinetics evaporation rates.
+
+**Activation.** Always, after `LogSVPFunc::init(nucleation_options)`.
+
+**Guarantee / limits.** Exact first derivative; the selected reaction set is process-wide state.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\mathcal L$, a scalar loss a caller differentiates [-]; $\bar g_r = \partial \mathcal L / \partial
+\ln K_r$, the incoming gradient [-]. $K_r$ as in the notation table (@sec-appa).
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+By the chain rule, the gradient of a loss with respect to the temperature of one cell, through reaction $r$, is
+
+$$
+\frac{\partial \mathcal L}{\partial T} = \bar g_r \, \frac{\mathrm d \ln K_r}{\mathrm d T} .
+$$ {#eq-ch02-svp-autograd-backward}
+
+`backward` ({{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}) returns this product, evaluating the
+derivative by the `_ddT` functions of @sec-ch02-svp at the temperature saved in `forward`
+({{< code src/thermo/log_svp.cpp LogSVPFunc::forward >}}). The temperature passed to `apply` must already be
+expanded to one column per reaction, so each column's gradient goes to its own temperature entry.
 
 ### Numerical method
 
-Pending.
+`init` ({{< code src/thermo/log_svp.hpp LogSVPFunc::init >}}) copies the reactions' formula names and inline
+parameters into static members of the class. `call` and `grad` evaluate the values and derivatives without autograd;
+`forward` saves the formula names and the inline parameters in the autograd context, so a later `init` with another
+reaction set does not change what an earlier graph's backward pass uses. Evaluation goes through a tensor iterator
+over the reaction dimension, on CPU or CUDA; inline forms are evaluated by the same scalar `eval_logsvp` as the
+saturation kernels.
+
+The autograd figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| set the reaction set | {{< code src/thermo/log_svp.hpp LogSVPFunc::init >}} | `init` | nucleation options |
+| pack inline parameters | {{< code src/thermo/log_svp.cpp LogSVPFunc::make_svp_spec >}} | `make_svp_spec` | `ideal`, `antoine` |
+| values | {{< code src/thermo/log_svp.cpp LogSVPFunc::call >}} | `call` | always |
+| derivatives | {{< code src/thermo/log_svp.cpp LogSVPFunc::grad >}} | `grad` | always |
+| autograd forward | {{< code src/thermo/log_svp.cpp LogSVPFunc::forward >}} | `forward` | `apply` |
+| autograd backward | {{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}} | `backward` | `apply` |
+
+: Code map of `LogSVPFunc`. {#tbl-ch02-svp-autograd-code}
+
+Setup checks a user can hit: an inline formula without its parameters is refused when the specification is packed.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_svp_autograd.py` | an inline reaction's backward uses its forward-time parameters | $10^{-12}$ rel. | not yet derived |
+| `test_svp_autograd.py` | a named reaction's backward uses its forward-time formula | $2 \times 10^{-8}$ rel. | not yet derived |
+
+: Tests of `LogSVPFunc`. {#tbl-ch02-svp-autograd-tests}
+
+The tolerances are read from `tests/test_svp_autograd.py` at the pin.
 
 ### Limits
 
-Pending.
+The reaction set lives in static class members, so every caller must call `init` right before `call` or `grad`;
+two threads using different reaction sets at once could interleave (a hypothesis; no lock is present, verified by
+reading; not run). The backward pass is first order only: it is not itself differentiable, so second derivatives
+through `LogSVPFunc` are not available (verified by reading `backward`; not run).

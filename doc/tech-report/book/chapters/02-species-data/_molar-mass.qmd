@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src
+sources: src/utils/molar_mass.cpp, src/utils/molar_mass.hpp, src/utils/parse_comp_string.cpp, src/species.cpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,84 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+kintera never takes a molar mass from the user. It computes each species' molar mass from its elemental
+composition, written in the YAML file as a map from element symbol to count. This keeps mass and moles consistent
+across every conversion between mass fractions and mole fractions (@sec-ch03).
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\mu_n = \sum_e a_{en} m_e$, @eq-ch02-molar-mass-sum.
+
+**Data.** `composition: {H: 2, O: 1}` in; $\mu_n$ [kg mol$^{-1}$] out.
+
+**Placement.** Once per species, when the registry is filled (@sec-ch02-species-registry).
+
+**Activation.** Always; `composition` is required for every species.
+
+**Guarantee / limits.** Exact sum; the element masses come from the pyharp element table.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\mu_n$, molar mass of species $n$ [kg mol$^{-1}$]; $a_{en}$, number of atoms of element $e$ in
+species $n$ [-]; $m_e$, atomic mass of element $e$ [kg mol$^{-1}$].
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+The molar mass is the composition-weighted sum of atomic masses:
+
+$$
+\mu_n = \sum_e a_{en}\, m_e .
+$$ {#eq-ch02-molar-mass-sum}
+
+@eq-ch02-molar-mass-sum is evaluated by `molar_mass` ({{< code src/utils/molar_mass.cpp molar_mass >}}), which
+calls the pyharp compound-weight function; kintera stores the result as kg mol$^{-1}$, the unit `ThermoY` assumes
+when it forms $1/\mu_n$ in mol kg$^{-1}$. `atomic_mass` ({{< code src/utils/molar_mass.cpp atomic_mass >}})
+converts a single element's mass from g mol$^{-1}$ to kg mol$^{-1}$ by the factor $10^{-3}$. The internals of the
+pyharp table are not read for this section.
+
+A second entry point, `molar_masses_from_yaml` ({{< code src/utils/molar_mass.cpp molar_masses_from_yaml >}}),
+reads a chemistry file with `phases` and `species` and returns the molar masses in phase order, for the
+equilibrium solver of @sec-ch05. The composition-string parser `parse_comp_string`
+({{< code src/utils/parse_comp_string.cpp parse_comp_string >}}) reads strings such as `"H:2, O:1"`; at the pin
+the species reader does not use it (it reads the YAML map directly), only the photochemistry cross-section loader
+does (verified by reading the callers).
 
 ### Numerical method
 
-Pending.
+No numerical method: one sum per species, done once at load time.
+
+The molar-mass figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| species molar mass | {{< code src/utils/molar_mass.cpp molar_mass >}} | `molar_mass` | `composition` |
+| element mass | {{< code src/utils/molar_mass.cpp atomic_mass >}} | `atomic_mass` | always |
+| from a chemistry file | {{< code src/utils/molar_mass.cpp molar_masses_from_yaml >}} | `molar_masses_from_yaml` | `phases`, `species` |
+| from element matrix | {{< code src/utils/molar_mass.cpp molar_masses >}} | `molar_masses` | API |
+| composition strings | {{< code src/utils/parse_comp_string.cpp parse_comp_string >}} | `parse_comp_string` | API |
+
+: Code map of the molar masses. {#tbl-ch02-molar-mass-code}
+
+Setup checks a user can hit: `molar_masses_from_yaml` refuses a file without `phases` or `species`, a species with
+no `name` or `composition`, a duplicate species and a phase component with no definition; `molar_masses` refuses a
+component with no positive molar mass; `parse_comp_string` refuses duplicate keys and unparsable pairs.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_species_registry.py` | molar masses of a second card equal its reference values | $10^{-12}$ rel. | not yet derived |
+| `test_kinetics_base_units.py` | molar masses from a KINETICS-base input are in kg mol$^{-1}$ | $10^{-3}$ rel. | element table rounded to 0.01 g mol$^{-1}$ (test docstring) |
+
+: Tests of the molar masses. {#tbl-ch02-molar-mass-tests}
+
+The tolerances are read from the test files at the pin. No test checks @eq-ch02-molar-mass-sum against hand values
+for a YAML card: missing evidence.
 
 ### Limits
 
-Pending.
+The element table belongs to pyharp, so its values and their precision are outside this report; an element pyharp
+does not know cannot be used. Isotopes and non-integer compositions are accepted as given (the counts are read as
+floating-point numbers).

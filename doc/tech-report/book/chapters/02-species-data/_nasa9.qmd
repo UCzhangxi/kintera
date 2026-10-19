@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src
+sources: src/species.cpp, src/thermo/nasa9.hpp, data/nasa9.dat, python/data/nasa9.dat
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,94 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+A constant heat capacity is accurate only over a narrow temperature range. kintera ships a table of NASA-9
+polynomial coefficients for 293 species, which give heat capacity, enthalpy and entropy as functions of temperature
+in two ranges. The table is looked up by species name when the registry is filled. The coefficients are used in two
+places: the temperature-dependent heat capacity of @sec-ch03 when `use-nasa9-cp` is on, and the
+dimensionless Gibbs energy of the multiphase equilibrium solver (@sec-ch05).
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $c_p/\mathcal R$, $h/(\mathcal R T)$, $s/\mathcal R$ from nine coefficients per range,
+@eq-ch02-nasa9-forms.
+
+**Data.** `data/nasa9.dat` (293 species, 200-1000 K and 1000-6000 K); nine coefficients per range per species.
+
+**Placement.** Looked up by name in the registry reader; evaluated by the thermodynamic functions.
+
+**Activation.** Lookup always; use in $c_p$, $c_v$, $u$ only with `reference-state: use-nasa9-cp: true` (default off).
+
+**Guarantee / limits.** Exact polynomial evaluation; no clamp outside 200-6000 K.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $a_0, \dots, a_6$, polynomial coefficients [K$^{-k}$ as needed]; $b_1$, $b_2$, integration constants
+of enthalpy [K] and entropy [-]; $T_{\mathrm{mid}}$, the range boundary [K].
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+Within one temperature range the NASA-9 forms are
+
+$$
+\begin{aligned}
+\frac{c_p}{\mathcal R} &= a_0 T^{-2} + a_1 T^{-1} + a_2 + a_3 T + a_4 T^2 + a_5 T^3 + a_6 T^4 , \\
+\frac{h}{\mathcal R T} &= -a_0 T^{-2} + a_1 \frac{\ln T}{T} + a_2 + \frac{a_3 T}{2} + \frac{a_4 T^2}{3}
++ \frac{a_5 T^3}{4} + \frac{a_6 T^4}{5} + \frac{b_1}{T} , \\
+\frac{s}{\mathcal R} &= -\frac{a_0 T^{-2}}{2} - a_1 T^{-1} + a_2 \ln T + a_3 T + \frac{a_4 T^2}{2}
++ \frac{a_5 T^3}{3} + \frac{a_6 T^4}{4} + b_2 .
+\end{aligned}
+$$ {#eq-ch02-nasa9-forms}
+
+The second line is $\int c_p\, \mathrm d T$ divided by $\mathcal R T$, with $b_1$ the constant of integration; the
+third is $\int c_p\, \mathrm d T / T$ divided by $\mathcal R$, with $b_2$ its constant. Term by term:
+$\int a_0 T^{-2}\,\mathrm d T = -a_0 T^{-1}$ and $\int a_0 T^{-3}\,\mathrm d T = -a_0 T^{-2}/2$;
+$\int a_1 T^{-1}\,\mathrm d T = a_1 \ln T$ and $\int a_1 T^{-2}\,\mathrm d T = -a_1 T^{-1}$; the powers
+$T^k$, $k \ge 0$, integrate to $T^{k+1}/(k+1)$ and $T^k/k$. The Gibbs energy is $g/(\mathcal R T) = h/(\mathcal R T)
+- s/\mathcal R$, computed in `nasa9_gibbs_RT` ({{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}).
+
+The file stores ten numbers per range, $a_0$ to $a_6$, an unused zero, $b_1$ and $b_2$, as four lines of five
+after the species name. `get_nasa9_db` ({{< code src/species.cpp get_nasa9_db >}}) keeps nine of them, dropping the
+zero, so index 7 holds $b_1$ and index 8 holds $b_2$.
 
 ### Numerical method
 
-Pending.
+The low range is used for $T < T_{\mathrm{mid}}$ and the high range otherwise, chosen per cell and species by a mask.
+The registry sets $T_{\mathrm{mid}} = 1000$ K for every species. A species absent from the table gets all-zero
+coefficients, and the thermodynamic functions treat a row of zeros as "no NASA-9 data". The table is parsed once per
+process, at first use, under a once-flag; `find_resource` locates `nasa9.dat` (a file in the current directory takes
+precedence, see the Tests layer).
+
+The NASA-9 figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| table parser | {{< code src/species.cpp get_nasa9_db >}} | `get_nasa9_db` | `nasa9.dat` |
+| Gibbs energy by name | {{< code src/species.cpp nasa9_gibbs_rt >}} | `nasa9_gibbs_rt` | API |
+| Gibbs energy | {{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}} | `nasa9_gibbs_RT` | always |
+| lookup into registry | {{< code src/species.cpp init_species_from_yaml overload=2 >}} | `init_species_from_yaml` | `species` |
+
+: Code map of the NASA-9 data. {#tbl-ch02-nasa9-code}
+
+Setup checks a user can hit: a missing `nasa9.dat` stops the load; `nasa9_gibbs_rt` refuses a name not in the table
+("NASA-9 species not found") and a non-floating-point temperature. `data/nasa9.dat` and `python/data/nasa9.dat` are
+identical at the pin (`cmp` of the two files).
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_species.release` (`SpeciesInit.prefers_current_directory_nasa9_file`) | a `nasa9.dat` in the working directory is read, with the coefficient layout above | exact | equality |
+| `test_nasa9_cp.py` | with `use-nasa9-cp`, $c_p$ and $c_v$ follow @eq-ch02-nasa9-forms | $10^{-10}$ rel. | not yet derived |
+
+: Tests of the NASA-9 data. {#tbl-ch02-nasa9-tests}
+
+The tolerances are read from the test files at the pin. No test checks the entropy line of @eq-ch02-nasa9-forms or
+`nasa9_gibbs_RT` directly in this chapter's scope; that is missing evidence.
 
 ### Limits
 
-Pending.
+The polynomials are evaluated outside 200-6000 K without warning (verified by reading `nasa9_gibbs_RT`; no clamp).
+$T_{\mathrm{mid}}$ is fixed at 1000 K, which matches the file header's ranges. A working-directory `nasa9.dat`
+silently replaces the shipped one.

@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src
+sources: src/units/units.cpp, src/units/units.hpp, src/constants.h
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,82 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+kintera computes in SI units with amounts in moles. Input data often come in other units, such as rate constants
+in molecule, cm and s. The `Units` and `UnitSystem` classes parse a unit string, check its dimensions and convert a
+value to kintera's base units. The physical constants every module shares are defined once in one header.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Convert a value from a unit string to SI-and-mole, @eq-ch02-units-factor.
+
+**Data.** A value and a unit string such as `cm^3/molecule/s` in; the value in kg, m, s, K, A, mol out.
+
+**Placement.** Used by the reaction readers (`arrhenius`, fall-off, evaporation) when they read YAML.
+
+**Activation.** Always for those readers; base units are kg, m, s, mol, Pa, J, K, A.
+
+**Guarantee / limits.** Exact factor products; dimension check on conversion.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $f_u$, the conversion factor of a base unit $u$ to SI [-]; $p_u$, its prefix factor [-]; $k_u$, its exponent in the unit string
+[-]; $f$, the factor of the whole unit [-]; $N_{\mathrm A}$, the Avogadro constant [mol$^{-1}$].
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+A unit string is a product of base units with exponents, each base unit optionally carrying an SI prefix. Its
+factor to SI is the product
+
+$$
+f = \prod_u \left(p_u f_u\right)^{k_u} ,
+$$ {#eq-ch02-units-factor}
+
+where the prefix factor $p_u$ is, for example, $10^{-2}$ for `c`, and the base-unit factor $f_u$ is, for example,
+$1/N_{\mathrm A}$ mol for `molecule`. The value in base units is the value times $f$. The parser in the `Units`
+constructor ({{< code src/units/units.cpp Units::Units overload=2 >}}) splits the string at `*` and `/`, reads each
+exponent after `^`, looks the name up among the known units first and only then tries a one-letter prefix, so `m` is
+the metre and `mm` the millimetre.
+
+The shared constants are, in `src/constants.h` ({{< code src/constants.h >}}): $N_{\mathrm A} = 6.02214076 \times
+10^{23}$ mol$^{-1}$, $\mathcal R = 8.31446$ J mol$^{-1}$ K$^{-1}$, $k_{\mathrm B} = 1.380649 \times 10^{-23}$
+J K$^{-1}$, $e = 1.602176634 \times 10^{-19}$ C and 1 atm $= 101325$ Pa. $N_{\mathrm A}$, $k_{\mathrm B}$ and $e$ are
+the exact SI values. $\mathcal R$ is truncated: $N_{\mathrm A} k_{\mathrm B} = 8.314462618\ldots$ J mol$^{-1}$
+K$^{-1}$, so the stored value is smaller by $2.6 \times 10^{-6}$ J mol$^{-1}$ K$^{-1}$, a relative
+$3.1 \times 10^{-7}$ (arithmetic on the constants as printed).
 
 ### Numerical method
 
-Pending.
+No numerical method: one product of factors per conversion.
+
+The units figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| unit parser | {{< code src/units/units.cpp Units::Units overload=2 >}} | `Units` | unit string |
+| converter | {{< code src/units/units.hpp UnitSystem >}} | `UnitSystem` | API |
+| constants | {{< code src/constants.h >}} | file | always |
+
+: Code map of units and constants. {#tbl-ch02-units-code}
+
+Setup checks a user can hit, each an `std::invalid_argument` from `units.cpp`: "Unknown unit" for a name that is
+neither a known unit nor a prefix plus one; "Cannot convert from ... to ..." for units of different dimensions;
+"not supported for temperature" or "for current" for a unit the system cannot take for that dimension; and "does
+not represent unity conversion factor" when a factor of one is required.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| none | no test targets `Units` or `UnitSystem` directly | n/a | missing evidence |
+
+: Tests of units and constants. {#tbl-ch02-units-tests}
+
+The classes are exercised only through the reaction readers' tests (@sec-ch06).
 
 ### Limits
 
-Pending.
+$\mathcal R$ and $N_{\mathrm A} k_{\mathrm B}$ differ by a relative $3.1 \times 10^{-7}$, so a quantity converted
+once through $k_{\mathrm B}$ and once through $\mathcal R$ disagrees at that level. Whether any code path mixes the two
+is not checked here.

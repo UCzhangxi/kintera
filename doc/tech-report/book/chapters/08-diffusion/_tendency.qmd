@@ -52,7 +52,8 @@ explicit step is not derived here. The test below uses a forward-Euler step of $
 
 : Code map of the eddy-diffusion tendency. {#tbl-ch08-tendency-code}
 
-1. `diffusion_tendency` calls `diffusion_coefficients` and adds a trailing dimension to `A`[^rg-8035248ae605], `B` and `C`.
+1. `diffusion_tendency` calls `diffusion_coefficients` and adds a trailing dimension to the three coefficient
+   vectors $A$, $B$ and $C$.
 2. It forms `A * y`, then adds the upper and lower neighbour terms in place on slices.
 3. `bind_diffusion` exposes both functions to Python as `kintera.diffusion_tendency(y, Kzz, dzi)` and
    `kintera.diffusion_coefficients(y, Kzz, dzi)`, with the same argument names.
@@ -84,7 +85,3 @@ and attaches no run record (missing evidence).
 - Molecular diffusion is not provided here: `src/diffusion` has only the eddy term. The binary (molecular)
   diffusion matrix is built in the two-dimensional solver
   ({{< code python/atm2d/transport.py build_binary_diffusion_matrix >}}); answered at @sec-ch09-molecular.
-
-<!-- reader glossary notes -->
-[^rg-8035248ae605]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
-<!-- end reader glossary notes -->

@@ -37,13 +37,17 @@ That source fact alone is not a complete answer to how a user should configure r
 section must supply the relevant setup and conditions as well. This example is source reading, not an executed
 resource-lookup test or a task classified as answered.
 
-The generated summary below currently contains no task entries. Its empty categories do not mean that all
-tasks have been answered, that no tasks are possible, or that the code has no unsupported operations.
+The map covers the original 32 questions and the supplemental spacing task. Four original questions
+remain excluded from the paired 28-question comparison: Shomate, binary diffusion, molecular-diffusion
+configuration and radiation/photochemistry coupling. Their presence here does not change that denominator.
+The last three have routes elsewhere in the expanded book; Shomate retains an explicit scope statement.
 
 ::: {.callout-warning title="Limits"}
-Not provided: task-specific answering destinations and evidence-backed task classifications, because the
-curated task list is empty. The status guide explains how to read future entries; it does not substitute for
-their answers or for a reader lookup test.
+The statuses preserve a conservative distinction between available sections and complete answers.
+Partly documented entries have not passed a new lookup round. In particular, species and saturation-law
+extension procedures, mixture-capacity lookup, device/dtype contracts and GPU benchmarking still need
+verification against their complete question. The spacing task links to its local definition; it does not
+fill the shared notation group. Follow the destination's limits and tests before using its procedure.
 :::
 
 {{< include appendices/_appg-reader-tasks.qmd >}}

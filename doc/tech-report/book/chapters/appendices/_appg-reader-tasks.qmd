@@ -2,11 +2,53 @@
 
 | status | tasks |
 |---|---|
-| answered | 0 |
-| partly documented | 0 |
+| answered | 12 |
+| partly documented | 20 |
 | undocumented | 0 |
 | unsupported by the code | 0 |
-| outside scope | 0 |
-| total | 0 |
+| outside scope | 1 |
+| total | 33 |
 
 : Reader tasks by status. {#tbl-appg-reader-tasks}
+
+## Answered {.unnumbered .unlisted}
+
+- What does reference-pressure mean and what units does it use?. See Reference state and latent heat, @sec-ch03-reference-state.
+- How are mass and mole fractions converted and what happens to the implicit dry species?. See Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
+- How is condensate entropy derived from saturation equilibrium?. See Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
+- How does the implicit kinetics update work and what are its limitations?. See Linearly implicit time step, @sec-ch06-implicit.
+- What are the Arrhenius rate parameters and their units?. See Arrhenius rate constants and their temperature bands, @sec-ch06-arrhenius.
+- What diffusion flux is solved and what are its boundary assumptions?. See The eddy-diffusion tendency of a column, @sec-ch08-tendency.
+- How is the diffusion discretization derived?. See The eddy-diffusion operator on a column, @sec-ch08-operator.
+- How do I load a YAML mechanism and construct Python modules?. See The YAML input file: species and reference state, @sec-ch11-yaml-input.
+- How are resource files located?. See Resource lookup for data files, @sec-ch11-resources.
+- Where can I find test coverage and its limits?. See What the suite covers on CPU only (device coverage), @sec-ch13-device-coverage.
+- How do I couple chemistry to a hydrodynamics step and who owns the timestep?. See Kinetics after the dynamics step, @sec-ch14-kinetics.
+- What units and state conversions are needed at the host interface?. See Kinetics after the dynamics step, @sec-ch14-kinetics.
+
+## Partly documented {.unnumbered .unlisted}
+
+- How are gases and condensates ordered in species data?. See The species registry: names, phases and per-species data, @sec-ch02-species-registry.
+- How do I add a species with thermodynamic data?. See The species registry: names, phases and per-species data, @sec-ch02-species-registry.
+- How are mixture heat capacities computed and in what units?. See Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
+- How do I add a new saturation vapor pressure law?. See Saturation vapor pressure fits per reaction, @sec-ch02-svp.
+- What is a third-body reaction and how is effective concentration defined?. See Three-body and fall-off rate constants, @sec-ch06-falloff.
+- How do I add a reaction rate law?. See Arrhenius rate constants and their temperature bands, @sec-ch06-arrhenius.
+- What is binary diffusion and what units does its coefficient have?. See Molecular (binary) diffusion and the exponential vertical schemes, @sec-ch09-molecular.
+- How do I configure molecular diffusion coefficients?. See Molecular (binary) diffusion and the exponential vertical schemes, @sec-ch09-molecular.
+- What does ADD_ARG mean for an option?. See The C++ options objects and modules, @sec-ch11-options.
+- How do I add a YAML configuration option?. See The C++ options objects and modules, @sec-ch11-options.
+- How do I move a module to GPU and what tensors must share its device?. See Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
+- What is a batch dimension in this API?. See Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
+- What dtype and device limitations apply to execution?. See Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
+- How do I benchmark GPU speedup reliably?. See Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
+- Which tests verify equilibrium conservation and what do they establish?. See How the test suite is organised and run, @sec-ch13-suite.
+- What is a validation tolerance and how is it chosen?. See How the test suite is organised and run, @sec-ch13-suite.
+- How do I run verification tests?. See How the test suite is organised and run, @sec-ch13-suite.
+- What is operator splitting and what accuracy is promised?. See Kinetics after the dynamics step, @sec-ch14-kinetics.
+- How do I couple radiation to photochemistry?. See Chemical and photochemical source terms, @sec-ch09-sources.
+- Can the shared notation index define the diffusion face spacing and units?. See The eddy-diffusion operator on a column, @sec-ch08-operator.
+
+## Outside scope {.unnumbered .unlisted}
+
+- What is the Shomate representation and its temperature convention?. Not provided: Shomate is outside the frozen scope; NASA-9 is described in @sec-ch02-nasa9.

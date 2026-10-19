@@ -48,11 +48,11 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | $c^{\star}_n$ | constant heat-capacity coefficient of species $n$, $c_{v,n}/\mathcal R$ without extra terms [-] | `cref_R` (YAML `cv_R`) |
 | $u^{\star}_n$ | internal energy of species $n$ at $T_\star$, divided by $\mathcal R$ [K] | `uref_R` (YAML `u0_R`) |
 | $s^{\star}_n$ | entropy of gas $n$ at $T_\star$ and $p_\star$, divided by $\mathcal R$ [-] | `sref_R` (YAML `s0_R`) |
-| $K_r$ | saturation constant of condensation reaction $r$: the product of reactant partial pressures, each to its stoichiometric magnitude, on the saturation curve [Pa$^{m}$, $m$ the sum of the gas magnitudes] | `logsvp` (its logarithm) |
+| $K_r$ | saturation constant of condensation reaction $r$: the product over the gases of the reaction of their partial pressures on the saturation curve, each raised to $-\nu_{nr}$ (positive for a gas consumed, negative for a gas produced) [Pa$^{m}$, $m = -\sum_{n<N_{\mathrm g}} \nu_{nr}$] | `eval_logsvp` (its logarithm; the solvers' `logsvp` also holds the pressure or $\mathcal R T$ term) |
 | $L_r$ | latent heat of reaction $r$ at constant volume, internal energy released per unit extent [J mol$^{-1}$] | |
-| $\mathrm{RH}_r$ | relative humidity of reaction $r$, reactant partial-pressure product over $K_r$ [-] | `relative_humidity` |
+| $\mathrm{RH}_r$ | relative humidity of reaction $r$, the gas partial-pressure product of $K_r$ at the actual partial pressures, over $K_r$ [-] | `relative_humidity` |
 | $\nu_{nr}$ | stoichiometric coefficient of species $n$ in reaction $r$, negative for a reactant, positive for a product [-] | `stoich` |
-| $\xi_r$ | extent of reaction $r$ in one step of a saturation solve, in the units of the amounts it moves [-] or [mol m$^{-3}$] | `rhs` (after the least-squares solve) |
+| $\xi_r$ | extent of reaction $r$: a change $\xi_r$ changes the amount of each species $n$ by $\nu_{nr}\,\xi_r$; in the units of those amounts, mole fraction [-] or concentration [mol m$^{-3}$] | `rhs` in the saturation solvers, after the least-squares solve |
 | $\Delta_r$ | saturation deficit of reaction $r$, $\ln K_r(T) + \sum_{n<N_{\mathrm g}} \nu_{nr} \ln p_n$, positive when subsaturated [-] | `logsvp - log_frac_sum` |
 
 ## 3. Fluxes and transport

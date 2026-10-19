@@ -28,14 +28,18 @@ every reaction has exactly one vapour and one condensate and no species appears 
 
 **Activation.** YAML `dynamics: equation-of-state: uv-solver:` `auto` (default), `kkt` or `partition`.
 
-**Guarantee / limits.** `partition` is refused for sets that do not qualify and can fail near `Tref`[^rg-9ae8cd00fe8f].
+**Guarantee / limits.** `partition` is refused for sets that do not qualify and can fail near $T_\star$.
 
 **Evidence.** See the Tests layer below.
 :::
 
-Symbols of the notation table (@sec-appa): $c_n$, $u_n$, $c_{v,n}$, $U$, $\mathcal R$; the rest as in
-@sec-ch04-conditions. Local symbol: $u_{0,n}$, the molar internal energy of species $n$ extrapolated to $T = 0$
-[J mol$^{-1}$].
+Symbols of the notation table (@sec-appa): $c_n$, $u_n$, $c_{v,n}$, $U$, $C_V$, $L_r$, $T_\star$, $\mathcal R$; the
+rest as in @sec-ch04-conditions. Local symbols: $u_{0,n}$, the molar internal energy of species $n$ extrapolated to
+$T = 0$ [J mol$^{-1}$]; $K'_r$, the saturation constant of reaction $r$ in concentration units, defined in
+@eq-ch04-equilibrate-uv-constant [(mol m$^{-3}$)$^{m}$, $m = \sum_{n<N_{\mathrm g}} \hat\nu_{nr}$]; $F_r$, the
+residual of the concentration condition of reaction $r$ [-]; $\mathsf W$, here the weight matrix of the fixed-energy
+step (active reactions by species) [m$^3$ mol$^{-1}$]. The reference temperature $T_\star$ is the YAML entry
+`reference-state: Tref` (default 300 K, @sec-ch03-reference-state).
 
 ### Derivation
 
@@ -44,9 +48,9 @@ deficit of @sec-ch04-conditions gives the condition in concentration units:
 
 $$
 \begin{aligned}
-\sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln c_n &= \ln K_r(T) - \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln(\mathcal R T), \\
-\frac{\mathrm{d}}{\mathrm{d}T}\Big[\ln K_r(T) - \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln(\mathcal R T)\Big]
-  &= \frac{\mathrm{d}\ln K_r}{\mathrm{d}T} - \frac{\sum_{n<N_{\mathrm g}} \hat\nu_{nr}}{T} .
+\sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln c_n &= \ln K'_r(T), \\
+\ln K'_r(T) &= \ln K_r(T) - \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln(\mathcal R T), \\
+\frac{\mathrm{d}\ln K'_r}{\mathrm{d}T} &= \frac{\mathrm{d}\ln K_r}{\mathrm{d}T} - \frac{\sum_{n<N_{\mathrm g}} \hat\nu_{nr}}{T} .
 \end{aligned}
 $$ {#eq-ch04-equilibrate-uv-constant}
 
@@ -66,6 +70,43 @@ uses. @eq-ch04-equilibrate-uv-constant and @eq-ch04-equilibrate-uv-energy are co
 (\mathrm{d}u_n/\mathrm{d}T)\,c_n$,
 until two iterates differ by less than $\max(10^{-4}\,\mathrm{K}, 8\,\epsilon_{\mathrm{mach}} T)$.
 
+**The linear step.** The step must anticipate that temperature change, because $\ln K'_r$ depends on $T$ and, at
+fixed $U$, every composition change moves $T$. Write the residual of reaction $r$ as
+$F_r(\mathbf c) = \sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln c_n - \ln K'_r\big(T(\mathbf c)\big)$, where
+$T(\mathbf c)$ is the temperature that keeps $U$ fixed. Differentiating @eq-ch04-equilibrate-uv-energy at fixed $U$
+gives the temperature change that a composition change $\delta\mathbf c$ causes, and the first-order change of $F_r$:
+
+$$
+\begin{aligned}
+0 = \delta U &= \sum_n u_n\,\delta c_n + C_V\,\delta T , \qquad C_V = \sum_n \frac{\mathrm d u_n}{\mathrm d T}\, c_n , \\
+\delta T &= -\frac{1}{C_V} \sum_n u_n\,\delta c_n , \\
+\delta F_r &= \sum_{n<N_{\mathrm g}} \frac{\hat\nu_{nr}}{c_n}\,\delta c_n - \frac{\mathrm d \ln K'_r}{\mathrm d T}\,\delta T
+  = \sum_n \mathsf W_{rn}\,\delta c_n , \\
+\mathsf W_{rn} &= \frac{\mathrm d \ln K'_r}{\mathrm d T}\,\frac{u_n}{C_V}
+  + \begin{cases} \hat\nu_{nr}/c_n & n < N_{\mathrm g} \\ 0 & n \ge N_{\mathrm g} \end{cases} .
+\end{aligned}
+$$ {#eq-ch04-equilibrate-uv-weight}
+
+`equilibrate_uv` ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}) builds this row for every active
+reaction: `logsvp_ddT[j] * intEng[i] / heat_capacity` for every species and `nu / conc[i]` added for the gases of the reaction, with `intEng`
+the absolute molar energy $u_n$, offset included, and `heat_capacity` the sum $C_V$. The check
+`equilibrate_uv_check.py` compares the row with finite differences of $F_r$ at fixed $U$ (`[C1]`, `[C2]`). With
+$\delta\mathbf c = \mathsf S\boldsymbol\xi$, where $\mathsf S$ has entries $\nu_{nk}$, the gain matrix of the step is
+
+$$
+(\mathsf W\mathsf S)_{rk} = \sum_{n<N_{\mathrm g}} \frac{\hat\nu_{nr}\,\nu_{nk}}{c_n}
+  - \frac{\mathrm d\ln K'_r}{\mathrm d T}\,\frac{L_k}{C_V} ,
+\qquad L_k = -\sum_n \nu_{nk}\,u_n ,
+$$
+
+since $\sum_n u_n \nu_{nk}$ is minus the energy that reaction $k$ releases per unit extent (`[C4]`). The second term is
+where latent heat enters the step: condensing warms the cell, which raises $K'_r$ and so reduces the condensation the
+step asks for. The row differs from the fixed-temperature row (@eq-ch04-equilibrate-tp-weight) in three ways. It has
+no term in the gas total, because a concentration does not depend on the amounts of the other species, as a mole
+fraction does. Condensates have non-zero weights, through their energies $u_n$. And it has the coupling term. Without
+that term the gain of the check's example changes by 0.72 of its largest entry (`[C3]`), and each step would overshoot
+until the separate temperature update undid it.
+
 ### Numerical method
 
 **Method choice.** `ThermoYImpl::forward` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}) passes the choice
@@ -84,8 +125,9 @@ to each cell:
 `max-iter` times:
 
 1. evaluate @eq-ch04-equilibrate-uv-constant at the current temperature;
-2. find the active reactions and build the weight matrix and right side in concentrations, as in
-   @sec-ch04-equilibrate-tp;
+2. find the active reactions by the tests of @sec-ch04-conditions and build the weight rows of
+   @eq-ch04-equilibrate-uv-weight and the right side $\ln K'_r - \sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln c_n$; an absent
+   gas is handled as in @sec-ch04-conditions, in concentrations;
 3. solve the constrained least-squares problem of @sec-ch04-active-set;
 4. clip each reaction's extent to the stock of the species it consumes;
 5. shrink the whole step by a factor 0.99 per try until every gas present changes by a ratio between 0.01 and 100;
@@ -100,6 +142,22 @@ condensate (`partition_uv_state`, {{< code src/thermo/equilibrate_uv.h partition
 matches $U$ is bracketed by halving or doubling, at most 64 times, and then found by a Newton iteration safeguarded by
 bisection. It stops when the energy residual is at most $64\,\epsilon_{\mathrm{mach}} \max(|U_0|, 1)$, where $U_0$ is
 the target energy in the solver's own reference. That tolerance is absolute.
+
+The Newton passes are capped by the same `max-iter` as the general method (default 10): the loop runs while the
+residual is above the tolerance and fewer than `max-iter` passes have been made. The 64 bracketing steps are a separate,
+fixed bound. On success the diagnostic is the number of Newton passes, counting the evaluation at the start
+temperature as the first, and the same count is written back to the caller's `max_iter`; it is not a count of outer
+passes. If the cap is reached first the cell
+fails with diagnostic $-1$ and keeps its input state; with `uv-solver: partition` there is no fallback. On the
+one-vapour card of @fig-ch04-equilibrate-uv-partition with $T_\star = 0$ and 15 cells from 200 to 320 K with
+$x_{\mathrm v}$ from $10^{-3}$ to $5\times10^{-2}$, `max-iter: 3` fails 9 of the 15 cells, while 5, 10 and 50 fail
+none and the largest pass count is 4.[^ch04-uv-partition-maxiter]
+
+**The gain matrix returned.** The general method returns the gain $\mathsf W\mathsf S$ of the active reactions of the
+last pass that had any, scattered into the full reaction order, and zeros elsewhere. A solve that converges ends on a
+pass with no active reaction, so its gain is all zeros; only a failed solve returns a non-zero gain. The partition
+method always returns zeros. A caller therefore cannot use the fixed-energy gain as the gain of
+@sec-ch03-adiabat, which needs the fixed-temperature one (@sec-ch04-warm-start-failures).
 
 @fig-ch04-equilibrate-uv-partition compares the two methods near the reference temperature.
 
@@ -129,35 +187,44 @@ make_fig()
 |---|---|---|---|
 | `test_equilibrate_uv_gain.py` | the gain matrix is zero outside the active set | exact zeros | structure |
 | `test_saturation_adjustment_nh4sh.py` | adjusted cells satisfy the conditions; N and S conserved | RH within $10^{-5}$; `rtol=1e-12` | not stated in the test |
-| `test_cuda_workspace.py` | the solve on CUDA matches the CPU, for `kkt` and `partition` | `rtol=1e-10`, `atol=1e-14` | not stated in the test |
+| `test_cuda_workspace.py` | the solve on CUDA matches the CPU, for `kkt` and `partition`; skipped when CUDA is absent, so on a CPU build it asserts nothing | `rtol=1e-10`, `atol=1e-14` | not stated in the test |
 
 : Tests of saturation adjustment at fixed internal energy and volume. {#tbl-ch04-equilibrate-uv-tests}
 
-No test in the tree asserts that the internal energy is conserved, that is, that $U$ after the solve equals $U$ before
-to the tolerance of the inner temperature solve. Two runs show the property the proposed test would assert. On the
-cold-start cells of @sec-ch04-equilibrate-tp (`tests/jupiter.yaml`), the relative change of $U$ is at most
-$7.3\times10^{-16}$.[^ch04-uv-coldstart] On 25 cells of a self-written one-vapour card started between 297 and
-303 K, all converged, $|U_{\mathrm{after}} - U_{\mathrm{before}}| / \max(|U_{\mathrm{before}}|, 1\,\mathrm{J\,m^{-3}})$
-is at most $1.9\times10^{-11}$.[^ch04-uv-energy] The larger value comes from the 1 J m$^{-3}$ floor of the measure
-near `Tref`, where $U$ is small. A suite test would build such cells, call `ThermoY.forward` and compare `VT->U` at
-the returned temperature with the input $U$.
+Conservation of $U$ is not a useful test: the forward takes $U$ as input, and a host recovers the temperature from
+the returned state at that same $U$, so $U$ at the recovered temperature equals the input by construction. What can
+fail is saturation at the temperature the host will use. The proposed test reads the temperature back from the
+returned state at the input $U$ (`VU->T`) and requires, at that temperature, that no reaction is supersaturated and
+that every reaction whose condensate is present is saturated, each within the $10^{-5}$ of
+`test_saturation_adjustment_nh4sh.py`. No test in the tree does this. The measurement passes on the 25 cells of the
+one-vapour card started between 297 and 303 K with `kkt` and with `auto` (largest $|\ln\mathrm{RH}|$
+$9.2\times10^{-7}$) and on the cold-start cells of `tests/jupiter.yaml` with `max-iter: 30` (largest $1.0\times10^{-7}$).
+It fails where it should: with `max-iter: 2` on the same cells ($\ln\mathrm{RH}$ up to 14) and with `use-h2-cp`
+(Limits; $|\ln\mathrm{RH}| = 3.5\times10^{-3}$).[^ch04-uv-host-rh]
 
-[^ch04-uv-energy]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the self-written card of
-@fig-ch04-equilibrate-uv-partition with `uv-solver: kkt`; run: `python -P uv_energy.py`, which calls `ThermoY.forward`,
-then `VU->T` and `VT->U`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a
-committed check.]
+[^ch04-uv-host-rh]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the one-vapour card `ONE_VAPOUR` of
+`src/kintera_report/ch04/runs/common.py` and `tests/jupiter.yaml`; run: `python -P
+src/kintera_report/ch04/runs/uv_host_rh.py` with `KINTERA_REPO` set to a kintera checkout at the pin, which calls
+`ThermoY.forward`, `VU->T` and `relative_humidity`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement
+outside the suite, not a committed check.]
+
+[^ch04-uv-partition-maxiter]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `ONE_VAPOUR` with
+$T_\star = 0$ and `uv-solver: partition`; run: `python -P src/kintera_report/ch04/runs/partition_maxiter.py`, which
+calls `ThermoY.forward` for `max-iter` 3, 5, 10 and 50, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement
+outside the suite, not a committed check.]
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- **The partition method fails near `Tref`.** Its tolerance is absolute, and the target energy $U_0$ is close to zero
+- **The partition method fails near $T_\star$.** Its tolerance is absolute, and the target energy $U_0$ is close to zero
   when the cell starts near the reference temperature. For one vapour (water, $x_{\mathrm{v}} = 5\times10^{-2}$, 1 bar,
-  `Tref` 300 K), `uv-solver: partition` fails in 23 of 25 cells started between 297 and 303 K and succeeds only at
+  $T_\star$ = 300 K), `uv-solver: partition` fails in 23 of 25 cells started between 297 and 303 K and succeeds only at
   297.00 and 302.25 K (@fig-ch04-equilibrate-uv-partition). A failed cell keeps its input temperature and leaves the
   saturation residual $\ln\mathrm{RH}$ between 0.17 and 0.51. `kkt` converges in every one of these cells to
-  $|\ln\mathrm{RH}| < 10^{-6}$.[^ch04-uv-partition] With `Tref` 250 K and starts within 1 K of it, `partition` fails in
+  $|\ln\mathrm{RH}| < 10^{-6}$.[^ch04-uv-partition] With $T_\star$ = 250 K and starts within 1 K of it, `partition` fails in
   all five cells tried, leaving $\ln\mathrm{RH}$ between 4.09 and 4.28.[^ch04-uv-partition-250] With `auto` such a cell
   falls back to the general method.
+- **`max-iter` also caps the partition method**, as above; lowering it below 5 to save time loses partition cells.
 - **The default `max-iter` of 10 fails cold starts here too.** On the cold-start cells of @sec-ch04-equilibrate-tp the
   general method fails at 130 and 150 K with `max-iter: 10` and converges with 20 or 30, in 14 and 12
   iterations.[^ch04-uv-coldstart]
@@ -170,29 +237,27 @@ committed check.]
 
 - The saturation tests assume an ideal gas (@sec-ch04-conditions, Limits).
 
-[^ch04-uv-partition]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: a self-written card with dry gas,
-`H2O` and `H2O(l)`, one nucleation reaction with `formula: h2o_ideal`, `Tref` 300 K, `max-iter: 50`; cells started at
-297 to 303 K in steps of 0.25 K, $10^5$ Pa; run: `python -P fig_partition.py uv_partition_tref.json`, which calls
+[^ch04-uv-partition]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the card `ONE_VAPOUR` of
+`src/kintera_report/ch04/runs/common.py`, with dry gas, `H2O` and `H2O(l)`, one nucleation reaction with
+`formula: h2o_ideal`, $T_\star$ = 300 K, `max-iter: 50`; cells started at 297 to 303 K in steps of 0.25 K, $10^5$ Pa;
+run: `python -P src/kintera_report/ch04/runs/fig_partition.py uv_partition_tref.json`, which calls
 `ThermoY.forward` with `uv-solver: partition` and `kkt` and `relative_humidity`, and writes the data file of the figure,
 `src/kintera_report/ch04/data/uv_partition_tref.json` (its `provenance` field repeats this record); CPU, double;
 kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed
 check.]
 
-[^ch04-uv-partition-250]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the same card with `Tref`
-250 K; cells at `Tref` $-1$, $-0.5$, 0, $+0.5$, $+1$ K and $10^5$ Pa; run: `python -P item5_partition_tref.py 250
-partition` and the same with `kkt`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite,
+[^ch04-uv-partition-250]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the same card with
+$T_\star$ = 250 K; cells at $T_\star$ $-1$, $-0.5$, 0, $+0.5$, $+1$ K and $10^5$ Pa; run: `python -P
+src/kintera_report/ch04/runs/partition_tref.py 250 partition` and the same with `kkt`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite,
 not a committed check.]
 
 [^ch04-uv-coldstart]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` with
 `uv-solver: kkt` and `max-iter` 10, 20 or 30, the cells of the fixed-temperature cold start; run: `python -P
-uv_coldstart.py 10` (and 20, 30), which calls `ThermoY.forward`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a
+src/kintera_report/ch04/runs/uv_coldstart.py 10` (and 20, 30) with `KINTERA_REPO` set to a kintera checkout at the
+pin, which calls `ThermoY.forward`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a
 measurement outside the suite, not a committed check.]
 
 [^ch04-uv-h2cp]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: a self-written card with `H2` as the dry
-gas, one vapour and its condensate, `Tref` 0, with and without `use-h2-cp: true`; run: `python -P uv_h2cp.py nh3_160
-on` and the other five cases, which call `ThermoY.forward`, `VU->T` and `relative_humidity`, CPU, double; Python
+gas, one vapour and its condensate, $T_\star = 0$, with and without `use-h2-cp: true`; run: `python -P
+src/kintera_report/ch04/runs/uv_h2cp.py nh3_160 on` and the other five cases, which call `ThermoY.forward`, `VU->T` and `relative_humidity`, CPU, double; Python
 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed check.]
-
-<!-- reader glossary notes -->
-[^rg-9ae8cd00fe8f]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
-<!-- end reader glossary notes -->

@@ -42,7 +42,10 @@ reaction entry:
 2. The `equation`[^rg-af50ac18addc] and the `rate-constant`[^rg-f7d3460bb6bb] block are required. In `rate-constant`,
    `formula`[^rg-4090a0a3b182] is required:
    - `ideal` takes `T3`, `P3`, `beta` and `gamma`, with optional `betas` and `gammas` for a solid branch below `T3`;
-   - `antoine` takes `A`[^rg-cf38eb9c6d82], `B` and `C`;
+   - `antoine` takes three coefficients $A$, $B$ and $C$, stored as given with no unit conversion, of the curve
+     $\log_{10}(p_{\mathrm{sat}}/10^5\,\mathrm{Pa}) = A - B/(T + C)$ (`logsvp_antoine`,
+     {{< code src/vapors/vapor_functions.h logsvp_antoine >}}); they are not the Arrhenius factor of the same name
+     in @sec-ch06;
    - any other value names a function of the function table, such as `h2o_ideal`, `nh3_ideal` or the two-gas
      `nh3_h2s_lewis` ({{< code src/vapors/vapor_functions.h >}}).
 3. `minT` and `maxT` are read, with defaults 0 and $10^4$ K, and are stored. No solver reads them; they appear only in
@@ -50,8 +53,9 @@ reaction entry:
    A temperature range in the input therefore has no effect.
 
 When the species are classified into gases and condensates, a nucleation reactant must be a gas
-(`add_to_vapor_cloud`, {{< code src/thermo/nucleation.cpp add_to_vapor_cloud >}}). `ThermoY` also requires each
-nucleation reaction to have a condensed product (`ThermoYImpl::reset`,
+(`add_to_vapor_cloud`, {{< code src/thermo/nucleation.cpp add_to_vapor_cloud >}}). Both `ThermoX` and `ThermoY` also
+require each nucleation reaction to have a condensed product, when they are built (`ThermoXImpl::reset`,
+{{< code src/thermo/thermo_x.cpp ThermoXImpl::reset >}}; `ThermoYImpl::reset`,
 {{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}).
 
 @fig-ch04-nucleation-path follows one entry.
@@ -100,6 +104,4 @@ No test checks that a reaction of another type is excluded, or that `minT`/`maxT
 [^rg-f7d3460bb6bb]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
 
 [^rg-4090a0a3b182]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)
-
-[^rg-cf38eb9c6d82]: A — Arrhenius pre-exponential factor, input in molecule, cm, s units; default 1 in internal units; converted by `convert_from`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L84-L93)
 <!-- end reader glossary notes -->

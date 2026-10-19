@@ -147,6 +147,20 @@
       "meaning": "length whose square divides the evaporation rate coefficient; default 1e-2; stored in option `diameter`",
       "section": "sec-ch11-yaml-reactions",
       "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/evaporation.cpp#L103"
+    },
+    {
+      "kind": "key",
+      "term": "Kzz",
+      "meaning": "eddy diffusion coefficient on the N-1 inner faces of a column, argument of `diffusion_coefficients`",
+      "section": "sec-ch08-operator",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/diffusion/diffusion.cpp#L12-L20"
+    },
+    {
+      "kind": "key",
+      "term": "dzi",
+      "meaning": "distances between neighbouring level centres on the N-1 inner faces, argument of `diffusion_coefficients`",
+      "section": "sec-ch08-operator",
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/diffusion/diffusion.cpp#L12-L20"
     }
   ]
 }

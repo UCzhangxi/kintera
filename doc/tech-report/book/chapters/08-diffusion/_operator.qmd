@@ -1,0 +1,206 @@
+## The eddy-diffusion operator on a column (`diffusion_coefficients`) {#sec-ch08-operator}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/diffusion/diffusion.hpp, src/diffusion/diffusion.cpp, tests/test_diffusion.cpp
+status: draft
+author: jihenghu
+reviewer: gitlinffff (requested)
+-->
+
+### Summary
+
+Turbulent mixing in an atmosphere carries each species from where its mixing ratio is high to where it is low.
+kintera represents this as a diffusive flux of mixing ratio between neighbouring levels of one column. It uses an
+eddy diffusion coefficient given on the faces between levels and zero flux through the bottom and the top. This
+scheme builds, for every level, the three coefficients that couple the level to itself and to its two
+neighbours. A level's tendency is then a three-term sum.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Tridiagonal coefficients of the flux-form eddy-diffusion tendency, @eq-ch08-operator-tendency.
+
+**Data.** Number densities per level and species; `Kzz`[^rg-5972ec96a93f] and `dzi`[^rg-13c0414b85aa] on the faces.
+
+**Placement.** Called by `diffusion_tendency`, or directly by a caller that builds its own matrix.
+
+**Activation.** Always available; no option.
+
+**Guarantee / limits.** Conserves a weighted column total; uniform mixing ratio gives zero tendency.
+
+**Evidence.** `test_diffusion`; see the Tests layer.
+:::
+
+Local symbols: $y_{j,s}$, number density of species $s$ at level $j$ (any unit, the same for all species);
+$n_j = \sum_s y_{j,s}$, total of level $j$; $X_{j,s} = y_{j,s}/n_j$, mixing ratio [-]; $K_{j+1/2}$, eddy diffusion
+coefficient on the face between levels $j$ and $j+1$ [$\mathrm{m^2\,s^{-1}}$ or $\mathrm{cm^2\,s^{-1}}$];
+$h_{j+1/2}$, distance between the centres of levels $j$ and $j+1$ [m or cm]; $N$, the number of levels. These are
+proposed for the editor's notation register (none exists for diffusion yet).
+
+The operator has no switch and no default to set. In the code, the `Kzz` is the eddy diffusion coefficient on the
+$N-1$ inner faces, the `dzi` is the vector of the $N-1$ face spacings $h_{j+1/2}$, and the `y` argument holds the
+number densities, levels first.
+
+### Derivation
+
+The flux of species $s$ through the face $j+1/2$ is the eddy flux of mixing ratio, with the face density taken as
+the mean of the two levels:
+
+$$
+\begin{aligned}
+F_{j+1/2,s} &= -K_{j+1/2}\, \bar n_{j+1/2}\, \frac{X_{j+1,s} - X_{j,s}}{h_{j+1/2}} \\
+\bar n_{j+1/2} &= \tfrac12 \left( n_j + n_{j+1} \right)
+\end{aligned}
+$$ {#eq-ch08-operator-flux}
+
+Define the face conductance $D_{j+1/2} = K_{j+1/2}\, \bar n_{j+1/2} / h_{j+1/2}$, so that
+$F_{j+1/2,s} = -D_{j+1/2} (X_{j+1,s} - X_{j,s})$. The conductance `D` is computed in `diffusion_coefficients`
+({{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}).
+
+For an inner level $1 \le j \le N-2$, the cell width is the mean of its two face spacings,
+$\Delta_j = \tfrac12 (h_{j-1/2} + h_{j+1/2})$, and the finite-volume balance is
+
+$$
+\frac{\mathrm d y_{j,s}}{\mathrm d t} = -\frac{F_{j+1/2,s} - F_{j-1/2,s}}{\Delta_j} .
+$$
+
+Substituting the fluxes and $X = y/n$:
+
+$$
+\begin{aligned}
+\frac{\mathrm d y_{j,s}}{\mathrm d t}
+&= \frac{D_{j+1/2} (X_{j+1,s} - X_{j,s}) - D_{j-1/2} (X_{j,s} - X_{j-1,s})}{\Delta_j} \\
+&= -\frac{D_{j+1/2} + D_{j-1/2}}{\Delta_j\, n_j}\, y_{j,s}
+   + \frac{D_{j+1/2}}{\Delta_j\, n_{j+1}}\, y_{j+1,s}
+   + \frac{D_{j-1/2}}{\Delta_j\, n_{j-1}}\, y_{j-1,s} .
+\end{aligned}
+$$
+
+So the tendency of every level has the form
+
+$$
+\frac{\mathrm d y_{j,s}}{\mathrm d t} = A_j\, y_{j,s} + B_j\, y_{j+1,s} + C_j\, y_{j-1,s} ,
+$$ {#eq-ch08-operator-tendency}
+
+with, for the inner levels,
+
+$$
+\begin{aligned}
+A_j &= -\frac{D_{j+1/2} + D_{j-1/2}}{\Delta_j\, n_j} \\
+B_j &= \frac{D_{j+1/2}}{\Delta_j\, n_{j+1}} \\
+C_j &= \frac{D_{j-1/2}}{\Delta_j\, n_{j-1}}
+\end{aligned}
+$$ {#eq-ch08-operator-inner}
+
+@eq-ch08-operator-inner is computed in `diffusion_coefficients`
+({{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}), on the slices `dz_avg`, `D_lo` and `D_hi`.
+The coefficients are the same for every species; only $y_{j,s}$ carries the species index.
+
+At the bottom level the flux through the lower boundary is zero, and the code uses the one face spacing next to
+it, $h_{1/2}$, as the width of the level. The top level is treated the same way with $h_{N-3/2}$:
+
+$$
+\begin{aligned}
+A_0 &= -\frac{D_{1/2}}{h_{1/2}\, n_0} \\
+B_0 &= \frac{D_{1/2}}{h_{1/2}\, n_1} \\
+C_0 &= 0 \\
+A_{N-1} &= -\frac{D_{N-3/2}}{h_{N-3/2}\, n_{N-1}} \\
+C_{N-1} &= \frac{D_{N-3/2}}{h_{N-3/2}\, n_{N-2}} \\
+B_{N-1} &= 0
+\end{aligned}
+$$ {#eq-ch08-operator-boundary}
+
+@eq-ch08-operator-boundary is computed in `diffusion_coefficients`
+({{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}); $C_0$ and $B_{N-1}$ keep the zeros the
+coefficient vectors are created with.
+
+Three identities follow; each is exact in exact arithmetic.
+
+::: {#prp-ch08-operator-uniform}
+A profile with the same mixing ratio at every level has zero tendency.
+:::
+
+If $X_{j,s} = X_s$ for all $j$, every face flux in @eq-ch08-operator-flux is zero, and so is every tendency.
+
+::: {#prp-ch08-operator-level-total}
+The operator does not change the total $n_j$ of any level: $\sum_s \mathrm d y_{j,s}/\mathrm d t = 0$.
+:::
+
+Summing @eq-ch08-operator-tendency over $s$ gives $A_j n_j + B_j n_{j+1} + C_j n_{j-1}$. For an inner level this is
+$\left[-(D_{j+1/2} + D_{j-1/2}) + D_{j+1/2} + D_{j-1/2}\right]/\Delta_j = 0$, and the two boundary rows cancel the
+same way.
+
+::: {#prp-ch08-operator-column-total}
+With weights $w_0 = h_{1/2}$, $w_j = \Delta_j$ for the inner levels and $w_{N-1} = h_{N-3/2}$, the weighted column
+total $\sum_j w_j\, y_{j,s}$ of every species is conserved.
+:::
+
+Multiplying each row by its weight gives $w_j\, \mathrm d y_{j,s}/\mathrm d t = -(F_{j+1/2,s} - F_{j-1/2,s})$
+with $F_{-1/2,s} = F_{N-1/2,s} = 0$, and the sum over $j$ telescopes to zero. On a uniform grid all weights equal
+$h$, so the plain sum of the tendencies over the levels is zero; on a non-uniform grid it is not, because the
+boundary levels are weighted with a full face spacing and the inner levels with a mean of two.
+
+No published derivation is cited; the steps above are re-derived from the code at the pin.
+
+### Numerical method
+
+The operator is a three-point, flux-form stencil on cell centres: values $y_{j,s}$ live at level centres,
+$K_{j+1/2}$ and $h_{j+1/2}$ on the $N-1$ inner faces, and the boundary faces carry no flux. It is a spatial operator
+only. It does not step in time, and it does not iterate. Every coefficient is a whole-tensor expression, so the
+same code runs on CPU and CUDA tensors. The order of accuracy on a non-uniform grid is not measured. The stencil
+figure is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| declaration and argument shapes | {{< code src/diffusion/diffusion.hpp diffusion_coefficients >}} | `diffusion_coefficients` | always |
+| coefficients | {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}} | `diffusion_coefficients` | always |
+| Python binding | {{< code python/csrc/pydiffusion.cpp bind_diffusion >}} | `bind_diffusion` | always |
+
+: Code map of the eddy-diffusion operator. {#tbl-ch08-operator-code}
+
+1. `n_tot` is the sum of `y` over its last dimension: the level total $n_j$ over every species passed in.
+2. `n_avg` is the mean of neighbouring totals, $\bar n_{j+1/2}$, and `D` is `Kzz * n_avg / dzi`.
+3. The bottom and top rows are written element by element; the inner rows are written by slices when $N > 2$.
+4. The function returns `(A, B, C)`, each of length $N$.
+
+No argument is checked: shapes, signs and zero totals are not validated (see Limits).
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_diffusion` | `CoefficientsShape`: length $N$; $C_0 = 0$, $B_{N-1} = 0$ | absolute $10^{-30}$ | `EXPECT_NEAR` in the test |
+| `test_diffusion` | `UniformProfileNoFlux`: @prp-ch08-operator-uniform | max below $10^{-10}\, n$ | the test |
+| `test_diffusion` | `MassConservation`: @prp-ch08-operator-column-total, uniform grid | relative $10^{-10}$ | the test |
+
+: Tests of the eddy-diffusion operator. {#tbl-ch08-operator-tests}
+
+The cases are in {{< code tests/test_diffusion.cpp >}}. They use a uniform grid of 20 levels, two species,
+`Kzz` $= 10^5$ and spacing $10^5$ (the test comments say cm and $\mathrm{cm^2\,s^{-1}}$), in float64. They are
+instantiated for CPU and CUDA; the CUDA case needs a GPU. @prp-ch08-operator-level-total is not tested directly, and
+@prp-ch08-operator-column-total is tested only on a uniform grid. This draft has not run the tests and attaches no run
+record (missing evidence).
+
+### Limits
+
+::: {.callout-warning title="Limits"}
+- One column at a time: `y` must be (levels, species), and `Kzz` and `dzi` are vectors of length $N-1$. A batched call
+  is not supported by the slicing; what it does is not tested.
+- $N \ge 2$ is needed; with one level the code indexes an empty `D` (read from the code; not tested).
+- A level with zero total $n_j$ divides by zero; no guard exists.
+- Signs of `Kzz` and `dzi` are not checked.
+- The mixing ratio is relative to the sum of all species in `y`. If `y` holds condensed species, they count in
+  $n_j$; whether callers pass gases only is not checked here (hypothesis).
+:::
+
+The header comment gives `Kzz` in $\mathrm{cm^2\,s^{-1}}$ and `dzi` in cm
+({{< code src/diffusion/diffusion.hpp diffusion_tendency >}}). The coefficients depend on them only through
+$K/h^2$, so any consistent unit system works, and $A$, $B$, $C$ come out in $\mathrm{s^{-1}}$. The column test of
+@sec-ch08-tendency passes SI values.
+
+<!-- reader glossary notes -->
+[^rg-5972ec96a93f]: Kzz — eddy diffusion coefficient on the N-1 inner faces of a column, argument of `diffusion_coefficients`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/diffusion/diffusion.cpp#L12-L20)
+
+[^rg-13c0414b85aa]: dzi — distances between neighbouring level centres on the N-1 inner faces, argument of `diffusion_coefficients`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/diffusion/diffusion.cpp#L12-L20)
+<!-- end reader glossary notes -->

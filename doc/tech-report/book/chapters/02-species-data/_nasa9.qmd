@@ -13,7 +13,7 @@ reviewer:
 A constant heat capacity is accurate only over a narrow temperature range. kintera ships a table of NASA-9
 polynomial coefficients for 293 species, which give heat capacity, enthalpy and entropy as functions of temperature
 in two ranges. The table is looked up by species name when the registry is filled. The coefficients are used in two
-places: the temperature-dependent heat capacity of @sec-ch03 when `use-nasa9-cp` is on, and the
+places: the temperature-dependent heat capacity of @sec-ch03-species-functions when `use-nasa9-cp` is on, and the
 dimensionless Gibbs energy of the multiphase equilibrium solver (@sec-ch05).
 
 ::: {.callout-note title="At a glance"}

@@ -1,0 +1,294 @@
+{
+  "frozen_commit": "ec97f538b74d5c1d5e3d64033f455f4c78622dca",
+  "evidence_urls": [
+    "https://github.com/UCzhangxi/kintera/issues/38#issuecomment-6261732830",
+    "https://github.com/UCzhangxi/kintera/issues/38#issuecomment-6261733168",
+    "https://github.com/UCzhangxi/kintera/issues/38#issuecomment-6261733510"
+  ],
+  "questions": [
+    {
+      "id": "Q01",
+      "chapter": 2,
+      "route": "TOC",
+      "question": "How are gases and condensates ordered in species data?",
+      "excluded": false,
+      "frozen_grade": "PARTIAL"
+    },
+    {
+      "id": "Q02",
+      "chapter": 2,
+      "route": "glossary",
+      "question": "What does reference-pressure mean and what units does it use?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q03",
+      "chapter": 2,
+      "route": "task map",
+      "question": "How do I add a species with thermodynamic data?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q04",
+      "chapter": 2,
+      "route": "topic index",
+      "question": "How are mass and mole fractions converted and what happens to the implicit dry species?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q05",
+      "chapter": 3,
+      "route": "TOC",
+      "question": "How are mixture heat capacities computed and in what units?",
+      "excluded": false,
+      "frozen_grade": "PARTIAL"
+    },
+    {
+      "id": "Q06",
+      "chapter": 3,
+      "route": "glossary",
+      "question": "What is the Shomate representation and its temperature convention?",
+      "excluded": true,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q07",
+      "chapter": 3,
+      "route": "topic index",
+      "question": "How is condensate entropy derived from saturation equilibrium?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q08",
+      "chapter": 3,
+      "route": "task map",
+      "question": "How do I add a new saturation vapor pressure law?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q09",
+      "chapter": 6,
+      "route": "TOC",
+      "question": "How does the implicit kinetics update work and what are its limitations?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q10",
+      "chapter": 6,
+      "route": "glossary",
+      "question": "What is a third-body reaction and how is effective concentration defined?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q11",
+      "chapter": 6,
+      "route": "topic index",
+      "question": "What are the Arrhenius rate parameters and their units?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q12",
+      "chapter": 6,
+      "route": "task map",
+      "question": "How do I add a reaction rate law?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q13",
+      "chapter": 8,
+      "route": "TOC",
+      "question": "What diffusion flux is solved and what are its boundary assumptions?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q14",
+      "chapter": 8,
+      "route": "glossary",
+      "question": "What is binary diffusion and what units does its coefficient have?",
+      "excluded": true,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q15",
+      "chapter": 8,
+      "route": "topic index",
+      "question": "How is the diffusion discretization derived?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q16",
+      "chapter": 8,
+      "route": "task map",
+      "question": "How do I configure molecular diffusion coefficients?",
+      "excluded": true,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q17",
+      "chapter": 11,
+      "route": "TOC",
+      "question": "How do I load a YAML mechanism and construct Python modules?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q18",
+      "chapter": 11,
+      "route": "glossary",
+      "question": "What does ADD_ARG mean for an option?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q19",
+      "chapter": 11,
+      "route": "topic index",
+      "question": "How are resource files located?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q20",
+      "chapter": 11,
+      "route": "task map",
+      "question": "How do I add a YAML configuration option?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q21",
+      "chapter": 12,
+      "route": "TOC",
+      "question": "How do I move a module to GPU and what tensors must share its device?",
+      "excluded": false,
+      "frozen_grade": "PARTIAL"
+    },
+    {
+      "id": "Q22",
+      "chapter": 12,
+      "route": "glossary",
+      "question": "What is a batch dimension in this API?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q23",
+      "chapter": 12,
+      "route": "topic index",
+      "question": "What dtype and device limitations apply to execution?",
+      "excluded": false,
+      "frozen_grade": "PARTIAL"
+    },
+    {
+      "id": "Q24",
+      "chapter": 12,
+      "route": "task map",
+      "question": "How do I benchmark GPU speedup reliably?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q25",
+      "chapter": 13,
+      "route": "TOC",
+      "question": "Which tests verify equilibrium conservation and what do they establish?",
+      "excluded": false,
+      "frozen_grade": "PARTIAL"
+    },
+    {
+      "id": "Q26",
+      "chapter": 13,
+      "route": "glossary",
+      "question": "What is a validation tolerance and how is it chosen?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q27",
+      "chapter": 13,
+      "route": "topic index",
+      "question": "Where can I find test coverage and its limits?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q28",
+      "chapter": 13,
+      "route": "task map",
+      "question": "How do I run verification tests?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q29",
+      "chapter": 14,
+      "route": "TOC",
+      "question": "How do I couple chemistry to a hydrodynamics step and who owns the timestep?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q30",
+      "chapter": 14,
+      "route": "glossary",
+      "question": "What is operator splitting and what accuracy is promised?",
+      "excluded": false,
+      "frozen_grade": "NO-ENTRY"
+    },
+    {
+      "id": "Q31",
+      "chapter": 14,
+      "route": "topic index",
+      "question": "What units and state conversions are needed at the host interface?",
+      "excluded": false,
+      "frozen_grade": "FULL"
+    },
+    {
+      "id": "Q32",
+      "chapter": 14,
+      "route": "task map",
+      "question": "How do I couple radiation to photochemistry?",
+      "excluded": true,
+      "frozen_grade": "NO-ENTRY"
+    }
+  ],
+  "followup_ids": [
+    "Q01",
+    "Q03",
+    "Q05",
+    "Q06",
+    "Q08",
+    "Q10",
+    "Q12",
+    "Q14",
+    "Q16",
+    "Q18",
+    "Q20",
+    "Q21",
+    "Q22",
+    "Q23",
+    "Q24",
+    "Q25",
+    "Q26",
+    "Q28",
+    "Q30",
+    "Q32",
+    "A04"
+  ],
+  "supplemental": {
+    "id": "A04",
+    "question": "Can the shared notation index define the diffusion face spacing and units?",
+    "frozen_grade": "NO-ENTRY"
+  }
+}

@@ -2,11 +2,81 @@
 
 | status | questions |
 |---|---|
-| answered | 0 |
-| partly documented | 0 |
+| answered | 12 |
+| partly documented | 19 |
 | undocumented | 0 |
 | unsupported by the code | 0 |
-| outside scope | 0 |
-| total | 0 |
+| outside scope | 1 |
+| total | 32 |
 
 : Questions of the bank by status. {#tbl-appg-status}
+
+## Answered {.unnumbered .unlisted}
+
+**Q-002.** What does reference-pressure mean and what units does it use? See Reference state and latent heat, @sec-ch03-reference-state.
+
+**Q-004.** How are mass and mole fractions converted and what happens to the implicit dry species? See Mass-fraction state and its mixture totals, @sec-ch03-thermo-y.
+
+**Q-007.** How is condensate entropy derived from saturation equilibrium? See Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
+
+**Q-009.** How does the implicit kinetics update work and what are its limitations? See Linearly implicit time step, @sec-ch06-implicit.
+
+**Q-011.** What are the Arrhenius rate parameters and their units? See Arrhenius rate constants and their temperature bands, @sec-ch06-arrhenius.
+
+**Q-013.** What diffusion flux is solved and what are its boundary assumptions? See The eddy-diffusion tendency of a column, @sec-ch08-tendency.
+
+**Q-015.** How is the diffusion discretization derived? See The eddy-diffusion operator on a column, @sec-ch08-operator.
+
+**Q-017.** How do I load a YAML mechanism and construct Python modules? See The YAML input file: species and reference state, @sec-ch11-yaml-input.
+
+**Q-019.** How are resource files located? See Resource lookup for data files, @sec-ch11-resources.
+
+**Q-027.** Where can I find test coverage and its limits? See What the suite covers on CPU only (device coverage), @sec-ch13-device-coverage.
+
+**Q-029.** How do I couple chemistry to a hydrodynamics step and who owns the timestep? See Kinetics after the dynamics step, @sec-ch14-kinetics.
+
+**Q-031.** What units and state conversions are needed at the host interface? See Kinetics after the dynamics step, @sec-ch14-kinetics.
+
+## Partly documented {.unnumbered .unlisted}
+
+**Q-001.** How are gases and condensates ordered in species data? See The species registry: names, phases and per-species data, @sec-ch02-species-registry. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-003.** How do I add a species with thermodynamic data? See The species registry: names, phases and per-species data, @sec-ch02-species-registry. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-005.** How are mixture heat capacities computed and in what units? See Mass-fraction state and its mixture totals, @sec-ch03-thermo-y. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-008.** How do I add a new saturation vapor pressure law? See Saturation vapor pressure fits per reaction, @sec-ch02-svp. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-010.** What is a third-body reaction and how is effective concentration defined? See Three-body and fall-off rate constants, @sec-ch06-falloff. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-012.** How do I add a reaction rate law? See Arrhenius rate constants and their temperature bands, @sec-ch06-arrhenius. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-014.** What is binary diffusion and what units does its coefficient have? See Molecular (binary) diffusion and the exponential vertical schemes, @sec-ch09-molecular. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-016.** How do I configure molecular diffusion coefficients? See Molecular (binary) diffusion and the exponential vertical schemes, @sec-ch09-molecular. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-018.** What does ADD_ARG mean for an option? See The C++ options objects and modules, @sec-ch11-options. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-020.** How do I add a YAML configuration option? See The C++ options objects and modules, @sec-ch11-options. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-021.** How do I move a module to GPU and what tensors must share its device? See Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-022.** What is a batch dimension in this API? See Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-023.** What dtype and device limitations apply to execution? See Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-024.** How do I benchmark GPU speedup reliably? See Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-025.** Which tests verify equilibrium conservation and what do they establish? See How the test suite is organised and run, @sec-ch13-suite. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-026.** What is a validation tolerance and how is it chosen? See How the test suite is organised and run, @sec-ch13-suite. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-028.** How do I run verification tests? See How the test suite is organised and run, @sec-ch13-suite. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-030.** What is operator splitting and what accuracy is promised? See Kinetics after the dynamics step, @sec-ch14-kinetics. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+**Q-032.** How do I couple radiation to photochemistry? See Chemical and photochemical source terms, @sec-ch09-sources. Not covered: The frozen lookup was not FULL; review the destination limits. This route has not been regraded.
+
+## Outside scope {.unnumbered .unlisted}
+
+**Q-006.** What is the Shomate representation and its temperature convention? See NASA-9 polynomial data, @sec-ch02-nasa9. Not covered: Shomate is outside the frozen scope; the book documents NASA-9 instead.

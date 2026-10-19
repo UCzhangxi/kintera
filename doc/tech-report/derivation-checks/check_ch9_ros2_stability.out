@@ -1,0 +1,14 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+GAMMA = 1.7071067811865475, 1 + 1/sqrt 2 = 1.7071067811865475
+   R(z) code: z=-0.01: 9.9005115284e-01, z=-0.1: 9.0577442315e-01, z=-1: 4.6588626785e-01, z=-2.41: 2.6034952783e-01, z=-10: 7.6990037926e-02, z=-1e+03: 8.2780015823e-04, z=-1e+06: 8.2842649730e-07
+(s1) code R(z) vs formula, gamma = GAMMA, worst |difference| (c0 = 1; absolute, 16 eps): measured 1.804e-16  tol 4e-15  PASS
+   x R(-x): x=1e+06: 0.8284264973, x=1e+09: 0.8284270353, x=1e+12: 0.8284345432; limit (1+sqrt2)/gamma^2 = 0.8284271247 (info: at large x the product carries x times the absolute round-off of R)
+(s2) L-stability: |R(-1e12) - R_formula(-1e12)| (formula value (1+sqrt2)/(gamma^2 1e12) = 8.3e-13): measured 7.418e-18  tol 4e-15  PASS
+(s2) L-stability: |R(-1e12)|, must be below 1e-11 (R(-inf) = 0): measured 8.284e-13  tol 1e-11  PASS
+   R(-x) on 50 points x in [0, 1e8]: min 8.284e-09, max 1.000000000000000
+(s3) 0 < R(-x) <= 1 on x in [0, 1e8]: number of violations: measured 0.000e+00  tol 0e+00  PASS
+   gamma = 1 - 1/sqrt2: x=1: R=3.504403e-01 (formula 3.504403e-01), x=2: R=6.822746e-02 (formula 6.822746e-02), x=2.91: R=-6.028151e-02 (formula -6.028151e-02), x=10: R=-2.035522e-01 (formula -2.035522e-01), x=1e+03: R=-4.784047e-03 (formula -4.784047e-03)
+(s4) gamma = 1 - 1/sqrt2: sign of R changes at x = 1 + sqrt2 and matches the formula (mismatches): measured 0.000e+00  tol 0e+00  PASS
+(s4) gamma = 1 - 1/sqrt2: |R(-1e12)| (L-stable too): measured 4.829e-12  tol 1e-09  PASS
+(s5) gamma = 1/2: |R(-1e12) - (-1)|, the formula's R(-inf) for a gamma off both roots: measured 4.000e-12  tol 1e-09  PASS
+ALL PASS

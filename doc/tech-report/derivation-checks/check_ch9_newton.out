@@ -1,0 +1,13 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+(e1) one code iteration vs c0 - G'(c0)^-1 G(c0), dt = 0.5 and 1e3, max rel: measured 1.732e-16  tol 1e-12  PASS
+   undamped, dt = 1e5: max|G(c^k)| / max c0 for k = 0..8: 5.98e+01, 1.46e+01, 3.21e+00, 4.97e-01, 2.48e-02, 7.47e-05, 6.70e-10, 7.63e-16, 5.09e-16
+   observed orders p_k once max|G| < 1 and while max|G| > 1e-12: 1.608, 1.936, 2.002
+(e2) observed order of the last two estimates, max |p - 2|: measured 6.410e-02  tol 1e-01  PASS
+   damped theta = 0.5: ratios max|G_{k+1}|/max|G_k| = 0.5594, 0.5569, 0.5529, 0.5469, 0.5387, 0.5291, 0.5197, 0.5120, 0.5068, 0.5036, 0.5019, 0.5010, 0.5005
+(e3) damped iteration is linear with ratio 1/2: |last ratio - 0.5|: measured 4.828e-04  tol 1e-02  PASS
+   steady state by hand: max|F(c*)| / max|T c*| = 8.0e-16
+   max|c(dt) - c*| / max c* for dt = 1e9, 1e10, 1e11: 4.256e-03, 4.283e-04, 4.286e-05
+(e4a) converged step: |T c + S(c) - (c - c0)/dt| / |T c + S(c)|, worst: measured 8.401e-12  tol 1e-09  PASS
+   (info) at dt = 1e8 the distance is 4.022e-02: the O(1/dt^2) term is still a few per cent there, so the decade ratios are taken from 1e9 on
+(e4b) distance to the steady state falls as 1/dt: max |ratio per decade - 10| / 10: measured 6.221e-03  tol 5e-02  PASS
+ALL PASS

@@ -1,0 +1,15 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+   L = 1.0 F: |error / prediction - 1| at dt = 1e-2, 1e-3, 1e-4: 3.329e-02, 3.405e-03, 3.413e-04; per-decade ratios 9.775, 9.977
+(r1) L = 1.0 F: |error / (dt^2 |1/2 - gamma s|) - 1| at dt = 1e-4: measured 3.413e-04  tol 1e-03  PASS
+(r1) L = 1.0 F: deviation falls as dt, max |ratio per decade - 10| / 10: measured 2.254e-02  tol 5e-02  PASS
+   L = 0.5 F: |error / prediction - 1| at dt = 1e-2, 1e-3, 1e-4: 1.685e-02, 1.705e-03, 1.707e-04; per-decade ratios 9.886, 9.989
+(r1) L = 0.5 F: |error / (dt^2 |1/2 - gamma s|) - 1| at dt = 1e-4: measured 1.707e-04  tol 1e-03  PASS
+(r1) L = 0.5 F: deviation falls as dt, max |ratio per decade - 10| / 10: measured 1.139e-02  tol 5e-02  PASS
+   dc/dt = -c^2: |error / prediction - 1| at dt = 1e-2, 1e-3, 1e-4: 6.307e-02, 6.589e-03, 6.618e-04
+(r2) dc/dt = -c^2, exact L: |error / (dt^2 |F f| |1/2 - gamma|) - 1| at dt = 1e-4: measured 6.618e-04  tol 1e-03  PASS
+   dc/dt = -c^2: true |c1 - 1/(1+dt)| 2.737e-03, 4.944e-06, 5.288e-09; estimate 1.362e-02, 2.262e-04, 2.398e-06
+   per-decade ratios dt 1e-2 -> 1e-3: true error 934.9 (order 3 gives 1000), estimate 94.3 (order 2 gives 100)
+(r3) true local error is O(dt^3): |log10(ratio) - 3|: measured 2.923e-02  tol 5e-02  PASS
+(r3) estimate is O(dt^2): |log10(ratio) - 2|: measured 2.542e-02  tol 5e-02  PASS
+(r3) estimate exceeds the true error at every dt (violations): measured 0.000e+00  tol 0e+00  PASS
+ALL PASS

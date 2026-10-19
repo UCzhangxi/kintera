@@ -100,7 +100,8 @@ reader therefore converts $k_0$ with the order $n + 1$ in @eq-ch06-arrhenius-uni
 {{< code src/kinetics/lindemann_falloff.cpp LindemannFalloffOptionsImpl::from_yaml >}}). The check evaluates the
 Lindemann rate constant for $P_r$ from $10^{-6}$ to $10^{6}$, with a third-body efficiency, against
 $k_0 [M]/(1 + P_r)$, and reaches both limits to $10^{-6}$ at the ends of that range.[^ch06-check-c]
- Lindemann has $F = 1$
+<!-- equation-check: eq-ch06-falloff-blend check_ch6_rates.py [c1] -->
+Lindemann has $F = 1$
 (`LindemannFalloffImpl::forward`, {{< code src/kinetics/lindemann_falloff.cpp LindemannFalloffImpl::forward >}}).
 Troe and SRI both use
 

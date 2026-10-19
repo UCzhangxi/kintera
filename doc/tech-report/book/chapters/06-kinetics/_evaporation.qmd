@@ -58,6 +58,7 @@ that brings the products to equilibrium, $(c_1 + x)(c_2 + x) = K$. Other stoichi
 extent of `EvaporationExtent`. @eq-ch06-evaporation-kappa is computed in `forward`
 ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}); the factor $c_p$ is applied in
 `forward_with_rate_constants` ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
+<!-- equation-check: eq-ch06-evaporation-kappa check_ch6_evaporation.py (a1) -->
 **Where $\kappa$ comes from.** Consider one spherical particle of radius $a = d/2$ at rest in a gas whose vapour
 concentration far away is $c_v$, and whose surface is at saturation, $c = K$. The vapour diffuses with diffusivity
 $D$, and the particle changes slowly compared with the diffusion time. The concentration around it is then
@@ -127,6 +128,7 @@ $(c_1 + c_2)^2 - 4 c_1 c_2 = (c_1 - c_2)^2$. @eq-ch06-evaporation-extent is comp
 The check evaluates the one-vapour rate at $c_v = 0.5K$, $K$ and $1.5K$. It finds @eq-ch06-evaporation-kappa to
 $1.7 \times 10^{-16}$, a rate of $1.4 \times 10^{-16}$ of its scale at saturation, and exactly zero above it. The
 two-product root satisfies its quadratic to $2.5 \times 10^{-15}$ at four states, including $c_1 = 0$.[^ch06-check-e]
+<!-- equation-check: eq-ch06-evaporation-extent check_ch6_evaporation.py (b) -->
 
 ### Numerical method
 

@@ -52,7 +52,8 @@ $$ {#eq-ch06-mass-action-rate}
 @eq-ch06-mass-action-rate is computed in `forward_with_rate_constants`
 ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), with the orders $\nu_{ij}$ held in
 the buffer `forward_orders`, equal to the reactant coefficients except for evaporation columns
-(@sec-ch06-evaporation). Since $r_j$ is in $\mathrm{mol\,m^{-3}\,s^{-1}}$ and each concentration in
+(@sec-ch06-evaporation).
+<!-- equation-check: eq-ch06-mass-action-rate check_ch6_rates.py [a1] --> Since $r_j$ is in $\mathrm{mol\,m^{-3}\,s^{-1}}$ and each concentration in
 $\mathrm{mol\,m^{-3}}$, a reaction of total order $n_j = \sum_i \nu_{ij}$ has $k_j$ in
 $(\mathrm{mol\,m^{-3}})^{1 - n_j}\,\mathrm{s^{-1}}$; @sec-ch06-arrhenius converts the input units to these.
 
@@ -112,20 +113,24 @@ $$
 \ln K_{c,j} = -\frac{\Delta g_j^\circ}{\mathcal R T} + \Delta n_j \ln\frac{p_{\mathrm{ref}}}{\mathcal R T} ,
 $$ {#eq-ch06-mass-action-kc}
 
-and detailed balance fixes the reverse rate constant as
+computed in `forward_with_rate_constants`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}) from the NASA-9 polynomials.
+<!-- equation-check: eq-ch06-mass-action-kc check_ch6_rates.py [d1] -->
+Detailed balance then fixes the reverse rate constant as
 
 $$
 k_{\bar j} = \frac{k_j}{K_{c,j}} .
 $$ {#eq-ch06-mass-action-reverse}
 
-@eq-ch06-mass-action-kc and @eq-ch06-mass-action-reverse are computed in `forward_with_rate_constants`
-({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}): $g_i^\circ/(\mathcal R T)$ comes
+@eq-ch06-mass-action-reverse is computed in the same function
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}). There $g_i^\circ/(\mathcal R T)$ comes
 from the NASA-9 polynomials (`nasa9_gibbs_RT`, @sec-ch02-nasa9), $\Delta n_j$ is the buffer `dn` built in `reset`, and
 $K_{c,j}$ is clamped below at $10^{-250}$ before the division. Because @eq-ch06-mass-action-reverse holds at every
 state, a state where all reversible reactions balance satisfies $\prod_i c_i^{S_{ij}} = K_{c,j}$, which is the
 chemical-equilibrium condition of @sec-ch05: the fixed point of the kinetics is the chemical equilibrium. The check
 compares $k_j/k_{\bar j}$ from the code with an independent $K_{c,j}$ from the NASA-9 data file at 300 K and 1500 K
 (both NASA-9 ranges) and finds the forward and reverse rates equal to round-off at such a state.[^ch06-check-d1]
+<!-- equation-check: eq-ch06-mass-action-reverse check_ch6_rates.py [d1] -->
 
 **Temperature derivative of the reverse rate constant.** Taking the logarithm of @eq-ch06-mass-action-reverse and
 differentiating,
@@ -159,6 +164,8 @@ $\mathrm{d} k_j/\mathrm{d}T$ itself in the reverse column, without the factor $1
 (see Limits). The concentration derivative is divided by $K_{c,j}$ correctly. The check measures the forward
 derivative against a finite difference, and confirms that the reverse entry is off by exactly the predicted
 amount.[^ch06-check-d2]
+<!-- equation-check: eq-ch06-mass-action-reverse-dt check_ch6_rates.py [d2] -->
+<!-- equation-source: eq-ch06-mass-action-reverse-dt code differs (D65) -->
 
 No published derivation is quoted. The steps above are textbook chemical thermodynamics,[^ch06-kee] checked against
 the code at the pin.
@@ -213,7 +220,8 @@ family from `reactions`; reactants
 The tolerances of the Chapman-cycle tests are missing evidence: they have not been read for this draft. CPU and
 CUDA instantiations of `test_kinetics` exist; run records are not attached yet. The derivation checks run four
 reactions, including `2 H => H2` and a termolecular one, for `[a1]` and `[a2]`, which measure 0 for both. `[d1]` runs
-`O + O2 <=> O3` and `O + O3 <=> 2 O2` at 300 K and 1500 K and measures at most $2.8 \times 10^{-14}$. `[d2]`
+`O + O2 <=> O3` and `O + O3 <=> 2 O2` at 300 K and 1500 K and measures at most $1.1 \times 10^{-14}$ in the committed output; a second machine at the same pin gives
+$2.8 \times 10^{-14}$, a round-off difference. `[d2]`
 measures $2.4 \times 10^{-10}$ for the forward column. Its reverse line is an expected failure: the code gives
 $-81.9$ where the true $\mathrm{d}k_{\bar j}/\mathrm{d}T$ is $4.8 \times 10^{-8}$, and the difference equals the
 predicted $\mathrm{d}k_j/\mathrm{d}T - \mathrm{d}k_{\bar j}/\mathrm{d}T$ to $2.4 \times 10^{-10}$.[^ch06-check-d2]
@@ -243,9 +251,9 @@ predicted $\mathrm{d}k_j/\mathrm{d}T - \mathrm{d}k_{\bar j}/\mathrm{d}T$ to $2.4
 - With `evolve_temperature` on, the reverse columns of $\partial k/\partial T$ are a copy of the forward ones. They lack
   the factor $1/K_{c,j}$ and the term $-k_{\bar j}\,\Delta u_j^\circ/(\mathcal R T^2)$ of
   @eq-ch06-mass-action-reverse-dt ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
-  The temperature-feedback Jacobian of @sec-ch06-jacobian is then wrong in every reversible reaction unless
-  $K_{c,j}$ is close to 1. The error is far larger than the van 't Hoff term alone ($-81.9$ against $4.8 \times 10^{-8}$
-  in the check). This is a recorded code defect with a fix in progress;[^ch06-d65] the derivation above is the
+  The temperature-feedback Jacobian of @sec-ch06-jacobian is then wrong in every reversible reaction, with no
+  exception: even where $K_{c,j} = 1$ the van 't Hoff term is missing. Where $K_{c,j}$ is far from 1 the error is far
+  larger than that term alone ($-81.9$ against $4.8 \times 10^{-8}$ in the check). This is a recorded code defect with a fix in progress;[^ch06-d65] the derivation above is the
   intended result.
 - $K_{c,j}$ is clamped below at $10^{-250}$, so a reverse rate constant cannot exceed $10^{250} k_j$.
 - The reverse columns are added only when the options carry NASA-9 data. The stoichiometry gets its reverse columns

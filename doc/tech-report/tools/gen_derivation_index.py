@@ -78,6 +78,7 @@ _CHECK = re.compile(r"\b([\w-]+_check\.py)\b")
 _CLINE = re.compile(r"\[C\d+\]")
 _NOTE = re.compile(r"docs/derivations/|(?<![\w/])sources/")
 _TAGGED = re.compile(r"<!-- equation-check: (eq-[\w-]+) ([\w-]+\.py)(?: (\[\w+\]|\(\w+\)))? -->")
+_SCRIPT = re.compile(r"`[\w-]+\.py`")   # a check script named in a check cell
 _SOURCE_NOTE = re.compile(r"<!-- equation-source: (eq-[\w-]+) (.+?) -->")
 #: chapters that are not schemes, e.g. a verification catalogue that only restates the other chapters' checks
 #: (labels such as "sec-ch13"); none is excluded until such a chapter is written
@@ -301,7 +302,7 @@ def _counts(rs: list[Row]) -> dict[str, str]:
     return {"schemes": str(len({r.scheme for r in rs})), "with-eq": str(len({r.scheme for r in e})),
             "equations": str(len(e)), "exists": str(sum(r.source.split(";")[0] == "exists" for r in e)),
             "re-derived": str(sum(r.source.split(";")[0] == "re-derived" for r in e)),
-            "with-check": str(len({r.scheme for r in rs if "_check.py" in r.check}))}
+            "with-check": str(len({r.scheme for r in rs if _SCRIPT.search(r.check)}))}
 
 
 def chapter_file(label: str) -> str:

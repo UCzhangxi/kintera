@@ -153,6 +153,21 @@ def test_equation_comments_name_a_check_line_and_a_source_note(tmp_path):
     assert values["ch02.exists"] == "2"
 
 
+def test_with_check_counts_a_scheme_whose_only_script_is_under_derivation_checks(tmp_path):
+    """The summary column "with a check script" counts a scheme mapped only to a `derivation-checks/check_*.py`
+    script by an `equation-check` comment, not only `chNN/checks/*_check.py` scripts."""
+    book = make_book(tmp_path)
+    (tmp_path / "src" / "kintera_report" / "ch02" / "checks" / "gas_check.py").unlink()
+    (tmp_path / "derivation-checks").mkdir()
+    (tmp_path / "derivation-checks" / "check_ch2_gas.py").write_text("")
+    f = book / "chapters" / "02-thermo" / "_gas.qmd"
+    f.write_text(f.read_text().replace("### Numerical method",
+                                       "<!-- equation-check: eq-ch02-gas-c check_ch2_gas.py (a1) -->\n\n"
+                                       "### Numerical method"))
+    _, values = g.outputs(g.collect(book, {}, tmp_path / "src" / "kintera_report"))
+    assert values["ch02.with-check"] == "1"
+
+
 def test_check_mode_flags_a_stale_fragment(tmp_path, capsys):
     book = make_book(tmp_path)
     frag = tmp_path / "frag.qmd"

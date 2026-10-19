@@ -49,6 +49,35 @@ ones when `default_flux` is empty, the values as given when they already match t
 interpolation from the option's `wavelength` otherwise. The options `wave_min` and `wave_max` are stored but not
 read by these helpers (from reading the header).
 
+#### Caller contract for a computed actinic flux
+
+A caller that computes $F$ itself, for example from a radiative-transfer model, hands it to `Photolysis.forward` under
+these rules. Items marked "checked" raise an error when broken; the others are not checked.
+
+1. Grid: $F$ is sampled on the module's `wavelength` buffer, which is the first reaction's grid in nm
+   (@sec-ch07-cross-sections). A flux on another grid goes through `interpolate_actinic_flux` first. The length of the
+   first axis is checked; the wavelength values are not.
+2. Shape: $F$ has shape `(nwave)` for one spectrum shared by every cell, or `(nwave, *T.shape)` with wavelength first.
+   A batch shape that does not broadcast against the temperature fails with a generic tensor error, not a kintera
+   message.
+3. Units: photons $\mathrm{cm^{-2}\,s^{-1}\,nm^{-1}}$ for the trapezoidal rule, or photons
+   $\mathrm{cm^{-2}\,s^{-1}}$ per bin with `quadrature_weights`. Not checked; nothing is converted.
+4. Values: negative and non-finite values are not checked. A negative flux gives a negative $J$ and a NaN gives a NaN
+   rate.
+5. Order: `update_xs_diss_stacked(T)` after every change of $T$, then `forward(T, F)`. An empty cache is refused; a
+   cache built for another temperature shape fails with a generic reshape error; a cache built for other temperature
+   values of the same shape is used without a check (from reading `forward`, not run).
+6. Optical depth, solar zenith angle and the conversion of mean intensity to actinic flux are outside kintera's C++
+   core. The Python solver of @sec-ch09-sources does them in `compute_actinic_flux_disort`
+   ({{< code python/atm2d/radiation.py compute_actinic_flux_disort >}}): optical depth from branch 0 of each
+   reaction times the number density and the layer thickness, the mean intensity of the discrete-ordinate solver
+   averaged from levels to cells, and a factor $4\pi$ (option `actinic_scale`).
+
+Items 2, 4 and 5 were checked by a run against kintera 2.6.5 built from the pin[^ch07-contract-src]. Item 6 is from
+reading the code: it builds the optical depth from branch 0 as the total photoabsorption, while for a KINETICS7 block
+branch 0 holds only the absorption that dissociates nothing (@eq-ch07-cross-sections-absorption). That the optical
+depth is then too small for KINETICS7 decks is a hypothesis, not run.
+
 ### Code
 
 | what | code link | symbol | switch |
@@ -73,4 +102,11 @@ read by these helpers (from reading the header).
 
 ### Limits
 
-No radiative transfer, no optical depth and no solar zenith angle: all of that is the caller's.
+No radiative transfer, no optical depth and no solar zenith angle in the C++ core: all of that is the caller's, as
+listed in the caller contract of @sec-ch07-actinic-flux.
+
+[^ch07-contract-src]: [source: the deck of @sec-ch07-rate with a temperature of shape (2, 3); a flux of shape (3) and
+    (3, 2, 3) gives $J$ of shape (2, 3, 2); a flux batch of 5 raises a size-mismatch error; a flux of length 4
+    raises "Actinic flux wavelength dimension must match photolysis wavelength grid"; $-F$ gives $J = -0.03\
+    \mathrm{s^{-1}}$; one NaN gives NaN; a cache for temperature shape (1) raises a reshape error. CPU, float64;
+    kintera 2.6.5 built from the pin, torch 2.10.0, Python 3.12.10.]

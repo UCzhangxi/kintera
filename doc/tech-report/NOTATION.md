@@ -98,6 +98,12 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | symbol | meaning | code |
 |---|---|---|
 | $\sigma_{\mathrm{SB}}$ | Stefan-Boltzmann constant [W m$^{-2}$ K$^{-4}$] | |
+| $\lambda$ | wavelength of the photolysis grid [nm] (not SI: the cross-section and flux tables are per nm) | `wavelength` |
+| $\sigma_b$ | photolysis cross section of branch $b$ of a reaction [cm$^2$ molecule$^{-1}$]; $b = 0$ the photoabsorption column, $b \ge 1$ the dissociation channels | `cross_section` |
+| $\sigma_d$ | dissociative cross section of a reaction, $\sum_{b \ge 1} \sigma_b$ [cm$^2$ molecule$^{-1}$] | `xs_diss_stacked` |
+| $F$ | spectral actinic flux [photons cm$^{-2}$ s$^{-1}$ nm$^{-1}$] | `actinic_flux` |
+| $J_j$ | photolysis rate constant of reaction $j$ [s$^{-1}$] | `forward` (Photolysis) |
+| $w_i$ | quadrature weight of photolysis grid point $i$ [-] | `quadrature_weights` |
 
 ## 9. Diagnostics and errors
 

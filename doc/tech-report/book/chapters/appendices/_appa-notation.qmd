@@ -95,6 +95,12 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | symbol | meaning | units/shape | first used | code |
 |--------------|--------------------------------------------|--------------|--------------|--------------|
 | $\sigma_{\mathrm{SB}}$ | Stefan-Boltzmann constant | [W m$^{-2}$ K$^{-4}$] | {{< generated appa first-0eb197f46b0f >}} |  |
+| $\lambda$ | wavelength of the photolysis grid [nm] (not SI: the cross-section and flux tables are per nm) |  | {{< generated appa first-b3931f1ce298 >}} | `wavelength` |
+| $\sigma_b$ | photolysis cross section of branch $b$ of a reaction [cm$^2$ molecule$^{-1}$]; $b = 0$ the photoabsorption column, $b \ge 1$ the dissociation channels |  | {{< generated appa first-968ef0943f92 >}} | `cross_section` |
+| $\sigma_d$ | dissociative cross section of a reaction, $\sum_{b \ge 1} \sigma_b$ [cm$^2$ molecule$^{-1}$] |  | {{< generated appa first-922941ea860e >}} | `xs_diss_stacked` |
+| $F$ | spectral actinic flux | [photons cm$^{-2}$ s$^{-1}$ nm$^{-1}$] | {{< generated appa first-e69f20e9f683 >}} | `actinic_flux` |
+| $J_j$ | photolysis rate constant of reaction $j$ | [s$^{-1}$] | {{< generated appa first-c70b953fd8c4 >}} | `forward` (Photolysis) |
+| $w_i$ | quadrature weight of photolysis grid point $i$ | [-] | {{< generated appa first-cd9772e75400 >}} | `quadrature_weights` |
 
 : Radiation and photochemistry. {#tbl-appa-8a}
 

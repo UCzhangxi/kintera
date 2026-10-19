@@ -16,7 +16,7 @@ implicit step. Each rate is the rate constant times the reactant concentrations,
 weight the branches by their share of the rate, or map rates into a species-space Jacobian.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** $r_j = J_j \prod_i c_i^{\nu_{ij}}$ and $\partial r_j/\partial c_k$, @eq-ch07-photochem-rate.
+**Purpose.** $r_j = J_j \prod_n c_n^{\nu_{nj}}$ and $\partial r_j/\partial c_m$, @eq-ch07-photochem-rate.
 
 **Data.** $T$ [K], $c$ [$\mathrm{mol\,m^{-3}}$], $F$; returns $r$ [$\mathrm{mol\,m^{-3}\,s^{-1}}$] per reaction.
 
@@ -29,8 +29,8 @@ weight the branches by their share of the rate, or map rates into a species-spac
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $r_j$, rate of reaction $j$ [$\mathrm{mol\,m^{-3}\,s^{-1}}$]; $c_i$, concentration of species $i$
-[$\mathrm{mol\,m^{-3}}$]; $\nu_{ij}$, reactant coefficient of species $i$ in reaction $j$ [-]; $f_b$, share of branch
+Local symbols: $r_j$, rate of reaction $j$ [$\mathrm{mol\,m^{-3}\,s^{-1}}$]; $c_n$, molar concentration of species $n$
+[$\mathrm{mol\,m^{-3}}$] (as in @sec-appa); $\nu_{nj}$, reactant coefficient of species $n$ in reaction $j$ [-]; $f_b$, share of branch
 $b$ in the branch-weighted rate [-].
 
 ### Derivation
@@ -39,8 +39,8 @@ The reaction rate and its reaction-space Jacobian are
 
 $$
 \begin{aligned}
-r_j &= J_j \prod_i c_i^{\nu_{ij}} ,\\
-\frac{\partial r_j}{\partial c_k} &= \nu_{kj}\, \frac{r_j}{c_k} .
+r_j &= J_j \prod_n c_n^{\nu_{nj}} ,\\
+\frac{\partial r_j}{\partial c_m} &= \nu_{mj}\, \frac{r_j}{c_m} .
 \end{aligned}
 $$ {#eq-ch07-photochem-rate}
 
@@ -54,11 +54,11 @@ The branch-weighted stoichiometry of one reaction is
 $$
 \begin{aligned}
 f_b &= \frac{\int \sigma_b F\, \mathrm d\lambda}{\sum_{b'} \int \sigma_{b'} F\, \mathrm d\lambda + 10^{-30}} ,\\
-\bar s_i &= \sum_b f_b\, s_{bi} ,
+\bar s_n &= \sum_b f_b\, s_{bn} ,
 \end{aligned}
 $$ {#eq-ch07-photochem-effective}
 
-with $s_{bi}$ the composition of branch $b$. @eq-ch07-photochem-effective is computed in `get_effective_stoich`
+with $s_{bn}$ the composition of branch $b$. @eq-ch07-photochem-effective is computed in `get_effective_stoich`
 ({{< code src/photochem/photolysis.cpp PhotolysisImpl::get_effective_stoich >}}). The sum over $b'$ includes the
 absorption branch 0, whose composition is the reactant. Verified by a run[^ch07-eff-src]: for `O2 => O + O` with the
 rows of @sec-ch07-rate, the result is $\bar s = (0.727, 0.545, 0)$ for $(\mathrm{O_2}, \mathrm{O}, \mathrm{O_3})$. Only a
@@ -71,7 +71,7 @@ the equation) and the reactant orders, then creates the `Photolysis` module. `fo
 and multiplies by the floored concentration product; it does not refresh the cross-section cache, so the caller
 calls `update_xs_diss_stacked` first. The species-space helper `jacobian_photolysis_species`
 ({{< code src/photochem/jacobian_photolysis.cpp jacobian_photolysis_species >}}) returns
-$\sum_r S_{ir}\, x_r\, \nu_{kr} / c_k$ for an input $x_r$ that its comment calls the rate constant.
+$\sum_r S_{nr}\, x_r\, \nu_{mr} / c_m$ for an input $x_r$ that its comment calls the rate constant.
 
 The figure of the call order is not provided: the figure module is not written yet.
 
@@ -107,8 +107,8 @@ Open questions, not tested:
 - For a branched reaction, `stoich` comes from the equation. `data/ch4_photolysis.yaml` lists every branch product in
   one equation, so one photolysis event would produce all of them. Whether the branch weights of
   @eq-ch07-photochem-effective should replace `stoich` is a chemistry question.
-- `jacobian_photolysis_species` equals $\partial (\mathrm d c_i/\mathrm dt)/\partial c_k$ only if its input is the
-  reaction rate $J c$; with the rate constant, as its comment says, the result is too small by a factor $c_k$. The
+- `jacobian_photolysis_species` equals $\partial (\mathrm d c_n/\mathrm dt)/\partial c_m$ only if its input is the
+  reaction rate $J c$; with the rate constant, as its comment says, the result is too small by a factor $c_m$. The
   only test checks signs.
 
 [^ch07-eff-src]: [source: the run of @sec-ch07-rate, `Photolysis.get_effective_stoich(0, wavelength, F, T)`;

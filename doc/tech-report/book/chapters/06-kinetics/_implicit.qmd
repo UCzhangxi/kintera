@@ -55,6 +55,7 @@ The exact solution over one step is $c(t + h) - c(t) = h f + \tfrac12 h^2 f' f +
 in the $h$ term and differ by $\tfrac12 h^2 f' f$, so the local error is $O(h^2)$ and the error after the $1/h$ steps
 of a fixed interval is $O(h)$: first order. The check integrates $A \Rightarrow B$ with $k = 1\ \mathrm{s^{-1}}$ to
 $t = 1$ and finds that halving the step (from 50 to 100 steps) divides the error by 1.992.[^ch06-check-h]
+<!-- equation-check: eq-ch06-implicit-system check_ch6_implicit.py -->
 
 **The two-stage Rosenbrock variant.** `evolve_ros2` takes the two stages of the ROS2 method of Verwer et
 al.,[^ch06-verwer] in a scaled form whose stages $k_1$, $k_2$ are concentration changes:
@@ -92,6 +93,7 @@ The terms in $A$ cancel in the last line, and what remains is the Taylor expansi
 $O(h^2)$. The local error is therefore $O(h^3)$ and the method is second order whatever Jacobian is used (a
 W-method). The check finds an error ratio of 3.882 when the step is halved, against 4 for second
 order.[^ch06-check-h]
+<!-- equation-check: eq-ch06-implicit-ros2 check_ch6_implicit.py -->
 
 *Stiff decay is damped completely.* Apply the method to $y' = \lambda y$ with $A = \lambda$ and $z = h\lambda$. The
 stages are $k_1 = \gamma z\, y/(1 - \gamma z)$ and $k_2 = (\gamma z\, y + z k_1 - 2 k_1)/(1 - \gamma z)$, and one

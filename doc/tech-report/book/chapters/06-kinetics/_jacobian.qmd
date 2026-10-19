@@ -45,7 +45,8 @@ $$ {#eq-ch06-jacobian-entry}
 
 because $\partial P_j / \partial c_k = \nu_{kj} P_j / c_k$. For an evaporation column the product is the condensate
 concentration $c_p$ alone, so the second term is $k_j\, \partial c_p / \partial c_k$, which is $k_j$ for the
-condensate and 0 for the gases.
+condensate and 0 for the gases. `jacobian` forms @eq-ch06-jacobian-entry
+({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}).
 
 **Temperature follows from energy.** With `evolve_temperature` the step is taken in a closed cell at fixed volume with
 no heating from outside. The first law then holds the internal energy per volume fixed,
@@ -72,7 +73,9 @@ $$
 $$ {#eq-ch06-jacobian-dtdc}
 
 Raising the concentration of a species with a large (positive) energy content at fixed $U$ cools the cell, because
-that energy has to come from the thermal part.
+that energy has to come from the thermal part. `jacobian` does not form @eq-ch06-jacobian-dtdc on its own: it uses
+$u_k$ from `eval_intEng_R` ({{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}) and divides by the caller's $C_V$
+inside the term below.
 
 **Chain rule.** The rate depends on $c$ directly and through $T(c)$. At fixed $U$,
 
@@ -93,9 +96,13 @@ thermodynamics uses to recover $T$ from $U$ (@sec-ch03-thermo-y); otherwise the 
 $T(U)$. And `cvol` must be the heat capacity at constant volume.
 
 The check differentiates $r(c, T(c))$ by central differences, with $T$ solved from fixed $U$ at each perturbed state,
-and compares with `jacobian`: the worst relative difference is $1.5 \times 10^{-10}$. The fixed-temperature
-derivatives alone have the wrong sign for one entry, and are 0 for another whose feedback value is
-$1.4 \times 10^{7}$, so the check does test @eq-ch06-jacobian-feedback.[^ch06-check-g]
+and compares with `jacobian`. For the irreversible `A + B => C` the worst relative difference is
+$1.0 \times 10^{-10}$ ($1.5 \times 10^{-10}$ on a second machine at the same pin). The fixed-temperature derivatives alone have the wrong sign for one entry, and are 0 for
+another whose feedback value is $1.4 \times 10^{7}$, so the check does test @eq-ch06-jacobian-feedback. A second card
+with the reversible `O + O2 <=> O3` gives $3.5 \times 10^{-10}$ for the forward column. The reverse column is an
+expected failure: it is off by a factor of up to $5.9 \times 10^{9}$, because its $\partial k/\partial T$ is the
+copied forward one (@sec-ch06-mass-action, Limits).[^ch06-check-g]
+<!-- equation-check: eq-ch06-jacobian-feedback check_ch6_jacobian.py -->
 
 ### Numerical method
 
@@ -129,17 +136,25 @@ definition at the pin.
 | `test_evaporation_general.py` | temperature feedback in the fixed-energy Jacobian | missing evidence | not yet read |
 | `test_falloff` | three-body and fall-off Jacobians | missing evidence | not yet read |
 | `test_rate_constant_ddC.py` | $\partial k/\partial c$ is per reaction | $10^{-6}$ rel. | finite difference |
-| check (`check_ch6_jacobian.py`) | @eq-ch06-jacobian-feedback against a fixed-$U$ central difference | $10^{-8}$ rel. | central difference |
+| check (`check_ch6_jacobian.py`) | @eq-ch06-jacobian-feedback against a fixed-$U$ central difference, one irreversible and one reversible card (reverse column EXPECTED-FAIL, D65) | $10^{-8}$ rel. | central difference |
 
 : Tests of the Jacobian. {#tbl-ch06-jacobian-tests}
 
-[^ch06-check-g]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-species card inside the
-    script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_jacobian.py` from a scratch
+[^ch06-check-g]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the two three-species cards inside
+    the script, the second with `data/nasa9.dat`; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_jacobian.py` from a scratch
     directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
-    output: `derivation-checks/check_ch6_jacobian.out`, last line. The check calls the energy function that the open
+    output: `derivation-checks/check_ch6_jacobian.out`, the three `worst rel err` lines; the reverse-column line is
+    EXPECTED-FAIL by design. The check calls the energy function that the open
     fix batch edits and is to be rerun when it lands.]
 
 ### Limits
 
-Open question: the drivers of @sec-ch14 pass a volumetric heat capacity at constant pressure as $C_V$; the term
-above is written for constant volume. It matters only with `evolve_temperature` on. Not tested.
+- At the pin @eq-ch06-jacobian-feedback is computed wrongly for the reverse column of every reversible reaction:
+  the $\partial k/\partial T$ it uses there is the forward one copied, without $1/K_{c,j}$ and the van 't Hoff
+  term of @eq-ch06-mass-action-reverse-dt. This is the recorded defect D65.[^ch06-d65-jac] The check's irreversible
+  card passes; its reversible card fails in the reverse column as expected.
+- Open question: the drivers of @sec-ch14 pass a volumetric heat capacity at constant pressure as $C_V$; the term
+  above is written for constant volume. It matters only with `evolve_temperature` on. Not tested.
+
+[^ch06-d65-jac]: [source: UCzhangxi/kintera#54, row D65 (reverse-reaction `rc_ddT` entries). This text is to be
+    updated when that fix merges.]

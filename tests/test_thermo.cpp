@@ -849,7 +849,8 @@ TEST_P(DeviceTest, extrapolate_ad) {
   }
 
   auto op_thermo = ThermoOptionsImpl::from_yaml("jupiter.yaml");
-  (*op_thermo).max_iter(15).ftol(1e-8);
+  // 15 iterations leave the 200 K starting state unconverged
+  (*op_thermo).max_iter(50).ftol(1e-8);
 
   ThermoX thermo_x(op_thermo);
   thermo_x->to(device, dtype);

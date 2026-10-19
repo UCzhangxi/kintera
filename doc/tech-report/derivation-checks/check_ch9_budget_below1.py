@@ -1,10 +1,10 @@
-"""Ch. 9 atomic-budget trim below a hog total of 1: corrected rule against the pinned code (K9 limit).
+"""Ch. 9 atomic-budget trim below a hog total of 1: corrected rule against the pinned code (K9).
 
 The corrected rule (eq-ch09-conservation-trim, budget_theory.trim) divides by sum_H A; project_atomic_budget at the
-pin divides by max(1, sum_H A) (eq-ch09-conservation-code). Defect row K9 of UCzhangxi/kintera#54 documents this;
+pin divides by max(1, sum_H A) (eq-ch09-conservation-code); the two coincide for sum_H A >= 1 and differ below. Defect row K9 of UCzhangxi/kintera#54 documents this;
 the code lines below are EXPECTED-FAIL until that fix lands, and are expected to PASS after it.
 (y1) the K9 case of check_ch9_atm2d.py line d': species [A (C1) 0.5, B (C2) 0.005, N2 fixed], budget 0.3.
-     Corrected rule: total after = 0.3. Code: 0.51 - 0.21 * 0.5 = 0.405, the limit formula.
+     Corrected rule: total after = 0.3. Code: 0.51 - 0.21 * 0.5 = 0.405, the pinned-code formula.
 (y2) units: the corrected rule commutes with a change of concentration unit (trim(s c) = s trim(c)); the floor at 1
      does not, so the code's result depends on the unit.
 """
@@ -38,10 +38,10 @@ th = trim(small, cnt, fixed, {"C": B})
 co = project_atomic_budget(small, atom_counts=cnt, fixed_mask=fixed, budget={"C": B})
 tt, tc = (th * cnt["C"]).sum().item(), (co * cnt["C"]).sum().item()
 print(f"   (y1) hog total 0.5, excess 0.21: corrected rule total_after = {tt:.6f}, code total_after = {tc:.6f}, "
-      f"limit formula 0.51 - 0.21 * 0.5 = {0.51 - 0.21 * 0.5:.6f}")
+      f"pinned-code formula 0.51 - 0.21 * 0.5 = {0.51 - 0.21 * 0.5:.6f}")
 report("(y1) corrected rule meets the budget: |total_after / 0.3 - 1|", abs(tt / 0.3 - 1), 1e-13)
 report("(y1) corrected rule: no hog negative (min c)", max(0.0, -th.min().item()), 0.0)
-report("(y1) code equals the limit formula eq-ch09-conservation-code: |total_after - 0.405| / 0.405",
+report("(y1) code equals the pinned-code formula eq-ch09-conservation-code: |total_after - 0.405| / 0.405",
        abs(tc - 0.405) / 0.405, 1e-13)
 report("(y1) code meets the budget: |total_after / 0.3 - 1| (K9, UCzhangxi/kintera#54)", abs(tc / 0.3 - 1), 1e-13,
        expected_fail=True)

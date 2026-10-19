@@ -26,7 +26,7 @@ diffusion into one face flux that is exact for an exponential profile.
 
 **Activation.** `binary_diffusion` given; scheme by `form` (`c_diffusion`, `mr_diffusion`, `mr_exp`, `mr_hybrid`).
 
-**Guarantee / limits.** Mixing-ratio and exponential forms hold the hydrostatic profile to round-off; the concentration form does not.
+**Guarantee / limits.** The exponential form holds each species' own-scale-height profile to round-off on any grid; the centred mixing-ratio form does so only for a species of the mean mass ($H_i = H$) and is second order otherwise; the concentration form does not hold it.
 
 **Evidence.** See the Tests layer.
 :::
@@ -105,11 +105,22 @@ F_i &= \frac{D_{\mathrm{tot}}}{\delta z}\left(c_{i,\mathrm{L}}\, e^{-S} - c_{i,\
 \end{aligned}
 $$ {#eq-ch09-molecular-exp}
 
-$F_i = 0$ exactly when $c_{i,\mathrm{R}}/c_{i,\mathrm{L}} = e^{-2S} = e^{-\delta z / H_{\mathrm{eff}}}$, the exponential
-profile with scale height $H_{\mathrm{eff}}$, whatever $\delta z$. For small $S$, expanding
+$F_i = 0$ exactly when $c_{i,\mathrm{R}}/c_{i,\mathrm{L}} = e^{-2S} = e^{-\delta z / H_{\mathrm{eff}}}$, the
+exponential profile with scale height $H_{\mathrm{eff}}$, whatever $\delta z$. For small $S$, expanding
 $e^{\pm S} \approx 1 \pm S$ gives
 $F_i \approx -D_{\mathrm{tot}} (c_{i,\mathrm{R}} - c_{i,\mathrm{L}})/\delta z - D_{\mathrm{tot}}\, \bar c_i / H_{\mathrm{eff}}$,
-the centred diffusion plus a settling term. @eq-ch09-molecular-exp is assembled in `_assemble_vertical_kb_exponential`
+the centred diffusion plus a settling term. The definition of $H_{\mathrm{eff}}$, with $H/H_i = \mu_i/\bar\mu$,
+gives $D_{\mathrm{tot}}/H_{\mathrm{eff}} = K/H + D_{ii}/H_i$, so the limit is
+
+$$
+F_i \approx -K \left(\frac{c_{i,\mathrm{R}} - c_{i,\mathrm{L}}}{\delta z} + \frac{\bar c_i}{H}\right)
+- D_{ii} \left(\frac{c_{i,\mathrm{R}} - c_{i,\mathrm{L}}}{\delta z} + \frac{\bar c_i}{H_i}\right) :
+$$
+
+eddy diffusion in the mixing-ratio form plus the molecular flux of step 2, which is the centred mixing-ratio scheme to
+$O(\delta z^2)$.
+
+@eq-ch09-molecular-exp is assembled in `_assemble_vertical_kb_exponential`
 ({{< code python/atm2d/transport.py _assemble_vertical_kb_exponential >}}), with $S$ clamped to $[-50, 50]$. Only the
 diagonal $D_{ii}$ enters. `mr_hybrid` uses @eq-ch09-molecular-exp for species with $\mu_i < 0.6\, \bar\mu$ and the
 centred mixing-ratio scheme with @eq-ch09-molecular-centred (diagonal) for all others.
@@ -190,16 +201,16 @@ interior tendency divided by $D c / H^{2}$ is $8.7 \times 10^{-15}$ in `mr_diffu
 `mr_exp`, and $1.002$ in `c_diffusion`. No kintera test checks either scheme against a hydrostatic profile.
 
 The derivation is checked by the derivation check `check_ch9_atm2d.py`, lines `b1` and `b2` (isothermal, 200 K,
-$K = 0$, diagonal $D = 10^{5}$ cm$^2$ s$^{-1}$; tendencies divided by $D c_i/H_i^2$).[^ch09-molecular-check]
-Line `b1` tests step 3: one species of mass 2 with $c = e^{-z/H}$ on a coarse grid, $\delta z = H/2$. The tendency is
-below $10^{-12}$ in the centred mixing-ratio and the exponential schemes (round-off; PASS) and 2.595 in the
-concentration form, which is not an equilibrium (PASS when $> 0.1$). Line `b2` tests step 4: a minor species twice the
-mean mass, $c_i = e^{-z/H_i}$ with $H_i = H/2$, on grids with $\delta z = H/4$, $H/8$ and $H/16$. The exponential
-scheme holds it to $7.354 \times 10^{-14}$ on all three grids (tolerance $10^{-12}$; PASS). The centred interior
-error is $1.059 \times 10^{-2}$, $2.615 \times 10^{-3}$ and $6.517 \times 10^{-4}$, falling by 4.050 and 4.013 per
-halving, which is second order as @eq-ch09-molecular-centred-error predicts (tolerance 10% of 4; PASS). With the
-boundary cells included, the worst error falls by only 2.277 and 2.131, which is the first order of the one-sided
-boundary rows (information line).
+$K = 0$, diagonal $D = 10^{5}$ cm$^2$ s$^{-1}$; tendencies divided by $D c_i/H_i^2$).[^ch09-molecular-check] Line `b1`
+tests step 3: one species of mass 2 with $c = e^{-z/H}$ on a coarse grid, $\delta z = H/2$. The tendency is below
+$10^{-12}$ in the centred mixing-ratio and the exponential schemes (round-off; PASS) and 2.595 in the concentration
+form, which is not an equilibrium (PASS when $> 0.1$). Line `b2` tests step 4: a minor species twice the mean mass,
+$c_i = e^{-z/H_i}$ with $H_i = H/2$, on grids with $\delta z = H/4$, $H/8$ and $H/16$. The exponential scheme holds it
+to $7.354 \times 10^{-14}$ on all three grids (tolerance $10^{-12}$; PASS). The centred interior error is
+$1.059 \times 10^{-2}$, $2.615 \times 10^{-3}$ and $6.517 \times 10^{-4}$, falling by 4.050 and 4.013 per halving,
+which is second order as @eq-ch09-molecular-centred-error predicts (tolerance 10% of 4; PASS). With the boundary cells
+included, the worst error falls by only 2.277 and 2.131, which is the first order of the two edge cells, each of which
+has a single face (information line).
 
 [^ch09-molecular-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: isothermal columns built in
     the script; run: `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with
@@ -210,9 +221,15 @@ boundary rows (information line).
 ### Limits
 
 In the concentration form, molecular diffusion lacks the background scale-height term, so a hydrostatic profile is not
-an equilibrium (run `[R8]`); use a mixing-ratio form with molecular diffusion. The docstring of
-`build_kb_exponential_vertical_matrix` says `mr_hybrid` treats species with $\mu_i \ge \bar\mu$ by the centred
-scheme, while the code switches at $\mu_i < 0.6\,\bar\mu$ (verified by reading). The exponential scheme uses only the
-diagonal of $D_{ij}$. The units are the caller's to keep consistent (CGS by default), and no unit is checked.
+an equilibrium (run `[R8]`). The centred mixing-ratio form holds it to round-off only for a species of the mean mass;
+for a lighter or heavier species its error is $O(\delta z^2)$ in the interior and $O(\delta z)$ in the edge cells
+(@eq-ch09-molecular-centred-error, check line `b2`). Only the exponential form holds every species' profile on any
+grid. The docstring of `build_kb_exponential_vertical_matrix` says `mr_hybrid` treats species with $\mu_i \ge \bar\mu$
+by the centred scheme, while the code switches at $\mu_i < 0.6\,\bar\mu$ (verified by reading). The exponential scheme
+uses only the diagonal of $D_{ij}$. The units are the caller's to keep consistent (CGS by default), and no unit is
+checked. With `mr_exp` or `mr_hybrid` and any of `kyy`, `kzy`, `kyz`, `build_kb_exponential_vertical_matrix` also adds
+`build_eddy_diffusion_matrix(state, kzz, ...)` in the concentration form, which contains vertical $K_{zz}$ diffusion
+again, so vertical eddy diffusion would be counted twice. This is verified by reading only, not run. No step driver
+passes `kyy`, so no current path reaches it.
 
 [^ch09-r8]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, line `[R8]`.

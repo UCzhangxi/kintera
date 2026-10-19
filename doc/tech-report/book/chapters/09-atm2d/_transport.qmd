@@ -27,15 +27,15 @@ a column whose density falls with height. There is no advection operator in `pyt
 
 **Activation.** `form`: `c_diffusion`, `mr_diffusion`, `mr_exp`, `mr_hybrid`; default `mr_diffusion` when a density is given.
 
-**Guarantee / limits.** Conservative fluxes; centred, second order in space (not measured).
+**Guarantee / limits.** Conservative fluxes; centred, second order in space on a uniform grid (check line `b2`, @sec-ch09-molecular).
 
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $K_{zz}$, $K_{yy}$, vertical and horizontal eddy diffusivities [length$^2$ time$^{-1}$]; $n_{j,i}$, total
-number density of a cell; $F_{i+1/2}$, the diffusive flux through the face between layers $i$ and $i+1$; $s_n$, a
-per-species scale factor of the diffusivity (`species_diffusion_scale`, default 1). Geometry symbols are those of
-@sec-ch09-state.
+Local symbols: $K_{zz}$, $K_{yy}$, vertical and horizontal eddy diffusivities [length$^2$ time$^{-1}$]; $n_{j,i}$,
+total number density of a cell; $F_{i+1/2}$, the upward diffusive flux (towards increasing $x_1$) through the face
+between layers $i$ and $i+1$, the same sign convention as @sec-ch09-molecular; $s_n$, a per-species scale factor of
+the diffusivity (`species_diffusion_scale`, default 1). Geometry symbols are those of @sec-ch09-state.
 
 ### Derivation
 
@@ -44,8 +44,8 @@ width $\Delta x_{1,i}$ and approximate the face gradient by the difference of th
 
 $$
 \begin{aligned}
-F_{i+1/2} &= s_n K_{zz,i+1/2}\, \frac{c_{i+1} - c_i}{\delta x_{1,i+1/2}} , \\
-\frac{\mathrm d c_i}{\mathrm d t} &= \frac{F_{i+1/2} - F_{i-1/2}}{\Delta x_{1,i}} .
+F_{i+1/2} &= -s_n K_{zz,i+1/2}\, \frac{c_{i+1} - c_i}{\delta x_{1,i+1/2}} , \\
+\frac{\mathrm d c_i}{\mathrm d t} &= -\frac{F_{i+1/2} - F_{i-1/2}}{\Delta x_{1,i}} .
 \end{aligned}
 $$ {#eq-ch09-transport-flux}
 
@@ -54,9 +54,10 @@ domain-edge faces with the edge cell's value, but the assembly uses interior fac
 `kyy_x2f[1:-1, :]`), so no diffusive flux crosses the domain boundary: the operator is zero-flux at every edge unless
 a boundary row (below) or a boundary source (@sec-ch09-sources) is added (verified by reading).
 @eq-ch09-transport-flux is assembled face by face in `_add_two_cell_block`
-({{< code python/atm2d/transport.py _add_two_cell_block >}}): a face adds $+F/\Delta x_{1,i}$ to cell $i$ and
-$-F/\Delta x_{1,i+1}$ to cell $i+1$, so $\sum_i \Delta x_{1,i}\, \mathrm d c_i / \mathrm d t$ telescopes to the
-boundary fluxes and the interior conserves the column content exactly. The horizontal term is the same along $x_2$.
+({{< code python/atm2d/transport.py _add_two_cell_block >}}): an upward flux $F$ through a face removes
+$F/\Delta x_{1,i}$ from cell $i$ below it and adds $F/\Delta x_{1,i+1}$ to cell $i+1$ above it, so
+$\sum_i \Delta x_{1,i}\, \mathrm d c_i / \mathrm d t$ telescopes to the boundary fluxes and the interior conserves the
+column content exactly. The horizontal term is the same along $x_2$.
 
 **Mixing-ratio form.** The reason for this form is one line of physics. An eddy carries a parcel up or down without
 changing its composition, so what turbulence mixes down-gradient is the mixing ratio $c/n$, not the concentration. The
@@ -67,15 +68,15 @@ Diffusing the mixing ratio $c / n$ instead of $c$, with the same cell integral a
 face flux
 
 $$
-F_{i+1/2} = s_n K_{zz,i+1/2}\, n_{i+1/2}\, \frac{c_{i+1}/n_{i+1} - c_i/n_i}{\delta x_{1,i+1/2}} ,
+F_{i+1/2} = -s_n K_{zz,i+1/2}\, n_{i+1/2}\, \frac{c_{i+1}/n_{i+1} - c_i/n_i}{\delta x_{1,i+1/2}} ,
 $$ {#eq-ch09-transport-mr}
 
-with the face density $n_{i+1/2} = \tfrac12 (n_i + n_{i+1})$,
-
-assembled in `_assemble_vertical_scalar_diffusion`
-({{< code python/atm2d/transport.py _assemble_vertical_scalar_diffusion >}}) by scaling the two column entries by
-$n_{i+1/2}/n_i$ and $n_{i+1/2}/n_{i+1}$. For $c = x\, n$ with a uniform mixing ratio $x$ the flux vanishes, which is the
-property the form is chosen for. A face that touches a cell with $n = 0$ carries no flux.
+with the face density $n_{i+1/2} = \tfrac12 (n_i + n_{i+1})$ and the same update
+$\mathrm d c_i/\mathrm d t = -(F_{i+1/2} - F_{i-1/2})/\Delta x_{1,i}$. It is assembled in
+`_assemble_vertical_scalar_diffusion` ({{< code python/atm2d/transport.py _assemble_vertical_scalar_diffusion >}}) by
+scaling the two column entries by $n_{i+1/2}/n_i$ and $n_{i+1/2}/n_{i+1}$. For $c = x\, n$ with a uniform mixing ratio
+$x$ the flux vanishes, which is the property the form is chosen for. A face that touches a cell with $n = 0$ carries
+no flux.
 
 Molecular diffusion and the exponential schemes are derived in @sec-ch09-molecular. In brief, molecular diffusion
 adds a full species-by-species block per face with a gravitational-separation term proportional
@@ -157,7 +158,9 @@ agree; on the left and bottom sides the sign is reversed. A zero-gradient condit
 left or bottom Neumann row. Whether this is a documentation error or a code error is for the code owners to decide.
 
 The spatial order of the concentration and mixing-ratio forms is second order on a uniform grid by the centred
-differences; it is not measured, and the non-uniform-grid order is a derivation still to write (TODO).
+differences. It is measured for the same mixing-ratio stencil with a molecular coefficient in place of $K_{zz}$: check
+line `b2` of @sec-ch09-molecular gives interior error ratios of 4.050 and 4.013 per halving of the uniform spacing.
+The non-uniform-grid order is a derivation still to write (TODO).
 
 The horizontal and cross terms (`kyy`, `kzy`, `kyz`) and the boundary rows exist only in `build_transport_matrix` and
 `build_implicit_operator`. None of the step drivers, `rosenbrock2_step`, `newton_implicit_step`, `operator_split_step`

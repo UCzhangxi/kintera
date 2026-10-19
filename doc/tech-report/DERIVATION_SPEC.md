@@ -26,7 +26,7 @@ Every entry has six parts.
    missing), MISSING (no derivation).
 
 **Fix batch.** Entries tagged `[FIX: ...]` describe code that changes in the open fix batch (D64, K6, D8,
-D4, D6, K4, D12, D16; see issue [#54](https://github.com/UCzhangxi/kintera/issues/54) of UCzhangxi/kintera).
+D4, D6, K4, D12, D16, K9; see issue [#54](https://github.com/UCzhangxi/kintera/issues/54) of UCzhangxi/kintera).
 Write those derivations for the corrected code: derive the physically correct result, cite the fixed lines
 once the batch lands, and keep the 0d9f67f behaviour only as a Limits note. Rerun the entry's check after the
 batch lands; some checks are expected to flip from EXPECTED-FAIL to PASS.
@@ -86,10 +86,10 @@ batch lands; some checks are expected to flip from EXPECTED-FAIL to PASS.
 | C9-c | Source linearisation and stoichiometric mapping | 09/_sources | PRESENT | - | (proposed FD, see entry) |
 | C9-d | Implicit assembly and Rosenbrock-2 order | 09/_assembly, 09/_rosenbrock | PARTIAL | - | check_ch9_atm2d |
 | C9-e | Newton iteration and the steady-state limit | 09/_newton | PRESENT | - | (proposed, see entry) |
-| C9-f | Atomic-budget projection | 09/_conservation | PRESENT | - | check_ch9_atm2d |
+| C9-f | Atomic-budget projection | 09/_conservation | PRESENT | K9 | check_ch9_atm2d, check_ch9_budget_exact, check_ch9_budget_below1 |
 
-Counts: 38 entries; PRESENT 19, PARTIAL 14, MISSING 5. Fix-batch tagged: 8 entries (C3-a, C3-c, C3-d, C3-e,
-C3-f, C4-c, C4-d, C4-e) plus C6-g, whose check must be rerun because it calls the energy function the batch
+Counts: 38 entries; PRESENT 19, PARTIAL 14, MISSING 5. Fix-batch tagged: 9 entries (C3-a, C3-c, C3-d, C3-e,
+C3-f, C4-c, C4-d, C4-e, C9-f) plus C6-g, whose check must be rerun because it calls the energy function the batch
 edits.
 
 ## Check scripts and results at 0d9f67f
@@ -805,7 +805,7 @@ derivations; they are PRESENT and not listed as entries.)
 - **Question.** What system does a step solve, and why is the two-stage Rosenbrock scheme second order even
   with an approximate Jacobian?
 - **Start.** `build_implicit_step_system` (`python/atm2d/assembly.py:116`); `gamma = 1 + 1/sqrt 2`
-  (`python/atm2d/rosenbrock.py:13`); `rosenbrock2_step` (`:81`).
+  (`python/atm2d/rosenbrock.py:42`); `rosenbrock2_step` (`:81`).
 - **End.** `A = I/(gamma dt) - L`; two stages; `c1 = c0 + (1.5/gamma) k1 + (0.5/gamma) k2`
   (`python/atm2d/rosenbrock.py:165`); embedded estimate `|c1 - y2|`.
 - **Steps.** (1) Expand both stages for `y' = f(y)` with an arbitrary matrix L. (2) Order-2 conditions in
@@ -838,4 +838,8 @@ derivations; they are PRESENT and not listed as entries.)
   The removal weight divides by a hog total clamped to at least 1 (`python/atm2d/conservation/atomic.py:130`),
   so below 1 the excess is removed only in part (info line: 0.405 left against a budget of 0.3); the
   derivation must state this condition.
+- **[FIX: K9]** The hog-total floor at `python/atm2d/conservation/atomic.py:130` is defect K9 of #54. Derive the
+  corrected rule (division by the hog total itself); the pinned code coincides with it for a hog total of at least 1
+  and differs below, which stays as a Limits note. `check_ch9_budget_below1.py` has two EXPECTED-FAIL lines that are
+  expected to pass after the fix.
 - **Home and status.** `09-atm2d/_conservation.qmd:35-60`. PRESENT.

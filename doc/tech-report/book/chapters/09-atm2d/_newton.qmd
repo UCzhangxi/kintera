@@ -147,14 +147,16 @@ Setup checks a user can hit: an unknown `KINTERA_CHEM_SOLVER`; any error of the 
 
 The derivation is checked by the derivation check `check_ch9_newton.py`, on a 6-layer column with species A and B,
 eddy diffusion, `2 A => B`, `B => A` and a bottom flux of A. Its residual @eq-ch09-newton-residual and Jacobian are
-written in the script, independently of atm2d. All six lines pass:[^ch09-newton-check]
+written in the script, independently of atm2d. All seven lines pass:[^ch09-newton-check]
 
 - Step 2: one iteration of `newton_implicit_step` (no damping, clip or cap) equals $c^{0} - G'(c^{0})^{-1} G(c^{0})$
   to $1.732 \times 10^{-16}$ relative, for $\Delta t = 0.5$ and $10^{3}$, so on both sides of the code's switch at
   $\Delta t = 1$ (tolerance $10^{-12}$).
 - Step 3: undamped, with $\Delta t = 10^{5}$, $\max\lvert G \rvert / \max c^{0}$ falls from 59.8 to
   $7.6 \times 10^{-16}$ in seven iterations. Once it is below 1, the observed orders are 1.608, 1.936 and 2.002
-  (the last two within 0.1 of 2). With $\theta = 0.5$ at every iteration the residual ratio tends to 0.5005, which
+  (the last two within 0.1 of 2). The residual ratio $\lVert G(c^{k+1})\rVert / \lVert G(c^{k})\rVert^2$ over the same
+  iterations is 0.1003, 0.1215 and 0.1202 (normalised by $\max c^{0}$), bounded within a factor 1.21 (the line
+  requires 2). With $\theta = 0.5$ at every iteration the residual ratio tends to 0.5005, which
   is linear convergence with ratio $1 - \theta$.
 - Steps 4 and 5: the converged step satisfies $f(c) = (c - c^{0})/\Delta t$ to $8.4 \times 10^{-12}$ relative. For
   $\Delta t = 10^{9}$, $10^{10}$ and $10^{11}$ its distance to the steady state (found by Newton on $f = 0$ in the
@@ -165,7 +167,7 @@ written in the script, independently of atm2d. All six lines pass:[^ch09-newton-
 [^ch09-newton-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the column built in the script;
     run: `python doc/tech-report/derivation-checks/check_ch9_newton.py` from a scratch directory, with `KINTERA_WT` set
     to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
-    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch9_newton.out`, 6 PASS,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch9_newton.out`, 7 PASS,
     0 FAIL.]
 
 No kintera test at the pin covers the chemistry-only Newton step, the SciPy integrators or the operator-split step.

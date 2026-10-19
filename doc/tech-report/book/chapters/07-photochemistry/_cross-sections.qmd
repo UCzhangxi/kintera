@@ -73,6 +73,33 @@ values to one flat `cross_section` list and records the number of blocks per rea
 (temperature, wavelength, branch) tensor per reaction. A reaction with one block is copied to every temperature of
 the shared grid. The figure of the table layout is not provided: the figure module is not written yet.
 
+**Adding a photolysis reaction.** The keys of one `type: photolysis` entry, as `from_yaml` reads them:
+
+- `equation`[^rg-1203f05957b1]: the reactants become branch 0, written `species:coefficient` with the coefficient truncated to an
+  integer; the equation also gives the stoichiometry of the rate (@sec-ch07-photochem).
+- `branches` (optional): a list of composition strings, one per dissociation channel, each a set of
+  `species:coefficient` pairs separated by spaces, commas or semicolons, for example `"OH:1 H:1"`. They become
+  branches 1, 2, … in list order (parsed by `parse_comp_string`,
+  {{< code src/utils/parse_comp_string.cpp parse_comp_string >}}).
+- `cross-section`: a list of blocks. Each block has `format` (`YAML` when absent, or `KINETICS7`) and, when the list
+  has more than one block, a `temperature` [K].
+- `data` (`format: YAML`): a list of rows `[wavelength, sigma_0, sigma_1, ...]`, with the wavelength in nm and then
+  one cross section per branch in $\mathrm{cm^2\,molecule^{-1}}$, branch 0 first
+  ({{< code src/photochem/load_xsection_yaml.cpp load_xsection_yaml >}}). The rows of every block must use the
+  wavelengths of the first reaction's first block (see below).
+- `filename` (`format: KINETICS7`): a KINETICS7 cross-section file, located like other data files (@sec-ch11-resources).
+
+An entry needs `equation`, `type: photolysis` and the `cross-section` list; the deck also needs a `reference-state`[^rg-9343a8647dbb]
+block, without which `PhotoChemOptions.from_yaml` returns `None`. A tested entry: `equation: H2O => OH + H`,
+`branches: ["OH:1 H:1", "H2:1 O:1"]`, and two `format: YAML` blocks with
+`temperature: 200.` and `temperature: 300.`, each with three rows such as `[120., 1.0e-17, 7.0e-18, 1.0e-18]`
+(wavelength, then branches 0, 1 and 2). Loaded with `PhotoChemOptions.from_yaml`[^ch07-example-src], it gives the
+branch names `H2O:1`, `OH:1 H:1` and `H2:1 O:1`, the wavelength grid (120, 150, 180) nm, the temperature grid
+(200, 300) K and a cross-section table of shape (2, 3, 3) (temperature, wavelength, branch). The load also
+succeeded with `OH`, or with `H2` and `O`, missing from the species list; what such a deck does in a rate evaluation
+was not run. A KINETICS7 block replaces `data` by, for example, `filename: "CH4.dat2"` (as in
+`data/ch4_photolysis.yaml`) and fills the branches from the file's channel tables.
+
 ### Code
 
 | what | code link | symbol | switch |
@@ -85,7 +112,7 @@ the shared grid. The figure of the table layout is not provided: the figure modu
 
 : Code map of the cross-section readers. {#tbl-ch07-cross-sections-code}
 
-Refused at setup: a reaction without `type`[^rg-5a0ce8082ce9] or `equation`[^rg-1203f05957b1]; an unknown `format`; several blocks of one reaction
+Refused at setup: a reaction without `type`[^rg-5a0ce8082ce9] or `equation`; an unknown `format`; several blocks of one reaction
 without a `temperature` on each; multi-temperature reactions with different temperature lists; a slab count that
 is neither 1 nor the size of the shared grid; too few values for a reaction.
 
@@ -121,8 +148,15 @@ zero (from reading `load_xsection_kin7`, not run).
     `PhotoChemOptions.from_yaml`, then `Photolysis.update_xs_diss_stacked` and `forward` on CPU in float64;
     kintera 2.6.5 built from the pin, torch 2.10.0, Python 3.12.10.]
 
-<!-- reader glossary notes -->
-[^rg-5a0ce8082ce9]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
+[^ch07-example-src]: [source: that entry, rows 120, 150 and 180 nm, in a deck with `reference-state` and the
+    species `H2O`, `OH`, `H`, `H2`, `O`, loaded with
+    `PhotoChemOptions.from_yaml` and built with `PhotoChem` on CPU; kintera 2.6.1 wheel, whose `src/photochem` and
+    `parse_comp_string` are identical to the pin (`git diff v2.6.1 0d9f67f9` is empty for them), torch 2.10.0.]
 
+<!-- reader glossary notes -->
 [^rg-1203f05957b1]: equation — reaction string; => irreversible, <=> or = reversible; required; parsed by `Reaction`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L64-L68)
+
+[^rg-9343a8647dbb]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+
+[^rg-5a0ce8082ce9]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
 <!-- end reader glossary notes -->

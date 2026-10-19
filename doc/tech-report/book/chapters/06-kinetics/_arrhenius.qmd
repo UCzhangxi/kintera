@@ -37,6 +37,12 @@ Defaults when a key is omitted: `A` is 1, `b` is 0, `Ea_R` is 1 K, `E4` is 0. Th
 verified finding: options read from a card with no `Ea_R` report `Ea_R() == [1.0]`, so the rate constant carries a
 factor $\exp(-1/T)$, about 0.99 at 100 K. Whether this default is intended is an open question.
 
+$T_{\mathrm{ref}}$ is the field `ArrheniusOptions.Tref` ({{< code src/kinetics/arrhenius.hpp ArrheniusOptionsImpl >}}).
+It is not taken from `reference-state`: that block sets the `Tref` of the kinetics and thermodynamics options only,
+and `ArrheniusOptionsImpl::from_yaml` reads no `Tref` key, so a YAML deck always gets 300 K. Only the KINETICS-base
+reader sets it, to 1 K (@sec-ch06-kinetics-base); from C++ or Python it can be set on the options directly
+(verified by reading the pin).
+
 ### Derivation
 
 Within one temperature band the rate constant is
@@ -52,8 +58,11 @@ units before it is stored. @eq-ch06-arrhenius-rate is computed in `forward`
 ({{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}}).
 
 With bands, band $r$ of reaction $j$ covers $[T_{r-1}, T_r)$; the first band extends to 0 K and the last to
-$+\infty$, so every temperature falls in exactly one band. The full derivation of the unit factor is not drafted
-yet.
+$+\infty$, so every temperature falls in exactly one band. The last value of `T_ranges` is therefore never used as
+a bound, though it must still exceed the one before it. With `A_ranges: [1.e-12, 2.e-12]` and
+`T_ranges: [500., 1000.]` under `rate-constant`[^rg-fe9f62b85a4d], the first band covers $T < 500$ K and the second
+$T \ge 500$ K, including $T \ge 1000$ K. Absent `b_ranges` and `Ea_R_ranges` are zeros, not the single-band
+defaults. The full derivation of the unit factor is not drafted yet.
 
 ### Numerical method
 
@@ -148,7 +157,7 @@ The band-selection figure is not provided: the figure module is not written yet.
 | what | code link | symbol | switch |
 |---|---|---|---|
 | options | {{< code src/kinetics/arrhenius.hpp ArrheniusOptionsImpl >}} | `ArrheniusOptionsImpl` | `type: arrhenius` |
-| YAML reader | {{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant`[^rg-fe9f62b85a4d] |
+| YAML reader | {{< code src/kinetics/arrhenius.cpp ArrheniusOptionsImpl::from_yaml >}} | `from_yaml` | `rate-constant` |
 | band tables | {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::reset >}} | `reset` | `A_ranges` |
 | rate constant | {{< code src/kinetics/arrhenius.cpp ArrheniusImpl::forward >}} | `forward` | always |
 
@@ -191,7 +200,7 @@ does this), whether evaluators may be called from several threads, or any order 
 
 [^rg-3a030b87ff19]: Ea_R — activation energy divided by the gas constant, in K; default 1 K in the Arrhenius reader; stored in option `Ea_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L96)
 
-[^rg-36105a006e4f]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
-
 [^rg-fe9f62b85a4d]: rate-constant — map of the rate parameters of one reaction entry; read as `rxn_node["rate-constant"]`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L76-L79)
+
+[^rg-36105a006e4f]: type — name of the rate form; each reader keeps the entries of its own type; required; compared with the reader `name()`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L58-L62)
 <!-- end reader glossary notes -->

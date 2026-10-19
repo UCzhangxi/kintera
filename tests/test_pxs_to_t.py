@@ -65,3 +65,37 @@ def test_pxs_to_t_inverts_entropy(thermo, device, vapors, Tstar):
 
     T = th.compute("PXS->T", [pres, x.clone(), entropy])
     assert T.item() == pytest.approx(Tstar, rel=1e-5)
+
+
+@pytest.mark.parametrize("device", DEVICES)
+def test_pxs_to_t_batched(thermo, device):
+    """One batched call: columns that converge early must stay finite while
+    the others keep iterating."""
+    op, op_ref, sp = thermo
+    th = _thermo_x(op, device)
+    th_ref = _thermo_x(op_ref, device)
+
+    grid = [(h, float(t)) for h in (0.0, 2.5e-3, 1.0e-2, 5.0e-2)
+            for t in range(130, 410, 10)]
+    n = len(grid)
+    x = torch.zeros(n, len(sp), dtype=torch.float64, device=device)
+    for i, (h, _) in enumerate(grid):
+        if h > 0.0:
+            x[i, sp.index("H2O")] = h
+            x[i, sp.index("NH3")] = 3.0e-4
+            x[i, sp.index("H2S")] = 8.0e-5
+    x[:, 0] = 1.0 - x[:, 1:].sum(-1)
+
+    tstar = torch.tensor([t for _, t in grid], dtype=torch.float64,
+                         device=device)
+    pres = torch.full((n,), P, dtype=torch.float64, device=device)
+    xeq = x.clone()
+    th_ref.forward(tstar, pres, xeq)
+    conc = th_ref.compute("TPX->V", [tstar, pres, xeq])
+    entropy = th_ref.compute("TPV->S", [tstar, pres, conc])
+
+    T = th.compute("PXS->T", [pres, x.clone(), entropy])
+    relerr = ((T - tstar) / tstar).abs()
+    bad = [(grid[i], T[i].item()) for i in range(n)
+           if not relerr[i].item() < 1e-5]
+    assert bad == []

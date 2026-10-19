@@ -380,6 +380,13 @@ def test_chapter_of():
     assert rg.chapter_of("index.qmd") == "preface"
 
 
+def test_chapter_of_keeps_the_letter_of_a_split_chapter():
+    """A split chapter (STYLE 10.1) is its own owner row: `01b-parcel-model` is ch01b, not ch01 or the file name."""
+    assert rg.chapter_of("chapters/01b-parcel-model.qmd") == "ch01b"
+    assert rg.chapter_of("chapters/01b-parcel-model/_state.qmd") == "ch01b"
+    assert rg.chapter_of("chapters/01-overview/_map.qmd") == "ch01"
+
+
 def test_the_repository_has_one_owner_per_chapter():
     c = rg.count(rg.ROOT)
     owners, problems = rg.read_owners(rg.ROOT)

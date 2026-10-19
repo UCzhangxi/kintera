@@ -10,11 +10,13 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
    TP T=130 NH3: RH - 1 = -6.235e-09, rate / rate(c_v = 0) = 6.235e-09
    TP T=140 NH3: RH - 1 = -1.263e-10, rate / rate(c_v = 0) = 1.263e-10
    TP: 10 (cell, reaction) pairs with condensate; 0 cells report non-convergence
+(a) TP: cloudy (cell, reaction) pairs (must be > 0) and non-converged cells (must be 0); missing: measured 0.000e+00  tol 0e+00  PASS
 (a) TP: worst |rate| / rate(c_v = 0) on the phase solver's output, same formulas: measured 2.043e-07  tol 1e-06  PASS
 (a) TP: worst |RH - 1| at the same states: measured 2.043e-07  tol 1e-06  PASS
    UV T0=280 yv=0.02: diag=4 T=281.915708, RH - 1 = +3.775e-15, rate / rate(c_v = 0) = 0.000e+00
    UV T0=250 yv=0.01: diag=4 T=251.635449, RH - 1 = +0.000e+00, rate / rate(c_v = 0) = 0.000e+00
    UV T0=220 yv=0.005: diag=3 T=220.923589, RH - 1 = +5.329e-15, rate / rate(c_v = 0) = 0.000e+00
+(b) UV: cases without condensate or not converged (must be 0): measured 0.000e+00  tol 0e+00  PASS
 (b) UV: worst |rate| / rate(c_v = 0) on the phase solver's output, same formula: measured 0.000e+00  tol 1e-06  PASS
 (b) UV: worst |RH - 1| at the same states, T from VU->T: measured 5.329e-15  tol 1e-06  PASS
    mismatch T=130 H2O: RH - 1 = -8.450e-08, rate / rate(c_v = 0) = 7.170e-01
@@ -29,4 +31,4 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
    mismatch T=140 NH3: RH - 1 = -1.263e-10, rate / rate(c_v = 0) = 1.263e-10
    mismatch: 10 (cell, reaction) pairs with condensate; 0 cells report non-convergence
 (c) H2O evaporation with the inline liquid-branch curve (all cloudy cells are below 273.16 K): worst rate / rate(c_v = 0) 7.170e-01  INFO
-SUMMARY: 4 PASS, 0 FAIL, 1 INFO
+SUMMARY: 6 PASS, 0 FAIL, 1 INFO

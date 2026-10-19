@@ -21,34 +21,39 @@ miss: a dynamical core that conserves energy and volume has to call the energy-a
 ::: {.callout-note title="At a glance"}
 **Purpose.** One table of entry point, fixed variables and conserved quantities, @tbl-ch01b-state-table.
 
-**Data.** Amounts (concentrations or mole fractions) of gases and condensates; two state variables.
+**Data.** Molar amounts of gases and condensates (passed as concentrations, mass fractions or mole fractions); two
+state variables.
 
 **Placement.** Read before chapters 3 to 6; a map of their solvers.
 
 **Activation.** Not applicable: it describes the solvers; it has no option of its own.
 
-**Guarantee / limits.** Element totals exact for balanced reactions; energy, entropy to the solver tolerance.
+**Guarantee / limits.** Element amounts (and element/dry ratios) exact for balanced reactions; element-weighted
+mole fractions are not conserved; energy, entropy to the solver tolerance.
 
 **Evidence.** The conservation lines of the chapter 3, 4 and 6 checks; see the Tests layer.
 :::
 
-Local symbols: $n_i$, amount of species $i$ in the solver's own basis: the concentration $c_i$
-[$\mathrm{mol\,m^{-3}}$] for the fixed-volume paths (ThermoY, the kinetics), the mole fraction $x_i$ for the
-fixed-pressure paths (ThermoX, `extrapolate_dlnp`); $S$, the stoichiometric matrix with entries $S_{ir}$; $\xi_r$,
-extent of reaction $r$, in the same basis as $n$; $a_{ei}$, number of atoms of element $e$ in species $i$; $U$, internal energy per volume [$\mathrm{J\,m^{-3}}$]; $u_i(T)$, molar internal energy of species
-$i$ [$\mathrm{J\,mol^{-1}}$]; $C_V = \sum_i c_i\, c_{v,i}$, heat capacity at constant volume per volume
+Local symbols: $N_i$, molar amount of species $i$ in the parcel [mol]; $x_i = N_i/\sum_j N_j$, its mole fraction
+(a normalized quantity, not an amount); $c_i = N_i/V$, its concentration in a parcel of volume $V$
+[$\mathrm{mol\,m^{-3}}$]; $S$, the stoichiometric matrix with entries $S_{ir}$; $\xi_r$, extent of reaction $r$
+[mol]; $a_{ei}$, number of atoms of element $e$ in species $i$; $u_i(T)$, molar internal energy of species $i$
+[$\mathrm{J\,mol^{-1}}$]; $U_{\mathrm{p}} = \sum_i N_i u_i$, internal energy of the parcel [J]; $U = U_{\mathrm{p}}/V$, internal
+energy per volume [$\mathrm{J\,m^{-3}}$]; $C_V = \sum_i c_i\, c_{v,i}$, heat capacity at constant volume per volume
 [$\mathrm{J\,m^{-3}\,K^{-1}}$].
 
 ### Derivation
 
-**Step 1: counting.** A parcel has $N$ species amounts and two thermodynamic variables. The solvers do not move
-amounts freely. They move them along reactions, so every reachable composition is
+**Step 1: counting.** A parcel has one molar amount per species and two thermodynamic variables. The solvers do not
+move amounts freely. They move them along reactions, so every reachable composition is
 
 $$
-n = n^0 + S \xi ,
+N = N^0 + S \xi ,
 $$ {#eq-ch01b-state-extent}
 
-with $n^0$ the starting amounts and one extent $\xi_r$ per reaction. Each active reaction at equilibrium adds one
+with $N^0$ the starting amounts and one extent $\xi_r$ per reaction. The relation holds for molar amounts, and for
+concentrations only at fixed volume ($c = c^0 + S\xi/V$). It does not hold for mole fractions when a reaction
+changes the number of moles ($\sum_i S_{ir} \ne 0$, for example $\mathrm{NH_3 + H_2S \to NH_4SH(s)}$). Each active reaction at equilibrium adds one
 condition: its reaction Gibbs energy is zero, or, for a phase change, its saturation condition holds
 (@sec-ch04-conditions). With $R$ active reactions there are $R$ unknown extents and $R$ conditions, so once the
 starting amounts and the two thermodynamic variables are given, the system is square and determines the state.
@@ -56,21 +61,29 @@ This counting holds as written when $T$ is one of the two given variables. When 
 one more unknown and the energy balance $\sum_i c_i u_i(T) = U$ one more condition, so there are $R + 1$ unknowns
 and $R + 1$ conditions and the system is again square (@sec-ch04-equilibrate-uv).
 Inactive reactions, such as a condensate that is absent and stays absent, are inequalities, not conditions; that is
-why the phase solvers are active-set methods (@sec-ch04-active-set). @eq-ch01b-state-extent is the update the
-saturation adjustment applies in `equilibrate_tp` ({{< code src/thermo/equilibrate_tp.h >}}), where the negated
-active columns of the stoichiometry form the constraint matrix of the least-squares step, and in
-`phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h >}}).
+why the phase solvers are active-set methods (@sec-ch04-active-set). `equilibrate_tp` ({{< code src/thermo/equilibrate_tp.h >}})
+works in mole fractions. Each iteration subtracts the active stoichiometric columns times the step from $x$, which
+is @eq-ch01b-state-extent for a parcel of one mole at the start of the step, and then divides by the new sum
+$\sum_i x_i$. That rescales every amount by the same factor and changes no ratio of amounts. So the returned $x$ is
+$N/\sum_j N_j$ for amounts $N$ that obey @eq-ch01b-state-extent; the dry species, which is in no reaction, keeps
+its amount, so $N_i = x_i\, N_{\mathrm{dry}}/x_{\mathrm{dry}}$ recovers them. `phase_equilibrate_tp`
+({{< code src/equilibrium/phase_equilibrate_tp.h >}}) applies @eq-ch01b-state-extent to its amounts directly.
 
 **Step 2: elements are conserved by every step.** A reaction is balanced when it has as many atoms of each element
 on both sides, $\sum_i a_{ei} S_{ir} = 0$ for every element $e$ and reaction $r$. Applying the element matrix to
 @eq-ch01b-state-extent,
 
 $$
-\sum_i a_{ei}\, n_i = \sum_i a_{ei}\, n_i^0 + \sum_r \Big(\sum_i a_{ei} S_{ir}\Big) \xi_r = \sum_i a_{ei}\, n_i^0 ,
+\sum_i a_{ei}\, N_i = \sum_i a_{ei}\, N_i^0 + \sum_r \Big(\sum_i a_{ei} S_{ir}\Big) \xi_r = \sum_i a_{ei}\, N_i^0 ,
 $$ {#eq-ch01b-state-elements}
 
-for any extents, so element totals are conserved exactly by every solver that moves along reactions, the kinetics
-included (@sec-ch06-mass-action). The chemical-equilibrium reader rejects a reaction that does not conserve every
+for any extents, so element amounts are conserved exactly by every solver that moves along reactions, the kinetics
+included (@sec-ch06-mass-action). The conserved budgets are amounts, or ratios of amounts. The element-weighted mole
+fraction $\sum_i a_{ei} x_i = \sum_i a_{ei} N_i / \sum_j N_j$ is not conserved when the number of moles changes.
+For $\mathrm{A + B \to C}$ from $x = (0.4, 0.3, 0.3)$ with $\xi = 0.1$ mol per mole, the A atoms stay at 0.7 mol,
+while their mole-fraction weight goes from 0.7 to $0.7/0.9 = 0.778$. A host that compares budgets per mole uses
+element/dry ratios $\sum_i a_{ei} N_i / N_{\mathrm{dry}}$ (or element/mass), which are ratios of amounts and are
+conserved. The chemical-equilibrium reader rejects a reaction that does not conserve every
 element to $10^{-10}$ (`EquilibriumOptionsImpl::from_yaml`,
 {{< code src/equilibrium/equilibrium_options.cpp EquilibriumOptionsImpl::from_yaml >}}), so for the log-K solver the
 balance is enforced on input. The thermodynamics (nucleation) and kinetics readers do not check it (searched in
@@ -82,7 +95,8 @@ balance is enforced on input. The thermodynamics (nucleation) and kinetics reade
   $p$ and mole fractions, overwrites the mole fractions in place with the equilibrium ones, and returns the gain
   matrix (@sec-ch04-equilibrate-tp). At fixed $T$ and $p$ the equilibrium is the minimum
   of the Gibbs energy subject to @eq-ch01b-state-elements (@sec-ch04-conditions). The amounts change, $T$ and $p$ do
-  not, and neither $U$ nor the volume is conserved.
+  not. The parcel's volume changes with its gas amount, $\Delta V = (\mathcal R T/p) \sum_g \Delta N_g$ for an
+  ideal gas with the condensate volume neglected, and its internal energy $U_{\mathrm{p}}$ is not conserved.
 - *Internal energy and volume.* `ThermoY.forward` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}) takes
   density, internal energy per volume and mass fractions, overwrites the mass fractions in place and returns the gain
   matrix. The volume is fixed by the density, and $U$ is held. Inside the kernel, after every change of the amounts,
@@ -111,7 +125,7 @@ $$ {#eq-ch01b-state-t-of-u}
 
 | entry point | holds fixed | returns | conserves exactly |
 |---|---|---|---|
-| `ThermoX.forward` | $T$, $p$ | gain matrix; mole fractions updated in place | elements |
+| `ThermoX.forward` | $T$, $p$ | gain matrix; mole fractions updated in place | element amounts (element/dry ratios of $x$; not element-weighted fractions) |
 | `ThermoY.forward` | $U$, $V$ | gain matrix; mass fractions updated in place; $T$ from `compute("VU->T")` | elements; $U$ to the $T$ tolerance |
 | `extrapolate_dlnp` | molar $s$ on the new $p$ | $T$, mole fractions | elements (reversible step) |
 | `Kinetics` with `evolve_temperature` | $U$, $V$ (linearised) | rates, Jacobian | elements |
@@ -122,16 +136,23 @@ $$ {#eq-ch01b-state-t-of-u}
 **Step 4: consequence for coupling.** A finite-volume dynamical core advances the conserved densities, mass and
 total energy, in a cell of fixed volume. What it hands to the thermodynamics is therefore $\rho$, $U$ and the mass
 fractions, and the adjustment it needs is the one at fixed $U$ and $V$. Calling the temperature-and-pressure path
-with the core's $T$ and $p$ instead holds $T$ fixed while vapour condenses. The energy then changes by
+with the core's $T$ and $p$ instead holds $T$ fixed while vapour condenses. In molar amounts, the parcel's internal
+energy then changes by
 
 $$
-\Delta U = \sum_i u_i(T)\, \Delta c_i = \sum_r \Big(\sum_i S_{ir}\, u_i(T)\Big) \xi_r = -\sum_r L_r\, \xi_r ,
+\Delta U_{\mathrm{p}} = \sum_i u_i(T)\, \Delta N_i = \sum_r \Big(\sum_i S_{ir}\, u_i(T)\Big) \xi_r = -\sum_r L_r\, \xi_r
+\quad [\mathrm{J}] ,
 $$ {#eq-ch01b-state-energy-change}
 
 for the fixed-$T$ path of `ThermoX.forward` ({{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}}), with
-$L_r = -\sum_i S_{ir} u_i$ the latent energy of reaction $r$ (positive for condensation). This is not zero
-unless no latent energy is released. The fixed-$T$ path does not conserve energy, and the energy-conserving coupling
-uses `ThermoY.forward` (@sec-ch14-saturation).
+$L_r = -\sum_i S_{ir} u_i$ the latent energy of reaction $r$ (positive for condensation) and $\Delta N = S\xi$ from
+@eq-ch01b-state-extent. This is not zero unless no latent energy is released. At fixed $p$ the parcel also changes
+volume by $\Delta V$ (above), so the TP path gives no energy per volume of its own. A host of fixed volume $V$
+converts explicitly: it passes $x_i = c_i / \sum_j c_j$, and maps the returned fractions back to concentrations at
+its own $V$ with its dry amount kept, $c_i' = c_{\mathrm{dry}}\, x_i'/x_{\mathrm{dry}}'$. In that fixed-volume basis
+$\Delta c = S\xi/V$, the energy per volume changes by $\Delta U = -\sum_r L_r \xi_r / V$, and the pressure is no
+longer the $p$ the solver held, because the gas amount changed. Either way the fixed-$T$ path does not conserve
+energy, and the energy-conserving coupling uses `ThermoY.forward` (@sec-ch14-saturation).
 
 No published derivation is quoted. The steps above are standard equilibrium thermodynamics, here matched to the code
 at the pin.
@@ -158,24 +179,44 @@ solvers is not provided: the figure module is not written yet.
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| check `check_ch4_tp.py` (a) | element totals O, N, S at fixed $T$, $p$ | $10^{-14}$ rel. | round-off |
+| check `check_ch4_tp.py` (a) | element/dry ratios O, N, S at fixed $T$, $p$ | $10^{-14}$ rel. | round-off |
+| check `check_ch1b_amounts.py` (a), (b) | amounts from $x$ per mole of dry gas obey @eq-ch01b-state-extent; element/dry ratios kept; element-weighted fractions not (INFO) | $10^{-12}$, $10^{-14}$ rel. | round-off |
 | check `check_ch4_uv.py` (a), (b) | $U$ and water conserved at fixed $U$, $V$ | $10^{-10}$, $10^{-14}$ rel. | solver tolerance; round-off |
 | check `check_ch3_adiabat.py` (4b) | molar entropy over a saturated pressure step | $10^{-5}$ J mol$^{-1}$ K$^{-1}$ | solver tolerance |
 | check `check_ch6_jacobian.py` | the fixed-$U$ Jacobian against a fixed-$U$ difference | $10^{-8}$ rel. | central difference |
 
 : Checks of the fixed variables. {#tbl-ch01b-state-tests}
 
-The checks are collected here, not repeated. At fixed $T$ and $p$ the element totals change by at most
-$5.6 \times 10^{-16}$ (relative; round-off).[^ch01b-tp] At fixed $U$ and $V$ the energy changes by at most
+The checks are collected here, not repeated. At fixed $T$ and $p$ the element/dry ratios change by at most
+$5.6 \times 10^{-16}$ (relative; round-off).[^ch01b-tp] The amounts check reproduces the $\mathrm{A + B \to C}$
+example above (amount change $1.1 \times 10^{-16}$, fraction weight change 0.078) and runs `ThermoX.forward` on
+`tests/jupiter.yaml` at 160, 200 and 250 K. The amounts recovered per mole of dry gas differ from the start by
+$S\xi$ to $3.7 \times 10^{-16}$ (relative), and the element/dry ratios are kept to $5.2 \times 10^{-16}$. The
+element-weighted mole fractions change by about $8.0 \times 10^{-5}$ where $\mathrm{NH_4SH(s)}$ forms, and the gas
+volume by up to 0.27 % (informational lines).[^ch01b-am] It also prints $\sum_i u_i \Delta N_i$ next to
+$-\sum_r L_r \xi_r$ with the deck's linear energies; that is an identity once $\Delta N = S\xi$, not a test of
+the code, so @eq-ch01b-state-energy-change has no check of its own.
+<!-- equation-check: eq-ch01b-state-extent check_ch1b_amounts.py (b) -->
+<!-- equation-check: eq-ch01b-state-elements check_ch4_tp.py (a) -->
+<!-- equation-check: eq-ch01b-state-elements check_ch1b_amounts.py (a) -->
+<!-- equation-check: eq-ch01b-state-elements check_ch1b_amounts.py (b) -->
+<!-- equation-check: eq-ch01b-state-t-of-u check_ch4_uv.py (a) -->
+<!-- equation-check: eq-ch01b-state-t-of-u check_ch4_uv.py (b) -->
+At fixed $U$ and $V$ the energy changes by at most
 $1.6 \times 10^{-15}$ and the water by at most $2.2 \times 10^{-16}$ (relative), with both UV solvers.[^ch01b-uv] Over a saturated step of $\Delta \ln p = -0.01$ the
 molar entropy changes by $4.6 \times 10^{-7}\ \mathrm{J\,mol^{-1}\,K^{-1}}$.[^ch01b-ad] The fixed-$U$ Jacobian agrees
-with a difference quotient taken at fixed $U$ to $1.5 \times 10^{-10}$.[^ch01b-jac] @eq-ch01b-state-energy-change has no
-check of its own.
+with a difference quotient taken at fixed $U$ to at most $1.6 \times 10^{-10}$ ($1.5 \times 10^{-10}$ in the committed
+output, $1.0 \times 10^{-10}$ on a second machine at the same pin).[^ch01b-jac]
 
 [^ch01b-tp]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch4_tp.py` from a scratch directory, with
     `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
     `derivation-checks/check_ch4_tp.out`, block (a), element lines.]
+
+[^ch01b-am]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and the A + B -> C
+    algebra inside the script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch1b_amounts.py`
+    from a scratch directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0,
+    kintera 2.6.5; output: `derivation-checks/check_ch1b_amounts.out`, lines `(a)`, `(b)`.]
 
 [^ch01b-uv]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the cards inside the script; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch4_uv.py` from a scratch directory, with

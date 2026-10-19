@@ -58,13 +58,21 @@
 
 **`diff_T`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
+*diffusion_tendency*, see **eddy diffusion tendency**.
+
 *dispatch stub*, see **device dispatch**.
+
+**`dzi`**: The eddy-diffusion operator on a column, @sec-ch08-operator.
 
 ## E {.unnumbered .unlisted}
 
 *Ea_R*, see **Arrhenius rate constant**.
 
 **`Ea_R`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
+
+**eddy diffusion operator**: The eddy-diffusion operator on a column, @sec-ch08-operator.
+
+**eddy diffusion tendency**: The eddy-diffusion tendency of a column, @sec-ch08-tendency.
 
 **`equation`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
@@ -114,11 +122,19 @@
 
 *KineticsOptions*, see **options objects, C++**.
 
+*Kzz*, see **eddy diffusion operator**.
+
+**`Kzz`**: The eddy-diffusion operator on a column, @sec-ch08-operator.
+
 ## L {.unnumbered .unlisted}
 
 *law of mass action*, see **reaction rate, mass action**.
 
 *Lindemann*, see **fall-off rate constant**.
+
+## M {.unnumbered .unlisted}
+
+*mixing-ratio diffusion*, see **eddy diffusion operator**.
 
 ## N {.unnumbered .unlisted}
 
@@ -254,6 +270,8 @@
 
 *version number*, see **package version**.
 
+*vertical mixing*, see **eddy diffusion tendency**.
+
 **`vm`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
 **VULCAN comparison, scoped out**: Comparison scripts against VULCAN (scoped out: they need a VULCAN tree outside the repository), @sec-ch13-vulcan.
@@ -265,3 +283,7 @@
 ## Y {.unnumbered .unlisted}
 
 **YAML input file**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
+
+## Z {.unnumbered .unlisted}
+
+*zero-flux boundary*, see **eddy diffusion operator**.

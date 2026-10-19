@@ -1,0 +1,4 @@
+[C1] PASS weight row equals dF/dc at fixed U: max relative difference 2.3e-09
+[C2] PASS dT/dc_i = -u_i/C_V at fixed U: max relative difference 1.7e-09
+[C3] PASS condensate weights are non-zero (largest 15.8 m^3/mol) and dropping the coupling term changes the gain by 0.72 of its largest entry
+[C4] PASS gain = gas part - (d ln K'/dT) L / C_V: max relative difference 1.3e-16

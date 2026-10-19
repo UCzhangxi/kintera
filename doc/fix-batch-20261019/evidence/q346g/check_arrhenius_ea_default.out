@@ -1,0 +1,7 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+ card                          T [K]  stored Ea_R   k / k(Ea_R: 0)   exp(-1/T)
+ Ea_R omitted                   50.0       1.0000         0.980199    0.980199
+ Ea_R: 0                        50.0       0.0000         1.000000
+ Ea_R omitted                  300.0       1.0000         0.996672    0.996672
+ Ea_R: 0                       300.0       0.0000         1.000000
+omitted Ea_R stored as 1 K (expected 0): EXPECTED-FAIL

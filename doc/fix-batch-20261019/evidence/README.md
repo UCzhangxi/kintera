@@ -5,10 +5,13 @@ run the RED case of its item. The upstream pull request built from this branch m
 `doc/fix-batch-20261019/`.
 
 - `q346b/` .. `q346e/`: one quick check per item, `<name>.py` -> `<name>.out` (stdout of the run at 0d9f67f).
+- `q346g/`: the checks behind items D65, K8, K9 and K10 (from the tech-report derivation spec):
+  `check_ch6_rates.py` (D65, line `[d2] reverse column`), `check_ch3_card_latent.py` (K8, the `ratio=` lines),
+  `check_ch9_atm2d.py` (K9, line `d' (info) hog total 0.5 < 1`) and `check_arrhenius_ea_default.py` (K10).
 - `common.py` loads kintera and builds `ThermoX` from `tests/jupiter.yaml`; `tp_oracle.py` is an independent
   brute-force TP equilibrium for `tests/jupiter.yaml`; `q346b/card_two_cloud_tref0.yaml` is a two-cloud card with
   `Tref: 0` and precipitating condensate copies, used by `q346b/check_d17_precip_copy.py`.
-- The copies of `common.py` and `tp_oracle.py` in the four subdirectories are identical.
+- The copies of `common.py` and `tp_oracle.py` in the five subdirectories are identical.
 
 ## Rerun
 

@@ -1,0 +1,26 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+jupiter.yaml cards (INFO; ratio 1 = consistent with the saturation curve):
+   H2O(l)  T= 200.00 (solid  branch): l_card= 35585.889 (YAML algebra  35585.889) l_svp= 51326.964 J/mol  ratio=0.693318  INFO
+   H2O(l)  T= 250.00 (solid  branch): l_card= 33299.412 (YAML algebra  33299.412) l_svp= 51110.788 J/mol  ratio=0.651514  INFO
+   H2O(l)  T= 273.16 (solid  branch): l_card= 32240.316 (YAML algebra  32240.316) l_svp= 51010.655 J/mol  ratio=0.632031  INFO
+   H2O(l)  T= 300.00 (liquid branch): l_card= 31012.936 (YAML algebra  31012.936) l_svp= 43990.623 J/mol  ratio=0.704990  INFO
+   H2O(l): kintera TV->H latent vs YAML offset algebra, max rel 5.451e-13  tol 1e-10  PASS
+   consistent H2O(l) card for h2o_ideal liquid branch: u_c(0)-u_v(0) = -beta*T3 = -6786.6602 K (x R), cv_c = cv_v + 1 + gamma = 8.486009 (card has -5380.0, 9.0)
+   consistent H2O(l) card for h2o_ideal solid branch: u_c(0)-u_v(0) = -beta*T3 = -6277.2168 K (x R), cv_c = cv_v + 1 + gamma = 4.020000 (card has -5380.0, 9.0)
+   NH3(s)  T= 200.00 (liquid branch): l_card= 53461.978 (YAML algebra  53461.978) l_svp= 23277.428 J/mol  ratio=2.296730  INFO
+   NH3(s)  T= 250.00 (liquid branch): l_card= 50926.067 (YAML algebra  50926.068) l_svp= 20941.065 J/mol  ratio=2.431876  INFO
+   NH3(s)  T= 273.16 (liquid branch): l_card= 49751.434 (YAML algebra  49751.434) l_svp= 19858.862 J/mol  ratio=2.505251  INFO
+   NH3(s)  T= 300.00 (liquid branch): l_card= 48390.157 (YAML algebra  48390.157) l_svp= 18604.702 J/mol  ratio=2.600964  INFO
+   NH3(s): kintera TV->H latent vs YAML offset algebra, max rel 2.355e-13  tol 1e-10  PASS
+   consistent NH3(s) card for nh3_ideal liquid branch: u_c(0)-u_v(0) = -beta*T3 = -3923.6320 K (x R), cv_c = cv_v + 1 + gamma = 9.120000 (card has -7650.0, 9.6)
+   consistent NH3(s) card for nh3_ideal solid branch: u_c(0)-u_v(0) = -beta*T3 = -4033.0560 K (x R), cv_c = cv_v + 1 + gamma = 4.930000 (card has -7650.0, 9.6)
+consistent card: cv_c = 8.486009, u0_R(Tref=300.0) = -4990.8575, single 'ideal' liquid branch
+   T= 150.00: l_card=50209.018908 l_svp=50209.018908 J/mol ratio-1=-5.73e-14
+   T= 200.00: l_card=48136.220288 l_svp=48136.220288 J/mol ratio-1=-2.22e-14
+   T= 250.00: l_card=46063.421669 l_svp=46063.421669 J/mol ratio-1=-6.31e-14
+   T= 273.16: l_card=45103.301348 l_svp=45103.301348 J/mol ratio-1=-8.55e-14
+   T= 300.00: l_card=43990.623049 l_svp=43990.623049 J/mol ratio-1=-2.48e-14
+   T= 350.00: l_card=41917.824430 l_svp=41917.824430 J/mol ratio-1=-2.64e-14
+   T= 400.00: l_card=39845.025810 l_svp=39845.025810 J/mol ratio-1=-2.80e-14
+3 consistent card l_card/l_svp - 1, max over T: measured 8.549e-14  tol 1e-10  PASS
+SUMMARY: 3 PASS, 0 FAIL, 8 INFO

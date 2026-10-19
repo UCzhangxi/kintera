@@ -226,8 +226,7 @@ torch::Tensor ThermoXImpl::forward(torch::Tensor temp, torch::Tensor pres,
   vec2.push_back(reactions.size());
   reaction_set = torch::arange(0, (int)reactions.size(),
                                temp.options().dtype(torch::kInt));
-  for (int i = 0; i < temp.dim(); ++i)
-    reaction_set = reaction_set.unsqueeze(0);
+  for (int i = 0; i < temp.dim(); ++i) reaction_set = reaction_set.unsqueeze(0);
   reaction_set = reaction_set.expand(vec2).contiguous();
   nactive = torch::zeros_like(temp, temp.options().dtype(torch::kInt));
 

@@ -16,7 +16,7 @@ fits of @sec-ch02-svp as a PyTorch autograd function: its forward pass evaluates
 multiplies the incoming gradient by the hand-written derivative, so no finite differences are taken.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Tensor $\ln K_r(T)$ with the exact gradient, @eq-ch02-svp-autograd-backward.
+**Purpose.** Tensor $\ln K_r(T)$ with its analytic gradient, @eq-ch02-svp-autograd-backward.
 
 **Data.** $T$ [K], shape `(...)` or `(..., R)`; $\ln K_r$, shape `(..., R)` with one column per reaction.
 
@@ -24,7 +24,7 @@ multiplies the incoming gradient by the hand-written derivative, so no finite di
 
 **Activation.** Always, after `LogSVPFunc::init(nucleation_options)`.
 
-**Guarantee / limits.** Exact first derivative; the selected reaction set is process-wide state.
+**Guarantee / limits.** Analytic first derivative of each fit; the selected reaction set is process-wide state.
 
 **Evidence.** See the Tests layer.
 :::
@@ -86,5 +86,8 @@ The tolerances are read from `tests/test_svp_autograd.py` at the pin.
 
 The reaction set lives in static class members, so every caller must call `init` right before `call` or `grad`;
 two threads using different reaction sets at once could interleave (a hypothesis; no lock is present, verified by
-reading; not run). The backward pass is first order only: it is not itself differentiable, so second derivatives
-through `LogSVPFunc` are not available (verified by reading `backward`; not run).
+reading; not run). The backward pass multiplies the incoming gradient by $\mathrm d \ln K_r / \mathrm d T$ computed
+outside autograd (verified by reading `backward`). A second derivative taken through `LogSVPFunc` would therefore
+treat $\mathrm d \ln K_r / \mathrm d T$ as a constant and miss the $\mathrm d^2 \ln K_r / \mathrm d T^2$ term; that it
+returns a silently wrong value rather than an error is a hypothesis, not run. The first derivatives are checked against
+finite differences for the named fits (@sec-ch02-svp) and against analytic values in `test_svp_autograd.py`.

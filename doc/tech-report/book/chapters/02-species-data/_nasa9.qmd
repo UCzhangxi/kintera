@@ -31,7 +31,8 @@ dimensionless Gibbs energy of the multiphase equilibrium solver (@sec-ch05).
 **Evidence.** See the Tests layer.
 :::
 
-Local symbols: $a_0, \dots, a_6$, polynomial coefficients [K$^{-k}$ as needed]; $b_1$, $b_2$, integration constants
+Local symbols: $a_k$, $k = 0, \dots, 6$, polynomial coefficients, $a_k$ multiplying $T^{k-2}$ in $c_p/\mathcal R$ and so
+carrying K$^{2-k}$; $b_1$, $b_2$, integration constants
 of enthalpy [K] and entropy [-]; $T_{\mathrm{mid}}$, the range boundary [K].
 
 ### Derivation
@@ -90,11 +91,12 @@ identical at the pin (`cmp` of the two files).
 |---|---|---|---|
 | `test_species.release` (`SpeciesInit.prefers_current_directory_nasa9_file`) | a `nasa9.dat` in the working directory is read, with the coefficient layout above | exact | equality |
 | `test_nasa9_cp.py` | with `use-nasa9-cp`, $c_p$ and $c_v$ follow @eq-ch02-nasa9-forms | $10^{-10}$ rel. | not yet derived |
+| `test_equilibrium.release` (`Nasa9.ConcurrentFirstDatabaseAccess`) | eight threads reading the table first at once get the same finite $g/(\mathcal R T)$ at 1500 K | `allclose` defaults | PyTorch defaults |
 
 : Tests of the NASA-9 data. {#tbl-ch02-nasa9-tests}
 
-The tolerances are read from the test files at the pin. No test checks the entropy line of @eq-ch02-nasa9-forms or
-`nasa9_gibbs_RT` directly in this chapter's scope; that is missing evidence.
+The tolerances are read from the test files at the pin. No test checks the entropy line of @eq-ch02-nasa9-forms or the value of `nasa9_gibbs_RT` against reference data; the
+concurrency test checks only finiteness and agreement between threads. That is missing evidence.
 
 ### Limits
 

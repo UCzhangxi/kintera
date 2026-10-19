@@ -24,7 +24,7 @@ The thermodynamics and kinetics options then copy the entries they need. A secon
 
 **Activation.** The `species` block is required; `phase` is optional (`gas`, `liquid`, `solid`).
 
-**Guarantee / limits.** Exact copy of the card; a failed load leaves an empty registry.
+**Guarantee / limits.** Card values stored as read, defaults filled; a failed load leaves an empty registry.
 
 **Evidence.** See the Tests layer.
 :::
@@ -52,7 +52,16 @@ species entry yields one row:
 The rows are read in `init_species_from_yaml`
 ({{< code src/species.cpp init_species_from_yaml overload=2 >}}). The default $c^{\star}_n = 5/2$ is $c_v/\mathcal R$ of a
 diatomic ideal gas with frozen vibration (a monatomic gas has 3/2). The same default applies to condensates unless
-`cv_R` is given (verified by reading the reader at the pin).
+`cv_R` is given (verified by reading the reader at the pin). All values are per mole: $\mu_n$ in kg mol$^{-1}$,
+$c^{\star}_n$ and $s^{\star}_n$ dimensionless (divided by $\mathcal R$), $u^{\star}_n$ in K (energy per mole divided by
+$\mathcal R$).
+
+The registry holds every species of the card, but `ThermoOptions.from_yaml`
+({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=2 >}}) copies only some of them: the
+first species of the card, every species of a `nucleation`, `coagulation` or `evaporation` reaction, and every species
+with an explicit `phase` (verified by reading at the pin). A species with no `phase` that appears in none of those
+reactions is in the registry but not in the thermodynamics; for example the `H2O(s)` and `NH3(l)` entries of
+`tests/jupiter.yaml`.
 
 ### Numerical method
 
@@ -97,8 +106,9 @@ run when a GPU is present.
 ### Limits
 
 The registry is process-wide state: two configurations used alternately in one process reload it on every switch.
-Whether concurrent use from several threads is safe is a hypothesis to test (no lock guards the vectors, verified by
-reading; not run).
+No lock guards the registry vectors (verified by reading); that concurrent loading from several threads can corrupt
+them is a hypothesis, not run. A species left out of `ThermoOptions` by the selection rule above is silently ignored by
+the thermodynamics; no warning is printed.
 
 <!-- reader glossary notes -->
 [^rg-69a0a493850f]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)

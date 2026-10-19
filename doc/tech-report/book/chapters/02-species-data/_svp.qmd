@@ -21,7 +21,7 @@ derivative.
 **Purpose.** $\ln K_r(T)$ and $\mathrm d \ln K_r / \mathrm d T$; the inline forms are @eq-ch02-svp-ideal and
 @eq-ch02-svp-antoine.
 
-**Data.** $T$ [K] in; $\ln K_r$ with $K_r$ in Pa$^{m}$, $m$ the sum of gas reactant coefficients, out.
+**Data.** $T$ [K] in; $\ln K_r$ out, $K_r$ in Pa$^{m}$ with $m = \sum_{\mathrm{gases}} (-\nu_{nr})$ (gas products count negative).
 
 **Placement.** Evaluated inside the saturation solvers and by `LogSVPFunc` (@sec-ch02-svp-autograd).
 

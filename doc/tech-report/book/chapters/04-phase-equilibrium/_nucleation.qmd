@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/thermo/nucleation.cpp, src/thermo/nucleation.hpp
+sources: src/thermo/nucleation.cpp, src/thermo/nucleation.hpp, src/thermo/thermo_y.cpp, src/vapors/vapor_functions.h
 status: draft
 author: gitlinffff
 reviewer:
@@ -11,28 +11,73 @@ reviewer:
 ### Summary
 
 Only the condensation reactions listed with `type: nucleation` in the YAML input take part in saturation adjustment.
-Each carries the formula of its saturation constant and an optional temperature range. The entry point is
-`NucleationOptionsImpl::from_yaml`
-({{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}}).
+Each one names the formula of its saturation constant. The reader builds the equilibrium stoichiometry from these
+reactions and skips every other type, so a condensate produced by a `coagulation` reaction, for example, is never
+adjusted (@sec-ch04-conditions). A reaction may also give a temperature range, but no solver uses it.
 
-TODO: the At a glance box and the remaining summary paragraphs.
+::: {.callout-note title="At a glance"}
+**Purpose.** Choose the reactions and saturation constants of @eq-ch04-conditions-saturation.
+
+**Data.** YAML `reactions:` entries with `type: nucleation` and a `rate-constant:` block.
+
+**Placement.** When the thermodynamics options are read.
+
+**Activation.** `type: nucleation`; `rate-constant: formula` required.
+
+**Guarantee / limits.** Reactants must be gases; `minT`/`maxT` are parsed but unused.
+
+**Evidence.** See the Tests layer below.
+:::
 
 ### Derivation
 
-TODO: not yet written.
+No derivation: the reader maps YAML entries to the constants $K_j(T)$ of @sec-ch04-conditions.
 
 ### Numerical method
 
-TODO: not yet written, with its figure.
+`NucleationOptionsImpl::from_yaml` ({{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}}) reads each
+reaction entry:
+
+1. An entry whose `type` is not `nucleation` is skipped.
+2. The `equation` and the `rate-constant` block are required. In `rate-constant`, `formula` is required:
+   - `ideal` takes `T3`, `P3`, `beta` and `gamma`, with optional `betas` and `gammas` for a solid branch below `T3`;
+   - `antoine` takes `A`, `B` and `C`;
+   - any other value names a function of the function table, such as `h2o_ideal`, `nh3_ideal` or the two-gas
+     `nh3_h2s_lewis` ({{< code src/vapors/vapor_functions.h >}}).
+3. `minT` and `maxT` are read, with defaults 0 and $10^4$ K, and are stored. No solver reads them; they appear only in
+   the options' printed report (`NucleationOptionsImpl`, {{< code src/thermo/nucleation.hpp NucleationOptionsImpl >}}).
+   A temperature range in the input therefore has no effect.
+
+When the species are classified into gases and condensates, a nucleation reactant must be a gas
+(`add_to_vapor_cloud`, {{< code src/thermo/nucleation.cpp add_to_vapor_cloud >}}). `ThermoY` also requires each
+nucleation reaction to have a condensed product (`ThermoYImpl::reset`,
+{{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}).
+
+TODO: a figure of the path from a YAML entry to $K_j(T)$.
 
 ### Code
 
-TODO: the code table and the walk-through.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| YAML reader | {{< code src/thermo/nucleation.cpp NucleationOptionsImpl::from_yaml >}} | `NucleationOptionsImpl::from_yaml` | `type: nucleation` |
+| gas/condensate classification | {{< code src/thermo/nucleation.cpp add_to_vapor_cloud >}} | `add_to_vapor_cloud` | always |
+| named saturation functions | {{< code src/vapors/vapor_functions.h >}} | `h2o_ideal`, `nh3_h2s_lewis` | `formula` |
+
+: Code map of the nucleation reactions. {#tbl-ch04-nucleation-code}
 
 ### Tests
 
-TODO: the test table; missing evidence.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_saturation_adjustment_nh4sh.py` | two nucleation reactions parsed from YAML are adjusted correctly | RH within $10^{-5}$ | not stated in the test |
+| `test_inline_svp.py` | the inline `ideal` and `antoine` forms | not tabulated yet | not tabulated yet |
+| `test_thermo.release` | thermodynamics with the nucleation reactions of `tests/jupiter.yaml` | not tabulated yet | not tabulated yet |
+
+: Tests of the nucleation reactions. {#tbl-ch04-nucleation-tests}
+
+No test checks that a reaction of another type is excluded, or that `minT`/`maxT` have no effect.
 
 ### Limits
 
-TODO: not yet written; not measured.
+- `minT` and `maxT` have no effect, as above.
+- A condensate outside every nucleation reaction is not adjusted (@sec-ch04-conditions).

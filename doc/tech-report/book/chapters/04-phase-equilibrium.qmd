@@ -17,18 +17,18 @@ at fixed internal energy and volume, how it decides which condensates are presen
 the solve fails. The separate chemical-equilibrium solver, which balances reactions through equilibrium constants
 from NASA polynomials, is the subject of @sec-ch05.
 
-TODO (structure draft): a dependency-map figure of the six schemes (the conditions feed both solvers; both solvers
-use the active-set least-squares step; warm starts and failure reporting wrap both; nucleation switches choose which
-reactions take part).
+The nucleation reactions (@sec-ch04-nucleation) define which conditions apply. Both solvers aim at those conditions
+and call the constrained least-squares step (@sec-ch04-active-set), and the warm-start and failure bookkeeping wraps
+both. TODO: a dependency-map figure of these relations.
 
 | scheme | option | default | main test |
 |---|---|---|---|
 | @sec-ch04-conditions | none | always | `test_saturation_adjustment_nh4sh.py` |
 | @sec-ch04-equilibrate-tp | `max-iter`, `ftol` | 10, $10^{-6}$ | `test_equilibrate_tp_max_iter` |
 | @sec-ch04-equilibrate-uv | `uv-solver` | `auto` | `test_equilibrate_uv_gain.py` |
-| @sec-ch04-active-set | none | always | missing evidence |
-| @sec-ch04-warm-start-failures | `warm_start` argument | off | `test_saturation_failure_reported.py` |
-| @sec-ch04-nucleation | nucleation reactions | from YAML | `test_thermo_default_nucleation.py` |
+| @sec-ch04-active-set | none | always | no direct test |
+| @sec-ch04-warm-start-failures | `warm_start` argument | `False` | `test_saturation_failure_reported.py` |
+| @sec-ch04-nucleation | `type: nucleation` | from YAML | `test_saturation_adjustment_nh4sh.py` |
 
 : Schemes of this chapter. {#tbl-ch04-schemes}
 

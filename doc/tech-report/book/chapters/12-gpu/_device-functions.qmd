@@ -44,8 +44,7 @@ No derivation beyond the index rule. For a requested name $n$,
 $$
 \begin{aligned}
 h(n) &= \mathrm{id}(n) , \\
-d(n) &= \mathrm{id}(n) + 1 \quad \text{for a registered name}, \qquad d(n) = 0 \quad \text{for an empty name or
-\texttt{null}} .
+d(n) &= \mathrm{id}(n) + 1 \quad \text{(registered name)}, \qquad d(n) = 0 \quad \text{(empty name or null)} .
 \end{aligned}
 $$ {#eq-ch12-device-functions-index}
 

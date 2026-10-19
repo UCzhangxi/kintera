@@ -251,9 +251,10 @@ predicted $\mathrm{d}k_j/\mathrm{d}T - \mathrm{d}k_{\bar j}/\mathrm{d}T$ to $2.4
 - With `evolve_temperature` on, the reverse columns of $\partial k/\partial T$ are a copy of the forward ones. They lack
   the factor $1/K_{c,j}$ and the term $-k_{\bar j}\,\Delta u_j^\circ/(\mathcal R T^2)$ of
   @eq-ch06-mass-action-reverse-dt ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
-  The temperature-feedback Jacobian of @sec-ch06-jacobian is then wrong in every reversible reaction, with no
-  exception: even where $K_{c,j} = 1$ the van 't Hoff term is missing. Where $K_{c,j}$ is far from 1 the error is far
-  larger than that term alone ($-81.9$ against $4.8 \times 10^{-8}$ in the check). This is a recorded code defect with a fix in progress;[^ch06-d65] the derivation above is the
+  The reverse-column derivative, and with it the temperature-feedback Jacobian of @sec-ch06-jacobian, is therefore
+  generally incorrect for reversible reactions. This includes $K_{c,j} = 1$ whenever $\Delta u_j^\circ \ne 0$,
+  because the van 't Hoff term is still missing; the copy agrees only where $K_{c,j} = 1$ and
+  $\Delta u_j^\circ = 0$. Where $K_{c,j}$ is far from 1 the error is far larger than the van 't Hoff term alone ($-81.9$ against $4.8 \times 10^{-8}$ in the check). This is a recorded code defect with a fix in progress;[^ch06-d65] the derivation above is the
   intended result.
 - $K_{c,j}$ is clamped below at $10^{-250}$, so a reverse rate constant cannot exceed $10^{250} k_j$.
 - The reverse columns are added only when the options carry NASA-9 data. The stoichiometry gets its reverse columns

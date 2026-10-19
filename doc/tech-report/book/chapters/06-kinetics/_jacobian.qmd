@@ -149,8 +149,8 @@ definition at the pin.
 
 ### Limits
 
-- At the pin @eq-ch06-jacobian-feedback is computed wrongly for the reverse column of every reversible reaction:
-  the $\partial k/\partial T$ it uses there is the forward one copied, without $1/K_{c,j}$ and the van 't Hoff
+- At the pin @eq-ch06-jacobian-feedback is generally computed wrongly for the reverse column of a reversible
+  reaction: the $\partial k/\partial T$ it uses there is the forward one copied, without $1/K_{c,j}$ and the van 't Hoff
   term of @eq-ch06-mass-action-reverse-dt. This is the recorded defect D65.[^ch06-d65-jac] The check's irreversible
   card passes; its reversible card fails in the reverse column as expected.
 - Open question: the drivers of @sec-ch14 pass a volumetric heat capacity at constant pressure as $C_V$; the term

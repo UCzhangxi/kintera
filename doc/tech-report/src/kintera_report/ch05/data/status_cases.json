@@ -1,0 +1,115 @@
+{
+ "converged": {
+  "start": [
+   1.0,
+   0.1,
+   0.1
+  ],
+  "result": [
+   1.0,
+   0.036630614624429014,
+   0.163369385375571
+  ],
+  "gain": [
+   26.334922999365087
+  ],
+  "diag": [
+   0.0,
+   5.0,
+   2.0650148258027912e-13
+  ],
+  "note": "default options"
+ },
+ "restart_from_solution": {
+  "start": [
+   1.0,
+   0.036630614624429014,
+   0.163369385375571
+  ],
+  "result": [
+   1.0,
+   0.036630614624429014,
+   0.163369385375571
+  ],
+  "gain": [
+   0.0
+  ],
+  "diag": [
+   0.0,
+   0.0,
+   2.0650148258027912e-13
+  ],
+  "note": "input is the converged state"
+ },
+ "zero_amount": {
+  "start": [
+   1.0,
+   0.1,
+   0.0
+  ],
+  "result": [
+   1.0,
+   0.1,
+   0.0
+  ],
+  "gain": [
+   0.0
+  ],
+  "diag": [
+   1.0,
+   0.0,
+   0.0
+  ],
+  "note": "one amount not above mole-floor"
+ },
+ "max_iter_1": {
+  "start": [
+   1.0,
+   0.1,
+   0.1
+  ],
+  "result": [
+   1.0,
+   0.04802767793357697,
+   0.15197232206642303
+  ],
+  "gain": [
+   9.090909090909092
+  ],
+  "diag": [
+   2.0,
+   1.0,
+   0.2968766239821301
+  ],
+  "note": "max-iter 1"
+ },
+ "phase_must_vanish": {
+  "start": [
+   1.0,
+   0.01,
+   0.01
+  ],
+  "result": [
+   1.0,
+   0.019999999999982705,
+   1.729179140090798e-14
+  ],
+  "gain": [
+   49.019607843180474
+  ],
+  "diag": [
+   4.0,
+   17.0,
+   0.8021475726188958
+  ],
+  "note": "total water below saturation"
+ },
+ "provenance": {
+  "sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+  "deck": "WATER in run_equilibrium.py",
+  "cases": "T = 300 K, p = 1e5 Pa, ln K from Nasa9LogK; starts as listed per case",
+  "command": "python -P src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>",
+  "device": "CPU, double",
+  "versions": "kintera 2.6.6.dev0+g0d9f67f97.d20261018 source build, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6"
+ }
+}

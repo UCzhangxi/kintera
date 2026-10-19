@@ -1,0 +1,5 @@
+[C1] PASS Jacobian equals d(residual)/d(extent): max relative difference 6.0e-10
+[C2] PASS element balance of the stoichiometry 0.0e+00; drift of a step 1.1e-16
+[C3] PASS the pure solid contributes 0.0e+00 to the Jacobian
+[C4] PASS residual of A <=> A_l at Raoult's composition 0.0e+00
+[C5] PASS double: target 1.000e-08, reported error at the target 1.000e-08; single: target 4.768e-07 = 4 eps

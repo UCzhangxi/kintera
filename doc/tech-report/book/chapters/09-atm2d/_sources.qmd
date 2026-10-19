@@ -1,8 +1,8 @@
-## Chemical and photochemical source terms (`sources`) {#sec-ch09-sources}
+## Chemical and photochemical source terms (`LocalSourceTerm`) {#sec-ch09-sources}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: python/atm2d
+sources: python/atm2d/sources/, python/atm2d/chemistry.py, python/atm2d/radiation.py, python/atm2d/source.py
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,115 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Chemistry enters the two-dimensional solver as source terms: each term gives, in every cell, a tendency
+$S(c)$ and its Jacobian $\partial S / \partial c$. The implicit steps of @sec-ch09-rosenbrock and @sec-ch09-newton
+only ever need this pair. Sources come from three places: kintera's kinetics and photochemistry modules
+(@sec-ch06, @sec-ch07), whose reaction Jacobians are mapped to species; a set of simple built-in sources (first-order
+loss, mass action, reversible exchange, boundary fluxes); and any user object that follows the same protocol.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Per-cell $S$ and $\partial S/\partial c$, summed over terms, @eq-ch09-sources-sum.
+
+**Data.** `(ncol, nlyr, nspecies)` tendency, `(ncol, nlyr, nspecies, nspecies)` Jacobian; rates in the caller's units.
+
+**Placement.** Linearized once per stage or Newton iteration, at the current state.
+
+**Activation.** `source_terms=[...]` of the step functions; `kinetics=`, `photo_chem=` of `build_implicit_operator`.
+
+**Guarantee / limits.** Analytic Jacobians; reactant concentrations clamped at 0 inside the built-in sources.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $S_n$, the source of species $n$ in a cell [concentration time$^{-1}$]; $\mathsf J$, the per-cell
+Jacobian $\partial S/\partial c$; $k$, a rate or rate constant; $\nu_{nr}$, net stoichiometric coefficient of species
+$n$ in reaction $r$; $\mathsf R$, the reaction-space Jacobian of @sec-ch06.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+Each term $t$ returns its tendency and Jacobian in every cell, and the solver adds them:
+
+$$
+\begin{aligned}
+S &= \sum_t S^{(t)}(c), \\
+\mathsf J &= \sum_t \frac{\partial S^{(t)}}{\partial c} .
+\end{aligned}
+$$ {#eq-ch09-sources-sum}
+
+@eq-ch09-sources-sum is formed in `build_source_linearization`
+({{< code python/atm2d/sources/combine.py build_source_linearization >}}). A term may also supply a non-local
+operator (`global_operator`), which `build_source_global_operator` sums into a sparse matrix.
+
+For kintera's kinetics, the species Jacobian is the reaction Jacobian mapped through the stoichiometry,
+
+$$
+\mathsf J_{nm} = \sum_r \nu_{nr}\, \mathsf R_{rm} ,
+$$ {#eq-ch09-sources-stoich}
+
+computed in `build_chemistry_jacobian` ({{< code python/atm2d/chemistry.py build_chemistry_jacobian >}}) from
+`kinetics.forward` and `kinetics.jacobian`, and likewise for photochemistry in `build_photochemistry_jacobian`.
+
+The built-in mass-action source of reactants $a$ with coefficients $p_a$ has rate $w = k \prod_a c_a^{p_a}$; it adds
+$+q_b w$ to each product $b$ and $-p_a w$ to each reactant, and its Jacobian column for reactant $m$ is
+$k\, p_m c_m^{p_m - 1} \prod_{a \ne m} c_a^{p_a}$ times the same coefficients. A first-order source is the case of one
+reactant with $p = 1$; a boundary flux $\Phi$ at the bottom or top cell adds $\pm \Phi / \Delta x_1$ to that cell; a
+boundary velocity $v$ adds $\pm (v / \Delta x_1)\, c$.
 
 ### Numerical method
 
-Pending.
+Every term is linearized at the current concentration; nothing is iterated inside a term. In the built-in sources the
+reactant concentrations are clamped at zero before the rate and its derivatives are formed (`IndexedMassActionSource`,
+{{< code python/atm2d/sources/indexed.py IndexedMassActionSource >}}). When a charge-balance pair (cations, electron)
+is given, the Jacobian column of the electron is added to every cation column (@sec-ch09-conservation).
+
+The actinic flux that photochemistry needs can be computed by `compute_actinic_flux_disort`
+({{< code python/atm2d/radiation.py compute_actinic_flux_disort >}}): the total photoabsorption cross section of each
+species (branch 0 of each photolysis reaction) times its number density gives the extinction, times the layer
+thickness gives the optical depth; pydisort returns the mean intensity at levels, which is averaged to cell centres and
+multiplied by $4\pi$.
+
+The sources figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| protocol | {{< code python/atm2d/sources/protocol.py LocalSourceTerm >}} | `LocalSourceTerm` | API |
+| sum of terms | {{< code python/atm2d/sources/combine.py build_source_linearization >}} | `build_source_linearization` | `source_terms` |
+| non-local operators | {{< code python/atm2d/sources/combine.py build_source_global_operator >}} | `build_source_global_operator` | `global_operator` |
+| kintera kinetics | {{< code python/atm2d/chemistry.py build_chemistry_jacobian >}} | `build_chemistry_jacobian` | `kinetics` |
+| kintera photochemistry | {{< code python/atm2d/chemistry.py build_photochemistry_jacobian >}} | `build_photochemistry_jacobian` | `photo_chem` |
+| mass action | {{< code python/atm2d/sources/indexed.py IndexedMassActionSource >}} | `IndexedMassActionSource` | API |
+| first order | {{< code python/atm2d/sources/indexed.py IndexedFirstOrderSource >}} | `IndexedFirstOrderSource` | API |
+| boundary flux | {{< code python/atm2d/sources/indexed.py IndexedBoundaryFluxSource >}} | `IndexedBoundaryFluxSource` | API |
+| actinic flux | {{< code python/atm2d/radiation.py compute_actinic_flux_disort >}} | `compute_actinic_flux_disort` | API |
+
+: Code map of the source terms. {#tbl-ch09-sources-code}
+
+Setup checks a user can hit: a term whose tendency or Jacobian has the wrong shape; a rate profile not shaped
+`(ncol, nlyr)`; a boundary other than `lower` or `upper`; non-positive vertical cell widths; `photo_chem` without
+`actinic_flux`; a photolysis reaction with more than one absorber; a concentration unit other than `mol_m3` or
+`molecules_cm3`.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_atm2d.py` (`test_implicit_operator_adds_chemistry_and_photochemistry`) | the operator differs from transport alone when chemistry is added | inequality | qualitative |
+| `test_atm2d.py` (`test_implicit_operator_adds_local_source_terms`) | source Jacobians land on the diagonal blocks | default | PyTorch defaults |
+| `test_atm2d.py` (`test_mass_action_jacobian_keeps_first_order_zero_reactant_derivative`) | the Jacobian of a first-order term stays $k$ at zero concentration | default | PyTorch defaults |
+| `test_atm2d.py` (`test_total_cross_section_uses_absorption_branch_only`) | only branch 0 enters the extinction | exact | equality |
+| `test_atm2d.py` (`test_actinic_flux_from_disort_supports_2d_state`) | the actinic flux runs on a 2-D state | shape | construction |
+
+: Tests of the source terms. {#tbl-ch09-sources-tests}
+
+The tolerances are read from `tests/test_atm2d.py` at the pin. No test compares @eq-ch09-sources-stoich with a
+finite-difference Jacobian of a kintera network: missing evidence.
 
 ### Limits
 
-Pending.
+Clamping reactants at zero makes the linearization exact only for non-negative states; a negative iterate is treated
+as zero in the rate but is not itself corrected here (the steps of @sec-ch09-rosenbrock and @sec-ch09-newton clip
+afterwards). The optical depth multiplies a number density in cm$^{-3}$ by the layer thickness in the state's own
+length unit (verified by reading `compute_actinic_flux_disort`); the caller must make the cross sections and the
+thickness consistent, and that a mismatch gives a wrong flux silently is a hypothesis, not run.

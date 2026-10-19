@@ -14,8 +14,6 @@
 
 *ADD_ARG*, see **options objects, C++**.
 
-*advection*, see **eddy diffusion, two-dimensional**.
-
 *Antoine equation*, see **saturation vapor pressure**.
 
 **Arrhenius rate constant**: Arrhenius rate constants and their temperature bands, @sec-ch06-arrhenius.
@@ -156,7 +154,7 @@
 
 **eddy diffusion tendency**: The eddy-diffusion tendency of a column, @sec-ch08-tendency.
 
-**eddy diffusion, two-dimensional**: Eddy diffusion and advection on the two-dimensional grid, @sec-ch09-transport.
+**eddy diffusion, two-dimensional**: Eddy and molecular diffusion on the two-dimensional grid, @sec-ch09-transport.
 
 **effective heat capacity**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
 
@@ -302,6 +300,8 @@
 
 *mixing-ratio diffusion*, see **eddy diffusion operator**.
 
+*mixing-ratio form*, see **eddy diffusion, two-dimensional**.
+
 **moist adiabat**: Moist adiabat extrapolation with the effective heat capacity, @sec-ch03-adiabat.
 
 **molar mass**: Molar masses from composition strings, @sec-ch02-molar-mass.
@@ -309,6 +309,8 @@
 *mole floor*, see **chemical equilibrium, options**.
 
 **mole fractions**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
+
+*molecular diffusion*, see **eddy diffusion, two-dimensional**.
 
 *molecular weight*, see **molar mass**.
 
@@ -480,7 +482,7 @@
 
 *status code*, see **chemical equilibrium, failures**.
 
-**steady state, Newton**: Newton solvers for steady states, @sec-ch09-newton.
+**steady state, Newton**: Newton solvers for implicit steps, @sec-ch09-newton.
 
 **stoichiometric matrix**: Reaction rates by mass action, @sec-ch06-mass-action.
 

@@ -1,8 +1,8 @@
-## The implicit operator and its sparse system (`assembly`, `matrix`) {#sec-ch09-assembly}
+## The implicit operator and its sparse system (`build_implicit_operator`, `SparseSystemMatrix`) {#sec-ch09-assembly}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: python/atm2d
+sources: python/atm2d/assembly.py, python/atm2d/matrix.py, python/atm2d/solver.py
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,100 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+All implicit steps of the solver need the same object: the linear operator $\mathsf L = \mathsf T + \mathsf J$ of
+transport plus linearized sources, on the flattened state of every cell and species, combined with a multiple of the
+identity. This section describes how that operator is assembled as one sparse matrix, how the backward-Euler system is
+formed from it, and how it is solved on CPU and on CUDA.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** $\mathsf L = \mathsf T + \mathsf J$ and the backward-Euler system @eq-ch09-assembly-be.
+
+**Data.** Flattened state of `ncol*nlyr*nspecies` unknowns; sparse CSR[^rg-1ad56b80a4ed] matrix; right side `(ncol, nlyr, nspecies)`.
+
+**Placement.** Built once per Rosenbrock step or Newton iteration (@sec-ch09-rosenbrock, @sec-ch09-newton).
+
+**Activation.** API: `build_implicit_operator`, `build_implicit_step_system`, `solve_sparse_system`.
+
+**Guarantee / limits.** Exact assembly; direct sparse solve (SciPy on CPU, cuSolver on CUDA).
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\mathsf L$, the operator; $\mathsf T$, transport (@sec-ch09-transport); $\mathsf J$, block-diagonal
+source Jacobian (@sec-ch09-sources); $\mathsf I$, identity; $\Delta t$, step; $c^{0}$, the state at the start of the
+step; $c^{k}$, the current Newton iterate.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+Backward Euler for $\mathrm d c/\mathrm d t = \mathsf T c + S(c)$, with the source linearized about $c^{k}$,
+$S(c) \approx S(c^{k}) + \mathsf J (c - c^{k})$, gives for the new state $c$:
+
+$$
+\begin{aligned}
+c - c^{0} &= \Delta t \left[\mathsf T c + S(c^{k}) + \mathsf J (c - c^{k})\right], \\
+\left(\mathsf I - \Delta t\, \mathsf L\right) c &= c^{0} + \Delta t \left[S(c^{k}) - \mathsf J c^{k}\right] .
+\end{aligned}
+$$ {#eq-ch09-assembly-be}
+
+`build_implicit_step_system` ({{< code python/atm2d/assembly.py build_implicit_step_system >}}) returns this matrix
+and right side when $\Delta t < 1$, and the same system divided by $\Delta t$,
+$(\mathsf I/\Delta t - \mathsf L) c = c^{0}/\Delta t + S(c^{k}) - \mathsf J c^{k}$, when $\Delta t \ge 1$ (in the
+caller's time unit). The two have the same solution in exact arithmetic; the switch keeps the matrix entries of order
+one or of order $\lVert \mathsf L \rVert$ rather than $\Delta t \lVert \mathsf L \rVert$. A non-local source operator,
+if any, is added to $\mathsf J$ in both the matrix and the term $\mathsf J c^{k}$.
 
 ### Numerical method
 
-Pending.
+`build_implicit_operator` ({{< code python/atm2d/assembly.py build_implicit_operator >}}) adds the cell-local blocks
+(kinetics, photochemistry, source terms, and $\mathsf I/\Delta t$ if requested) to the transport matrix as diagonal
+blocks, then adds any non-local operator and, last, the boundary rows of @sec-ch09-transport.
+`SparseSystemMatrix.affine_with_identity` forms $a\,\mathsf I + b\,\mathsf L$ in coordinate form without densifying.
+`solve_sparse_system` ({{< code python/atm2d/solver.py solve_sparse_system >}}) applies the right-side overrides of
+boundary rows, then solves directly: on CPU with a SciPy factorization cached on the matrix object (so the two solves
+of a Rosenbrock step share it), on CUDA with the native cuSolver CSR binding.
+
+The assembly figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| operator | {{< code python/atm2d/assembly.py build_implicit_operator >}} | `build_implicit_operator` | `kinetics`, `photo_chem`, `source_terms` |
+| backward-Euler system | {{< code python/atm2d/assembly.py build_implicit_step_system >}} | `build_implicit_step_system` | `dt` |
+| sparse matrix | {{< code python/atm2d/matrix.py SparseSystemMatrix >}} | `SparseSystemMatrix` | API |
+| $a\mathsf I + b\mathsf L$ | {{< code python/atm2d/matrix.py SparseSystemMatrix.affine_with_identity >}} | `affine_with_identity` | always |
+| boundary rows | {{< code python/atm2d/matrix.py SparseSystemMatrix.replace_rows >}} | `replace_rows` | boundary conditions |
+| solve | {{< code python/atm2d/solver.py solve_sparse_system >}} | `solve_sparse_system` | device |
+
+: Code map of the implicit operator. {#tbl-ch09-assembly-code}
+
+Setup checks a user can hit: `photo_chem` without `actinic_flux`; `include_identity` without `dt`; diagonal blocks or
+a right side of the wrong shape.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_atm2d.py` (`test_build_implicit_step_system_matches_dense_reference`) | @eq-ch09-assembly-be equals a dense reference | as in the test | not yet derived |
+| `test_atm2d.py` (`test_affine_with_identity_matches_dense_construction`) | the sparse $a\mathsf I + b\mathsf L$ equals the dense one | as in the test | not yet derived |
+| `test_atm2d.py` (`test_sparse_solver_matches_dense_solution`) | the sparse solve equals a dense solve | $10^{-12}$ rel. and abs. | not yet derived |
+| `test_atm2d.py` (`test_sparse_solver_reuses_cpu_factorization`) | the CPU factorization is computed once per matrix | $10^{-12}$ | not yet derived |
+| `test_atm2d.py` (`test_implicit_step_system_solves_first_order_source_implicitly`) | one step of a first-order source equals the backward-Euler value | default | PyTorch defaults |
+| `test_atm2d.py` (`test_cuda_sparse_solver_matches_cpu`) | CUDA and CPU solves agree | $10^{-12}$ | not yet derived |
+
+: Tests of the implicit operator. {#tbl-ch09-assembly-tests}
+
+The CUDA case is skipped unless a GPU and the native cuSolver binding are present (a CPU-only kintera build lacks
+it). The tolerances are read from `tests/test_atm2d.py` at the pin.
 
 ### Limits
 
-Pending.
+`build_implicit_step_system` takes no boundary conditions, so a backward-Euler step built with it has no boundary
+rows; boundaries must be added by a `system_postprocess` hook or by pins (@sec-ch09-conservation). `affine_with_identity`
+does not carry the right-side overrides of an operator that already has boundary rows (verified by reading); no step
+path at the pin applies it to such an operator. The threshold $\Delta t = 1$ of the rescaled form is in the caller's
+time unit, not a property of the system.
+
+<!-- reader glossary notes -->
+[^rg-1ad56b80a4ed]: CSR — compressed sparse row; the sparse-matrix layout passed to `cuda_csr_solve_cusolver`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92)
+<!-- end reader glossary notes -->

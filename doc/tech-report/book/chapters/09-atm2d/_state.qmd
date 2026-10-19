@@ -1,8 +1,8 @@
-## The column state and its configuration (`AtmState2D`, `Atm2DConfig`) {#sec-ch09-state}
+## The column state and its configuration (`AtmState2D`, `CoreConfig`) {#sec-ch09-state}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: python/atm2d
+sources: python/atm2d/atm_state2d.py, python/atm2d/config.py, python/atm2d/__init__.py
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,93 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+The two-dimensional solver works on a grid of columns: a vertical coordinate $x_1$ with `nlyr` cells and a
+horizontal coordinate $x_2$ with `ncol` cells. Each cell holds a temperature, a pressure and the concentration of
+every species. `AtmState2D` stores these as tensors and derives the cell centres and spacings once, so every operator
+of this chapter reads its geometry from one place. A small configuration object chooses the transport form and the
+chemistry solver.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Hold the cell-centred state on an `(ncol, nlyr)` grid and its geometry.
+
+**Data.** Faces `x1f` (`nlyr`+1), `x2f` (`ncol`+1); $T$, $p$ `(ncol, nlyr)`; concentrations `(ncol, nlyr, nspecies)`.
+
+**Placement.** Built by the caller; passed to every operator, step and source of this chapter.
+
+**Activation.** API: `AtmState2D(x1f, x2f, temperature, pressure, concentration, gravity)`.
+
+**Guarantee / limits.** Shapes checked at construction; units are the caller's (see Limits).
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $x_{1,i}$, $x_{2,j}$, cell-centre coordinates; $x_{1,i\pm1/2}$, face coordinates;
+$\Delta x_{1,i} = x_{1,i+1/2} - x_{1,i-1/2}$, cell width; $\delta x_{1,i+1/2} = x_{1,i+1} - x_{1,i}$, distance between
+adjacent centres; $c_{j,i,n}$, concentration of species $n$ in column $j$, layer $i$.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+The geometry is defined from the face coordinates alone:
+
+$$
+\begin{aligned}
+x_{1,i} &= \tfrac12\left(x_{1,i-1/2} + x_{1,i+1/2}\right), \\
+\Delta x_{1,i} &= x_{1,i+1/2} - x_{1,i-1/2}, \\
+\delta x_{1,i+1/2} &= x_{1,i+1} - x_{1,i},
+\end{aligned}
+$$ {#eq-ch09-state-geometry}
+
+and the same for $x_2$. @eq-ch09-state-geometry is computed in `__post_init__`
+({{< code python/atm2d/atm_state2d.py AtmState2D.__post_init__ >}}). Face temperatures used by binary diffusion are
+the arithmetic mean of the two adjacent cells (`temperature_x1f`). Nothing here is approximate: the centres are
+midpoints by definition, and every operator of this chapter uses exactly these spacings.
 
 ### Numerical method
 
-Pending.
+No numerical method. `x1` is vertical and `x2` horizontal, and the state tensors are laid out `(ncol, nlyr, ...)`
+with the species last; the flattened index of `(column, layer, species)` used by the sparse system is
+`(column * nlyr + layer) * nspecies + species` (`flatten_state_index`, @sec-ch09-assembly).
+
+The transport form and the chemistry solver are chosen by `CoreConfig`
+({{< code python/atm2d/config.py CoreConfig >}}): `transport_form` (`c_diffusion`, `mr_diffusion`, `mr_exp`,
+`mr_hybrid`, or `None` for the density-dependent default of @sec-ch09-transport) and `chem_solver` (`newton`, `bdf`,
+`lsoda`, `radau`). Unless a caller installs one with `set_core_config`, `get_core_config` reads them from the
+environment variables `KINTERA_TRANSPORT_FORM` and `KINTERA_CHEM_SOLVER` at every call.
+
+The state figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| state | {{< code python/atm2d/atm_state2d.py AtmState2D >}} | `AtmState2D` | API |
+| geometry | {{< code python/atm2d/atm_state2d.py AtmState2D.__post_init__ >}} | `__post_init__` | always |
+| boundary condition of one side | {{< code python/atm2d/atm_state2d.py SpeciesBoundaryCondition >}} | `SpeciesBoundaryCondition` | API |
+| four sides | {{< code python/atm2d/atm_state2d.py SpeciesBoundaryConditions2D >}} | `SpeciesBoundaryConditions2D` | API |
+| configuration | {{< code python/atm2d/config.py CoreConfig >}} | `CoreConfig` | `KINTERA_TRANSPORT_FORM`, `KINTERA_CHEM_SOLVER` |
+| active configuration | {{< code python/atm2d/config.py get_core_config >}} | `get_core_config` | environment |
+
+: Code map of the state and configuration. {#tbl-ch09-state-code}
+
+Setup checks a user can hit: faces that are not one-dimensional or have fewer than two entries; a temperature or
+pressure not shaped `(ncol, nlyr)`; concentrations not shaped `(ncol, nlyr, nspecies)`; a boundary-kind list whose
+length is not `nspecies`; boundary values not broadcastable to `(nedge, nspecies)`.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_atm2d.py` | every operator test builds its state through `AtmState2D` | n/a | construction |
+
+: Tests of the state. {#tbl-ch09-state-tests}
+
+No test checks the geometry of @eq-ch09-state-geometry on its own; it is exercised by the transport tests of
+@sec-ch09-transport. `test_atm2d.py` is registered with ctest at the pin.
 
 ### Limits
 
-Pending.
+The state carries no units. The default `gravity` is 980.665, a value in cm s$^{-2}$ (CGS), and the binary-diffusion
+operator uses a gas constant in CGS units (`GAS_CONSTANT_CGS` in `transport.py`), while the rest of kintera is SI
+(verified by reading). A caller mixing SI state with the binary-diffusion operator must convert; that a mismatch
+gives silently wrong diffusion rates is a hypothesis, not run. The configuration is read from the environment at every
+call unless one is installed, so changing an environment variable between two calls changes the transport form.

@@ -1,8 +1,8 @@
-## Rosenbrock time steps with adaptive step size (`rosenbrock`, `timestep`) {#sec-ch09-rosenbrock}
+## Rosenbrock time steps with adaptive step size (`rosenbrock2_step`, `adaptive_advance`) {#sec-ch09-rosenbrock}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: python/atm2d
+sources: python/atm2d/rosenbrock.py, python/atm2d/timestep.py, python/atm2d/schedule.py
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,114 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Stiff photochemistry needs implicit time steps, and a Newton iteration on each step can stall when the step is large.
+The two-stage Rosenbrock method used here is linearly implicit: it solves two linear systems with the same frozen
+Jacobian and needs no iteration. It is second order and gives an embedded error estimate. A separate controller
+advances a fixed time interval by trying a step, rejecting it if the result is non-finite, strongly negative or
+unreasonably large, and halving and retrying.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** One second-order linearly implicit step, @eq-ch09-rosenbrock-ros2; a reject-and-halve controller.
+
+**Data.** State `(ncol, nlyr, nspecies)` in and out; step $\Delta t$ in the caller's time unit.
+
+**Placement.** Called by the caller's time loop; the controller wraps any `step_fn(state, dt)`.
+
+**Activation.** API: `rosenbrock2_step`, `adaptive_advance`, `stage_schedule`.
+
+**Guarantee / limits.** Second order, observed 1.93 at 64 steps (run `[R3]`); the controller ignores the error estimate.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $\gamma = 1 + 1/\sqrt2$; $f(c) = \mathsf T c + S(c)$; $\mathsf A$, the stage matrix; $k_1$, $k_2$, the
+stage increments; $y_2$, the intermediate state. $\mathsf L$ and $\Delta t$ are those of @sec-ch09-assembly.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+The scheme is the two-stage Rosenbrock method of Verwer, Spee, Blom and Hundsdorfer (1999,
+[doi:10.1137/S1064827597326651](https://doi.org/10.1137/S1064827597326651)) in the form the code uses:
+
+$$
+\begin{aligned}
+\mathsf A &= \frac{\mathsf I}{\gamma \Delta t} - \mathsf L , \\
+k_1 &= \mathsf A^{-1} f(c^{0}) , \\
+y_2 &= c^{0} + k_1 / \gamma , \\
+k_2 &= \mathsf A^{-1}\left[f(y_2) - \frac{2}{\gamma \Delta t} k_1\right] , \\
+c^{1} &= c^{0} + \frac{3}{2\gamma} k_1 + \frac{1}{2\gamma} k_2 ,
+\end{aligned}
+$$ {#eq-ch09-rosenbrock-ros2}
+
+with the embedded error $\lvert c^{1} - y_2 \rvert$. @eq-ch09-rosenbrock-ros2 is computed in `rosenbrock2_step`
+({{< code python/atm2d/rosenbrock.py rosenbrock2_step >}}); both solves use one matrix, so its factorization is
+computed once. The method is second order for any Jacobian $\mathsf L$, exact or not (the cited paper); run `[R3]`
+measures the order on a linear decay.
+
+The controller `adaptive_advance` ({{< code python/atm2d/timestep.py adaptive_advance >}}) advances a total
+$\Delta t_{\mathrm{target}}$: it tries $\min(\Delta t_{\mathrm{next}}, \mathrm{remaining})$, accepts the result if
+`default_accept` passes it, grows the next attempt by `grow_factor` (2) after an acceptance and multiplies by
+`shrink_factor` (0.5) after a rejection. `stage_schedule` produces geometric target steps
+$\min(\Delta t_0\, g^{k}, \Delta t_{\max})$.
 
 ### Numerical method
 
-Pending.
+A Rosenbrock step builds the transport matrix, linearizes the sources at $c^{0}$, solves for $k_1$, re-evaluates
+$f$ at $y_2$ (the Jacobian is not rebuilt), solves for $k_2$, and returns $c^{1}$ clipped at zero by default. The entry
+state is restored on every exit. A non-finite stage returns the entry state with `finite=False`. The relative error is
+$\max \lvert c^{1} - y_2\rvert / \lvert c^{1}\rvert$, computed after the clip, optionally only over cells whose entry
+and end values exceed `error_floor`, and with the bottom layer excluded when a post-process hook is given.
+
+`default_accept` rejects a candidate that is non-finite, has a value below $-10^{-3}$ times the species' largest
+absolute entry (floored at 1), or exceeds $10^{30}$. After a rejection at $\Delta t_r$, every later attempt within the
+same call is held below $\Delta t_r$ (`min_rejected`).
+
+The Rosenbrock figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| Ros2 step | {{< code python/atm2d/rosenbrock.py rosenbrock2_step >}} | `rosenbrock2_step` | `clip_negative`, `error_floor` |
+| step result | {{< code python/atm2d/rosenbrock.py Ros2Result >}} | `Ros2Result` | API |
+| controller | {{< code python/atm2d/timestep.py adaptive_advance >}} | `adaptive_advance` | `grow_factor`, `shrink_factor`, `max_subdivisions` |
+| acceptance | {{< code python/atm2d/timestep.py default_accept >}} | `default_accept` | `relative_negative_tol`, `absolute_magnitude_cap` |
+| schedule | {{< code python/atm2d/schedule.py stage_schedule >}} | `stage_schedule` | `start_dt`, `growth_factor`, `max_dt` |
+
+: Code map of the Rosenbrock step and the controller. {#tbl-ch09-rosenbrock-code}
+
+Setup checks and errors a user can hit: a non-positive `dt_target`; "dt collapsed below floor" after
+`max_subdivisions` (16) halvings; a non-positive schedule length.
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_adaptive_timestep.py` (`test_subdivides_when_large_dt_produces_nan`, `..._severe_negative`) | a rejected step is halved and retried | exact | step counts |
+| `test_adaptive_timestep.py` (`test_does_not_retry_rejected_dt_within_call`) | a rejected size is not tried again in the same call | exact | step counts |
+| `test_adaptive_timestep.py` (`test_raises_when_dt_collapses_below_floor`) | the controller raises below the floor | exception | API |
+| `test_adaptive_timestep.py` (`test_state_not_mutated_on_rejection`) | a rejection leaves the state unchanged | exact | equality |
+| `test_refactor_phase1.py` (`test_stage_schedule_*`) | geometric growth, cap, and the documented defaults | exact | equality |
+| run `[R2]`, `[R3]` | the step ceiling after one rejection; the Ros2 order | exact; observed | run |
+
+: Tests of the Rosenbrock step and the controller. {#tbl-ch09-rosenbrock-tests}
+
+No test in `tests/` calls `rosenbrock2_step`: its order and error estimate have no kintera test at the pin (missing
+evidence beyond run `[R3]`).
+
+Runs[^ch09-r23] (pinned `python/atm2d` source, torch 2.10.0, CPU, float64). `[R3]`: $\mathrm d c/\mathrm d t = -c$ on
+one cell from $c = 1$ to $t = 1$ with 8, 16, 32 and 64 steps gives errors $5.624 \times 10^{-3}$,
+$1.648 \times 10^{-3}$, $4.496 \times 10^{-4}$ and $1.177 \times 10^{-4}$, observed orders 1.771, 1.874 and 1.934,
+approaching 2. `[R2]`: advancing 8 time units from a first attempt of 1, with only that first attempt rejected,
+accepts 16 steps all of size 0.5; the step never grows back to 1.
 
 ### Limits
 
-Pending.
+`adaptive_advance` does not use the Rosenbrock error estimate: acceptance is only finiteness, a negativity threshold
+and a magnitude cap, so a step can be accepted with a large truncation error. The ceiling after a rejection is
+deliberate and tested, but it lasts for the whole call, so one early rejection fixes the step for the rest of the
+interval (run `[R2]`). The error estimate is formed after clipping at zero. A cell clipped to zero has
+$\lvert c^{1} - y_2 \rvert = \lvert y_2 \rvert$ divided by the smallest positive floating-point number, so with the
+default `error_floor` of 0 one clipped cell with $y_2 \ne 0$ sets an enormous relative error (verified by reading the
+formula; not run). A caller using the estimate for step control should set `error_floor`.
+
+[^ch09-r23]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, lines `[R2]` and `[R3]`.

@@ -1,8 +1,8 @@
-## Conservation of atoms and charge, and pinned species (`conservation`, `pins`) {#sec-ch09-conservation}
+## Conservation of atoms and charge, and pinned species (`project_atomic_budget`, `pins`) {#sec-ch09-conservation}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: python/atm2d
+sources: python/atm2d/conservation/atomic.py, python/atm2d/sources/charge_balance.py, python/atm2d/pins.py
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,24 +10,92 @@ reviewer:
 
 ### Summary
 
-Pending: this scheme is being drafted.
+Large implicit steps can drive a network to states no physical evolution reaches: trace species holding more atoms
+than the cell has, or an electron count out of step with the ions. The solver offers three repairs that a caller
+applies around its steps: a projection that trims species exceeding a per-cell atomic budget, a change to the
+Jacobian that makes the electron follow the cations, and pins that hold chosen cells at prescribed values.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Per-cell atomic budget projection, @eq-ch09-conservation-trim; charge-balance fold; pinned cells.
+
+**Data.** Concentrations `(ncol, nlyr, nspecies)`; atom counts per element; per-cell budgets; pin masks and values.
+
+**Placement.** Caller-applied: projection between solves, the fold inside the source linearization, pins as post-process or rows.
+
+**Activation.** API: `project_atomic_budget`, `charge_balance_indices=`, `build_pin_mask` and its two appliers.
+
+**Guarantee / limits.** The projection only removes; it is a clip, not a conservation law.
+
+**Evidence.** See the Tests layer.
+:::
+
+Local symbols: $a_{en}$, atoms of element $e$ in species $n$; $B_e$, the per-cell budget of element $e$; $A_n = a_{en}
+c_n$, the atoms of $e$ held by species $n$; $X_e$, the excess; $H$, the set of "hog" species.
 
 ### Derivation
 
-Pending: the derivation is being drafted.
+For each element $e$ and cell, with the fixed species excluded, the excess over the budget and the trimmed
+concentrations are
+
+$$
+\begin{aligned}
+X_e &= \max\left(0, \sum_n A_n - B_e\right), \\
+H &= \left\{ n : A_n > \tfrac{1}{N_e} \textstyle\sum_m A_m \right\}, \\
+c_n &\leftarrow \max\left(0,\ c_n - \frac{A_n}{\sum_{m \in H} A_m} \frac{X_e}{a_{en}}\right), \quad n \in H ,
+\end{aligned}
+$$ {#eq-ch09-conservation-trim}
+
+with $N_e$ the number of non-fixed species containing $e$. Species below the mean share are untouched. The excess is
+shared in proportion to each hog's atoms, so before the clip at zero the hogs lose exactly $X_e$ atoms.
+@eq-ch09-conservation-trim is computed in `project_atomic_budget`
+({{< code python/atm2d/conservation/atomic.py project_atomic_budget >}}). Elements are processed one after another,
+so trimming a species for one element also changes the other elements it contains.
+
+The charge-balance fold adds the electron column of the Jacobian to every cation column,
+$\mathsf J_{\cdot, j} \leftarrow \mathsf J_{\cdot, j} + \mathsf J_{\cdot, e}$ for each cation $j$
+(`fold_charge_balance_into_jacobian`, {{< code python/atm2d/sources/charge_balance.py fold_charge_balance_into_jacobian >}}),
+the chain rule for $c_e = \sum_j c_j$.
 
 ### Numerical method
 
-Pending.
+Atom counts come from species names (`count_atoms`): parenthesized labels are skipped, trailing `+`, `-`, `*` are
+dropped, a two-letter element is not matched by its first letter, and only one digit after an element is read, so a
+subscript of 10 or more is read as its first digit. Pins are built by `build_pin_mask` into a `(mask, values)` pair
+(later specs win) and applied either by overwriting concentrations after a solve or by replacing rows of the implicit
+system with identity rows (`apply_pin_mask_as_dirichlet_rows`, {{< code python/atm2d/pins.py apply_pin_mask_as_dirichlet_rows >}}).
+`recompute_charge_balance_e` sets the electron to the cation sum minus the anion sum.
+
+The conservation figure is not provided: the figure module is not written yet.
 
 ### Code
 
-Pending.
+| what | code link | symbol | switch |
+|---|---|---|---|
+| atomic budget | {{< code python/atm2d/conservation/atomic.py project_atomic_budget >}} | `project_atomic_budget` | `budget`, `fixed_mask` |
+| atom counts | {{< code python/atm2d/conservation/atomic.py count_atoms >}} | `count_atoms` | species names |
+| charge fold | {{< code python/atm2d/sources/charge_balance.py fold_charge_balance_into_jacobian >}} | `fold_charge_balance_into_jacobian` | `charge_balance_indices` |
+| pin mask | {{< code python/atm2d/pins.py build_pin_mask >}} | `build_pin_mask` | `BoundaryPinSpec` |
+| pins as rows | {{< code python/atm2d/pins.py apply_pin_mask_as_dirichlet_rows >}} | `apply_pin_mask_as_dirichlet_rows` | API |
+| electron reset | {{< code python/atm2d/pins.py recompute_charge_balance_e >}} | `recompute_charge_balance_e` | API |
+
+: Code map of conservation and pins. {#tbl-ch09-conservation-code}
 
 ### Tests
 
-Pending.
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `test_refactor_phase1.py` (`test_count_atoms_*`) | counts, labels, two-letter elements, and the single-digit subscript | exact | equality |
+| `test_refactor_phase1.py` (`test_project_atomic_budget_*`) | no change under budget; only hogs trimmed; fixed species untouched | as in the test | not yet derived |
+| `test_refactor_phase1.py` (`test_charge_balance_fold_*`) | the electron column is added to cations; an empty list is a no-op | exact | equality |
+
+: Tests of conservation and pins. {#tbl-ch09-conservation-tests}
+
+No test at the pin covers the pin functions or `recompute_charge_balance_e`: missing evidence.
 
 ### Limits
 
-Pending.
+The atom count of a species with a two-digit subscript is wrong (for example `C4H10` is counted as 1 hydrogen, not
+10); the code says this is kept on purpose and a test asserts it. The projection only removes atoms, never adds them,
+and it is a repair, not a conservation property of the scheme. The fold uses the cation sum only, while
+`recompute_charge_balance_e` uses cations minus anions; with anions present the Jacobian and the reset describe
+different constraints (verified by reading both; the effect is not measured, a hypothesis).

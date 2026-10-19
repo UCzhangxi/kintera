@@ -1,10 +1,11 @@
-## One saturation function and one energy model for all modules (`LogSVPFunc`, `eval_intEng_R`) {#sec-ch01b-shared}
+## One saturation evaluator and one energy function for all modules (`LogSVPFunc`, `eval_intEng_R`) {#sec-ch01b-shared}
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
 sources: src/thermo/log_svp.cpp, src/thermo/svp_eval.h, src/thermo/eval_uhs.cpp, src/thermo/relative_humidity.cpp,
   src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h, src/thermo/extrapolate_ad.cpp, src/kinetics/evaporation.cpp,
-  src/kinetics/kinetics.cpp
+  src/kinetics/kinetics.cpp, src/kinetics/kinetics.hpp, src/thermo/thermo.hpp, src/thermo/thermo_y.cpp,
+  src/kinetics/evaporation.hpp
 status: draft
 author: jihenghu
 reviewer: Editor (requested); independent theory check requested
@@ -13,14 +14,17 @@ reviewer: Editor (requested); independent theory check requested
 ### Summary
 
 The same physics appears in several modules. The phase solvers, the condensate entropy, the moist adiabat and the
-evaporation kinetics all need the saturation curve, and the energy solver and the kinetics both need the species
-energies. kintera evaluates each with one function, called from every module. This section shows two consequences.
-The evaporation kinetics stops exactly where the phase solver puts the parcel, and the latent heat of a kinetic
-step is the one the energy solver uses. It also states what goes wrong when the two energy models differ.
+evaporation kinetics all need a saturation curve, and the energy solver and the kinetics both need the species
+energies. kintera evaluates the saturation curves with one evaluator and the tensor modules' species energies with
+one function. The curves themselves are not shared: each reaction of the input names its own. This section shows
+two consequences and the conditions they need. If the deck gives the evaporation and the nucleation reaction of a
+condensate the same curve, the evaporation kinetics stops exactly where the phase solver puts the parcel. If the
+modules also use the same reference temperature, heat capacity and energy options, the latent heat of a kinetic
+step is the one the energy solver uses. It also states what goes wrong when the energy models differ.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Why the kinetic fixed point is the phase equilibrium, @eq-ch01b-shared-deficit, and why the latent heats
-agree, @eq-ch01b-shared-latent.
+**Purpose.** When the kinetic fixed point is the phase equilibrium, @eq-ch01b-shared-deficit, and when the latent
+heats agree, @eq-ch01b-shared-latent.
 
 **Data.** $\ln p_{\mathrm{sat}}(T)$ per reaction; $u_i(T)$ per species.
 
@@ -28,9 +32,11 @@ agree, @eq-ch01b-shared-latent.
 
 **Activation.** Always; the energy model changes with `use-nasa9-cp` and `use-h2-cp`.
 
-**Guarantee / limits.** Exact sharing of the saturation curve; the energy model differs in one path at the pin (Limits).
+**Guarantee / limits.** Exact sharing of the saturation evaluator; the curve is shared only if the deck repeats it.
+One energy model only under the conditions listed in Limits.
 
-**Evidence.** `check_ch3_species_functions.py`, `check_ch6_evaporation.py`; see the Tests layer.
+**Evidence.** `check_ch1b_fixed_point.py`, `check_ch3_species_functions.py`, `check_ch6_evaporation.py`; see the
+Tests layer.
 :::
 
 Local symbols: $K_r(T)$, saturation product of reaction $r$ in concentration units; $\mathrm{RH}_r$, relative humidity
@@ -44,15 +50,23 @@ equilibrium kernels call it directly ({{< code src/thermo/equilibrate_tp.h >}}, 
 The tensor modules call it through `LogSVPFunc` ({{< code src/thermo/log_svp.cpp LogSVPFunc::evaluate >}}), which
 dispatches the same named functions and the same scalar `eval_logsvp`. Those modules are the condensate entropy
 (@sec-ch03-species-functions), the moist adiabat (@sec-ch03-adiabat), relative humidity (@sec-ch03-relative-humidity)
-and evaporation (@sec-ch06-evaporation). A code comment there states that this makes the results identical bit for bit.
-The species energies $u_i(T)$ of the tensor modules come from `eval_intEng_R`
-({{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}), which ThermoY uses to recover $T$ from $U$ and the kinetics uses
-for its temperature feedback.
+and evaporation (@sec-ch06-evaporation). A code comment there states that this makes the results identical bit for bit
+for the same curve. Which curve is evaluated comes from two separate entries of the input. The phase solvers take it
+from the thermodynamics' nucleation reactions (`ThermoYImpl::forward` passes `options->nucleation()`,
+{{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}). The evaporation kinetics takes it from its own
+evaporation reactions, a separate option set (`EvaporationOptionsImpl`,
+{{< code src/kinetics/evaporation.hpp EvaporationOptionsImpl >}}). No code ties the formula of an evaporation reaction
+to that of the nucleation reaction of the same condensate. The species energies $u_i(T)$ of the tensor modules come
+from `eval_intEng_R` ({{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}), which ThermoY's `compute("VU->T")` uses to
+recover $T$ from $U$ and the kinetics uses for its temperature feedback, each with its own options.
 
 ### Derivation
 
-**Step 1: relative humidity and the evaporation deficit in the same variables.** For reaction $r$ with gas
-coefficients $\nu_{gr} = -S_{gr} > 0$ on the gas side, the saturation product in concentration units is
+**Step 1: relative humidity and the evaporation deficit in the same variables.** Let $\nu_{gr} = |S_{gr}|$ be the gas
+coefficients of the phase change $r$. They are the reactants of the nucleation reaction (vapour $\Rightarrow$
+condensate, $S_{gr} < 0$) that `relative_humidity` uses, and the products of the evaporation reaction (condensate
+$\Rightarrow$ vapour, $S_{gr} > 0$; the code's `sp = stoich.clamp_min(0)`) that the kinetics uses. The saturation
+product in concentration units is
 $K_r = \exp(\ln p_{\mathrm{sat},r} - \sum_g \nu_{gr} \ln(\mathcal R T))$ (@sec-ch06-evaporation), and the relative
 humidity is
 
@@ -68,16 +82,18 @@ $$
 \eta = K_r - c_v = K_r\, (1 - \mathrm{RH}_r) ,
 $$ {#eq-ch01b-shared-deficit}
 
-computed in `forward` ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}) with the same
-$K_r$, before the clamp at zero.
+computed in `forward` ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}) with $K_r$ from the
+evaporation reaction's own curve, before the clamp at zero.
 
 **Step 2: RH = 1 is the phase-equilibrium condition.** The phase solver puts a condensate in equilibrium with its
 vapour by setting the reaction Gibbs energy to zero. For a pure condensate, whose chemical potential depends on $T$
 only, and an ideal vapour this is $p_v = p_{\mathrm{sat}}(T)$, that is $c_v = K_r$ or $\mathrm{RH}_r = 1$
 (@sec-ch04-conditions). By @eq-ch01b-shared-deficit the evaporation rate $\kappa c_p \eta$ vanishes at exactly that
-state. Because both evaluate the same $\ln p_{\mathrm{sat}}$, the kinetic fixed point and the equilibrium are the
-same state, not two nearby ones. The same argument holds for multi-vapour reactions, with the product of
-@eq-ch01b-shared-rh.
+state if its $K_r$ is the phase solver's. Both modules evaluate $\ln p_{\mathrm{sat}}$ with the same evaluator, so
+this holds whenever the deck gives the evaporation reaction the same formula and parameters as the nucleation
+reaction of the same condensate. Then the kinetic fixed point and the equilibrium are the same state, not two nearby
+ones. This is a requirement on the deck, not something the code enforces; `tests/jupiter.yaml` meets it for H$_2$O
+and NH$_3$. The same argument holds for multi-vapour reactions, with the product of @eq-ch01b-shared-rh.
 
 **Step 3: one latent heat.** Both the UV solver and the kinetics differentiate $U = \sum_i c_i\, u_i(T)$ at fixed
 $U$, which gives $\mathrm{d}T = -\sum_i u_i\, \mathrm{d}c_i / C_V$ (the energy balance of @sec-ch06-jacobian and
@@ -93,13 +109,16 @@ with $L_r = -\sum_i S_{ir} u_i$, positive for condensation because the condensat
 rows ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}). In the kinetics it enters as the term
 $-P_j (\partial k_j/\partial T)\, u_k / C_V$ of the temperature-feedback Jacobian (@sec-ch06-jacobian)
 ({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}). Both are the same factor
-$(\partial T/\partial c_k)_U$ times a temperature derivative, so if both modules use the same $u_i(T)$, a kinetic
-step releases the latent heat that the equilibrium accounts for.
+$(\partial T/\partial c_k)_U$ times a temperature derivative. A kinetic step therefore releases the latent heat that
+the equilibrium accounts for if three conditions hold. Both modules must use the same $u_i(T)$: the same reference
+temperature and no D12 options (Limits). And the host must pass as `cvol` the $C_V$ of ThermoY (`compute("VT->cv")`),
+because the kinetics divides by the caller's `cvol` and not by its own heat capacity.
 
-**Step 4: what breaks if the energy models differ.** Suppose the UV solver uses $\tilde u_i(T)$ while ThermoY recovers
-the temperature with $u_i(T)$. The UV solver then finds the equilibrium at the temperature $\tilde T$ that solves
-$\sum c_i \tilde u_i(\tilde T) = U$. ThermoY reports the $T$ that solves $\sum c_i u_i(T) = U$, so the returned state
-is saturated at $\tilde T$ but labelled with $T$, and $\mathrm{RH} \ne 1$ at the reported temperature. At the pin the
+**Step 4: what breaks if the energy models differ.** Suppose the UV kernel uses $\tilde u_i(T)$ while
+`compute("VU->T")` uses $u_i(T)$. The kernel then finds the equilibrium at the temperature $\tilde T$ that solves
+$\sum c_i \tilde u_i(\tilde T) = U$ and discards $\tilde T$. The host's `compute("VU->T")` returns the $T$ that solves
+$\sum c_i u_i(T) = U$, so the state is saturated at $\tilde T$ but labelled with $T$, and $\mathrm{RH} \ne 1$ at the
+reported temperature. At the pin the
 UV kernel evaluates $u_i = u_i^{\mathrm{off}} + c_{v,i} T$ plus the per-species extra function
 (@eq-ch01b-state-t-of-u, {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}). `eval_intEng_R` replaces this by the
 NASA-9 or H$_2$ heat-capacity form when `use-nasa9-cp` or `use-h2-cp` is on
@@ -133,14 +152,23 @@ written yet.
 |---|---|---|---|
 | check `check_ch3_species_functions.py` (1d) | $\lvert\mathrm{RH} - 1\rvert$ where condensate is present after `ThermoX.forward` | $10^{-6}$ | solver tolerance |
 | check `check_ch6_evaporation.py` (a2) | evaporation rate at $c_v = K$, relative to its scale | $10^{-12}$ | round-off |
+| check `check_ch1b_fixed_point.py` (a), (b) | evaporation rate and $\lvert\mathrm{RH} - 1\rvert$ on the phase solver's output, TP and UV paths, same formulas | $10^{-6}$ | solver tolerance |
 
 : Checks of the shared functions. {#tbl-ch01b-shared-tests}
 
 After an equilibrium call with 100 iterations allowed, every cell with condensate has
-$\lvert \mathrm{RH} - 1\rvert \le 2.0 \times 10^{-7}$ (15 cell and reaction pairs, 130 to 280 K).[^ch01b-rh] With the
+$\lvert \mathrm{RH} - 1\rvert \le 2.1 \times 10^{-7}$ (15 cell and reaction pairs, 130 to 280 K).[^ch01b-rh] With the
 default limit of 10 iterations, 6 of those cells do not converge; this is an informational line of the same
-check. The evaporation rate at $c_v = K$ is $1.4 \times 10^{-16}$ of its scale.[^ch01b-evap] Together the two lines
-check Step 2. Step 3 has no direct check; its kinetics half is checked in @sec-ch06-jacobian.
+check. The evaporation rate at $c_v = K$ is $1.4 \times 10^{-16}$ of its scale.[^ch01b-evap] These two lines check
+the two halves of Step 2 on different decks. The composed check runs the evaporation kinetics on the state that
+the phase solver returns, with the deck's own evaporation reactions.[^ch01b-fp] On the TP path
+(`tests/jupiter.yaml`, 10 cloudy cell and reaction pairs) the rate is at most $2.0 \times 10^{-7}$ of its value with
+the vapour removed, equal to $1 - \mathrm{RH}$ cell by cell. On the UV path (one-vapour card, $T$ from
+`compute("VU->T")`) it is 0 with $\lvert \mathrm{RH} - 1\rvert \le 5.3 \times 10^{-15}$. An informational line gives
+the H$_2$O evaporation reaction the inline liquid-branch curve instead of `h2o_ideal`. Every cloudy cell is below
+273.16 K, where the two curves differ, and the rate at the equilibrium state then reaches 0.72 of its dry value:
+the deck requirement of Step 2 is real. Step 3 has no direct check; its kinetics half is checked in
+@sec-ch06-jacobian.
 
 [^ch01b-rh]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch3_species_functions.py` from a scratch
@@ -152,17 +180,45 @@ check Step 2. Step 3 has no direct check; its kinetics half is checked in @sec-c
     directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
     output: `derivation-checks/check_ch6_evaporation.out`, line `(a2)`.]
 
+[^ch01b-fp]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and the one-vapour
+    card inside the script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch1b_fixed_point.py`
+    from a scratch directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0,
+    kintera 2.6.5; output: `derivation-checks/check_ch1b_fixed_point.out`, lines `(a)`, `(b)`, `(c)`.]
+
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- At the pin the UV kernel's species energies are the linear form with offsets, not the NASA-9 or H$_2$ form that
-  `eval_intEng_R` uses when `use-nasa9-cp` or `use-h2-cp` is on. With either option, the UV equilibrium and ThermoY's
-  temperature use different energy models (Step 4). This is a recorded code defect with a fix in
-  progress.[^ch01b-d12]
+- The kinetic fixed point is the phase equilibrium only if the deck gives each evaporation reaction the formula and
+  parameters of the nucleation reaction of the same condensate (Step 2). Nothing in the code checks this.
+- One energy model holds only under all of the following. Where one fails, Step 3's "one latent heat" fails with
+  it.
+  - D12: at the pin the UV kernel's species energies are the linear form with offsets, not the NASA-9 or H$_2$ form
+    that `eval_intEng_R` uses when `use-nasa9-cp` or `use-h2-cp` is on. With either option, the UV equilibrium and
+    the temperature from `compute("VU->T")` use different energy models (Step 4). This is a recorded code defect
+    with a fix in progress.[^ch01b-d12]
+  - Reference temperature: without a `reference-state: Tref` entry in the deck, the kinetics uses
+    $T_{\mathrm{ref}} = 298.15$ K ({{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}) and the
+    thermodynamics 300 K ({{< code src/thermo/thermo.hpp ThermoOptionsImpl >}}). Each moves the energy offsets to
+    $T = 0$ with its own value, so the kinetics' $u_i$ differ from ThermoY's by $1.85\ \mathrm{K} \cdot c_{v,i}$,
+    and $L_r$ by $1.85\ \mathrm{K} \cdot \sum_i S_{ir} c_{v,i}$. With the water heat capacities of
+    `tests/jupiter.yaml` ($6.5 \mathcal R$ between vapour and liquid) that is about 100 J/mol, 0.35 % of $L$ at
+    300 K. A deck that sets `Tref` gives both modules the same value.
+  - Heat capacity: the kinetics divides the feedback term by the caller's `cvol`
+    ({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}). It equals ThermoY's $C_V$ only if the host
+    computes it with `compute("VT->cv")` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_cv_vol >}}).
+  - Gas entropy: `eval_entropy_R` builds the gas entropy from the constant $c_p$ = `cref_R` + 1 whatever the energy
+    options ({{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=2 >}}). With `use-nasa9-cp` or `use-h2-cp`,
+    `extrapolate_dlnp` therefore takes $c_p$ and $h$ from the switched functions and the rain-out entropy from the
+    unswitched one ({{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}}). This is a recorded code
+    defect with a proposed fix.[^ch01b-k6]
 - The kinetics evaluates the reverse-reaction temperature derivative inconsistently with its own equilibrium
   constant (@sec-ch06-mass-action, Limits). Step 3 holds for the evaporation and forward columns.
-- How large the effect of Step 4 is for the decks in use is not measured.
+- How large the effect of Step 4 is for the decks in use is not measured, and neither is the latent-heat difference
+  of a deck without `reference-state`; both are computed above from the code, not run.
 :::
 
 [^ch01b-d12]: [source: UCzhangxi/kintera#54, row D12 (energy model passed to the UV kernel). This text is to be updated
     when that fix lands on the code pin.]
+
+[^ch01b-k6]: [source: UCzhangxi/kintera#54, row K6, and UCzhangxi/kintera#59 ("K6: gas entropy follows use-nasa9-cp
+    and use-h2-cp", open). This text is to be updated when that fix lands on the code pin.]

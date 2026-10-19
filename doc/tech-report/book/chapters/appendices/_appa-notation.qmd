@@ -51,11 +51,11 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | $c^{\star}_n$ | constant heat-capacity coefficient of species $n$, $c_{v,n}/\mathcal R$ without extra terms | [-] | {{< generated appa first-0233e875a62d >}} | `cref_R` (YAML `cv_R`) |
 | $u^{\star}_n$ | internal energy of species $n$ at $T_\star$, divided by $\mathcal R$ | [K] | {{< generated appa first-6a5f3ce640f7 >}} | `uref_R` (YAML `u0_R`) |
 | $s^{\star}_n$ | entropy of gas $n$ at $T_\star$ and $p_\star$, divided by $\mathcal R$ | [-] | {{< generated appa first-15b4343b3313 >}} | `sref_R` (YAML `s0_R`) |
-| $K_r$ | saturation constant of condensation reaction $r$: the product of reactant partial pressures, each to its stoichiometric magnitude, on the saturation curve | [Pa$^{m}$, $m$ the sum of the gas magnitudes] | {{< generated appa first-fe5d8cb48530 >}} | `logsvp` (its logarithm) |
+| $K_r$ | saturation constant of condensation reaction $r$: the product over the gases of the reaction of their partial pressures on the saturation curve, each raised to $-\nu_{nr}$ (positive for a gas consumed, negative for a gas produced) | [Pa$^{m}$, $m = -\sum_{n<N_{\mathrm g}} \nu_{nr}$] | {{< generated appa first-fe5d8cb48530 >}} | `eval_logsvp` (its logarithm; the solvers' `logsvp` also holds the pressure or $\mathcal R T$ term) |
 | $L_r$ | latent heat of reaction $r$ at constant volume, internal energy released per unit extent | [J mol$^{-1}$] | {{< generated appa first-44500c09e735 >}} |  |
-| $\mathrm{RH}_r$ | relative humidity of reaction $r$, reactant partial-pressure product over $K_r$ | [-] | {{< generated appa first-3b8ee286f6f7 >}} | `relative_humidity` |
+| $\mathrm{RH}_r$ | relative humidity of reaction $r$, the gas partial-pressure product of $K_r$ at the actual partial pressures, over $K_r$ | [-] | {{< generated appa first-3b8ee286f6f7 >}} | `relative_humidity` |
 | $\nu_{nr}$ | stoichiometric coefficient of species $n$ in reaction $r$, negative for a reactant, positive for a product | [-] | {{< generated appa first-5c6271b56873 >}} | `stoich` |
-| $\xi_r$ | extent of reaction $r$ in one step of a saturation solve, in the units of the amounts it moves or | [-], [mol m$^{-3}$] | {{< generated appa first-66c6c16e140f >}} | `rhs` (after the least-squares solve) |
+| $\xi_r$ | extent of reaction $r$: a change $\xi_r$ changes the amount of each species $n$ by $\nu_{nr}\,\xi_r$; in the units of those amounts, mole fraction or concentration | [-], [mol m$^{-3}$] | {{< generated appa first-66c6c16e140f >}} | `rhs` in the saturation solvers, after the least-squares solve |
 | $\Delta_r$ | saturation deficit of reaction $r$, $\ln K_r(T) + \sum_{n<N_{\mathrm g}} \nu_{nr} \ln p_n$, positive when subsaturated | [-] | {{< generated appa first-0bb2d6dc342f >}} | `logsvp - log_frac_sum` |
 
 : Species thermodynamics, phase change and reactions. {#tbl-appa-2a}

@@ -79,7 +79,16 @@ prints a warning with the count. On CUDA it does not synchronise, and the caller
 non-converged fixed-temperature solve prints a line and sets the cell's diagnostic, and the caller must read the
 diagnostic.
 
-TODO: a figure of the buffers' reuse rule and of the diagnostic codes.
+@fig-ch04-warm-start-flow summarises what the buffers do.
+
+```{python}
+#| label: fig-ch04-warm-start-flow
+#| fig-cap: "What a warm start passes to the saturation solvers and what comes back. Boxes in call order; grey notes give the reuse condition, that the stored count is never read, that the order only sets the visit order, and the diagnostic codes."
+#| fig-alt: "Five boxes left to right: warm_start true, stored order and count, solver re-tests all reactions, result and diagnostic, failure count in ThermoY."
+#| echo: false
+from kintera_report.ch04.figures.fig_warm_start_flow import make_fig
+make_fig()
+```
 
 ### Code
 

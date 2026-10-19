@@ -19,7 +19,16 @@ from NASA polynomials, is the subject of @sec-ch05.
 
 The nucleation reactions (@sec-ch04-nucleation) define which conditions apply. Both solvers aim at those conditions
 and call the constrained least-squares step (@sec-ch04-active-set), and the warm-start and failure bookkeeping wraps
-both. TODO: a dependency-map figure of these relations.
+both, as shown in @fig-ch04-dependency-map.
+
+```{python}
+#| label: fig-ch04-dependency-map
+#| fig-cap: "Schemes of this chapter and how they depend on each other. Black arrows read 'requires'; the dotted grey lines mark the warm-start and failure bookkeeping that wraps both solvers."
+#| fig-alt: "Six boxes: nucleation reactions, equilibrium conditions, the fixed temperature and pressure solver, the fixed energy and volume solver, constrained least squares, and warm start with failures. Both solvers point to the conditions and to the least-squares step; the conditions point to the nucleation reactions."
+#| echo: false
+from kintera_report.ch04.figures.fig_dependency_map import make_fig
+make_fig()
+```
 
 | scheme | option | default | main test |
 |---|---|---|---|

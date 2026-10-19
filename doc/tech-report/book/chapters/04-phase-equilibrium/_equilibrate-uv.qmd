@@ -33,20 +33,20 @@ every reaction has exactly one vapour and one condensate and no species appears 
 **Evidence.** See the Tests layer below.
 :::
 
-Local symbols: as in @sec-ch04-conditions, and $C_i$ the molar concentration of species $i$ [$\mathrm{mol\,m^{-3}}$];
-$u_i$ its molar internal energy [$\mathrm{J\,mol^{-1}}$], with offset $u_{0,i}$ and constant molar heat capacity
-$c_{v,i}$ [$\mathrm{J\,mol^{-1}\,K^{-1}}$]; $U$ the internal energy per volume [$\mathrm{J\,m^{-3}}$].
+Symbols of the notation table (@sec-appa): $c_n$, $u_n$, $c_{v,n}$, $U$, $\mathcal R$; the rest as in
+@sec-ch04-conditions. Local symbol: $u_{0,n}$, the molar internal energy of species $n$ extrapolated to $T = 0$
+[J mol$^{-1}$].
 
 ### Derivation
 
-In concentrations, the gas partial pressure of an ideal gas is $p_i = C_i \mathcal R T$. Substituting into the
+In concentrations, the gas partial pressure of an ideal gas is $p_n = c_n \mathcal R T$. Substituting into the
 deficit of @sec-ch04-conditions gives the condition in concentration units:
 
 $$
 \begin{aligned}
-\sum_{i\in\mathrm{g}} \nu_{ij} \ln C_i &= \ln K_j(T) - \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big) \ln(\mathcal R T), \\
-\frac{\mathrm{d}}{\mathrm{d}T}\Big[\ln K_j(T) - \Big(\sum_{i\in\mathrm{g}} \nu_{ij}\Big) \ln(\mathcal R T)\Big]
-  &= \frac{\mathrm{d}\ln K_j}{\mathrm{d}T} - \frac{\sum_{i\in\mathrm{g}} \nu_{ij}}{T} .
+\sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln c_n &= \ln K_r(T) - \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln(\mathcal R T), \\
+\frac{\mathrm{d}}{\mathrm{d}T}\Big[\ln K_r(T) - \Big(\sum_{n<N_{\mathrm g}} \hat\nu_{nr}\Big) \ln(\mathcal R T)\Big]
+  &= \frac{\mathrm{d}\ln K_r}{\mathrm{d}T} - \frac{\sum_{n<N_{\mathrm g}} \hat\nu_{nr}}{T} .
 \end{aligned}
 $$ {#eq-ch04-equilibrate-uv-constant}
 
@@ -54,16 +54,16 @@ The internal energy per volume is held fixed while condensation moves species:
 
 $$
 \begin{aligned}
-U &= \sum_i u_i(T)\, C_i, \\
-u_i(T) &= u_{0,i} + c_{v,i}\, T .
+U &= \sum_n u_n(T)\, c_n, \\
+u_n(T) &= u_{0,n} + c_{v,n}\, T .
 \end{aligned}
 $$ {#eq-ch04-equilibrate-uv-energy}
 
-A species may carry an extra temperature-dependent term in $u_i$, evaluated by the same function the thermodynamics
+A species may carry an extra temperature-dependent term in $u_n$, evaluated by the same function the thermodynamics
 uses. @eq-ch04-equilibrate-uv-constant and @eq-ch04-equilibrate-uv-energy are computed in `equilibrate_uv`
 ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}). After each composition step the temperature is found from
-@eq-ch04-equilibrate-uv-energy by Newton iteration, $T \leftarrow T + (U - \sum_i u_i C_i)/\sum_i
-(\mathrm{d}u_i/\mathrm{d}T)\,C_i$,
+@eq-ch04-equilibrate-uv-energy by Newton iteration, $T \leftarrow T + (U - \sum_n u_n c_n)/\sum_n
+(\mathrm{d}u_n/\mathrm{d}T)\,c_n$,
 until two iterates differ by less than $\max(10^{-4}\,\mathrm{K}, 8\,\epsilon_{\mathrm{mach}} T)$.
 
 ### Numerical method
@@ -95,13 +95,22 @@ to each cell:
 
 **Partition method.** `equilibrate_uv_partition`
 ({{< code src/thermo/equilibrate_uv.h equilibrate_uv_partition >}}) needs no linear algebra. At a trial temperature
-each reaction's vapour concentration is the smaller of its total and $K_j^{1/\nu}/(\mathcal R T)$, and the rest is
+each reaction's vapour concentration is the smaller of its total and $K_r^{1/\hat\nu}/(\mathcal R T)$, and the rest is
 condensate (`partition_uv_state`, {{< code src/thermo/equilibrate_uv.h partition_uv_state >}}). The temperature that
 matches $U$ is bracketed by halving or doubling, at most 64 times, and then found by a Newton iteration safeguarded by
 bisection. It stops when the energy residual is at most $64\,\epsilon_{\mathrm{mach}} \max(|U_0|, 1)$, where $U_0$ is
 the target energy in the solver's own reference. That tolerance is absolute.
 
-TODO: a figure of the two methods and the fallback of `auto`.
+@fig-ch04-equilibrate-uv-partition compares the two methods near the reference temperature.
+
+```{python}
+#| label: fig-ch04-equilibrate-uv-partition
+#| fig-cap: "Remaining ln RH after a fixed-energy solve of one water vapour (x_v = 5e-2, 1 bar, Tref 300 K) against the start temperature. Vermillion triangles: uv-solver partition; open green circles: uv-solver kkt; dotted line: Tref."
+#| fig-alt: "Partition leaves log relative humidity between 0.17 and 0.51 at all but two start temperatures between 297 and 303 K; kkt is at zero everywhere."
+#| echo: false
+from kintera_report.ch04.figures.fig_uv_partition import make_fig
+make_fig()
+```
 
 ### Code
 
@@ -120,22 +129,34 @@ TODO: a figure of the two methods and the fallback of `auto`.
 |---|---|---|---|
 | `test_equilibrate_uv_gain.py` | the gain matrix is zero outside the active set | exact zeros | structure |
 | `test_saturation_adjustment_nh4sh.py` | adjusted cells satisfy the conditions; N and S conserved | RH within $10^{-5}$; `rtol=1e-12` | not stated in the test |
-| `test_cuda_workspace.py` | the solve on CUDA matches the CPU | not tabulated yet | not tabulated yet |
+| `test_cuda_workspace.py` | the solve on CUDA matches the CPU, for `kkt` and `partition` | `rtol=1e-10`, `atol=1e-14` | not stated in the test |
 
 : Tests of saturation adjustment at fixed internal energy and volume. {#tbl-ch04-equilibrate-uv-tests}
 
-No test in the tree checks that the internal energy is conserved, that is, $U$ after the solve equals $U$ before to the
-inner tolerance. A run on the cold-start cells of @sec-ch04-equilibrate-tp finds a relative change of at most
-$7.3\times10^{-16}$.[^ch04-uv-coldstart] A test of this property is proposed, not present.
+No test in the tree asserts that the internal energy is conserved, that is, that $U$ after the solve equals $U$ before
+to the tolerance of the inner temperature solve. Two runs show the property the proposed test would assert. On the
+cold-start cells of @sec-ch04-equilibrate-tp (`tests/jupiter.yaml`), the relative change of $U$ is at most
+$7.3\times10^{-16}$.[^ch04-uv-coldstart] On 25 cells of a self-written one-vapour card started between 297 and
+303 K, all converged, $|U_{\mathrm{after}} - U_{\mathrm{before}}| / \max(|U_{\mathrm{before}}|, 1\,\mathrm{J\,m^{-3}})$
+is at most $1.9\times10^{-11}$.[^ch04-uv-energy] The larger value comes from the 1 J m$^{-3}$ floor of the measure
+near `Tref`, where $U$ is small. A suite test would build such cells, call `ThermoY.forward` and compare `VT->U` at
+the returned temperature with the input $U$.
+
+[^ch04-uv-energy]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the self-written card of
+@fig-ch04-equilibrate-uv-partition with `uv-solver: kkt`; run: `python -P uv_energy.py`, which calls `ThermoY.forward`,
+then `VU->T` and `VT->U`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a
+committed check.]
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
 - **The partition method fails near `Tref`.** Its tolerance is absolute, and the target energy $U_0$ is close to zero
-  when the cell starts near the reference temperature. For one vapour (water, $x_{\mathrm{v}} = 5\times10^{-2}$, 1 bar)
-  started within 1 K of `Tref`, `uv-solver: partition` fails in every cell. It leaves the saturation residual
-  $\ln\mathrm{RH}$ at 0.29-0.40 for `Tref` 300 K and 4.09-4.28 for `Tref` 250 K, temperature unchanged.
-  `kkt` converges in the same cells to $|\ln\mathrm{RH}| \le 10^{-6}$.[^ch04-uv-partition] With `auto` such a cell
+  when the cell starts near the reference temperature. For one vapour (water, $x_{\mathrm{v}} = 5\times10^{-2}$, 1 bar,
+  `Tref` 300 K), `uv-solver: partition` fails in 23 of 25 cells started between 297 and 303 K and succeeds only at
+  297.00 and 302.25 K (@fig-ch04-equilibrate-uv-partition). A failed cell keeps its input temperature and leaves the
+  saturation residual $\ln\mathrm{RH}$ between 0.17 and 0.51. `kkt` converges in every one of these cells to
+  $|\ln\mathrm{RH}| < 10^{-6}$.[^ch04-uv-partition] With `Tref` 250 K and starts within 1 K of it, `partition` fails in
+  all five cells tried, leaving $\ln\mathrm{RH}$ between 4.09 and 4.28.[^ch04-uv-partition-250] With `auto` such a cell
   falls back to the general method.
 - **The default `max-iter` of 10 fails cold starts here too.** On the cold-start cells of @sec-ch04-equilibrate-tp the
   general method fails at 130 and 150 K with `max-iter: 10` and converges with 20 or 30, in 14 and 12
@@ -150,10 +171,17 @@ $7.3\times10^{-16}$.[^ch04-uv-coldstart] A test of this property is proposed, no
 - The saturation tests assume an ideal gas (@sec-ch04-conditions, Limits).
 
 [^ch04-uv-partition]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: a self-written card with dry gas,
-`H2O` and `H2O(l)`, one nucleation reaction with `formula: h2o_ideal`, `Tref` 300 or 250, `max-iter: 50`; cells at
-`Tref` $-1$, $-0.5$, 0, $+0.5$, $+1$ K and $10^5$ Pa; run: `python -P item5_partition_tref.py 300 partition` and the
-same with `kkt` and with 250, which call `ThermoY.forward` and `relative_humidity`, CPU, double; Python 3.11.13,
-torch 2.10.0+cu126; a measurement outside the suite, not a committed check.]
+`H2O` and `H2O(l)`, one nucleation reaction with `formula: h2o_ideal`, `Tref` 300 K, `max-iter: 50`; cells started at
+297 to 303 K in steps of 0.25 K, $10^5$ Pa; run: `python -P fig_partition.py uv_partition_tref.json`, which calls
+`ThermoY.forward` with `uv-solver: partition` and `kkt` and `relative_humidity`, and writes the data file of the figure,
+`src/kintera_report/ch04/data/uv_partition_tref.json` (its `provenance` field repeats this record); CPU, double;
+kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed
+check.]
+
+[^ch04-uv-partition-250]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the same card with `Tref`
+250 K; cells at `Tref` $-1$, $-0.5$, 0, $+0.5$, $+1$ K and $10^5$ Pa; run: `python -P item5_partition_tref.py 250
+partition` and the same with `kkt`, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite,
+not a committed check.]
 
 [^ch04-uv-coldstart]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` with
 `uv-solver: kkt` and `max-iter` 10, 20 or 30, the cells of the fixed-temperature cold start; run: `python -P

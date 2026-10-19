@@ -32,7 +32,11 @@
 
 *branches*, see **photolysis cross section**.
 
+*building kintera*, see **installation**.
+
 ## C {.unnumbered .unlisted}
+
+**chapter map**: Where each part of kintera is described, @sec-ch01-map.
 
 **chemical equilibrium, conditions**: Equilibrium conditions in logarithmic form, with element balance and several phases, @sec-ch05-conditions.
 
@@ -45,6 +49,8 @@
 *Clausius-Clapeyron*, see **saturation vapor pressure**.
 
 **coagulation**: Coagulation of cloud into precipitation, @sec-ch06-coagulation.
+
+*code map*, see **chapter map**.
 
 **`composition`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
@@ -158,6 +164,8 @@
 
 *evolve_kinetics*, see **coupling, kinetics**.
 
+*example*, see **quick start**.
+
 **example scripts**: Example scripts as quick-start runs, @sec-ch13-examples.
 
 **`extrapolate`**: Multilinear table interpolation, @sec-ch10-interpolation.
@@ -169,6 +177,8 @@
 **fall-off rate constant**: Three-body and fall-off rate constants, @sec-ch06-falloff.
 
 *find_resource*, see **resource lookup**.
+
+*first run*, see **quick start**.
 
 **`formula`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
@@ -194,6 +204,8 @@
 
 **implicit time step**: Linearly implicit time step, @sec-ch06-implicit.
 
+**installation**: Installing kintera, @sec-ch01-install.
+
 **internal energy, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
 
 *interpn*, see **table interpolation**.
@@ -207,6 +219,8 @@
 *Jacobi eigenvalues*, see **pseudo-inverse solve**.
 
 **Jacobian, reaction space**: Reaction-space Jacobian, @sec-ch06-jacobian.
+
+*jupiter.yaml*, see **quick start**.
 
 ## K {.unnumbered .unlisted}
 
@@ -320,6 +334,8 @@
 
 *physical constants*, see **units**.
 
+*pip install*, see **installation**.
+
 **`Pref`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
 **pressure switch**: Pressure switch on Arrhenius-form rates, @sec-ch06-pressure-switch.
@@ -341,6 +357,8 @@
 ## Q {.unnumbered .unlisted}
 
 *quadrature_weights*, see **photolysis rate constant**.
+
+**quick start**: A first run: condensation on the Jupiter example card, @sec-ch01-quick-start.
 
 ## R {.unnumbered .unlisted}
 
@@ -405,6 +423,10 @@
 *shared memory*, see **GPU kernels**.
 
 *snapy equation of state*, see **coupling, equation of state**.
+
+*source build*, see **installation**.
+
+*source directories*, see **chapter map**.
 
 **sparse linear solve**: The sparse linear solve on CUDA, @sec-ch10-sparse.
 
@@ -515,6 +537,8 @@
 ## W {.unnumbered .unlisted}
 
 **warm start**: Warm starts and failure reporting, @sec-ch04-warm-start-failures.
+
+*where to find*, see **chapter map**.
 
 *workspace per thread*, see **GPU kernels**.
 

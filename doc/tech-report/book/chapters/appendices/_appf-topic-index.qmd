@@ -30,11 +30,21 @@
 
 **coupling, saturation adjustment**: Saturation adjustment inside a snapy stage (thermodynamics card), @sec-ch14-saturation.
 
+*CPU or GPU*, see **device dispatch**.
+
+**CUDA build**: Building the CUDA library, @sec-ch12-build.
+
+*CUDA option*, see **CUDA build**.
+
 **`cv_R`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
 ## D {.unnumbered .unlisted}
 
 *data files*, see **resource lookup**.
+
+**device dispatch**: Device dispatch: one call, CPU or CUDA, @sec-ch12-dispatch.
+
+**device function tables**: Device function tables for user functions, @sec-ch12-device-functions.
 
 **`diameter`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
@@ -43,6 +53,8 @@
 **`diff_P`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
 **`diff_T`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
+
+*dispatch stub*, see **device dispatch**.
 
 ## E {.unnumbered .unlisted}
 
@@ -69,6 +81,12 @@
 *find_resource*, see **resource lookup**.
 
 **`formula`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
+
+## G {.unnumbered .unlisted}
+
+*GPU architectures*, see **CUDA build**.
+
+**GPU kernels**: CUDA element loops and per-thread workspaces, @sec-ch12-kernels.
 
 ## I {.unnumbered .unlisted}
 
@@ -154,7 +172,11 @@
 
 *search path*, see **resource lookup**.
 
+*shared memory*, see **GPU kernels**.
+
 *snapy equation of state*, see **coupling, equation of state**.
+
+**sparse solver, GPU**: CUDA sparse linear solver, @sec-ch12-sparse-solver.
 
 **`species`**: The YAML input file: species and reference state, @sec-ch11-yaml-input.
 
@@ -213,6 +235,10 @@
 *version number*, see **package version**.
 
 **`vm`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
+
+## W {.unnumbered .unlisted}
+
+*workspace per thread*, see **GPU kernels**.
 
 ## Y {.unnumbered .unlisted}
 

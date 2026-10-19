@@ -199,6 +199,13 @@ sections:
     - chemical equilibrium, options: [EquilibriumOptions, standard pressure, mole floor]
   sec-ch05-log-k:
     - NASA-9 polynomials: [Nasa9LogK, Gibbs energy]
+  # Chapter 1. Overview and quick start
+  sec-ch01-map:
+    - chapter map: [where to find, code map, source directories]
+  sec-ch01-install:
+    - installation: [pip install, source build, building kintera]
+  sec-ch01-quick-start:
+    - quick start: [first run, example, jupiter.yaml]
 
 unlabeled:
   - file: chapters/appendices/_appb-ch*.qmd

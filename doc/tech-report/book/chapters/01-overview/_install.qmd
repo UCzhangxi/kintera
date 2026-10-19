@@ -1,0 +1,114 @@
+## Installing kintera (`pip install kintera` or a source build) {#sec-ch01-install}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: README.md, CMakeLists.txt, pyproject.toml, setup.py, python/__init__.py
+status: draft
+author: jihenghu
+reviewer: Editor (requested)
+-->
+
+### Summary
+
+kintera is a C++ library with a Python package on top, and both are needed to run it from Python. There are two
+routes. The PyPI package installs a released build in one command. A source build compiles the commit you check out,
+which is the only way to run exactly the code this report describes. At the time of writing the newest PyPI release
+is older than the code pin (see Limits).
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Get a working `import kintera`.
+
+**Data.** Python 3.10 or later, `torch` 2.10.0, `pyharp` 2.2.0 or later; for a source build also a C++17 compiler,
+CMake and the NetCDF C library.
+
+**Placement.** Before @sec-ch01-quick-start.
+
+**Activation.** Either route; the source build follows the README of the pinned commit.
+
+**Guarantee / limits.** Both routes were run for this chapter; see the Tests layer.
+
+**Evidence.** Run records in the Tests layer.
+:::
+
+The requirements are those the README states: a C++17 compiler (it names GCC 9 or later), CMake 3.18 or later,
+Python 3.10 or later, and the NetCDF C library ({{< code README.md >}}). The package version is not written in any
+file; it comes from the git tags at build time (@sec-ch11-version).
+
+### Derivation
+
+No derivation: this section is an installation procedure.
+
+### Numerical method
+
+No numerical method and no figure: this section is an installation procedure. The two routes are these.
+
+**PyPI.** In a fresh virtual environment:
+
+```bash
+pip install kintera
+```
+
+This also installs `torch`, `pyharp` and `pydisort` as dependencies.
+
+**Source build.** The steps of the README ({{< code README.md >}}), with the checkout at the commit to be run:
+
+```bash
+pip install numpy 'torch==2.10.0' 'pyharp>=2.2.0'
+git clone https://github.com/chengcli/kintera.git
+cd kintera
+git checkout <commit>
+cmake -B build
+cmake --build build --parallel
+pip install .
+```
+
+`cmake -B build` finds `torch` and the `pydisort` and `pyharp` packages through the active Python interpreter, so it
+must run in the environment where step 1 installed them. CUDA is used only when CMake finds a CUDA compiler
+(@sec-ch12-build).
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| install instructions | {{< code README.md >}} | `README.md` | always |
+| top-level build | {{< code CMakeLists.txt >}} | `find_package(Disort)` | always |
+| Python package build | {{< code setup.py >}} | `setup.py` | `pip install .` |
+| version and dependencies | {{< code pyproject.toml >}} | `pyproject.toml` | always |
+
+: Code map of installation. {#tbl-ch01-install-code}
+
+1. `CMakeLists.txt` requires `Torch`, `Disort` and `Harp` before it adds the sources ({{< code CMakeLists.txt >}}).
+2. `pip install .` builds the Python extension through `setup.py` and installs the package.
+3. On import, the package adds its own `data` directory to the resource search path (@sec-ch11-resources).
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| run record, source route | the README steps build and install at the pin | exit status 0 | [^ch01-build] |
+| run record, PyPI route | `pip install kintera` installs and runs the quick start | exit status 0 | [^ch01-pip] |
+
+: Runs of the two install routes. {#tbl-ch01-install-tests}
+
+Both routes were run in fresh virtual environments, CPU only. The source build at the pin installed kintera 2.6.5;
+`pip install kintera` installed kintera 2.6.4.[^ch01-build][^ch01-pip] The CUDA path was not built for this chapter.
+
+[^ch01-build]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: README "Installation / Quick Start";
+    run: `bash src/kintera_report/ch01/runs/build_from_source.sh <venv>` with `KINTERA_REPO` at the pin, CPU, GCC
+    13.3.1, CMake 3.26.5, Python 3.11.13, torch 2.10.0, pyharp 2.7.6, pydisort 1.8.13, numpy 2.4.6; output:
+    `src/kintera_report/ch01/data/build_from_source.out`.]
+
+[^ch01-pip]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 for the card and script, package PyPI kintera
+    2.6.4; deck: `examples/jupiter.yaml`; run: `bash src/kintera_report/ch01/runs/pip_install.sh <venv>`, CPU,
+    Python 3.11.13, torch 2.10.0, pyharp 2.7.6, pydisort 1.8.13, numpy 2.4.6; output:
+    `src/kintera_report/ch01/data/pip_install.out`.]
+
+### Limits
+
+- The newest PyPI release, 2.6.4, is older than the code pin, which is tagged 2.6.5. Code described in this report
+  may differ from what `pip install kintera` provides; for exact agreement build from source at the pin.
+- With the CPU-only `torch` build, `pyharp` and `pydisort` 2.7.6 and 1.8.13 fail to import (they look for
+  `libtorch_cuda.so`), and the source build's CMake step then stops in `FindDisort.cmake`. Installing `torch==2.10.0`
+  from PyPI, as the README writes it, avoids this; the run record notes the failed first attempt.[^ch01-build]
+- The README names GCC 9 as the minimum; the run used GCC 13.3.1. Older compilers were not tried.
+- Only Linux x86-64 with Python 3.11 was tried.

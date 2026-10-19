@@ -1,3 +1,29 @@
 # Overview and quick start {#sec-ch01}
 
-pending
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: README.md, CMakeLists.txt, pyproject.toml, setup.py, src/, python/__init__.py, examples/
+status: draft
+author: jihenghu
+reviewer: Editor (requested)
+-->
+
+kintera computes the thermodynamics, phase and chemical equilibrium, kinetics, photochemistry and diffusion of a
+mixture of gases and condensates, on CPU or GPU, as `torch` operations that a model can call cell by cell. This
+chapter is a map and a first run. It says where in this report each part of the code is described, how to install
+kintera, and how to make one call that you can check against a recorded output. It does not summarize the other
+chapters; follow their labels for the content.
+
+| scheme | what it gives | main source |
+|---|---|---|
+| @sec-ch01-map | which chapter and section describes each part of the code | `src/`, `python/` |
+| @sec-ch01-install | the two install routes and what each provides | `README.md`, `pyproject.toml` |
+| @sec-ch01-quick-start | one equilibrium-condensation call with its recorded output | `examples/jupiter.yaml` |
+
+: Schemes of this chapter. {#tbl-ch01-schemes}
+
+{{< include 01-overview/_map.qmd >}}
+
+{{< include 01-overview/_install.qmd >}}
+
+{{< include 01-overview/_quick-start.qmd >}}

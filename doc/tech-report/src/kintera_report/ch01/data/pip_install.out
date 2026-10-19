@@ -1,0 +1,12 @@
+# Run record of runs/pip_install.sh: python 3.11.13, fresh venv, CPU only (CUDA_VISIBLE_DEVICES empty).
+kintera                  2.6.4
+numpy                    2.4.6
+pydisort                 1.8.13
+pyharp                   2.7.6
+torch                    2.10.0      3
+[Q0] versions: python 3.11.13, torch 2.10.0+cu128, kintera 2.6.4
+[Q5] max_iter: 30
+[Q1] species (9): ['dry', 'H2O', 'NH3', 'H2S', 'H2O(l)', 'H2O(l,p)', 'NH3(s)', 'NH3(s,p)', 'NH4SH(s)']
+[Q2] xfrac before: [0.86, 0.1, 0.03, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0]
+[Q3] xfrac after:  ['8.686868e-01', '1.429130e-06', '2.020210e-02', '7.920146e-08', '1.010087e-01', '0.000000e+00', '0.000000e+00', '0.000000e+00', '1.010093e-02']
+[Q4] sum of xfrac after: 1.000000000000000

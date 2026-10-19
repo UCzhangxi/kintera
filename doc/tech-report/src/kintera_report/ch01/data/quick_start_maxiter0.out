@@ -1,0 +1,7 @@
+[Q0] versions: python 3.11.13, torch 2.10.0+cu128, kintera 2.6.5
+[Q5] max_iter: 10
+[Q1] species (9): ['dry', 'H2O', 'NH3', 'H2S', 'H2O(l)', 'H2O(l,p)', 'NH3(s)', 'NH3(s,p)', 'NH4SH(s)']
+[Q2] xfrac before: [0.86, 0.1, 0.03, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0]
+[Q3] xfrac after:  ['8.686783e-01', '9.864170e-05', '2.021169e-02', '9.864170e-06', '1.009105e-01', '0.000000e+00', '0.000000e+00', '0.000000e+00', '1.009105e-02']
+[Q4] sum of xfrac after: 1.000000000000000
+equilibrate_tp did not converge after 10 iterations.

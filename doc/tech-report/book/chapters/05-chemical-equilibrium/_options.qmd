@@ -52,10 +52,12 @@ No derivation: this scheme maps an input to the matrices $\mathsf S$ and $\maths
    skipped, so a file can also hold the kinetics of @sec-ch06. Every kept reaction must name only components and must
    balance every element to $10^{-10}$; otherwise the reader raises "does not conserve element".
 4. **Numerical options.** An optional `equilibrium` block sets the four values below.
-5. **Validation.** The options are then checked by `validate`
-   ({{< code src/equilibrium/equilibrium.cpp EquilibriumOptionsImpl::validate >}}). It requires non-empty lists, one
-   phase index per component and in range, at most 64 components, a gas phase in range, and positive standard pressure,
-   `max-iter` and `ftol`, and a non-negative `mole-floor`.
+5. **Validation.** The options must have non-empty lists, one phase index per component and in range, at most 64
+   components, a gas phase in range, positive standard pressure, `max-iter` and `ftol`, and a non-negative
+   `mole-floor`.
+
+The checks of step 5 are in `EquilibriumOptionsImpl::validate`
+({{< code src/equilibrium/equilibrium.cpp EquilibriumOptionsImpl::validate >}}).
 
 | key | meaning | default | read by |
 |---|---|---|---|
@@ -103,13 +105,14 @@ use small inputs of the same form written by `run_equilibrium.py`. The two-phase
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_equilibrium.release` (`ReadsSpeciesAndReactionsFromYaml`) | components, phase ids, only the `equilibrium` reaction kept, `standard-pressure` and `max-iter` read, stoichiometry signs | exact | parsed values |
-| `test_equilibrium.release` (`RejectsUnbalancedYamlReaction`) | A $\rightleftharpoons$ B with A = H and B = H$_2$ is refused | exception | the reader's check |
+| `test_equilibrium.release`, YAML case | components, phase ids, only the `equilibrium` reaction kept, `standard-pressure` and `max-iter` read, stoichiometry signs | exact | parsed values |
+| `test_equilibrium.release`, unbalanced case | A $\rightleftharpoons$ B with A = H and B = H$_2$ is refused | exception | the reader's check |
 | `test_equilibrium.py` (`test_python_core_binding_is_functional`) | options built through the Python API solve a reaction | `atol=1e-7` | not stated in the test |
 
 : Tests of the options. {#tbl-ch05-options-tests}
 
-Both cases, of the `EquilibriumOptions` test suite, pass on both builds (@sec-ch05-conditions, Tests). No test covers the one-gas-phase
+The two `test_equilibrium.release` rows are the gtest cases `EquilibriumOptions.ReadsSpeciesAndReactionsFromYaml`
+and `EquilibriumOptions.RejectsUnbalancedYamlReaction`. Both pass on both builds (@sec-ch05-conditions, Tests). No test covers the one-gas-phase
 rule, a component in two phases, the 64-component limit or the rank check.
 
 ### Limits

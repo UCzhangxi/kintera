@@ -100,11 +100,12 @@ make_fig()
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
 | `test_equilibrium.py` (`test_nasa9_yaml_equilibrium_case`) | $\ln K^\circ$ for H$_2$ + ½ O$_2$ $\rightleftharpoons$ H$_2$O at 4000 K has one finite entry, and the solve converges | finite | structure |
-| `test_equilibrium.release` (`Nasa9.ConcurrentFirstDatabaseAccess`) | eight concurrent first calls return the same finite values | `torch::allclose` defaults | the library defaults |
+| `test_equilibrium.release`, concurrent case | eight concurrent first calls return the same finite values | `torch::allclose` defaults | the library defaults |
 
 : Tests of the NASA-9 constants. {#tbl-ch05-log-k-tests}
 
-Both pass on both builds (@sec-ch05-conditions, Tests). No test checks a value of $\ln K^\circ_r$ against an
+The second row is the gtest case `Nasa9.ConcurrentFirstDatabaseAccess`. Both pass on both builds
+(@sec-ch05-conditions, Tests). No test checks a value of $\ln K^\circ_r$ against an
 independent table, or a condensed entry.
 
 [^ch05-logk-water]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in

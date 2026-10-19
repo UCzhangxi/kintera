@@ -55,9 +55,7 @@ No derivation: this scheme maps an input to the matrices $\mathsf S$ and $\maths
 5. **Validation.** The options must have non-empty lists, one phase index per component and in range, at most 64
    components, a gas phase in range, positive standard pressure, `max-iter` and `ftol`, and a non-negative
    `mole-floor`.
-
-The checks of step 5 run whenever the options are validated
-({{< code src/equilibrium/equilibrium.cpp EquilibriumOptionsImpl::validate >}}).
+   They are made by the validation function of the code map below.
 
 | key | meaning | default | read by |
 |---|---|---|---|

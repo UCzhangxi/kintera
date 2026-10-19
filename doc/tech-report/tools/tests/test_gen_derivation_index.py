@@ -131,6 +131,28 @@ def test_a_missing_check_script_is_not_listed(tmp_path):
     assert rows[2].check == "none"
 
 
+def test_equation_comments_name_a_check_line_and_a_source_note(tmp_path):
+    """`equation-check` names one line of a script under chNN/checks/ or derivation-checks/ for one equation;
+    `equation-source` appends a note to that equation's source cell only. A missing script is not listed."""
+    book = make_book(tmp_path)
+    (tmp_path / "derivation-checks").mkdir()
+    (tmp_path / "derivation-checks" / "check_ch2_gas.py").write_text("")
+    f = book / "chapters" / "02-thermo" / "_gas.qmd"
+    f.write_text(f.read_text().replace("### Numerical method", "<!-- equation-check: eq-ch02-gas-c check_ch2_gas.py "
+                                       "(a1) -->\n<!-- equation-check: eq-ch02-gas-c check_ch2_none.py [b] -->\n"
+                                       "<!-- equation-check: eq-ch02-gas-p gas_check.py [d1] -->\n"
+                                       "<!-- equation-check: eq-ch02-gas-p check_ch2_gas.py -->\n"
+                                       "<!-- equation-source: eq-ch02-gas-c code differs (D65) -->\n\n"
+                                       "### Numerical method"))
+    p, c, _ = g.collect(book, {}, tmp_path / "src" / "kintera_report")[0][2]
+    assert c.check == "`check_ch2_gas.py` `(a1)`"
+    assert "check_ch2_none.py" not in c.check
+    assert p.check == "`[C2]`, `gas_check.py` `[d1]`, `check_ch2_gas.py`"   # tagged scripts: only where tagged
+    assert c.source == "exists; code differs (D65)" and p.source == "exists"
+    files, values = g.outputs(g.collect(book, {}, tmp_path / "src" / "kintera_report"))
+    assert values["ch02.exists"] == "2"
+
+
 def test_check_mode_flags_a_stale_fragment(tmp_path, capsys):
     book = make_book(tmp_path)
     frag = tmp_path / "frag.qmd"

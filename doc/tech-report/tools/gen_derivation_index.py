@@ -15,8 +15,10 @@ scanned for its Derivation layer (STYLE 2). Each labelled equation `{#eq-...}` i
     the index repeats no URL, so a citation is checked once, where it is made;
   * the check: the executable check scripts the scheme file names (`<scheme>_check.py`, STYLE 7) that exist
     under `src/kintera_report/chNN/checks/`, and the check lines (`[Cn]`) the layer quotes next to the equation;
+    a comment `<!-- equation-check: eq-... script.py [tag] -->` names one check line of a script under
+    `chNN/checks/` or `derivation-checks/` for that equation (tag `[x]` or `(x)`, or none for the whole script);
   * the source: "exists" when the layer cites a derivation note (`docs/derivations/` or `sources/`), else
-    "re-derived".
+    "re-derived"; a comment `<!-- equation-source: eq-... note -->` appends a note, e.g. "code differs (D65)".
 
 A scheme whose Derivation layer labels no equation gets one row with its first sentence (often "None: ..."),
 so every written scheme appears once at least, as OUTLINE asks (one row per scheme). Appendix files and the
@@ -65,6 +67,7 @@ PARENT = "_appb-derivation-index.qmd"
 FRAGMENT = BOOK / "chapters" / INCLUDE_DIR / PARENT
 STATEMENTS = REPORT / "tools" / "derivation-statements"
 CHECKS = REPORT / "src" / "kintera_report"
+DERIVATION_CHECKS = "derivation-checks"   # next to src/, i.e. checks_dir.parent.parent / DERIVATION_CHECKS
 
 _SCHEME = re.compile(r"^## (?P<title>.*?)\s*\{#(?P<label>sec-[\w-]+)[^}]*\}\s*$")
 _CHAPTER = re.compile(r"^# (?P<title>.*?)\s*\{#(?P<label>sec-ch\d+[a-z]?)\}\s*$")
@@ -74,6 +77,8 @@ _SHORTCODE = re.compile(r"(?<!\{)\{\{<\s*code\s[^>]*>\}\}")
 _CHECK = re.compile(r"\b([\w-]+_check\.py)\b")
 _CLINE = re.compile(r"\[C\d+\]")
 _NOTE = re.compile(r"docs/derivations/|(?<![\w/])sources/")
+_TAGGED = re.compile(r"<!-- equation-check: (eq-[\w-]+) ([\w-]+\.py)(?: (\[\w+\]|\(\w+\)))? -->")
+_SOURCE_NOTE = re.compile(r"<!-- equation-source: (eq-[\w-]+) (.+?) -->")
 #: chapters that are not schemes, e.g. a verification catalogue that only restates the other chapters' checks
 #: (labels such as "sec-ch13"); none is excluded until such a chapter is written
 EXCLUDE: set[str] = set()
@@ -183,8 +188,10 @@ def scheme_rows(s: Scheme, statements: dict[str, str], checks_dir: Path) -> list
     num = re.match(r"sec-ch(\d+)", s.chapter)
     chk_dir = checks_dir / f"ch{num.group(1)}" / "checks" if num else None
     # Explicit equation-check comments scope a multi-equation script to its actual claims.
-    tagged = re.findall(r"<!-- equation-check: (eq-[\w-]+) ([\w-]+_check\.py) (\[D[\w]+\]) -->", whole)
+    tagged = _TAGGED.findall(whole)
     tagged_scripts = {script for _, script, _ in tagged}
+    notes = dict(_SOURCE_NOTE.findall(whole))
+    shared = checks_dir.parent.parent / DERIVATION_CHECKS
     scripts = sorted({c for c in _CHECK.findall(whole) if c not in tagged_scripts
                       and chk_dir and (chk_dir / c).exists()})
     source = "exists" if _NOTE.search(body) else "re-derived"
@@ -225,10 +232,11 @@ def scheme_rows(s: Scheme, statements: dict[str, str], checks_dir: Path) -> list
         code = _code_cell(s, n + 1, bounds[k + 1]) or _code_cell(s, prev, top) or "not tagged"
         after = "\n".join(s.lines[n + 1:bounds[k + 1]])
         clines = sorted(set(_CLINE.findall(after)), key=lambda c: int(c[2:-1]))
-        specific = [f"`{script}` `{tag}`" for eq, script, tag in tagged if eq == label
-                    and chk_dir and (chk_dir / script).exists()]
+        specific = [f"`{script}` `{tag}`" if tag else f"`{script}`" for eq, script, tag in tagged if eq == label
+                    and ((chk_dir and (chk_dir / script).exists()) or (shared / script).exists())]
         check = ", ".join([f"`{c}`" for c in scripts] + [f"`{c}`" for c in clines] + specific) or "none"
-        rows.append(Row(s.chapter, s.label, title, label, stmt, code, check, source, label in statements))
+        src = f"{source}; {notes[label]}" if label in notes else source
+        rows.append(Row(s.chapter, s.label, title, label, stmt, code, check, src, label in statements))
     return rows
 
 
@@ -291,8 +299,8 @@ def _counts(rs: list[Row]) -> dict[str, str]:
     """The summary-table counts of a set of rows."""
     e = [r for r in rs if r.equation]
     return {"schemes": str(len({r.scheme for r in rs})), "with-eq": str(len({r.scheme for r in e})),
-            "equations": str(len(e)), "exists": str(sum(r.source == "exists" for r in e)),
-            "re-derived": str(sum(r.source == "re-derived" for r in e)),
+            "equations": str(len(e)), "exists": str(sum(r.source.split(";")[0] == "exists" for r in e)),
+            "re-derived": str(sum(r.source.split(";")[0] == "re-derived" for r in e)),
             "with-check": str(len({r.scheme for r in rs if "_check.py" in r.check}))}
 
 

@@ -12,8 +12,8 @@ reviewer: requested
 
 A photolysis reaction needs the cross section of each of its product channels as a function of wavelength. The
 reader builds a list of branches for every reaction and fills one cross-section column per branch, from rows of
-inline YAML or from a KINETICS7 file. Branch 0 is always the photoabsorption that dissociates nothing; the other
-branches are the dissociation channels. Several blocks of the same reaction, each at one temperature, give a
+inline YAML or from a KINETICS7 file. Branch 0 is the photoabsorption column and the other branches are the
+dissociation channels; what branch 0 holds depends on the format (see Derivation). Several blocks of the same reaction, each at one temperature, give a
 temperature-dependent cross section.
 
 ::: {.callout-note title="At a glance"}
@@ -31,7 +31,7 @@ temperature-dependent cross section.
 :::
 
 Local symbols: $\lambda$, wavelength [nm]; $\sigma_b$, cross section of branch $b$ [$\mathrm{cm^2\,molecule^{-1}}$];
-$b = 0$ is photoabsorption and $b \ge 1$ are dissociation channels; $T_k$, the temperature of slab $k$ [K].
+$b = 0$ is the photoabsorption column and $b \ge 1$ are dissociation channels; $T_k$, the temperature of slab $k$ [K].
 
 The branch list is built from the equation: branch 0 is the reactant composition. When a `branches` list is given,
 each entry is appended as a further branch. Without it, the product side of the equation is the single
@@ -61,7 +61,9 @@ $$ {#eq-ch07-cross-sections-absorption}
 
 and converts the wavelength from Angstrom to nm. @eq-ch07-cross-sections-absorption is computed in
 `load_xsection_kin7` ({{< code src/photochem/load_xsection_kin7.cpp load_xsection_kin7 >}}). The YAML reader does
-neither: its columns are used as given.
+neither: its columns are used as given. After reading, branch 0 therefore holds the absorption that dissociates nothing for a
+KINETICS7 block, but whatever the deck supplies (often the total absorption) for a YAML block. @sec-ch07-actinic-flux
+states why this matters to a caller that builds an optical depth from branch 0.
 
 ### Numerical method
 

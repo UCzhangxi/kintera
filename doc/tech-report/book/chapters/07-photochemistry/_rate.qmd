@@ -69,6 +69,11 @@ flux (moving a leading wavelength dimension of the flux to the back) and integra
 The trapezoidal rule is second order in the grid spacing for a smooth integrand; the grid is the cross-section grid,
 so its accuracy depends on how well that grid resolves $\sigma F$ (not measured).
 
+Axes: the cache holds $\sigma_d$ with shape `(*T.shape, nwave, nreaction)` (from the header comment), and `forward`
+returns $J$ with shape `(*T.shape, nreaction)`. The leading axes are the batch axes of the temperature tensor; a flux of shape `(nwave)` is
+broadcast over them, and a flux of shape `(nwave, *T.shape)` is moved to wavelength-last before the product. These shapes
+were checked by the caller-contract run of @sec-ch07-actinic-flux.
+
 Verified by a run against kintera 2.6.5 built from the pin[^ch07-rate-src]: for a reaction with dissociation
 branch $\sigma_1 = (1, 2, 4) \times 10^{-18}$ on $\lambda = (100, 150, 200)$ nm and a uniform $F = 10^{14}$, `forward`
 returns $J = 0.0225\ \mathrm{s^{-1}}$, the trapezoidal value of the dissociation branch alone; unit weights return

@@ -1,0 +1,9 @@
+{
+  "eq-ch02-svp-cc": "Clausius-Clapeyron: the Clapeyron slope of the coexistence curve for an ideal vapor over a condensate of negligible volume.",
+  "eq-ch02-svp-kirchhoff": "Kirchhoff's law: with constant heat capacities the latent heat is linear in $T$, with intercept $L_0$ at $T = 0$.",
+  "eq-ch02-svp-beta-gamma": "The fit coefficients: $\\beta = L_0/(\\mathcal R T_3)$ and $\\gamma = \\Delta c/\\mathcal R$.",
+  "eq-ch02-svp-ideal": "Clausius-Clapeyron integrated from $(T_3, p_3)$ with the linear latent heat, written in $t = T/T_3$.",
+  "eq-ch02-svp-latent": "The latent heat a fit implies at any temperature, $\\mathcal R(\\beta T_3 - \\gamma T)$.",
+  "eq-ch02-svp-ideal-ddT": "The temperature derivative of the ideal form; $\\mathcal R T^2$ times it returns the latent heat.",
+  "eq-ch02-svp-antoine": "The Antoine equation, $\\log_{10}$ of the pressure in bar, converted to $\\ln$ of the pressure in Pa."
+}

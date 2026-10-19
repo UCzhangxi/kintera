@@ -59,7 +59,16 @@ third is $\int c_p\, \mathrm d T / T$ divided by $\mathcal R$, with $b_2$ its co
 $\int a_0 T^{-2}\,\mathrm d T = -a_0 T^{-1}$ and $\int a_0 T^{-3}\,\mathrm d T = -a_0 T^{-2}/2$;
 $\int a_1 T^{-1}\,\mathrm d T = a_1 \ln T$ and $\int a_1 T^{-2}\,\mathrm d T = -a_1 T^{-1}$; the powers
 $T^k$, $k \ge 0$, integrate to $T^{k+1}/(k+1)$ and $T^k/k$. The Gibbs energy is $g/(\mathcal R T) = h/(\mathcal R T)
-- s/\mathcal R$, computed in `nasa9_gibbs_RT` ({{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}).
+- s/\mathcal R$, computed in `nasa9_gibbs_RT` ({{< code src/thermo/nasa9.hpp nasa9_gibbs_RT >}}).[^ch02-nasa9-check]
+
+The heat-capacity path evaluates the enthalpy line multiplied by $T$, that is $h/\mathcal R = -a_0 T^{-1} + a_1 \ln T
++ a_2 T + a_3 T^2/2 + a_4 T^3/3 + a_5 T^4/4 + a_6 T^5/5 + b_1$, not $h/(\mathcal R T)$: `nasa9_h_R`
+({{< code src/thermo/eval_uhs.cpp nasa9_h_R >}}). The reason is how it is used. The NASA-9 internal energy of
+@sec-ch03-species-functions is the deviation $[h(T) - h(T_0)]/\mathcal R - (T - T_0)$ with $T_0 = 300$ K
+(`eval_nasa9`, {{< code src/thermo/eval_uhs.cpp eval_nasa9 >}}), a difference of two values of $h/\mathcal R$ in
+which $b_1$ cancels when $T$ and $T_0$ lie in the same range; it vanishes at $T_0$, so the polynomial and
+the constant-$c_v$ model coincide there and the reference offsets keep their meaning. Only the Gibbs energy uses
+the $h/(\mathcal R T)$ form.
 
 The file stores ten numbers per range, $a_0$ to $a_6$, an unused zero, $b_1$ and $b_2$, as four lines of five
 after the species name. `get_nasa9_db` ({{< code src/species.cpp get_nasa9_db >}}) keeps nine of them, dropping the
@@ -120,8 +129,26 @@ identical at the pin (`cmp` of the two files).
 
 : Tests of the NASA-9 data. {#tbl-ch02-nasa9-tests}
 
-The tolerances are read from the test files at the pin. No test checks the entropy line of @eq-ch02-nasa9-forms or the value of `nasa9_gibbs_RT` against reference data; the
-concurrency test checks only finiteness and agreement between threads. That is missing evidence.
+The tolerances are read from the test files at the pin. No ctest checks the entropy line of @eq-ch02-nasa9-forms or
+the value of `nasa9_gibbs_RT` against reference data; the concurrency test checks only finiteness and agreement
+between threads.
+
+The derivation check `check_ch5_equilibrium.py` (block c, `2 H2 + O2 <=> 2 H2O` at 3500 K) tests the enthalpy and
+entropy lines together, with the coefficients parsed from the package's `data/nasa9.dat`:[^ch02-nasa9-check]
+$\sum_n \nu_{n} (h_n/\mathcal R T - s_n/\mathcal R)$ from the second and third lines equals the library's
+$\Delta g/(\mathcal R T)$ to within $10^{-12}$ relative (round-off; PASS), and the van 't Hoff identity
+$\mathrm d \ln K / \mathrm d T = \Delta h/(\mathcal R T^2)$, with $\Delta h$ from the second line and the left side a
+central difference of `Nasa9LogK` with step $10^{-2}$ K, holds to $4.7 \times 10^{-10}$ relative, tolerance
+$10^{-6}$ (PASS). The first fixes $h - Ts$ and the second fixes $h$, so together they fix the entropy line. Only the
+high range at one temperature is exercised: the low range, the join at $T_{\mathrm{mid}}$ and agreement with
+published tables remain missing evidence.
+
+[^ch02-nasa9-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `EquilibriumOptions` built in
+    the script (H2, O2, H2O, one gas phase, standard pressure $10^5$ Pa); run:
+    `python doc/tech-report/derivation-checks/check_ch5_equilibrium.py` from a scratch directory, with `KINTERA_WT`
+    set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch5_equilibrium.out`,
+    block c, all PASS.]
 
 ### Limits
 

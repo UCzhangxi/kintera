@@ -1,0 +1,188 @@
+## What each solver holds fixed (`ThermoX`, `ThermoY`, `extrapolate_dlnp`, `Kinetics`) {#sec-ch01b-state}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: src/thermo/thermo_x.cpp, src/thermo/thermo_y.cpp, src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h,
+  src/thermo/extrapolate_ad.cpp, src/kinetics/kinetics.cpp, src/equilibrium/phase_equilibrate_tp.h
+status: draft
+author: jihenghu
+reviewer: Editor (requested); independent theory check requested
+-->
+
+### Summary
+
+A parcel of fixed elemental make-up has its state fixed by two thermodynamic variables once its reactions are in
+equilibrium. Each kintera solver chooses a different pair to hold fixed and returns the rest: temperature and
+pressure, or internal energy and volume, or entropy along a pressure step. This section states the pair for every
+entry point and the conservation laws its step obeys. It also gives the one consequence a model builder must not
+miss: a dynamical core that conserves energy and volume has to call the energy-and-volume path.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** One table of entry point, fixed variables and conserved quantities, @tbl-ch01b-state-table.
+
+**Data.** Amounts (concentrations or mole fractions) of gases and condensates; two state variables.
+
+**Placement.** Read before chapters 3 to 6; a map of their solvers.
+
+**Activation.** Not applicable: it describes the solvers; it has no option of its own.
+
+**Guarantee / limits.** Element totals exact for balanced reactions; energy, entropy to the solver tolerance.
+
+**Evidence.** The conservation lines of the chapter 3, 4 and 6 checks; see the Tests layer.
+:::
+
+Local symbols: $n_i$, amount of species $i$ (moles, or concentration $c_i$ per unit volume); $S$, the
+stoichiometric matrix with entries $S_{ir}$; $\xi_r$, extent of reaction $r$ [mol]; $a_{ei}$, number of atoms of element
+$e$ in species $i$; $U$, internal energy per volume [$\mathrm{J\,m^{-3}}$]; $u_i(T)$, molar internal energy of species
+$i$ [$\mathrm{J\,mol^{-1}}$]; $C_V = \sum_i c_i\, c_{v,i}$, heat capacity at constant volume per volume
+[$\mathrm{J\,m^{-3}\,K^{-1}}$].
+
+### Derivation
+
+**Step 1: counting.** A parcel has $N$ species amounts and two thermodynamic variables. The solvers do not move
+amounts freely. They move them along reactions, so every reachable composition is
+
+$$
+n = n^0 + S \xi ,
+$$ {#eq-ch01b-state-extent}
+
+with $n^0$ the starting amounts and one extent $\xi_r$ per reaction. Each active reaction at equilibrium adds one
+condition: its reaction Gibbs energy is zero, or, for a phase change, its saturation condition holds
+(@sec-ch04-conditions). With $R$ active reactions there are $R$ unknown extents and $R$ conditions, so once the
+starting amounts and the two thermodynamic variables are given, the system is square and determines the state.
+Inactive reactions, such as a condensate that is absent and stays absent, are inequalities, not conditions; that is
+why the phase solvers are active-set methods (@sec-ch04-active-set). @eq-ch01b-state-extent is the update the
+saturation adjustment applies in `equilibrate_tp` ({{< code src/thermo/equilibrate_tp.h >}}), where the negated
+active columns of the stoichiometry form the constraint matrix of the least-squares step, and in
+`phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h >}}).
+
+**Step 2: elements are conserved by every step.** A reaction is balanced when it has as many atoms of each element
+on both sides, $\sum_i a_{ei} S_{ir} = 0$ for every element $e$ and reaction $r$. Applying the element matrix to
+@eq-ch01b-state-extent,
+
+$$
+\sum_i a_{ei}\, n_i = \sum_i a_{ei}\, n_i^0 + \sum_r \Big(\sum_i a_{ei} S_{ir}\Big) \xi_r = \sum_i a_{ei}\, n_i^0 ,
+$$ {#eq-ch01b-state-elements}
+
+for any extents, so element totals are conserved exactly by every solver that moves along reactions, the kinetics
+included (@sec-ch06-mass-action). No code at the pin checks that the reactions of a card are balanced (searched in
+`src`), so @eq-ch01b-state-elements holds for balanced cards, which is the input's responsibility.
+
+**Step 3: the two fixed variables of each solver.**
+
+- *Temperature and pressure.* `ThermoX.forward` ({{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}}) takes $T$,
+  $p$ and mole fractions and returns equilibrium mole fractions. At fixed $T$ and $p$ the equilibrium is the minimum
+  of the Gibbs energy subject to @eq-ch01b-state-elements (@sec-ch04-conditions). The amounts change, $T$ and $p$ do
+  not, and neither $U$ nor the volume is conserved.
+- *Internal energy and volume.* `ThermoY.forward` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}) takes
+  density, internal energy per volume and mass fractions. The volume is fixed by the density, and $U$ is held.
+  Temperature is an output: after every change of the amounts, `equilibrate_uv`
+  ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}) solves $\sum_i c_i u_i(T) = U$ for $T$ by Newton's method,
+
+$$
+T \leftarrow T + \frac{U - \sum_i c_i\, u_i(T)}{\sum_i c_i\, \mathrm{d}u_i/\mathrm{d}T} ,
+$$ {#eq-ch01b-state-t-of-u}
+
+  whose denominator is $C_V$ (@sec-ch04-equilibrate-uv).
+- *Entropy along a pressure step.* `extrapolate_dlnp`
+  ({{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}}) moves the parcel to $p\, e^{\Delta \ln p}$
+  and finds the temperature at which the molar entropy equals its starting value (plus an optional prescribed
+  change). With rain-out the target is the entropy left in the gas after the condensate leaves with its own entropy
+  (@sec-ch03-adiabat).
+- *Internal energy and volume, in time.* With `evolve_temperature`, the kinetics Jacobian
+  ({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}) differentiates the rates at fixed $U$ and volume,
+  $(\partial T/\partial c_k)_U = -u_k/C_V$ (@sec-ch06-jacobian). Without it the rates are differentiated at fixed
+  $T$.
+- *Temperature, pressure and elements, for chemical equilibrium.* The log-K solver of @sec-ch05 holds $T$, $p$ and
+  the element totals, with every amount kept above a floor ({{< code src/equilibrium/phase_equilibrate_tp.h >}}).
+
+| entry point | holds fixed | returns | conserves exactly |
+|---|---|---|---|
+| `ThermoX.forward` | $T$, $p$ | equilibrium mole fractions | elements |
+| `ThermoY.forward` | $U$, $V$ | amounts, $T$ | elements; $U$ to the $T$ tolerance |
+| `extrapolate_dlnp` | molar $s$ on the new $p$ | $T$, mole fractions | elements (reversible step) |
+| `Kinetics` with `evolve_temperature` | $U$, $V$ (linearised) | rates, Jacobian | elements |
+| log-K solver (@sec-ch05) | $T$, $p$ | equilibrium amounts | elements |
+
+: The variables each solver holds fixed. {#tbl-ch01b-state-table}
+
+**Step 4: consequence for coupling.** A finite-volume dynamical core advances the conserved densities, mass and
+total energy, in a cell of fixed volume. What it hands to the thermodynamics is therefore $\rho$, $U$ and the mass
+fractions, and the adjustment it needs is the one at fixed $U$ and $V$. Calling the temperature-and-pressure path
+with the core's $T$ and $p$ instead holds $T$ fixed while vapour condenses. The energy then changes by
+
+$$
+\Delta U = \sum_i u_i(T)\, \Delta c_i = \sum_r \Big(\sum_i S_{ir}\, u_i(T)\Big) \xi_r = -\sum_r L_r\, \xi_r ,
+$$ {#eq-ch01b-state-energy-change}
+
+with $L_r = -\sum_i S_{ir} u_i$ the latent energy of reaction $r$ (positive for condensation). This is not zero
+unless no latent energy is released. The fixed-$T$ path does not conserve energy, and the energy-conserving coupling
+uses `ThermoY.forward` (@sec-ch14-saturation).
+
+No published derivation is quoted. The steps above are standard equilibrium thermodynamics, here matched to the code
+at the pin.
+
+### Numerical method
+
+No numerical method of its own: each solver's iteration is described in its chapter (@sec-ch04-equilibrate-tp,
+@sec-ch04-equilibrate-uv, @sec-ch03-adiabat, @sec-ch06-jacobian, @sec-ch05-newton). The figure of the parcel and its
+solvers is not provided: the figure module is not written yet.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| fixed $T$, $p$ | {{< code src/thermo/thermo_x.cpp ThermoXImpl::forward >}} | `ThermoXImpl::forward` | always |
+| fixed $U$, $V$ | {{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}} | `ThermoYImpl::forward` | always |
+| $T$ from $U$ | {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}} | `equilibrate_uv` | `uv-solver` |
+| entropy step | {{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}} | `extrapolate_dlnp` | `rainout` |
+| fixed-$U$ Jacobian | {{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}} | `KineticsImpl::jacobian` | `evolve_temperature` |
+
+: Code map of the solver entry points. {#tbl-ch01b-state-code}
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| check `check_ch4_tp.py` (a) | element totals O, N, S at fixed $T$, $p$ | $10^{-14}$ rel. | round-off |
+| check `check_ch4_uv.py` (a), (b) | $U$ and water conserved at fixed $U$, $V$ | $10^{-10}$, $10^{-14}$ rel. | solver tolerance; round-off |
+| check `check_ch3_adiabat.py` (4b) | molar entropy over a saturated pressure step | $10^{-5}$ J mol$^{-1}$ K$^{-1}$ | solver tolerance |
+| check `check_ch6_jacobian.py` | the fixed-$U$ Jacobian against a fixed-$U$ difference | $10^{-8}$ rel. | central difference |
+
+: Checks of the fixed variables. {#tbl-ch01b-state-tests}
+
+The checks are collected here, not repeated. At fixed $T$ and $p$ the element totals change by 0 (to the printed
+precision).[^ch01b-tp] At fixed $U$ and $V$ the energy changes by at most $3.3 \times 10^{-16}$ and the water by at most
+$2.2 \times 10^{-16}$ (relative), with both UV solvers.[^ch01b-uv] Over a saturated step of $\Delta \ln p = -0.01$ the
+molar entropy changes by $4.6 \times 10^{-7}\ \mathrm{J\,mol^{-1}\,K^{-1}}$.[^ch01b-ad] The fixed-$U$ Jacobian agrees
+with a difference quotient taken at fixed $U$ to $1.5 \times 10^{-10}$.[^ch01b-jac] @eq-ch01b-state-energy-change has no
+check of its own.
+
+[^ch01b-tp]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch4_tp.py` from a scratch directory, with
+    `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch4_tp.out`, block (a), element lines.]
+
+[^ch01b-uv]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the cards inside the script; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch4_uv.py` from a scratch directory, with
+    `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch4_uv.out`, blocks (a) and (b), `dU` and `dWater`.]
+
+[^ch01b-ad]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch3_adiabat.py` from a scratch directory, with
+    `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch3_adiabat.out`, line `4b |ds|`.]
+
+[^ch01b-jac]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-species card inside the script;
+    run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_jacobian.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch6_jacobian.out`, last line.]
+
+### Limits
+
+- Element conservation needs balanced reactions; the code does not check the balance.
+- The fixed-$U$ statements hold to the tolerance of the temperature inversion and of the solver, not exactly;
+  at the pin `check_ch4_uv.py` records an expected failure of the partition method near 300 K (an open defect of
+  @sec-ch04-equilibrate-uv).
+- The kinetics holds $U$ only in its linearisation. A step of @sec-ch06-implicit is not followed by a temperature
+  update from $U$ inside kintera; the caller does that.

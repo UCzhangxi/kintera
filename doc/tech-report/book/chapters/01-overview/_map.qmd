@@ -30,6 +30,7 @@ own scheme table, which lists its sections with their options, defaults and test
 
 | chapter | look here for | main source |
 |---|---|---|
+| @sec-ch01b | what each solver holds fixed; the shared saturation and energy functions | `src/thermo/`, `src/kinetics/` |
 | @sec-ch02 | species, molar masses, NASA-9 data, vapour pressure | `src/species.*`, `src/vapors/` |
 | @sec-ch03 | equation of state, thermodynamic functions, adiabats | `src/thermo/` |
 | @sec-ch04 | saturation adjustment of several condensables | `src/thermo/equilibrate_*` |

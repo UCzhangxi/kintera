@@ -97,7 +97,8 @@ Input contract, as a caller builds it:
 
 ```python
 T = atm2d.build_transport_matrix(state, kzz, binary_diffusion=D, molecular_weights=mu,
-                                 density=n, form="mr_diffusion")   # D: (ncol, nlyr, ns, ns); mu: (ns,)
+                                 density=n, form="mr_diffusion")
+# D: (ncol, nlyr, ns, ns); mu: (ns,)
 ```
 
 with $D$ in cm$^2$ s$^{-1}$, $\mu$ in g mol$^{-1}$, lengths in cm and `state.gravity` in cm s$^{-2}$ (the defaults), or

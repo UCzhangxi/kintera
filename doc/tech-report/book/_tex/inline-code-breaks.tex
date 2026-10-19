@@ -1,7 +1,8 @@
 % The PDF template of the report (STYLE 10.9: no overfull line over 10 pt). Three parts: inline code may
-% break after _ / : and @; running heads show the chapter title; long hex strings may break inside.
+% break after _ / : @ and dots, and at CamelCase boundaries; running heads show the chapter title;
+% long hex strings may break inside.
 %
-% Inline code may break after _ / : and @.
+% Inline code may break after _ / : @ and dots, and at CamelCase word boundaries.
 % Pandoc writes inline code as \texttt{...}. This wraps \texttt so that every \_, /, : and @ in its
 % argument is followed by an empty discretionary: a line break with no hyphen, at the penalty
 % \exhyphenpenalty, taken only where the line needs it. A C++ scope :: stays together and breaks
@@ -23,6 +24,11 @@
   {
     \tl_set:Nn \l__kintera_tt_tl {#1}
     \tl_replace_all:Nnn \l__kintera_tt_tl { \_ } { \_ \__kintera_tt_break: }
+    % Test-suite separators and CamelCase word boundaries are legal break points.
+    % Empty discretionaries preserve the identifier spelling (no visible hyphen).
+    \regex_replace_all:nnN { ([a-z]) ([A-Z]) }
+      { \1 \c{__kintera_tt_break:} \2 } \l__kintera_tt_tl
+    \__kintera_tt_after:n { . }
     \__kintera_tt_after:n { / }
     \__kintera_tt_after:n { @ }
     \__kintera_tt_after:n { : }

@@ -351,20 +351,15 @@ torch::Tensor ThermoYImpl::forward(torch::Tensor rho, torch::Tensor intEng,
   auto cv_const = cv0 / inv_mu;      // J/(kg K) -> J/(mol K)
   auto intEng_extra = options->intEng_R_extra();
 
-  // use_h2_cp: VT->U and VU->T give H2 its rotational energy (eval_intEng_R),
-  // u = R (uref + T0 cref + e(T)); hand the solver the same energy.
-  if (options->use_h2_cp()) {
-    auto names = options->species();
-    for (int i = 0; i < (int)names.size() && i < (int)intEng_extra.size();
-         ++i) {
-      if (names[i] != "H2") continue;
-      intEng_offset[i] =
-          (options->uref_R()[i] + kH2RotTref * options->cref_R()[i]) *
-          constants::Rgas;
-      cv_const[i] = 0.;
-      intEng_extra[i] = "h2_rot_" + options->h2_cp_mode();
-      break;
-    }
+  // use_h2_cp: hand the solver the H2 energy of eval_intEng_R
+  auto names = options->species();
+  int h2 = std::find(names.begin(), names.end(), "H2") - names.begin();
+  if (options->use_h2_cp() && h2 < (int)intEng_extra.size()) {
+    intEng_offset[h2] =
+        (options->uref_R()[h2] + kNasa9Tref * options->cref_R()[h2]) *
+        constants::Rgas;
+    cv_const[h2] = 0.;
+    intEng_extra[h2] = "h2_rot_" + options->h2_cp_mode();
   }
 
   // call the equilibrium solver

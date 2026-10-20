@@ -127,12 +127,8 @@ def project_atomic_budget(
         hog_atoms = torch.where(
             hog_mask, per_species_atoms, torch.zeros_like(per_species_atoms)
         )
-        # Guard only the no-hog cells (hog_total == 0, masked out below); a
-        # floor of 1 would make the split depend on the concentration units.
         hog_total = hog_atoms.sum(dim=-1, keepdim=True)
-        hog_fraction = hog_atoms / torch.where(
-            hog_total > 0, hog_total, torch.ones_like(hog_total)
-        )
+        hog_fraction = hog_atoms / torch.where(hog_total > 0, hog_total, 1.0)
         atoms_to_subtract = hog_fraction * excess
         counts_safe = counts_view.clamp(min=1.0)
         delta_c = atoms_to_subtract / counts_safe

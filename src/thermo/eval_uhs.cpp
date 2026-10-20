@@ -3,6 +3,7 @@
 
 #include <kintera/utils/utils_dispatch.hpp>
 
+#include "h2_rotation.h"
 #include "log_svp.hpp"
 #include "thermo.hpp"
 
@@ -19,7 +20,6 @@ namespace {
 // Internal energy e/R = h/R - T (ideal gas); the deviation (h(T)-h(T0)) -
 // (T-T0) is referenced to T0 so the NASA-9 and constant-cv thermo coincide at
 // T0 (continuity; preserves uref_R/sref_R latent-heat references).
-constexpr double kNasa9Tref = 300.0;  // matches ThermoOptions default Tref
 
 inline torch::Tensor nasa9_cp_R(torch::Tensor const& a,
                                 torch::Tensor const& T) {
@@ -80,9 +80,6 @@ inline bool nasa9_on(SpeciesThermo const& op) {
 // cv/R = 3/2 (trans) + cv_rot/R ; cp/R = cv/R + 1 (ideal gas); e/R = 3/2 T +
 // theta*<m> (m = J(J+1)); internal energy referenced to T0 like NASA-9
 // (continuity).
-constexpr double kThetaRot =
-    87.55;  // K, H2 rotational temperature (B = 60.853 cm^-1)
-constexpr int kJmax = 40;
 
 struct H2Thermo {
   torch::Tensor cp_R;  // (..., nsp), H2 column = cp/R

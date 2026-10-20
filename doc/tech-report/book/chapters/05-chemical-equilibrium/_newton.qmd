@@ -52,9 +52,13 @@ $$
 $$ {#eq-ch05-newton-jacobian}
 
 `phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}) builds
-`phase_stoich` ($\nu_{\pi k}$) once and then `jac[j * nreaction + k]` exactly as in @eq-ch05-newton-jacobian. The check
-`newton_check.py` compares it with central differences of the residual on a three-phase example (`[C1]`), and shows
-that a one-species phase contributes nothing: its activity is 1 whatever its amount (`[C3]`). The Newton direction
+`phase_stoich` ($\nu_{\pi k}$) once and then `jac[j * nreaction + k]` exactly as in @eq-ch05-newton-jacobian.
+`check_ch5_equilibrium.py` line d checks the code itself. On the three-phase system of `newton_check.py`, with
+`max-iter: 1`, the gain kintera returns (the Jacobian at the input) equals @eq-ch05-newton-jacobian to 0.0 relative
+difference.[^ch05-newton-check] `newton_check.py` is a numpy transcription of the code's formula, not a call to the
+built solver. Its line `[C1]` checks that the formula is the derivative of the residual (central differences, on the
+same system), and `[C3]` shows that a one-species phase contributes nothing, because its activity is 1 whatever its
+amount. The Newton direction
 solves $\mathsf J\boldsymbol\delta = -\mathbf r$. The amounts after a step of scale $\lambda$ must stay above the floor:
 
 $$
@@ -66,7 +70,12 @@ $$ {#eq-ch05-newton-bounds}
 
 The second line, at $\lambda = 1$, is the constraint form $\mathsf C\boldsymbol\delta \le \mathbf d$ of
 @sec-ch10-newton, with $\mathsf C = -\mathsf S$ and $\mathbf d = \boldsymbol{\mathcal N} - \mathcal N_{\mathrm{floor}}$.
-The code sets these rows as `constraints` and `bounds`.
+The code sets these rows as `constraints` and `bounds`. In this solver they never change the direction. The slack
+$\mathbf d$ is strictly positive in every state the iteration sees: the input passes the status-1 test
+$\mathcal N_n > \mathcal N_{\mathrm{floor}}$, every accepted trial passes the same test, and in floating point
+$x > f$ implies $x - f > 0$. `constrained_newton_step` leaves the direct direction only for a bound with no slack, or
+when the LU solve fails (an exactly zero pivot) or returns non-finite values. So here the least-squares fallback runs
+only in the last case. The floor acts in the line search instead (Numerical method, step 6).
 
 **Why a direct solve.** `constrained_newton_step` factorises $\mathsf J$ itself rather than forming the normal
 equations $\mathsf J^{\mathsf T}\mathsf J\boldsymbol\delta = -\mathsf J^{\mathsf T}\mathbf r$. The singular values of
@@ -84,18 +93,20 @@ $$
 so every non-zero residual shrinks in proportion, and $\max_r|r_r|$ falls for every small enough $\lambda$. Every
 amount is above the floor before the step, so small steps also keep the amounts above it. In exact arithmetic the
 halving loop therefore accepts a step whenever the direction is the Newton direction, provided the decrease sets in
-above the smallest scale, $10^{-12}$. When the bounds force the
-constrained least-squares direction, $\mathsf J\boldsymbol\delta \ne -\mathbf r$, and no decrease is guaranteed. The
-loop can then end with status 4. The merit function is the largest residual, and any decrease is accepted. Without
-a sufficient-decrease condition, a sequence of accepted steps can stall at a positive error. The vanishing phase of
-@sec-ch05-diagnostics is such a case.[^ch05-newton-refs]
+above the smallest scale, $10^{-12}$, and the trial stays above the floor at that scale. A phase that should vanish
+breaks the second condition. The Newton step drives its amount below the floor, and the floor test rejects every
+scale down to $10^{-12}$, so the loop ends with status 4 (@sec-ch05-diagnostics). The merit function is the largest
+residual, and any decrease is accepted. A sufficient-decrease (Armijo) test would not change this case, because the
+step is cut by the floor, not by a weak decrease.[^ch05-newton-refs] `check_ch5_equilibrium.py` line e reproduces
+kintera with a numpy copy of the iteration that has a plain LU direction and no least-squares fallback. The amounts,
+status, step count and error agree exactly, for a converged start and for a start whose liquid must vanish.
 
 ### Numerical method
 
 `phase_equilibrate_tp` ({{< code src/equilibrium/phase_equilibrate_tp.h phase_equilibrate_tp >}}) runs these steps in
 each cell:
 
-1. **Input checks.** A non-positive temperature or pressure, an empty species or reaction list, a gas phase index out
+1. **Input checks.** A non-positive temperature or pressure, an empty species, reaction or phase list, a gas phase index out
    of range, or any input amount not above `mole-floor` returns status 1 at once, with the input copied to the output.
 2. **Target.** The stop test is $\max_r |r_r| \le \max(\ln(1 + \texttt{ftol}), 4\,\epsilon_{\mathrm{mach}})$; see
    @sec-ch05-diagnostics.
@@ -106,7 +117,8 @@ each cell:
    with the rows of @eq-ch05-newton-bounds. It solves $\mathsf J\boldsymbol\delta = -\mathbf r$ directly and keeps that
    direction unless it leaves a bound with no slack, and only then solves the constrained least-squares problem
    (@sec-ch10-newton, @sec-ch10-kkt), with regularisation $10^{-12}$ and at most `max-iter` inner iterations. A
-   failure there stops the solve with status 3.
+   failure there stops the solve with status 3. Every slack is positive here (Derivation), so the fallback runs only
+   when the LU solve fails or returns non-finite values.
 6. **Line search.** Try $\lambda = 1, \tfrac12, \tfrac14, \dots$ down to $10^{-12}$. A trial is formed by
    `constrained_newton_trial` ({{< code src/math/constrained_newton.h constrained_newton_trial >}}) and accepted when
    every amount is finite and above the floor and the largest residual is smaller than before. If no scale is
@@ -166,6 +178,12 @@ recorded by the test (hypothesis: the direct one). Both tests pass on both build
 Tests). No test makes the line search or the least-squares fallback run, and no test checks element conservation on
 a multiphase case.
 
+[^ch05-newton-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-phase system of
+`src/kintera_report/ch05/checks/newton_check.py` (line d) and N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase
+at 300 K and $10^5$ Pa (lines d and e); run: `python derivation-checks/check_ch5_equilibrium.py` from a scratch
+directory with `KINTERA_WT` set to a build tree at the pin: lines d and e PASS; CPU, double; kintera source build at the
+pin, Python 3.11.13, torch 2.10.0+cu126, numpy.]
+
 [^ch05-newton-refs]: [source: J. Nocedal and S. J. Wright, Numerical Optimization, 2nd ed., Springer (2006),
 <https://doi.org/10.1007/978-0-387-40065-5>, chapter 11 (Newton's method for nonlinear equations, merit functions
 and line searches).]
@@ -183,5 +201,6 @@ CUDA 12.6.85; a measurement outside the suite, not a committed check.]
   with status 4 for reasons other than a vanishing phase. How often that happens on hard systems is not measured.
 - **At most 64 components** (`EquilibriumOptionsImpl::validate`), and the reactions must be linearly independent
   (@sec-ch05-options).
-- **The constraint rows are fixed at the floor.** A species that should reach zero stays at about the floor and blocks
-  convergence (@sec-ch05-diagnostics).
+- **A species cannot reach zero.** The floor test of the line search rejects every step that would take a species
+  below `mole-floor`. A species that should vanish stays just above the floor, and the cell ends with status 4
+  (@sec-ch05-diagnostics).

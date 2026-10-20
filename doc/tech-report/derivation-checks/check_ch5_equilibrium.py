@@ -3,11 +3,19 @@
 a. two-phase N2 + H2O(g) | H2O(l) vs analytic n_v = n_N2 p_sat / (p - p_sat);
 b. Newton Jacobian J = sum nu (nu/n - nu_phase/N_phase) vs central FD of the residual;
 c. 2 H2 + O2 <=> 2 H2O with Nasa9LogK at 3500 K: residual, H/O conservation,
-   van 't Hoff d lnK/dT = Delta h / (R T^2) with h/RT from the bundled NASA-9 table.
+   van 't Hoff d lnK/dT = Delta h / (R T^2) with h/RT from the bundled NASA-9 table;
+d. kintera's returned gain against the Jacobian formula: at the input (max-iter 1, three-phase system of
+   src/kintera_report/ch05/checks/newton_check.py), at the iterate before the last (status 0) and at the
+   returned amounts (status 4);
+e. a numpy copy of the iteration of phase_equilibrate_tp with a plain LU direction and no least-squares
+   fallback against kintera, for a converged start and a start whose liquid must vanish (status 4): amounts,
+   status, steps, error, smallest slack n - floor, and why the last halving loop rejects every scale.
 """
 import math
 import os
 import warnings
+
+import numpy as np
 
 from common import version_line, kintera, torch
 from kintera import EquilibriumOptions, EquilibriumTP, nasa9_gibbs_rt
@@ -128,7 +136,125 @@ def check_c():
     print(f"  van 't Hoff: FD dlnK/dT={fd:.10e} Delta h/(R T^2)={vh:.10e} rel={relv:.1e} tol 1e-6 {pf(relv <= 1e-6)}")
 
 
+def jac_matrix(n, stoich, phase):
+    """J[j][k] = sum_i S[i][j] (S[i][k] / n_i - S_phase[phase(i)][k] / N_phase(i)), as in phase_equilibrate_tp."""
+    n, stoich, phase = np.asarray(n, float), np.asarray(stoich, float), np.asarray(phase)
+    tot = np.bincount(phase, weights=n)
+    ps = np.zeros((phase.max() + 1, stoich.shape[1]))
+    for i, p in enumerate(phase):
+        ps[p] += stoich[i]
+    return np.array([[sum(stoich[i, j] * (stoich[i, k] / n[i] - ps[phase[i], k] / tot[phase[i]])
+                          for i in range(len(n))) for k in range(stoich.shape[1])] for j in range(stoich.shape[1])])
+
+
+def residual_vec(n, stoich, phase, gas, P, p0, lnk):
+    n, phase = np.asarray(n, float), np.asarray(phase)
+    tot = np.bincount(phase, weights=n)
+    la = np.log(n / tot[phase]) + np.where(phase == gas, math.log(P / p0), 0.0)
+    return -np.asarray(lnk, float) + np.asarray(stoich, float).T @ la
+
+
+WATER = dict(names=["N2", "H2O", "H2O(l)"], phases=["gas", "liquid"], pids=[0, 0, 1],
+             rxns=["H2O <=> H2O(l)"], stoich=[[0.0], [-1.0], [1.0]])
+
+
+def solve(card, T, P, p0, n0, lnk, max_iter=None):
+    op = (EquilibriumOptions().components(card["names"]).phases(card["phases"]).phase_ids(card["pids"])
+          .reactions(card["rxns"]).gas_phase(0).standard_pressure(p0))
+    if max_iter is not None:
+        op.max_iter(max_iter)
+    n, gain, dg = EquilibriumTP(op)(torch.tensor(T), torch.tensor(P), torch.tensor(n0), torch.tensor(lnk))
+    return op, n.numpy(), gain.numpy().reshape(len(lnk), len(lnk)), dg.numpy()
+
+
+def water_lnk(T, p0):
+    return [math.log(p0 / math.exp(h2o_ideal(T)))]
+
+
+def check_d():
+    print("== d. returned gain vs the Jacobian formula (kintera's gain, not a copy)")
+    three = dict(names=["A", "B", "C", "A_l", "B_l", "S"], phases=["gas", "liquid", "solid"],
+                 pids=[0, 0, 0, 1, 1, 2], rxns=["A <=> A_l", "B <=> B_l", "A + B <=> C", "C <=> S"],
+                 stoich=[[-1, 0, -1, 0], [0, -1, -1, 0], [0, 0, 1, -1], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+    n0 = [0.6, 0.5, 0.1, 0.2, 0.3, 0.05]
+    _, _, gain, dg = solve(three, 300.0, 3.0e5, 1.0e5, n0, [0.7, -0.3, 2.0, 0.4], max_iter=1)
+    J = jac_matrix(n0, three["stoich"], three["pids"])
+    rel = np.max(np.abs(gain - J)) / np.max(np.abs(J))
+    print(f"  three-phase system, max-iter 1 (gain formed at the input): max rel |gain - J(n0)|={rel:.1e}"
+          f" tol 1e-14 {pf(rel <= 1e-14)}  (status {dg[0]:.0f})")
+    T, P, p0 = 300.0, 1.0e5, 1.0e5
+    lnk = water_lnk(T, p0)
+    _, n, gain, dg = solve(WATER, T, P, p0, [1.0, 0.05, 0.05], lnk)
+    k = int(dg[1])
+    _, nprev, _, dgp = solve(WATER, T, P, p0, [1.0, 0.05, 0.05], lnk, max_iter=k - 1)
+    jp = jac_matrix(nprev, WATER["stoich"], WATER["pids"])[0, 0]
+    jn = jac_matrix(n, WATER["stoich"], WATER["pids"])[0, 0]
+    rel = abs(gain[0, 0] / jp - 1)
+    print(f"  water card, status {dg[0]:.0f} after {k} steps: gain={gain[0, 0]:.13e} J(iterate {k - 1}, status"
+          f" {dgp[0]:.0f})={jp:.13e} rel={rel:.1e} tol 1e-14 {pf(rel <= 1e-14)}; J(returned)={jn:.13e}"
+          f" rel {abs(gain[0, 0] / jn - 1):.1e}")
+    _, n, gain, dg = solve(WATER, T, P, p0, [1.0, 0.01, 0.001], lnk)
+    jn = jac_matrix(n, WATER["stoich"], WATER["pids"])[0, 0]
+    rel = abs(gain[0, 0] / jn - 1)
+    print(f"  water card, start (1, .01, .001), status {dg[0]:.0f}: gain={gain[0, 0]:.13e} J(returned)={jn:.13e}"
+          f" rel={rel:.1e} tol 1e-14 {pf(rel <= 1e-14)}")
+
+
+def newton_copy(n0, stoich, phase, gas, P, p0, lnk, floor, ftol, max_iter):
+    """phase_equilibrate_tp with the direction from a plain LU solve and no least-squares fallback."""
+    S = np.asarray(stoich, float)
+    n = np.asarray(n0, float)
+    target = max(math.log1p(ftol), 4.0 * np.finfo(float).eps)
+    status, it, minslack, last = 2, max_iter, np.inf, (0, 0)
+    for k in range(max_iter):
+        err = np.max(np.abs(residual_vec(n, S, phase, gas, P, p0, lnk)))
+        if err <= target:
+            status, it = 0, k
+            break
+        J = jac_matrix(n, S, phase)
+        minslack = min(minslack, np.min(n - floor))
+        step = np.linalg.solve(J, -residual_vec(n, S, phase, gas, P, p0, lnk))
+        scale, accepted, nfloor, nworse = 1.0, False, 0, 0
+        while scale >= 1e-12:
+            trial = n + scale * (S @ step)
+            if np.all(np.isfinite(trial)) and np.all(trial >= 0) and np.all(trial > floor):
+                if np.max(np.abs(residual_vec(trial, S, phase, gas, P, p0, lnk))) < err:
+                    n, accepted = trial, True
+                    break
+                nworse += 1
+            else:
+                nfloor += 1
+            scale *= 0.5
+        if not accepted:
+            status, it, last = 4, k, (nfloor, nworse)
+            break
+    err = np.max(np.abs(residual_vec(n, S, phase, gas, P, p0, lnk)))
+    return n, status, it, math.exp(err) - 1.0, minslack, last
+
+
+def check_e():
+    print("== e. numpy copy of the iteration, plain LU direction, no least-squares fallback, vs kintera")
+    T, P, p0 = 300.0, 1.0e5, 1.0e5
+    lnk = water_lnk(T, p0)
+    for n0 in ([1.0, 0.05, 0.05], [1.0, 0.01, 0.001]):
+        op, n, _, dg = solve(WATER, T, P, p0, n0, lnk)
+        m, st, it, err, minslack, last = newton_copy(n0, WATER["stoich"], WATER["pids"], 0, P, p0, lnk,
+                                                     op.mole_floor(), op.ftol(), op.max_iter())
+        dn = np.max(np.abs(m - n))
+        same = st == int(dg[0]) and it == int(dg[1]) and dn == 0.0
+        print(f"  start {tuple(n0)}: kintera status {dg[0]:.0f} steps {dg[1]:.0f} error {dg[2]:.3e};"
+              f" copy status {st} steps {it} error {err:.3e}; max |n_kintera - n_copy|={dn:.1e}"
+              f" {pf(same)}")
+        print(f"    smallest slack n - floor along the path={minslack:.2e} mol (> 0: the fallback test"
+              f" d <= 0 never holds) {pf(minslack > 0)}")
+        if st == 4:
+            print(f"    returned liquid={n[2]:.3e} mol; last halving loop: {last[0]} scales rejected by the floor"
+                  f" test, {last[1]} by no decrease of max|r| (INFO)")
+
+
 if __name__ == "__main__":
     print(version_line())
     check_ab()
     check_c()
+    check_d()
+    check_e()

@@ -1,4 +1,4 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.6.dev0+g0d9f67f97.d20261018 from $KINTERA_WT/../kt0d-cpu.py/kintera/__init__.py
 == a. two-phase vapour-liquid, T=300 K, p=1e5 Pa, n0=(1, .05, .05)
   n_v=3.66933196081383e-02 analytic=3.66933196082227e-02 rel=2.3e-12 tol 1e-10 PASS
   status=0 (0 = converged) PASS; iterations=4; reported error=2.2e-12 <= ftol=1e-08 PASS
@@ -11,3 +11,14 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
   H rel=0.0e+00 tol 1e-14 PASS; O rel=2.2e-16 tol 1e-14 PASS
   table parse: Delta g/RT table=-3.326765290687 library=-3.326765290687 rel=0.0e+00 tol 1e-12 PASS
   van 't Hoff: FD dlnK/dT=-4.9501006409e-03 Delta h/(R T^2)=-4.9501006385e-03 rel=4.7e-10 tol 1e-6 PASS
+== d. returned gain vs the Jacobian formula (kintera's gain, not a copy)
+  three-phase system, max-iter 1 (gain formed at the input): max rel |gain - J(n0)|=0.0e+00 tol 1e-14 PASS  (status 3)
+  water card, status 0 after 4 steps: gain=2.6288369104611e+01 J(iterate 3, status 2)=2.6288369104611e+01 rel=0.0e+00 tol 1e-14 PASS; J(returned)=2.6288311745887e+01 rel 2.2e-06
+  water card, start (1, .01, .001), status 4: gain=8.9919971225634e+01 J(returned)=8.9919971225634e+01 rel=0.0e+00 tol 1e-14 PASS
+== e. numpy copy of the iteration, plain LU direction, no least-squares fallback, vs kintera
+  start (1.0, 0.05, 0.05): kintera status 0 steps 4 error 2.217e-12; copy status 0 steps 4 error 2.217e-12; max |n_kintera - n_copy|=0.0e+00 PASS
+    smallest slack n - floor along the path=3.44e-02 mol (> 0: the fallback test d <= 0 never holds) PASS
+  start (1.0, 0.01, 0.001): kintera status 4 steps 19 error 2.253e+00; copy status 4 steps 19 error 2.253e+00; max |n_kintera - n_copy|=0.0e+00 PASS
+    smallest slack n - floor along the path=3.03e-15 mol (> 0: the fallback test d <= 0 never holds) PASS
+    returned liquid=3.027e-15 mol; last halving loop: 40 scales rejected by the floor test, 0 by no decrease of max|r| (INFO)
+Warning: leastsq_kkt maximum number of iterations reached (1).

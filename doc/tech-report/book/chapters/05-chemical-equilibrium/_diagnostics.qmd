@@ -61,7 +61,7 @@ returned amounts and writes:
 | `diagnostics[..., 0]` | meaning | returned amounts |
 |---|---|---|
 | 0 | converged: $\max_r |r_r|$ at or below the target | the solution |
-| 1 | input rejected: $T$ or $p$ not positive, empty lists, gas phase out of range, or an amount not above `mole-floor` | the input |
+| 1 | input rejected: $T$ or $p$ not positive, an empty species, reaction or phase list, gas phase out of range, or an amount not above `mole-floor` | the input |
 | 2 | `max-iter` iterations without meeting the target | the last iterate |
 | 3 | the bounded Newton step failed (@sec-ch10-newton) | the last iterate |
 | 4 | no step scale down to $10^{-12}$ reduced the largest residual | the last iterate |
@@ -71,17 +71,25 @@ returned amounts and writes:
 `diagnostics[..., 1]` is the number of accepted Newton steps: 0 for a cell already at equilibrium or rejected, and
 `max-iter` for status 2. `diagnostics[..., 2]` is $\varepsilon$ at the returned amounts, 0 for status 1. The gain is the
 Jacobian @eq-ch05-newton-jacobian of the last iteration that built one, evaluated before that iteration's step. It is
-all zeros when no iteration built one, that is, for status 1 and for a cell already at equilibrium.
-`check_ch5_equilibrium.py` line b evaluates @eq-ch05-newton-jacobian at the converged state of the vapour-liquid
-case of @sec-ch05-conditions and matches central differences of the residual to $2.1\times10^{-10}$ (tolerance
-$10^{-8}$). The returned gain, 26.28837, differs from that converged-state value, 26.28831, in the seventh significant digit. That
-difference is the one-step lag.[^ch05-diagnostics-check]
+all zeros when no iteration built one, that is, for status 1 and for a cell already at equilibrium. For status 0
+and 2 it therefore lags one step behind the returned amounts. For status 3 and 4 the last iteration accepted no step,
+so the gain is formed at the returned amounts. `check_ch5_equilibrium.py` checks both against the code. On the
+vapour-liquid case of @sec-ch05-conditions, the solve converges in 4 steps. The returned gain, 26.288369104611,
+equals @eq-ch05-newton-jacobian at the amounts returned with `max-iter: 3` (status 2) to 0.0 relative difference. It
+differs from the formula at the converged amounts, 26.288311745887, by $2.2\times10^{-6}$ relative (line d). For a
+start that ends with status 4, the gain equals the formula at the returned amounts to 0.0 (line d). Line b checks the
+formula itself against central differences of the residual, to $2.1\times10^{-10}$ (tolerance
+$10^{-8}$).[^ch05-diagnostics-check]
 
 **A phase that should vanish.** If the equilibrium has no amount of some phase, the iteration drives that phase
-towards `mole-floor` and the cell ends with status 4. The mechanism is a hypothesis we have not instrumented: near the
-floor the bound of @eq-ch05-newton-bounds caps every step that would reduce the phase further, and for a one-species
-phase the residual does not depend on its amount at all (`newton_check.py`, `[C3]`), so no step scale lowers the
-largest residual. Its amounts are then close to the one-phase answer, with the phase near the floor, but the error is large:
+towards `mole-floor` and the cell ends with status 4. The mechanism is measured (`check_ch5_equilibrium.py` line e,
+the vapour-liquid case started from 1, 0.01 and 0.001 mol). The slack $\mathcal N_n - \mathcal N_{\mathrm{floor}}$
+stays positive along the whole path, at least $3.03\times10^{-15}$ mol, so the least-squares fallback never runs.
+After 19 accepted steps the plain Newton step would take the liquid, then $3.027\times10^{-15}$ mol, below the
+floor, and the floor test of the line search rejects all 40 scales from 1 down to $10^{-12}$. None is rejected for
+failing to lower the residual. The solve ends with status 4 and error 2.253. A numpy copy of the iteration without
+the fallback gives the same amounts, status, step count and error. A one-species phase also gives no residual a
+dependence on its amount (`newton_check.py`, `[C3]`), so emptying it cannot by itself satisfy the condition. Its amounts are then close to the one-phase answer, with the phase near the floor, but the error is large:
 the reaction that would form the phase is subsaturated. @fig-ch05-diagnostics-water shows this for water vapour over a
 pure liquid with NASA-9 constants and a fixed total of water. Up to 300 K the solve converges and the water partial
 pressure equals $p^\circ/K^\circ$ to $7.2\times10^{-9}$. From 302.5 K up, where all the water should be vapour,
@@ -127,9 +135,9 @@ No test produces status 1, 2, 3 or 4, checks the iteration count, or checks the 
 show each status except 3. A suite test would build the water card of @fig-ch05-diagnostics-water and assert status 1,
 2 and 4 for the three inputs listed.
 
-[^ch05-diagnostics-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase, 300 K, $10^5$ Pa; run:
+[^ch05-diagnostics-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase, 300 K, $10^5$ Pa, starts (1, 0.05, 0.05) and (1, 0.01, 0.001) mol; run:
 `python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
-the pin: line b PASS; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
+the pin: lines b, d and e PASS; CPU, double; kintera source build at the pin, Python 3.11.13, torch 2.10.0+cu126.]
 
 [^ch05-water-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`, the cases of `water_condensation.json`; run: `python -P
@@ -154,7 +162,8 @@ build, Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not 
   `diagnostics[..., 0]`.
 - **A vanishing phase is reported as a failure.** Status 4 does not tell a phase that should vanish from a step that
   stalled for another reason; the caller can tell them apart only by looking at the amounts.
-- **The gain lags one step.** It is the Jacobian before the last step, and zero for a cell that needed no step.
+- **The gain can lag one step.** For status 0 and 2 it is the Jacobian before the last step, and it is zero for a
+  cell that needed no step.
 :::
 
 - In single precision the target is $4.8\times10^{-7}$, not `ftol`.

@@ -160,6 +160,15 @@ rate constant is $w(T) = \kappa\,(K(T) - c_v)$ with $K = e^{L}/(\mathcal R T)$. 
     torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build; output:
     `doc/tech-report/derivation-checks/check_ch2_svp_autograd.out`, 8 PASS, 0 FAIL.]
 
+<!-- equation-check: eq-ch02-svp-autograd-jacobian check_ch2_svp_autograd.py (a3) -->
+<!-- equation-check: eq-ch02-svp-autograd-backward check_ch2_svp_autograd.py (a1) -->
+<!-- equation-check: eq-ch02-svp-autograd-backward check_ch2_svp_autograd.py (a2) -->
+<!-- equation-check: eq-ch02-svp-autograd-backward check_ch2_svp_autograd.py (a4) -->
+<!-- equation-check: eq-ch02-svp-autograd-backward check_ch2_svp_autograd.py (a5) -->
+<!-- equation-check: eq-ch02-svp-autograd-second check_ch2_svp_autograd.py (b1) -->
+<!-- equation-check: eq-ch02-svp-autograd-second check_ch2_svp_autograd.py (b2) -->
+<!-- equation-check: eq-ch02-svp-autograd-second check_ch2_svp_autograd.py (b3) -->
+
 ### Limits
 
 The reaction set lives in static class members, so every caller must call `init` right before `call` or `grad`;

@@ -177,6 +177,10 @@ published tables remain missing evidence.
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch5_equilibrium.out`,
     block c, all PASS.]
 
+<!-- equation-check: eq-ch02-nasa9-forms check_ch5_equilibrium.py (c) -->
+<!-- equation-check: eq-ch02-nasa9-forms check_ch2_nasa9.py (n1) -->
+<!-- equation-check: eq-ch02-nasa9-forms check_ch2_nasa9.py (n3) -->
+
 ### Limits
 
 The polynomials are evaluated outside 200-6000 K without warning (verified by reading `nasa9_gibbs_RT`; no clamp).

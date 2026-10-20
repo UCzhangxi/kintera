@@ -83,9 +83,9 @@ batch lands; some checks are expected to flip from EXPECTED-FAIL to PASS.
 | C6-h | Linearly implicit step and the two-stage Rosenbrock variant | 06/_implicit | PARTIAL | - | check_ch6_implicit |
 | C9-a | Eddy diffusion in concentration and mixing-ratio forms | 09/_transport | PRESENT | - | check_ch9_atm2d |
 | C9-b | Molecular diffusion and the diffusive-equilibrium profile | 09/_molecular | PARTIAL | - | check_ch9_atm2d |
-| C9-c | Source linearisation and stoichiometric mapping | 09/_sources | PRESENT | - | (proposed FD, see entry) |
-| C9-d | Implicit assembly and Rosenbrock-2 order | 09/_assembly, 09/_rosenbrock | PARTIAL | - | check_ch9_atm2d |
-| C9-e | Newton iteration and the steady-state limit | 09/_newton | PRESENT | - | (proposed, see entry) |
+| C9-c | Source linearisation and stoichiometric mapping | 09/_sources | PRESENT | - | check_ch9_sources |
+| C9-d | Implicit assembly and Rosenbrock-2 order | 09/_assembly, 09/_rosenbrock | PARTIAL | - | check_ch9_atm2d, check_ch9_ros2_stability, check_ch9_ros2_error |
+| C9-e | Newton iteration and the steady-state limit | 09/_newton | PRESENT | - | check_ch9_newton |
 | C9-f | Atomic-budget projection | 09/_conservation | PRESENT | K9 | check_ch9_atm2d, check_ch9_budget_exact, check_ch9_budget_below1 |
 
 Counts: 38 entries; PRESENT 19, PARTIAL 14, MISSING 5. Fix-batch tagged: 9 entries (C3-a, C3-c, C3-d, C3-e,
@@ -112,6 +112,12 @@ expected to pass after the fix batch) or INFO.
 | check_ch6_evaporation.py | C6-e, O-2 | 4 | 0 | 0 | |
 | check_ch6_jacobian.py | C6-g | 1 | 0 | 0 | rerun after the batch |
 | check_ch6_implicit.py | C6-h | all | 0 | 0 | |
+| check_ch9_sources.py | C9-c | 8 | 0 | 0 | FD Jacobians at 1e-7 |
+| check_ch9_newton.py | C9-e | 6 | 0 | 0 | residual ratio, damping, large-dt limit |
+| check_ch9_ros2_stability.py | C9-d | 7 | 0 | 0 | R(z), L-stability, both roots |
+| check_ch9_ros2_error.py | C9-d | 8 | 0 | 0 | embedded error estimate |
+| check_ch9_budget_exact.py | C9-f | 9 | 0 | 0 | exactness condition, element order |
+| check_ch9_budget_below1.py | C9-f | 4 | 0 | 2 | K9 |
 | check_ch9_atm2d.py | C9-a, C9-b, C9-d, C9-f | all | 0 | 0 | 1 INFO: clamped hog total |
 
 Not yet covered by a script: C2-c (needs a C++ test), C3-d round trip, C4-f direct KKT test, C9-c and C9-e
@@ -797,7 +803,8 @@ derivations; they are PRESENT and not listed as entries.)
 - **Start/End.** `build_source_linearization` (`python/atm2d/sources/combine.py`); `build_chemistry_jacobian`
   (`python/atm2d/chemistry.py`): `J_nm = sum_r nu_nr dR_r/dc_m`.
 - **Steps.** Chain rule through `dc/dt = S r(c)`; mass-action column; boundary flux; charge-balance fold.
-- **Check.** Proposed: FD of a source tendency against its Jacobian, 1e-7 relative.
+- **Check.** `check_ch9_sources.py`: FD of the source tendencies against their Jacobians, 1e-7 relative (mass
+  action, a kintera network, boundary sources, the charge-balance fold); 8 PASS.
 - **Home and status.** `09-atm2d/_sources.qmd:39-71`. PRESENT.
 
 ### C9-d Implicit assembly and Rosenbrock-2 order
@@ -813,6 +820,7 @@ derivations; they are PRESENT and not listed as entries.)
   the difference estimates the error.
 - **Check.** `check_ch9_atm2d.py` line c: error ratio under dt halving 3.86 with the exact Jacobian and 3.82
   with half of it (expected 4 within 10%; the ratio from 20 to 40 steps, 3.7, is not yet asymptotic); PASS.
+  Steps 3 and 4 also: `check_ch9_ros2_stability.py` (7 PASS) and `check_ch9_ros2_error.py` (8 PASS).
 - **Home and status.** `09-atm2d/_assembly.qmd:36-53` PRESENT, `_rosenbrock.qmd:36-60` steps 1-3 cited not
   derived: PARTIAL.
 
@@ -823,8 +831,10 @@ derivations; they are PRESENT and not listed as entries.)
   `(I - dt L(c^k)) c~ = c0 + dt [S(c^k) - J(c^k) c^k]`, damped and clipped update.
 - **Steps.** Residual `G(c) = c - c0 - dt [T c + S(c)]`; Newton step rearranged; `dt -> infinity` gives
   Newton on `T c + S(c) = 0`; clipping and damping lose quadratic convergence.
-- **Check.** Proposed: residual ratio `|G_{k+1}|/|G_k|^2` bounded near the root.
-- **Home and status.** `09-atm2d/_newton.qmd:37-54`. PRESENT; add the large-dt limit.
+- **Check.** `check_ch9_newton.py`: one iteration against a hand Newton step, observed order and the residual ratio
+  `|G_{k+1}|/|G_k|^2` bounded near the root, linear rate under damping, and the 1/dt approach to the steady state;
+  6 PASS.
+- **Home and status.** `09-atm2d/_newton.qmd:37-54`. PRESENT; the large-dt limit is derived (step 4).
 
 ### C9-f Atomic-budget projection
 

@@ -217,8 +217,9 @@ Step 5 is checked by `check_ch9_ros2_error.py`, which compares the returned `err
 
 - On $\mathrm d c/\mathrm d t = -c$ with $\mathsf L = \mathsf F$ and $\mathsf L = \tfrac12 \mathsf F$, the ratio of
   `error` to $\Delta t^2 \lvert \tfrac12 - \gamma s \rvert c^{0}$ differs from 1 by $3.4 \times 10^{-4}$ and
-  $1.7 \times 10^{-4}$ at $\Delta t = 10^{-4}$ (tolerance $10^{-3}$). The deviation falls by 9.98 and 9.99 per
-  decade of $\Delta t$, the first-order correction.
+  $1.7 \times 10^{-4}$ at $\Delta t = 10^{-4}$ (tolerance $10^{-3}$). The deviation falls by 9.775 and 9.977
+  per decade of $\Delta t$ for $\mathsf L = \mathsf F$ and by 9.886 and 9.989 for $\mathsf L = \tfrac12 \mathsf F$
+  (the line requires each within 5% of 10), the first-order correction.
 - On $\mathrm d c/\mathrm d t = -c^2$ with the exact $\mathsf L$, the ratio differs from 1 by $6.6 \times 10^{-4}$.
 - From $\Delta t = 10^{-2}$ to $10^{-3}$, the true error of $c^{1}$ against $1/(1 + \Delta t)$ falls by 935 (order 3)
   and the estimate by 94 (order 2). The estimate exceeds the true error at $\Delta t = 10^{-1}$, $10^{-2}$ and

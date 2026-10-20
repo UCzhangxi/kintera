@@ -85,8 +85,18 @@ $$
 T \leftarrow T + T\, \frac{S_{\mathrm{given}} - S(T)}{C_p(T) - S(T)} ,
 $$ {#eq-ch03-thermo-x-entropy-correct}
 
-which converges quadratically near the root and does not depend on the entropy constants, because $S$ and $C_p - S$
-shift together. An equivalent route is to invert the molar entropy, as the adiabat does (@sec-ch03-adiabat). At the
+This is Newton's method at frozen composition. Its result does not depend on the entropy constants, because $S$ and
+$C_p - S$ shift together, and for a parcel in which nothing condenses it converges quadratically (check line `(f3)`).
+In a saturated parcel it does not. Each `PXS->T` pass calls `forward`, so $S(T)$ is taken along the equilibrium path,
+and its true slope there carries the latent heat, $(C_{p,\mathrm{eff}} - S)/T$ with the effective heat capacity of
+@sec-ch03-adiabat. With the frozen slope the map's derivative at the root is
+
+$$
+1 - \frac{C_p - S}{C_{p,\mathrm{eff}} - S} ,
+$$ {#eq-ch03-thermo-x-entropy-frozen-factor}
+
+which is not zero once anything condenses, so the convergence is only linear.
+An equivalent route is to invert the molar entropy, as the adiabat does (@sec-ch03-adiabat). At the
 pin the code does not use this slope. Its update, computed in `_entropy_to_temp`
 ({{< code src/thermo/thermo_x.cpp ThermoXImpl::_entropy_to_temp >}}), is
 
@@ -94,7 +104,8 @@ $$
 T \leftarrow T \left(1 + \frac{S_{\mathrm{given}} - S(T)}{C_p(T)}\right) ,
 $$ {#eq-ch03-thermo-x-entropy-newton}
 
-which is Newton's method for an entropy per mole or per kilogram (slope $C_p/T$), not per volume. Write the update
+which, at frozen composition, is Newton's method for an entropy per mole or per kilogram (slope $C_p/T$), not per
+volume. Write the update
 as $T \leftarrow \phi(T)$ with $\phi(T) = T + T (S_{\mathrm{given}} - S)/C_p$. At a root $T^{\ast}$,
 $S = S_{\mathrm{given}}$, so
 
@@ -110,7 +121,11 @@ contains the arbitrary entropy constants `s0_R` and the reference state $T_\star
 physical answer. (3) By @eq-ch03-thermo-x-entropy-slope, $S(T)$ at fixed $p$ has a turning point where
 $S = C_p$, so a given $S_{\mathrm{given}}$ can have a second, spurious root, to which the iteration may converge.
 The adiabat code avoids all three by inverting the molar entropy $\bar s$ instead (@sec-ch03-adiabat). This is the
-defect D8, whose fix uses the slope $(C_p - S)/T$ of @eq-ch03-thermo-x-entropy-correct.[^ch03-d8]
+defect D8.[^ch03-d8] Its fix steps in $\ln T$. The first step uses the frozen slope, $C_p - S$ per volume, as in
+@eq-ch03-thermo-x-entropy-correct. Later steps use a secant slope between successive iterates along the equilibrium
+path, which carries the latent heat, and fall back to the frozen slope when the secant is zero or not finite.
+Converged columns are frozen, and columns that are NaN stay active. How fast the fixed code converges, and whether
+check line `(f4)` passes on it within the allowed passes, is not measured here (no build of the fix branch was run).
 <!-- equation-source: eq-ch03-thermo-x-entropy-newton code at the pin, not the correct step (D8) -->
 
 After each step the code calls `forward`, the saturation adjustment at the new $(T, p)$, which changes the

@@ -7,10 +7,10 @@ R = 8.31446  # kintera Rgas (constants.h)
 RES = []
 
 
-def report(name, val, tol, ok, tag=None):
+def report(name, val, tol, ok, tag=None, row=None):
     tag = tag or ("PASS" if ok else "FAIL")
     RES.append(tag)
-    print(f"{name}: measured {val:.3e}  tol {tol:.0e}  {tag}")
+    print(f"{name}: measured {val:.3e}  tol {tol:.0e}  {tag}" + (f" ({row})" if row and tag == "EXPECTED-FAIL" else ""))
 
 
 def dry_x(op):
@@ -79,7 +79,7 @@ def check_pxs_roundtrip():
     d = abs(Tb.item() - 600.0)
     print(f"   S(600 K) = {S.item():.10f} J/(K m^3); PXS->T returns {Tb.item():.10f} K "
           f"(start guess Tref = {op.Tref()} K, max_iter = {op.max_iter()})")
-    report("4c PXS->T round trip |T - 600| (K)", d, 1e-6, d < 1e-6, None if d < 1e-6 else "EXPECTED-FAIL")
+    report("4c PXS->T round trip |T - 600| (K)", d, 1e-6, d < 1e-6, None if d < 1e-6 else "EXPECTED-FAIL", row="D8")
 
 
 if __name__ == "__main__":

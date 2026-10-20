@@ -71,12 +71,15 @@ a mixture with condensates has a larger total concentration than its gas pressur
 @eq-ch03-eos-conc are computed in `_xfrac_to_conc`
 ({{< code src/thermo/thermo_x.cpp ThermoXImpl::_xfrac_to_conc >}}). At the pin the condensate lines are computed as
 $c_m = c_0\, x_m / x_0$, from the first gas's concentration. That is the same number when $x_0 > 0$, $z_0 = 1$ and
-$c_0$ is above the floor, but it is not finite when the first gas is absent ($x_0 = 0$): the defect D16, whose fix
-uses @eq-ch03-eos-conc for the condensates too.[^ch03-d16]
+$c_0$ is above the floor, but it is not finite when the first gas is absent ($x_0 = 0$): the defect D16.[^ch03-d16]
+Its fix scales the condensates by the summed gas concentrations, $c_m = x_m \sum_{n<N_{\mathrm g}} c_n / x_{\mathrm g}$.
+For $z_n = 1$ that is @eq-ch03-eos-conc; for $z_n \ne 1$ it uses the corrected gas concentrations, which keeps
+$c_m / \sum_{n<N_{\mathrm g}} c_n = x_m / x_{\mathrm g}$, so the condensates keep their mole ratios to each other and
+to the total gas.
 <!-- equation-source: eq-ch03-eos-conc code differs at x_0 = 0 (D16) -->
 
 When a compressibility function is set, the gas concentrations solve $z_n(T, c_n)\, c_n = c^{\mathrm{id}}_n$,
-where $c^{\mathrm{id}}_n$ is the first line of @eq-ch03-eos-conc. Newton's method on
+where $c^{\mathrm{id}}_n$ is @eq-ch03-eos-conc for that gas. Newton's method on
 $f(c_n) = z_n c_n - c^{\mathrm{id}}_n$ with $f'(c_n) = z_n + c_n\, \partial z_n / \partial c_n$ gives the update
 
 $$

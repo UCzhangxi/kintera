@@ -564,8 +564,8 @@ TEST_P(DeviceTest, KineticsBaseForward) {
   auto [rate, rc_ddC, rc_ddT] = kinet->forward(temp, pres, conc);
   // O + O2 + M <=> O3 + M: NASA-9 Kc at 300 K and 1 bar (m3/mol).
   if (dtype == torch::kFloat64)
-    EXPECT_NEAR((rate[0][9] / rate[0][21]).item<double>() /
-                    1e18 / 2.8062191373259865e10,
+    EXPECT_NEAR((rate[0][9] / rate[0][21]).item<double>() / 1e18 /
+                    2.8062191373259865e10,
                 1., 1e-10);
   photo->photolysis->update_xs_diss_stacked(temp);
   auto photo_rate = photo->forward(temp, conc, aflux);

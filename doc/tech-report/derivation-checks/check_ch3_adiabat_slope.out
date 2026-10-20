@@ -5,6 +5,13 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
 (h2) per mole: dh/dT along the equilibrium path vs effective_cp (rel): measured 3.375e-09  tol 1e-05  PASS
    corrected cards, 280 K, 1e6 Pa, per mole of dry gas: dH/dT = 32.3120996315, T dS/dT = 32.3120996239 J/(mol K); per mole of mixture dh/dT = 32.2190407845
 (h1) closed parcel at fixed p, corrected cards: T dS/dT vs dH/dT (rel): measured 2.342e-10  tol 1e-05  PASS
+   T=170 K: x_NH4SH = 5.025e-03, effective_cp = 29.36303921, (1/n) dH/dT = 29.36303922, d(H/n)/dT = 29.36316862 J/(mol K)
+   T=190 K: x_NH4SH = 5.014e-03, effective_cp = 29.52796977, (1/n) dH/dT = 29.52796982, d(H/n)/dT = 29.52998468 J/(mol K)
+   T=210 K: x_NH4SH = 4.862e-03, effective_cp = 31.47956185, (1/n) dH/dT = 31.47956226, d(H/n)/dT = 31.49243355 J/(mol K)
+   T=230 K: x_NH4SH = 3.483e-03, effective_cp = 46.02678526, (1/n) dH/dT = 46.02678751, d(H/n)/dT = 46.01280320 J/(mol K)
+   T=240 K: x_NH4SH = 9.002e-04, effective_cp = 70.42215881, (1/n) dH/dT = 70.42216359, d(H/n)/dT = 70.16783442 J/(mol K)
+   |effective_cp / d(H/n)/dT - 1| up to 3.625e-03 (n changes)
+(h4) effective_cp vs (1/n) dH/dT where NH4SH forms, worst rel: measured 6.787e-08  tol 1e-06  PASS
    rain-out, d ln p = -0.2 from 300 K, 1e6 Pa: |T_N - T_512| = 7.5237e-02, 3.7305e-02, 1.8352e-02, 8.8786e-03 K for N = 4, 8, 16, 32; observed orders 1.012, 1.023, 1.048
 (h3) rain-out step is first order in d ln p: max |observed order - 1|: measured 4.751e-02  tol 0.15  PASS
-SUMMARY: 3 PASS, 0 FAIL, 1 EXPECTED-FAIL
+SUMMARY: 4 PASS, 0 FAIL, 1 EXPECTED-FAIL

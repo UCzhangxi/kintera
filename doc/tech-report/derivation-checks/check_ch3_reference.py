@@ -3,6 +3,8 @@
 (a1) u_n/R = (u0_n - cv_n Tref) + cv_n T, h = u + R T for gases, h = u for condensates (TV->H, one species at a
      time, tests/jupiter.yaml).
 (a2) gas entropy s/R = s0 + (cv+1) ln(T/Tref) - ln(p/Pref) for a pure gas (TPV->S).
+(a4) with use-nasa9-cp the energy is referenced to 300 K: u(300)/R = u* + c* (300 - Tref), which is u* only when
+     Tref = 300 K (H2O card with u0_R 1000, cv_R 3, Tref 300 and 250 K).
 (a3) enthalpy and energy latent heat: l = h_v - h_c (ThermoX TV->H) and L = u_v - u_c (ThermoY VT->U) differ by
      R T, one mole of gas removed by vapour -> condensate.
 (g1) the card latent heat l_card(T) = h_v - h_c against the curve's l_svp(T) = R T^2 d ln K/dT (a central
@@ -38,8 +40,12 @@ def check_offsets():
     op, th = thermo_x()
     sp = species(op)
     ngas = len(op.vapor_ids())
-    cv = {"H2O": 2.5, "H2O(l)": 9.0, "NH3(s)": 9.6}
-    u0 = {"H2O": 0.0, "H2O(l)": -3430.0, "NH3(s)": -5520.0}
+    import yaml  # the cards are read from the deck, so the line holds for whatever cards the build ships
+    with open(DECK) as f:
+        cards = {sp_["name"]: sp_ for sp_ in yaml.safe_load(f)["species"]}
+    names = ("H2O", "H2O(l)", "NH3(s)")
+    cv = {n: float(cards[n].get("cv_R", 2.5)) for n in names}
+    u0 = {n: float(cards[n].get("u0_R", 0.0)) for n in names}
     worst = 0.0
     for name in cv:
         for T0 in (200.0, 300.0, 400.0):
@@ -129,8 +135,39 @@ def check_cards():
                worst < 1e-6, tag)
 
 
+E4_CARD = """reference-state: {Tref: %s, Pref: 1.0e5, use-nasa9-cp: true}
+species:
+- {name: H2, composition: {H: 2}, cv_R: 2.5}
+- {name: H2O, composition: {H: 2, O: 1}, cv_R: 3.0, u0_R: 1000.}
+- {name: H2O(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+reactions:
+- {equation: H2O <=> H2O(l), type: nucleation, rate-constant: {formula: h2o_ideal}}
+"""
+E4_PROBE = r"""
+from kintera import ThermoOptions, ThermoX
+torch.set_default_dtype(torch.float64)
+op = ThermoOptions.from_yaml(sys.argv[1]); th = ThermoX(op); th.to(torch.float64)
+c = torch.zeros(1, 3); c[0, 1] = 1.0
+u = lambda T0: th.compute("TV->H", [torch.tensor([T0]), c]).item() / 8.31446 - T0
+print(json.dumps({"u300": u(300.0), "uTref": u(op.Tref())}))
+"""
+
+
+def check_nasa9_reference():
+    worst = 0.0
+    for tref in (300.0, 250.0):
+        got = ch3_card.run(E4_CARD % tref, E4_PROBE)
+        ref = 1000.0 + 3.0 * (300.0 - tref)
+        worst = max(worst, abs(got["u300"] - ref))
+        print(f"   use-nasa9-cp, Tref = {tref} K: u(300 K)/R = {got['u300']:.6f} (u* + c* (300 - Tref) = {ref:.6f}),"
+              f" u(Tref)/R = {got['uTref']:.6f}")
+    report("(a4) u(300 K)/R = u* + c* (300 K - Tref) under use-nasa9-cp, Tref 300 and 250 K (abs)", worst, 1e-9,
+           worst < 1e-9)
+
+
 if __name__ == "__main__":
     print(version_line())
     check_offsets()
+    check_nasa9_reference()
     check_cards()
     print("SUMMARY: " + ", ".join(f"{RES.count(k)} {k}" for k in ("PASS", "FAIL", "EXPECTED-FAIL")))

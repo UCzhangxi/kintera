@@ -6,6 +6,8 @@
      cards of tests/jupiter.yaml the solved condensate entropies do not satisfy T ds_c/dT = c_p,c (C3-g), so the
      identity fails: EXPECTED-FAIL, row K8 of UCzhangxi/kintera#54. With the corrected cards: PASS.
 (h2) per mole of mixture, dh/dT = c_p,eff, the quantity effective_cp returns (tests/jupiter.yaml).
+(h4) what effective_cp is when the number of moles changes: where NH4SH forms (NH3 = H2S = 5e-3 in dry gas,
+     170-240 K, 1e5 Pa) it equals (1/n) dH/dT for the closed parcel (H and n per mole of dry gas), not d(H/n)/dT.
 (h3) the rain-out branch (rainout=True) evaluates the removed condensate's entropy at the end of each step, a
      rectangle rule, so it is first order in d ln p: total d ln p = -0.2 in N = 4, 8, 16, 32 steps against
      N = 512; the observed order is log2 of successive error ratios (tolerance 0.15 on the order).
@@ -16,7 +18,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from common import thermo_x, jupiter_x, version_line, DECK, torch  # noqa: E402
+from common import thermo_x, jupiter_x, species, version_line, DECK, torch  # noqa: E402
 import ch3_card  # noqa: E402
 
 RES = []
@@ -90,8 +92,43 @@ def check_order():
     report("(h3) rain-out step is first order in d ln p: max |observed order - 1|", worst, 0.15, worst < 0.15)
 
 
+def check_moles():
+    op, th = thermo_x(ftol=1e-14, max_iter=100)
+    sp = species(op)
+    x0 = torch.zeros(1, len(sp))
+    x0[0, sp.index("NH3")] = 5e-3
+    x0[0, sp.index("H2S")] = 5e-3
+    x0[0, 0] = 1.0 - 1e-2
+    p = torch.tensor([1e5])
+
+    def state(T0):
+        T = torch.tensor([T0])
+        x = x0.clone()
+        gain = th.forward(T, p, x)
+        c = th.compute("TPX->V", [T, p, x])
+        H = th.compute("TV->H", [T, c])
+        return (H / c[..., 0]).item(), (c.sum(-1) / c[..., 0]).item(), (H / c.sum(-1)).item(), \
+            th.effective_cp(T, p, x, gain).item(), x[0, sp.index("NH4SH(s)")].item()
+
+    worst, other = 0.0, 0.0
+    dT = 1e-2
+    for T0 in (170.0, 190.0, 210.0, 230.0, 240.0):
+        Hp, np_, hp, _, _ = state(T0 + dT)
+        Hm, nm, hm, _, _ = state(T0 - dT)
+        _, n0, _, cpe, xs = state(T0)
+        one_n = (Hp - Hm) / (2 * dT) / n0
+        dhbar = (hp - hm) / (2 * dT)
+        worst = max(worst, abs(cpe / one_n - 1))
+        other = max(other, abs(cpe / dhbar - 1))
+        print(f"   T={T0:.0f} K: x_NH4SH = {xs:.3e}, effective_cp = {cpe:.8f}, (1/n) dH/dT = {one_n:.8f}, "
+              f"d(H/n)/dT = {dhbar:.8f} J/(mol K)")
+    print(f"   |effective_cp / d(H/n)/dT - 1| up to {other:.3e} (n changes)")
+    report("(h4) effective_cp vs (1/n) dH/dT where NH4SH forms, worst rel", worst, 1e-6, worst < 1e-6)
+
+
 if __name__ == "__main__":
     print(version_line())
     check_slope()
+    check_moles()
     check_order()
     print("SUMMARY: " + ", ".join(f"{RES.count(k)} {k}" for k in ("PASS", "FAIL", "EXPECTED-FAIL")))

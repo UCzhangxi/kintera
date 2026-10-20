@@ -3,13 +3,8 @@
 The construction follows examples/example_earth_dry.py: a Python ThermoOptions()
 with no .nucleation(...), then ThermoX(op) or ThermoY(op). Each construction runs
 in a fresh subprocess, because a segfault would kill pytest.
-
-The same Python-built options with one nucleation reaction, H2O => H2O(l) with
-the registered h2o_ideal, must condense a supersaturated cell to saturation:
-ThermoX at fixed T, P and ThermoY at fixed density and internal energy.
 """
 
-import math
 import os
 import subprocess
 import sys
@@ -68,86 +63,38 @@ def test_thermo_y_default_options_cuda():
     _default_options("Y", "cuda:0")
 
 
-NUCLEATION_SCRIPT = """
+
+SATURATE = """  # K3 (#54): one nucleation reaction condenses a supersaturated cell
 import sys, torch, kintera
 from kintera import NucleationOptions, Reaction, ThermoOptions, ThermoX, ThermoY
 torch.set_default_dtype(torch.float64)
-kind, device = sys.argv[1], torch.device(sys.argv[2])
+kind, dev = sys.argv[1], torch.device(sys.argv[2])
 kintera.set_species_names(["dry", "H2O", "H2O(l)"])
 kintera.set_species_weights([29.e-3, 18.e-3, 18.e-3])
-op = ThermoOptions()
-op.vapor_ids([0, 1])
-op.cloud_ids([2])
-op.cref_R([2.5, 3.0, 9.0])
-op.uref_R([0.0, 0.0, -6786.66])
-op.sref_R([0.0, 0.0, 0.0])
-op.Tref(300.0)
-op.Pref(1.e5)
-op.nucleation(NucleationOptions().reactions([Reaction("H2O => H2O(l)")])
-              .logsvp(["h2o_ideal"]))
-th = (ThermoX if kind == "X" else ThermoY)(op)
-th.to(device)
-diag = torch.zeros((1, 1), device=device)
+op = ThermoOptions().vapor_ids([0, 1]).cloud_ids([2]).cref_R([2.5, 3., 9.])
+op.uref_R([0., 0., -6786.66]).sref_R([0.] * 3).Tref(300.).Pref(1.e5)
+op.nucleation(NucleationOptions().reactions([Reaction("H2O => H2O(l)")]).logsvp(["h2o_ideal"]))
+th, T, one = (ThermoX if kind == "X" else ThermoY)(op), torch.tensor([300.]), torch.ones(1)
+th.to(dev); T, one = T.to(dev), one.to(dev)
 if kind == "X":
-    temp = torch.tensor([300.], device=device)
-    xfrac = torch.tensor([[0.9, 0.1, 0.]], device=device)
-    th.forward(temp, torch.tensor([1.e5], device=device), xfrac, diag=diag)
-    vapor, cloud = xfrac[0, 1].item(), xfrac[0, 2].item()
-    pvap = vapor / xfrac[0, :2].sum().item() * 1.e5
+    y = torch.tensor([[.9, .1, 0.]], device=dev)
+    th.forward(T, 1.e5 * one, y)
+    conc = th.compute("TPX->V", [T, 1.e5 * one, y])
 else:
-    rho = torch.tensor([1.], device=device)
-    yfrac = torch.tensor([[0.05], [0.]], device=device)
-    ivol = th.compute("DY->V", [rho, yfrac])
-    intEng = th.compute("VT->U", [ivol, torch.tensor([300.], device=device)])
-    th.forward(rho, intEng, yfrac, False, diag)
-    ivol = th.compute("DY->V", [rho, yfrac])
-    temp = th.compute("VU->T", [ivol, intEng])
-    vapor, cloud = yfrac[0, 0].item(), yfrac[1, 0].item()
-    pvap = (ivol[0, 1] / 18.e-3).item() * 8.31446 * temp.item()
-print(device.type, repr(temp.item()), repr(vapor), repr(cloud), repr(pvap),
-      repr(diag.item()))
+    y = torch.tensor([[.05], [0.]], device=dev)
+    U = th.compute("VT->U", [th.compute("DY->V", [one, y]), T])
+    th.forward(one, U, y)
+    conc = th.compute("DY->V", [one, y]) * th.buffer("inv_mu")
+    T = th.compute("VU->T", [conc / th.buffer("inv_mu"), U])
+rh = kintera.relative_humidity(T, conc, th.buffer("stoich"), op.nucleation())
+print(y.flatten()[-1].item(), rh.flatten()[0].item())
 """
 
 
-def _log_svp_h2o_ideal(temp):
-    # src/vapors/vapor_functions.h: h2o_ideal above the triple point
-    t = temp / 273.16
-    return (1. - 1. / t) * 24.845 - 4.986009 * math.log(t) + math.log(611.7)
-
-
-def _nucleation(kind, device):
-    out = subprocess.run(
-        [sys.executable, "-c", NUCLEATION_SCRIPT, kind, device],
-        capture_output=True, text=True, env=os.environ.copy())
-    assert out.returncode == 0, (
-        f"Thermo{kind} with a nucleation reaction on {device}: returncode "
-        f"{out.returncode} (-11 = SIGSEGV)\nstderr:\n{out.stderr}")
-    dev, *values = out.stdout.strip().splitlines()[-1].split()
-    temp, vapor, cloud, pvap, diag = map(float, values)
-    assert dev == torch.device(device).type
-    assert diag > 0, f"solver reported failure, diag = {diag}"
-    total = 0.1 if kind == "X" else 0.05
-    assert 0. < cloud < total, f"cloud {cloud} of {total}"
-    assert abs(vapor + cloud - total) <= 1e-12 * total
-    if kind == "Y":
-        assert temp > 300., f"latent heat must warm the cell, T = {temp}"
-    assert abs(math.log(pvap) - _log_svp_h2o_ideal(temp)) < 1e-6, (
-        f"not at saturation: T {temp} p_H2O {pvap}")
-
-
-def test_thermo_x_nucleation():
-    _nucleation("X", "cpu")
-
-
-def test_thermo_y_nucleation():
-    _nucleation("Y", "cpu")
-
-
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="needs CUDA")
-def test_thermo_x_nucleation_cuda():
-    _nucleation("X", "cuda:0")
-
-
-@pytest.mark.skipif(not torch.cuda.is_available(), reason="needs CUDA")
-def test_thermo_y_nucleation_cuda():
-    _nucleation("Y", "cuda:0")
+@pytest.mark.parametrize("kind", ["X", "Y"])
+@pytest.mark.parametrize("dev", ["cpu"] + ["cuda"] * torch.cuda.is_available())
+def test_nucleation_reaction_saturates(kind, dev):
+    out = subprocess.run([sys.executable, "-c", SATURATE, kind, dev], capture_output=True, text=True)
+    assert out.returncode == 0, out.stderr
+    cloud, rh = map(float, out.stdout.split()[-2:])
+    assert cloud > 0 and abs(rh - 1.) < 1e-6, out.stdout

@@ -88,11 +88,12 @@ evaporation reaction's own curve, before the clamp at zero.
 **Step 2: RH = 1 is the phase-equilibrium condition.** The phase solver puts a condensate in equilibrium with its
 vapour by setting the reaction Gibbs energy to zero. For a pure condensate, whose chemical potential depends on $T$
 only, and an ideal vapour this is $p_v = p_{\mathrm{sat}}(T)$, that is $c_v = K_r$ or $\mathrm{RH}_r = 1$
-(@sec-ch04-conditions). By @eq-ch01b-shared-deficit the evaporation rate $\kappa c_p \eta$ vanishes at exactly that
-state if its $K_r$ is the phase solver's. Both modules evaluate $\ln p_{\mathrm{sat}}$ with the same evaluator, so
+(@sec-ch04-conditions). By @eq-ch01b-shared-deficit the evaporation rate $\kappa\, c_{\mathrm{c}}\, \eta$, with
+$c_{\mathrm{c}}$ the condensate concentration, vanishes at exactly that state if its $K_r$ is the phase solver's. Both modules evaluate $\ln p_{\mathrm{sat}}$ with the same evaluator, so
 this holds whenever the deck gives the evaporation reaction the same formula and parameters as the nucleation
 reaction of the same condensate. Then the kinetic fixed point and the equilibrium are the same state, not two nearby
-ones. This is a requirement on the deck, not something the code enforces; `tests/jupiter.yaml` meets it for H$_2$O
+ones. The converse does not hold: the clamp at zero and an absent condensate also give a zero rate away from
+equilibrium. This is a requirement on the deck, not something the code enforces; `tests/jupiter.yaml` meets it for H$_2$O
 and NH$_3$. The same argument holds for multi-vapour reactions, with the product of @eq-ch01b-shared-rh.
 
 **Step 3: one latent heat.** Both the UV solver and the kinetics differentiate $U = \sum_i c_i\, u_i(T)$ at fixed

@@ -114,11 +114,15 @@ $$
 \phi' = 1 - \frac{T\, \mathrm d S/\mathrm d T}{C_p - S} ,
 $$ {#eq-ch03-thermo-x-entropy-frozen-factor}
 
-which without the $n_{\mathrm g}$ term reads $1 - (C_{\mathrm{eff}} - S)/(C_p - S)$. Latent heat makes
-$T\, \mathrm d S/\mathrm d T > C_p - S$, so $\phi'$ is negative once anything condenses and the iterates alternate
-about the root. The convergence is linear and needs $\lvert \phi' \rvert < 1$, which fails when
-$T\, \mathrm d S/\mathrm d T > 2 (C_p - S)$. At the state above $\phi' = -0.194276$, and iterating the step gives error
-ratios $-0.194275$ and $-0.194277$ (check line `(f6)`).
+which without the $n_{\mathrm g}$ term reads $1 - (C_{\mathrm{eff}} - S)/(C_p - S)$. The convergence is linear and
+needs $\lvert \phi' \rvert < 1$, that is $0 < T (\mathrm d S/\mathrm d T)/(C_p - S) < 2$; the iterates alternate about
+the root when that ratio exceeds 1 ($\phi' < 0$) and approach it from one side when it lies between 0 and 1. Which case
+holds depends on the entropy constants, since both $S$ and $\mathrm d S/\mathrm d T$ contain them. With the default
+constants $C_p - S > 0$ and latent heat makes $T\, \mathrm d S/\mathrm d T > C_p - S$, so $\phi'$ is negative once
+anything condenses and the iterates alternate: at the state above $\phi' = -0.194276$, and iterating the step gives
+error ratios $-0.194275$ and $-0.194277$ (check line `(f6)`). With the dry gas's `s0_R` = 10 at the same state,
+$C_p - S = -12665$ and $T\, \mathrm d S/\mathrm d T = -10626$ J/(K m$^3$), both negative, the ratio is 0.839, and
+$\phi' = +0.160977$: the iterates are monotone, with error ratios $+0.160977$ (check line `(f10)`).
 
 An equivalent route is to invert the molar entropy, as the adiabat does (@sec-ch03-adiabat). At the
 pin the code does not use this slope. Its update, computed in `_entropy_to_temp`
@@ -158,8 +162,10 @@ Converged columns are frozen, and columns that are NaN stay active. The theory r
 fix on a build of the fix branch.[^ch03-d8-measured] Check lines `(f4)` and `4c` pass there,
 $\lvert T - 600 \rvert = 2.7 \times 10^{-12}$ K, but both are dry states and test only the frozen first step. On the
 saturated state above, the fixed `PXS->T` converges in 5 passes from `Tref` (errors $-16.3$, $-8.0$, $+1.2$,
-$2.1 \times 10^{-3}$ and $-6.9 \times 10^{-8}$ K). The first step is large because the first pass evaluates $S$ on the
-composition passed in, before `forward`, so from a supersaturated input that first $S$ is off the equilibrium path.
+$2.1 \times 10^{-3}$ and $-6.9 \times 10^{-8}$ K). With `ftol` $10^{-14}$, as in check line `(f8)`, later passes stay
+within $5.7 \times 10^{-14}$ K; at the deck's default `ftol` they settle at $2.2 \times 10^{-6}$ K. The first step
+is large because the first pass evaluates $S$ on the composition passed in, before `forward`, so from a
+supersaturated input that first $S$ is off the equilibrium path.
 <!-- equation-source: eq-ch03-thermo-x-entropy-newton code at the pin, not the correct step (D8) -->
 
 After each step the code calls `forward`, the saturation adjustment at the new $(T, p)$, which changes the
@@ -215,7 +221,7 @@ CPU in float32 and float64 and on CUDA when a GPU is present. `TV->cp` and `TV->
 `DeviceTest.thermo_x` but not asserted.
 
 The derivation is checked by `check_ch3_pxs.py`, lines `(f1)`-`(f4)` on a dry parcel of `tests/jupiter.yaml` at 1 bar
-and `(f5)`-`(f8)` on a saturated one:[^ch03-pxs-check]
+and `(f5)`-`(f8)`, `(f10)` on a saturated one:[^ch03-pxs-check]
 
 - `(f1)`: @eq-ch03-thermo-x-entropy-slope against a central difference of `TPV->S` at fixed $(p, x)$, 250-600 K, to
   $3.1 \times 10^{-10}$ (tolerance $10^{-7}$).
@@ -233,10 +239,13 @@ and `(f5)`-`(f8)` on a saturated one:[^ch03-pxs-check]
   (tolerance $10^{-3}$).
 - `(f7)`: the pin's factor $1 - T (\mathrm d S/\mathrm d T)/C_p = -1.025175$ against the iteration's ratios
   (tolerance $10^{-3}$).
-- `(f8)`: kintera's `PXS->T` on that state after 8 passes from `Tref`, $\lvert T - T^{\ast} \rvert = 21.1$ K,
-  EXPECTED-FAIL (D8).
+- `(f8)`: kintera's `PXS->T` on that state after 8 passes from `Tref` with `ftol` $10^{-14}$,
+  $\lvert T - T^{\ast} \rvert = 21.1$ K, EXPECTED-FAIL (D8).
 - `(f9)`: with the dry gas's `s0_R` at 0 and 10, the root is 600 K both times (to $1.1 \times 10^{-13}$ K) and the first
   steps differ by 70.8 K.
+- `(f10)`: the `(f6)` state with the dry gas's `s0_R` = 10: @eq-ch03-thermo-x-entropy-frozen-factor, predicted
+  $+0.160977$ against the iteration's error ratios (to $5.7 \times 10^{-7}$, tolerance $10^{-3}$), and $\phi' > 0$ with
+  $C_p - S < 0$ and monotone iterates.
 
 <!-- equation-check: eq-ch03-thermo-x-entropy-slope check_ch3_pxs.py (f1) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-factor check_ch3_pxs.py (f2) -->
@@ -247,14 +256,15 @@ and `(f5)`-`(f8)` on a saturated one:[^ch03-pxs-check]
 <!-- equation-check: eq-ch03-thermo-x-entropy-slope-eq check_ch3_pxs.py (f5) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f6) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-factor check_ch3_pxs.py (f7) -->
+<!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f10) -->
 <!-- equation-check: eq-ch03-thermo-x-totals check_ch3_species_functions.py -->
 
 [^ch03-pxs-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, dry
-    composition, and the same deck with the step-3 cards for `(f5)`-`(f8)`; run:
+    composition, and the same deck with the step-3 cards for `(f5)`-`(f8)` and `(f10)`; run:
   `python doc/tech-report/derivation-checks/check_ch3_pxs.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_pxs.out`,
-    8 PASS, 2 EXPECTED-FAIL.]
+    10 PASS, 2 EXPECTED-FAIL.]
 
 [^ch03-d8]: [source: UCzhangxi/kintera#54, row D8 (`PXS->T` slope), merged on the staging branch of that issue.]
 

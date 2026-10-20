@@ -40,12 +40,21 @@ def check_offsets():
     op, th = thermo_x()
     sp = species(op)
     ngas = len(op.vapor_ids())
-    import yaml  # the cards are read from the deck, so the line holds for whatever cards the build ships
-    with open(DECK) as f:
-        cards = {sp_["name"]: sp_ for sp_ in yaml.safe_load(f)["species"]}
+    # the cards are read from the deck, so the line holds for whatever cards the build ships; a line parser for the
+    # two fields, as in ch3_card.fixed_deck, keeps the check to kintera's own dependencies
     names = ("H2O", "H2O(l)", "NH3(s)")
-    cv = {n: float(cards[n].get("cv_R", 2.5)) for n in names}
-    u0 = {n: float(cards[n].get("u0_R", 0.0)) for n in names}
+    cv = {n: 2.5 for n in names}
+    u0 = {n: 0.0 for n in names}
+    cur = None
+    with open(DECK) as f:
+        for line in f:
+            s_ = line.strip()
+            if s_.startswith("- name:"):
+                cur = s_.split(":", 1)[1].strip()
+            elif cur in names and s_.startswith("cv_R:"):
+                cv[cur] = float(s_.split(":", 1)[1])
+            elif cur in names and s_.startswith("u0_R:"):
+                u0[cur] = float(s_.split(":", 1)[1])
     worst = 0.0
     for name in cv:
         for T0 in (200.0, 300.0, 400.0):

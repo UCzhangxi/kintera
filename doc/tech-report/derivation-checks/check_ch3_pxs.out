@@ -18,4 +18,7 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
    dry gas, s0_R 0: first step 403.972 K, S(300) = 0.0, C_p - S = 1166.7; s0_R 10: first step 474.784 K, S(300) = 3333.3, C_p - S = -2166.7 J/(K m^3)
 (f9) the root does not depend on s0_R: both runs end at 600 K, max |T - 600| (K): measured 1.137e-13  tol 1e-09  PASS
 (f9) the iterates do: first steps differ (K), must EXCEED tol: measured 7.081e+01  tol 1e+00  PASS
-SUMMARY: 8 PASS, 0 FAIL, 2 EXPECTED-FAIL
+   same state, dry s0_R 10: C_p - S = -12665, T dS/dT = -10626 J/(K m^3), ratio 0.839023; phi' = 0.160977, error ratios 0.160977, 0.160977
+(f10) s0_R 10: root factor 1 - T (dS/dT)/(C_p - S) vs iteration (abs): measured 5.676e-07  tol 1e-03  PASS
+(f10) s0_R 10: phi' > 0 with C_p - S < 0, monotone iterates, must EXCEED tol: measured 1.610e-01  tol 0e+00  PASS
+SUMMARY: 10 PASS, 0 FAIL, 2 EXPECTED-FAIL

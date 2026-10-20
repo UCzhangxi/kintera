@@ -33,6 +33,8 @@ for Tv in (20.0, 50.0, 300.0):
     out[str(Tv)] = ((U1 - U0) / (T * 1e-6) / (rho / mu * R)).item() + 1.0  # cp/R = cv/R + 1
 T, c = torch.linspace(20.0, 1000.0, 50), torch.ones(50, 1); S = lambda t: tx.compute("TPV->S", (t, 1e5 * torch.ones(50), c))
 out["gibbs"] = ((T * (S(T * (1 + 1e-6)) - S(T * (1 - 1e-6))) / (2e-6 * T)) / tx.compute("TV->cp", (T, c)) - 1).abs().max().item()
+open(sys.argv[1] + ".off", "w").write(open(sys.argv[1]).read().replace("use-h2-cp: true", "use-h2-cp: false"))
+out["s300"] = [x.compute("TPV->S", (torch.tensor([300.0]), torch.tensor([1e5]), torch.ones(1, 1))).item() for x in (tx, ThermoX(ThermoOptions.from_yaml(sys.argv[1] + ".off")))]
 print(json.dumps(out))
 """
 
@@ -47,7 +49,9 @@ def _cp_R(tmp_path, mode):
     card.write_text(CARD % mode)
     res = subprocess.run([sys.executable, "-c", PROBE, str(card)],
                          capture_output=True, text=True, check=True)
-    return json.loads(res.stdout.strip().splitlines()[-1])
+    got = json.loads(res.stdout.strip().splitlines()[-1])
+    assert abs(got["s300"][0] - got["s300"][1]) < 1e-9, got["s300"]  # S(300 K) on == off
+    return got
 
 
 def test_equilibrium_mode_has_the_conversion_peak(tmp_path):

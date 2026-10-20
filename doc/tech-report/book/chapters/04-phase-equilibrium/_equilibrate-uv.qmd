@@ -389,7 +389,7 @@ torch 2.10.0+cu126.]
 [^ch04-uv-svp-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the nucleation formulas of
 `tests/jupiter.yaml` (`h2o_ideal`, `nh3_ideal`, `nh3_h2s_lewis`) over 150 to 350 K; run:
 `python derivation-checks/check_ch2_svp.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin:
-`SUMMARY: 7 PASS, 0 FAIL`; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
+`SUMMARY: 15 PASS, 0 FAIL`; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
 
 [^ch04-uv-host-rh]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the one-vapour card `ONE_VAPOUR` of
 `src/kintera_report/ch04/runs/common.py` and `tests/jupiter.yaml`; run: `python -P

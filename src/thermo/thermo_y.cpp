@@ -49,10 +49,9 @@ void ThermoYImpl::reset() {
   if (options->nucleation() == nullptr) {
     options->nucleation() = NucleationOptionsImpl::create();
   }
-  check_svp_formulas(options->nucleation());
+  check_nucleation_options(options->nucleation());
 
   check_dimensions(options);
-  check_temperature_range(options->nucleation());
 
   auto const& mu_vec = options->mu();
   inv_mu =

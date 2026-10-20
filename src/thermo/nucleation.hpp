@@ -57,16 +57,11 @@ struct NucleationOptionsImpl {
 };
 using NucleationOptions = std::shared_ptr<NucleationOptionsImpl>;
 
-//! Throws for a minT/maxT other than the defaults (0, 1e4 K): no solver
-//! applies the range, so a narrower one would be silently ignored
-void check_temperature_range(NucleationOptions const& op);
-
 void add_to_vapor_cloud(std::set<std::string>& vapor_set,
                         std::set<std::string>& cloud_set, NucleationOptions op);
 
-//! Throws "Function <name> not registered." for a named svp formula that is
-//! not in the func table (or lacks its _ddT twin); inline forms are skipped
-void check_svp_formulas(NucleationOptions const& op);
+//! Refuses unregistered named svp formulas and a non-default minT/maxT
+void check_nucleation_options(NucleationOptions const& op);
 
 }  // namespace kintera
 

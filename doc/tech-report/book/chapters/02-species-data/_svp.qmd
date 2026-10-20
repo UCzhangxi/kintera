@@ -255,7 +255,8 @@ lines.[^ch02-svp-check] What each group shows:
   @eq-ch02-svp-ideal-ddT to at most $7.3 \times 10^{-11}$ relative, tolerance $10^{-7}$ (the truncation error is
   $O(h^2/T^2) \sim 10^{-11}$). So kintera evaluates @eq-ch02-svp-ideal, and its slope is @eq-ch02-svp-ideal-ddT.
   These lines test the values; they do not call the hand-written `_ddT` functions (that evidence is
-  `test_vapor_functions.release` and `tests/test_svp_autograd.py` in the table above).
+  `test_vapor_functions.release` in the table above and `tests/test_svp_autograd.py` in the Tests layer of
+  @sec-ch02-svp-autograd).
 - Line 7 is the algebraic identity of step 6, $\mathcal R T^2\, \mathrm d \ln p / \mathrm d T =
   \mathcal R(\beta T_3 - \gamma T)$, evaluated on the script's copy of the formula on both branches, and the constant
   $\mathcal R\, b \ln 10$ for `nh3_h2s_lewis`, below $10^{-12}$ relative (round-off). It turns the slope of lines 1-6

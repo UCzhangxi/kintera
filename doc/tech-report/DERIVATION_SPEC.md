@@ -51,9 +51,9 @@ batch lands; some checks are expected to flip from EXPECTED-FAIL to PASS.
 |---|---|---|---|---|---|
 | O-1 | State variables and what each solver holds fixed | new overview chapter | MISSING | - | (cites C4-d, C3-h, C6-g checks) |
 | O-2 | One saturation function and one energy model shared by all modules | new overview chapter | MISSING | - | check_ch3_species_functions, check_ch6_evaporation |
-| C2-a | NASA-9 cp integrated to h and s | 02/_nasa9 | PRESENT | (feeds K6) | check_ch5_equilibrium (3c) |
+| C2-a | NASA-9 cp integrated to h and s | 02/_nasa9 | PRESENT | (feeds K6) | check_ch5_equilibrium (3c), check_ch2_nasa9 |
 | C2-b | Ideal saturation curve from Clausius-Clapeyron, and its T-derivative | 02/_svp | PARTIAL | - | check_ch2_svp |
-| C2-c | Hand-written backward pass of ln K(T) | 02/_svp-autograd | PRESENT | - | (proposed C++ test, see entry) |
+| C2-c | Hand-written backward pass of ln K(T) | 02/_svp-autograd | PRESENT | - | check_ch2_svp_autograd |
 | C3-a | Reference state: energy and entropy offsets, latent heat | 03/_reference-state | PARTIAL | D12 | check_ch3_card_latent |
 | C3-b | Species and mixture cv, cp, u, h, s | 03/_species-functions | PRESENT | - | check_ch3_species_functions |
 | C3-c | Equation of state with condensates (TPX->V) | 03/_eos | PRESENT | D16 | check_ch3_species_functions |
@@ -100,7 +100,9 @@ expected to pass after the fix batch) or INFO.
 
 | Script | Entries | PASS | FAIL | EXPECTED-FAIL | Notes |
 |---|---|---|---|---|---|
-| check_ch2_svp.py | C2-b, C4-b | 7 | 0 | 0 | prints beta R T3 per branch |
+| check_ch2_svp.py | C2-b, C4-b | 15 | 0 | 0 | prints beta R T3 per branch; lines 8-15 read kintera at T3 -+ 1e-6 K and 3e-6 K |
+| check_ch2_nasa9.py | C2-a | 3 | 0 | 0 | b1, b2 against CODATA; prints the jumps at Tmid (5 of 293 entries > 1 K in h/R) |
+| check_ch2_svp_autograd.py | C2-c | 8 | 0 | 0 | through kintera.Evaporation and forward_with_rate_constants |
 | check_ch3_species_functions.py | C3-b, C3-c, C3-d, C3-i | 8 | 0 | 0 | 1 INFO: default cap leaves 6 of 9 cold cells unconverged (D4) |
 | check_ch3_card_latent.py | C3-a, C3-g | 3 | 0 | 0 | 8 INFO: test-card latent heat ratios |
 | check_ch3_gibbs.py | C3-e | 1 | 0 | 0 | four states, RH 0.024 to 2.6 |
@@ -120,7 +122,7 @@ expected to pass after the fix batch) or INFO.
 | check_ch9_budget_below1.py | C9-f | 4 | 0 | 2 | K9 |
 | check_ch9_atm2d.py | C9-a, C9-b, C9-d, C9-f | all | 0 | 0 | 1 INFO: clamped hog total |
 
-Not yet covered by a script: C2-c (needs a C++ test), C3-d round trip, C4-f direct KKT test, C9-c and C9-e
+Not yet covered by a script: C3-d round trip, C4-f direct KKT test, C9-c and C9-e
 (proposed in the entries). The overview entries O-1 and O-2 cite lines of the scripts above.
 
 ---
@@ -238,9 +240,11 @@ or as the opening section of chapter 3, closes that gap. It holds two entries.
 - **Steps.** (1) Chain rule per reaction column. (2) T is expanded to one column per reaction so each
   gradient lands on its own entry. (3) The derivative is computed outside autograd, so the backward pass is
   itself a constant for a second differentiation.
-- **Check.** Not run: no Python binding exposes `LogSVPFunc` (the ch2 script recovers ln p_sat through
-  `relative_humidity` with unit partial pressures). Proposed: a C++ test that runs `torch::autograd::gradcheck`
-  on `LogSVPFunc::apply` in double precision (expected PASS) and `gradgradcheck` (expected to fail, step 3).
+- **Check.** `check_ch2_svp_autograd.py` reaches `LogSVPFunc::apply` through its one caller, `kintera.Evaporation`:
+  the first derivative against the closed form (1.3e-15) and `gradcheck` (step 1); the per-column gradient,
+  `rc_ddT` of `forward_with_rate_constants` per reaction ([32.978, 0.000] at 78 K) and the summed gradient for an
+  unexpanded temperature (step 2); the second derivative without the d2 ln K/dT2 term, and `gradgradcheck` false (step 3).
+  8 PASS.
 - **Home and status.** `02-species-data/_svp-autograd.qmd:35-46`. PRESENT.
 
 (Molar mass and unit conversion, `02-species-data/_molar-mass.qmd` and `_units.qmd`, are bookkeeping, not

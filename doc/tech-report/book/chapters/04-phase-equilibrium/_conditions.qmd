@@ -47,8 +47,8 @@ $\Delta_r$ is defined below. $K_r(T)$ has units Pa$^{\sum_{n<N_{\mathrm g}} \hat
 
 **Why these are the conditions: a constrained minimum of the Gibbs energy.** The conditions below are the optimality
 conditions of one problem: at fixed temperature and pressure, the parcel's Gibbs energy is minimised over the reaction
-extents, subject to no condensate amount going negative. The derivation rests on four assumptions, each a property of
-the code:
+extents, subject to no condensate amount going negative. The derivation rests on four assumptions. The first three
+are properties of the code; the fourth is an assumption of the derivation that the code does not check:
 
 1. $T$ and $p$ are held fixed during the solve (`equilibrate_tp` receives them as constants,
    {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}).
@@ -56,9 +56,12 @@ the code:
    use a compressibility factor in these tests (Limits).
 3. Each condensate is a pure phase whose chemical potential depends on $T$ only: it has unit activity and does not
    appear in the quotient (`equilibrate_tp` keeps species $n \ge N_{\mathrm g}$ out of `log_frac_sum`).
-4. Each nucleation reaction $r$ consumes gases and produces one condensate $m_r$ with coefficient
-   $q_r = \nu_{m_r r} > 0$ (the readers check for a condensed product, `ThermoYImpl::reset`,
-   {{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}), and no condensate is produced by two reactions.
+4. Each nucleation reaction $r$ consumes gases and produces exactly one condensate $m_r$ with coefficient
+   $q_r = \nu_{m_r r} > 0$, and no condensate is produced by two reactions. The reader enforces less: condensed species
+   may only be products, and each reaction needs at least one condensed product (`ThermoYImpl::reset`,
+   {{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}). It accepts several condensed products in one reaction,
+   and the same condensate in two reactions. The test deck `tests/jupiter.yaml` satisfies assumption 4. Step 3 needs
+   it, for one multiplier per reaction and $\mathcal N_{m_r} = \mathcal N^0_{m_r} + q_r\xi_r$.
 
 *Step 1, the Gibbs energy.* With $\mathcal N_n$ the amount of species $n$ in the parcel and $\mu_n$ its chemical
 potential, the ideal-gas and pure-condensate potentials are
@@ -136,7 +139,7 @@ is the saturation deficit, in energy per unit of condensate. Since $q_r > 0$ and
 $c_{m_r} = \mathcal N_{m_r}/V$ has the sign of its amount, the four conditions become the three of
 @eq-ch04-conditions-saturation below.
 
-*Step 4, the minimum is unique.* The second derivatives are
+*Step 4, any KKT point is a global minimum.* The second derivatives are
 
 $$
 \frac{\partial^2 G}{\partial \xi_r\, \partial \xi_s}
@@ -147,9 +150,16 @@ $$
 For any vector $\mathbf y$, put $a_n = \sum_r \hat\nu_{nr}\, y_r$. The quadratic form is
 $\mathcal R T\,[\sum_n a_n^2/\mathcal N_n - (\sum_n a_n)^2/\mathcal N_{\mathrm g}]$, which is non-negative by the
 Cauchy–Schwarz inequality, $(\sum_n a_n)^2 \le (\sum_n a_n^2/\mathcal N_n)(\sum_n \mathcal N_n)$. So $G$ is convex in the
-extents, the KKT point is the global minimum, and a solver that satisfies the conditions has found it. In mole-fraction
-units this matrix is minus the gain $\mathsf W\mathsf S$ of the fixed-temperature step
-(@eq-ch04-equilibrate-tp-weight), which is why that step is a Newton step on $G$.
+extents, any KKT point is a global minimum, and a solver that satisfies the conditions has found one. Equality in
+Cauchy–Schwarz holds when $a_n = t\,\mathcal N_n$ for every gas, that is, when the step changes every gas amount in
+proportion to it, including $a_n = 0$. The minimum is therefore unique (strict convexity) only if no non-zero
+combination of reactions leaves the gas change proportional to the gas amounts. The condition can fail. Two
+condensates drawn from one vapour, such as `H2O(l)` and `H2O(s)` from `H2O`, give the combination $y = (1, -1)$ with
+$a_n = 0$: it trades one condensate for the other and leaves every gas unchanged. Along it $G$ is linear (only the
+condensate $g^\circ$ terms change), so the minimum need not be unique. The gain
+$\mathsf W\mathsf S$ of the fixed-temperature step (@eq-ch04-equilibrate-tp-weight), whose extents are in mole-fraction
+units, is this matrix times $-\mathcal N_{\mathrm{tot}}/(\mathcal R T)$, with $\mathcal N_{\mathrm{tot}}$ the total
+amount. That is why that step is a Newton step on $G$.
 
 *Step 5, the cases.* A condensate present ($c_{m_r} > 0$) forces $\Delta_r = 0$. For one vapour with $\hat\nu = 1$ this
 is $p_v = K_r(T) = p_{\mathrm{sat}}(T)$; for ammonium hydrosulfide it is $p_{\mathrm{NH_3}}\,p_{\mathrm{H_2S}} = K(T)$
@@ -237,9 +247,27 @@ $$
 $$
 
 with $x_{\max}$ the largest representable number of the precision, so that the weight $1/\rho_r$ stays finite. The
-left side $\Lambda_r$ of the condition (@sec-ch04-equilibrate-tp) is replaced as shown, so the deficit that the step
-removes is $\nu_{\mathcal A}$, and the weight of an absent gas is $\hat\nu_{nr}/x_n$ evaluated at its boundary
-amount. A reaction that lacks both a gas it consumes and a gas it produces cannot move in either direction and is
+replacements follow from linearising the logarithm of each absent gas about its boundary amount
+$x^\ast_n = |\hat\nu_{nr}|\,\rho_r$:
+
+$$
+\ln\frac{x_n}{x_{\mathrm g}} \approx \ln\frac{x^\ast_n}{x_{\mathrm g}} + \frac{x_n - x^\ast_n}{x^\ast_n} , \qquad
+\text{at } x_n = 0:\ \ \ln\frac{|\hat\nu_{nr}|\,\rho_r}{x_{\mathrm g}} - 1 .
+$$
+
+Summing $\hat\nu_{nr}$ times this over the absent gases, and adding the exact terms of the present gases, gives the
+linearised left side of the condition (@sec-ch04-equilibrate-tp),
+
+$$
+\Lambda_r^{\mathrm{lin}} = \sum_{n\notin\mathcal A_r,\, n<N_{\mathrm g}} \hat\nu_{nr} \ln\frac{x_n}{x_{\mathrm g}}
+  + \sum_{n\in\mathcal A_r} \hat\nu_{nr} \ln\frac{|\hat\nu_{nr}|}{x_{\mathrm g}} + \nu_{\mathcal A}\ln\rho_r
+  - \nu_{\mathcal A} = \ln\tilde K_r - \nu_{\mathcal A} ,
+$$
+
+where the last step uses the choice of $\ln\rho_r$ above. The slope of the linearised logarithm with respect to
+$x_n$ is $1/x^\ast_n$, so the weight of an absent gas is $\hat\nu_{nr}/(|\hat\nu_{nr}|\,\rho_r)$. The deficit
+that the step removes is therefore $\nu_{\mathcal A}$. In the code, `log_r` is $\ln\rho_r$, `log_frac_sum` is set to
+`logsvp - nu_absent`, and the weight of an absent gas is $\pm$`exp(-log_r)` (`equilibrate_tp`). A reaction that lacks both a gas it consumes and a gas it produces cannot move in either direction and is
 skipped for that iteration (`equilibrate_tp`, {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}). The
 fixed-energy solver does the same in concentrations, without $x_{\mathrm g}$ (`equilibrate_uv`,
 {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}).
@@ -281,7 +309,7 @@ hydrosulfide, so the pressure exponent 2 of the second reaction is exercised. It
 unadjusted with a non-negative diagnostic, and that at most 10 of 2000 random cells fail.
 
 The derivation of @eq-ch04-conditions-gibbs is checked by `check_ch4_tp.py` (line a): at the returned states every
-present condensate is on its curve to $1.3\times10^{-7}$ in $\Delta_r$ (tolerance $10^{-6}$), every absent one is
+present condensate is on its curve to $6.95\times10^{-8}$ in $\Delta_r$ (tolerance $10^{-6}$), every absent one is
 subsaturated, and the element ratios change by at most $5.6\times10^{-16}$ (run record in the Derivation layer).
 
 [^ch04-conditions-refs]: [source: W. R. Smith and R. W. Missen, Chemical Reaction Equilibrium Analysis: Theory and
@@ -293,7 +321,7 @@ section 12.3, for the KKT conditions.]
 at 300, 250, 200 and 160 K and $10^5$ Pa from $x_{\mathrm{H_2O}} = 2.5\times10^{-3}$, $x_{\mathrm{NH_3}} =
 3\times10^{-4}$, $x_{\mathrm{H_2S}} = 8\times10^{-5}$; run: `python derivation-checks/check_ch4_tp.py` from a scratch
 directory with `KINTERA_WT` set to a build tree at the pin, line a: worst $|\Delta_r|$ at a present condensate
-$1.3\times10^{-7}$ (tol $10^{-6}$), every absent condensate subsaturated (7 cases), element ratios changed by at most
+$6.95\times10^{-8}$ (tol $10^{-6}$), every absent condensate subsaturated (7 cases), element ratios changed by at most
 $5.6\times10^{-16}$ (tol $10^{-14}$), PASS; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch
 2.10.0+cu126.]
 

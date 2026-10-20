@@ -73,12 +73,16 @@ The linearisation is exact only for an infinitesimal step, so the outer loop rep
 After each step the code divides every mole fraction by their new sum $s$ (Numerical method, step 7). This leaves the
 condition unchanged: $\Lambda_r$ depends on the mole fractions only through the ratios $x_n/x_{\mathrm g}$, and
 $(x_n/s)/(x_{\mathrm g}/s) = x_n/x_{\mathrm g}$. Only the unit of the next step's extents changes. Because $\Lambda_r$ is
-the gas part of $\partial G/\partial\xi_r$ in @eq-ch04-conditions-gibbs, the gain $\mathsf W\mathsf S$ is minus the
-Hessian of the Gibbs energy in mole-fraction units (@sec-ch04-conditions, step 4), and the linear step is a Newton step
+the gas part of $\partial G/\partial\xi_r$ in @eq-ch04-conditions-gibbs, the gain $\mathsf W\mathsf S$ is the
+Hessian of the Gibbs energy times $-\mathcal N_{\mathrm{tot}}/(\mathcal R T)$ (@sec-ch04-conditions, step 4), and the linear step is a Newton step
 on $G$. The check `check_ch4_tp.py` (line b) compares the returned gain with a central difference of $\Lambda_r$ along
-the extent: they agree to $5.8\times10^{-10}$ (tolerance $10^{-7}$). Dropping the gas-sum term
-$-\sum\hat\nu/x_{\mathrm g}$ changes the gain by $7.6\times10^{-4}$ at 250 K, where much water has condensed, and by
-only $7.5\times10^{-10}$ at 160 K.[^ch04-tp-check]
+the extent: they agree to $5.8\times10^{-10}$ (tolerance $10^{-7}$). For one vapour condensing ($\hat\nu = 1$) the
+gain is $-1/x_{\mathrm v} + 1/x_{\mathrm g}$. The gas-sum term $1/x_{\mathrm g}$ is thus smaller than the first by the
+factor $x_{\mathrm v}/x_{\mathrm g}$, the vapour's share of the gas. It matters where much vapour remains: in warm cells,
+or wherever the condensing gas is a large share of the gas. In the check, dropping it changes the water gain
+($-1337$ at 250 K, $-1.45\times10^{9}$ at 160 K) by $7.6\times10^{-4}$ and $7.5\times10^{-10}$ relative. These
+are the vapour fractions left at the two temperatures; more water is condensed at 160 K than at
+250 K.[^ch04-tp-check]
 
 ### Numerical method
 
@@ -175,7 +179,7 @@ GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
   `max-iter` of about 50 is needed. A host that adjusts every step starts near equilibrium and needs fewer. The
   derivation does not depend on the cap; the correct default for cold starts is of order 100, and the fix batch sets
   it to 100.[^ch04-tp-d4] The check `check_ch4_tp.py` (line c) records the pin: with the default 12 of 13 cold-start
-  cells fail (expected failure), with 100 all converge in 9 to 42 passes (run record in the Derivation layer).
+  cells fail (expected failure), with 100 all converge in 9 to 46 passes (run record in the Derivation layer).
 :::
 
 - The step is a linearisation, and convergence is not proven. A cell that does not converge keeps the state of its

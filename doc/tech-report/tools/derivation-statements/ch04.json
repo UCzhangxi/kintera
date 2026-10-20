@@ -6,5 +6,7 @@
   "eq-ch04-equilibrate-uv-slope": "$\\mathrm dU/\\mathrm dT$ is the heat capacity at fixed composition plus, per saturated reaction, a latent term $c_{v_r} L_r^2/(\\hat\\nu_r^2 \\mathcal R T^2) \\ge 0$, so $U(T)$ is increasing and the root unique; checked by `derivation-checks/check_ch4_uv.py`, line d.",
   "eq-ch04-active-set-kkt": "The Karush–Kuhn–Tucker conditions of the convex constrained least-squares problem: stationarity, primal and dual feasibility, complementarity; necessary and sufficient.",
   "eq-ch04-active-set-block": "With the working set held as equalities, stationarity and the tight rows give one symmetric block system for the extents and the multipliers.",
-  "eq-ch04-active-set-direct": "For a square non-singular gain, premultiplying the first block row by $\\mathsf A^{-\\mathsf T}$ gives a system conditioned like $\\mathsf A$ rather than $\\mathsf A^{\\mathsf T}\\mathsf A$."
+  "eq-ch04-active-set-direct": "For a square non-singular gain, premultiplying the first block row by $\\mathsf A^{-\\mathsf T}$ gives a system conditioned like $\\mathsf A$ rather than $\\mathsf A^{\\mathsf T}\\mathsf A$.",
+  "eq-ch04-equilibrate-tp-weight": "The derivative of $\\Lambda_r$ with respect to a gas mole fraction, including the gas-sum term $-\\sum_n\\hat\\nu_{nr}/x_{\\mathrm g}$; the returned gain is checked against a central difference by `derivation-checks/check_ch4_tp.py`, line b.",
+  "eq-ch04-equilibrate-uv-weight": "Differentiating the residual at fixed $U$ gives the weight row with the latent-heat coupling; its algebra is checked by the numpy transcription `equilibrate_uv_check.py` (`[C1]`–`[C4]`), not by a call to the built solver."
 }

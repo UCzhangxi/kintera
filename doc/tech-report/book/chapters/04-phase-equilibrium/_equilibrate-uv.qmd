@@ -127,7 +127,8 @@ $$ {#eq-ch04-equilibrate-uv-weight}
 `equilibrate_uv` ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}) builds this row for every active
 reaction: `logsvp_ddT[j] * intEng[i] / heat_capacity` for every species and `nu / conc[i]` added for the gases of the reaction, with `intEng`
 the absolute molar energy $u_n$, offset included, and `heat_capacity` the sum $C_V$. The check
-`equilibrate_uv_check.py` compares the row with finite differences of $F_r$ at fixed $U$ (`[C1]`, `[C2]`). With
+`equilibrate_uv_check.py` is a numpy transcription of this row, not a test of the built solver: it checks the algebra
+of the row against finite differences of $F_r$ at fixed $U$ (`[C1]`, `[C2]`). With
 $\delta\mathbf c = \mathsf S\boldsymbol\xi$, where $\mathsf S$ has entries $\nu_{nk}$, the gain matrix of the step is
 
 $$
@@ -171,7 +172,7 @@ $\max(10^{-4}\,\mathrm K, 8\,\epsilon_{\mathrm{mach}} T)$ and ends the loop, so 
 code's first test always passes, because its previous iterate starts at zero. A temperature-dependent extra term makes
 the left side nonlinear, and a few more passes are needed. `check_ch4_uv.py` line a compares the final temperature of
 `uv-solver: kkt` with an independent bisection of $U(T)$ on the one-vapour card. The two agree to
-$1.8\times10^{-9}$ K (tolerance $10^{-6}$ K), and $U$ and the water total change by at most $3.3\times10^{-16}$ and
+$1.4\times10^{-8}$ K (tolerance $10^{-6}$ K), and $U$ and the water total change by at most $3.3\times10^{-16}$ and
 $2.2\times10^{-16}$ (relative).[^ch04-uv-check]
 
 **The partition method as one equation in temperature.** Assume that the reaction set qualifies for the partition
@@ -241,10 +242,10 @@ which is what the numerical method relies on. The general method solves the same
 therefore reach the same temperature when it converges.
 
 `check_ch4_uv.py` line b compares the partition temperature with the bisection oracle of line a on three cells
-(agreement $5.7\times10^{-14}$ K, tolerance $10^{-9}$ K) and with `uv-solver: kkt` ($1.8\times10^{-9}$ K, tolerance
+(agreement $5.7\times10^{-14}$ K, tolerance $10^{-9}$ K) and with `uv-solver: kkt` ($1.4\times10^{-8}$ K, tolerance
 $10^{-6}$ K). Line d evaluates the oracle's $U(T)$ from 150 to 400 K, across the kink. The smallest slope is
 $9.4\times10^{3}$ J K$^{-1}$ m$^{-3}$, and the first line of @eq-ch04-equilibrate-uv-slope matches central differences
-to $4.7\times10^{-11}$ (tolerance $10^{-7}$), in the same run.
+to $4.6\times10^{-11}$ (tolerance $10^{-7}$), in the same run.
 
 ### Numerical method
 
@@ -308,9 +309,15 @@ At the code pin the test is $64\,\epsilon_{\mathrm{mach}} \max(|U_0|, 1)$, witho
 failure near $T_\star$ in the Limits.[^ch04-uv-d6]
 
 The Newton loop also needs its own bound on the number of passes. In the worst case every pass is a bisection, which
-halves the bracket. A bracket whose width is comparable to $T$ shrinks to the spacing of double-precision numbers near
-$T$ after about 53 halvings (24 in single precision), so 64 passes always suffice. The bound should not depend on
-the outer `max-iter`, which counts linear steps of the general method. The correct bound is therefore
+halves the bracket. When the start residual is negative the code doubles the upper end, and the bracket's width is
+comparable to the root. A bracket of that width shrinks to the spacing of double-precision numbers near the root
+after about 53 halvings (24 in single precision). When the start residual is positive the code halves only the lower
+end and keeps the start temperature $T_0$ as the upper end. After $k$ halvings the bracket is $[T_0/2^k, T_0]$, with
+the root above $T_0/2^k$. Pure bisection then needs about $53 + k$ halvings to reach the root's spacing, and about
+$47 + k$ to bring $|U - U_0|$ under the $64\,\epsilon_{\mathrm{mach}}$ tolerance. So 64 passes suffice when the root
+lies within a factor of about $2^6$ to $2^{10}$ of the start. That covers physical cells: latent heating moves a
+cell's temperature by tens of kelvin, so $k \le 1$. It is not a bound for every input. The bound should not depend
+on the outer `max-iter`, which counts linear steps of the general method. The correct bound is therefore
 $\max(\texttt{max-iter}, 64)$.[^ch04-uv-k4]
 
 At the code pin the Newton passes are capped by the same `max-iter` as the general method (default 10): the loop runs while the
@@ -407,11 +414,10 @@ outside the suite, not a committed check.]
   $|\ln\mathrm{RH}| < 10^{-6}$.[^ch04-uv-partition] With $T_\star$ = 250 K and starts within 1 K of it, `partition` fails in
   all five cells tried, leaving $\ln\mathrm{RH}$ between 4.09 and 4.28.[^ch04-uv-partition-250] With `auto` such a cell
   falls back to the general method. `check_ch4_uv.py` line c reproduces the failure on its own card: of seven starts
-  from 296 to 304 K, those at 299, 300 and 302 K return diagnostic $-1$ with the temperature left 2.8 to 3.5 K from the
-  oracle (EXPECTED-FAIL). Which starts fail depends on rounding: the committed output of the same script records a
-  different failing set. The scaled tolerance of the Numerical method lies above the rounding error by construction;
+  from 296 to 304 K, those at 299, 300 and 301 K return diagnostic $-1$ with the temperature left 3.0 to 3.5 K from the
+  oracle (EXPECTED-FAIL). The scaled tolerance of the Numerical method lies above the rounding error by construction;
   that it removes these failures is not measured at the code pin.[^ch04-uv-d6-limit]
-- **`max-iter` also caps the partition method at the code pin**, as above; lowering it below 5 to save time loses
+- **`max-iter` also caps the partition method at the code pin**, as above; lowering it below 4 to save time loses
   partition cells. The correct bound is independent of it (Numerical method).
 - **The default `max-iter` of 10 fails cold starts here too.** On the cold-start cells of @sec-ch04-equilibrate-tp the
   general method fails at 130 and 150 K with `max-iter: 10` and converges with 20 or 30, in 14 and 12
@@ -435,7 +441,7 @@ runs while fewer than `max_iter` passes have been made; the fix bounds it by $\m
 part of the code pin.]
 
 [^ch04-uv-d6-limit]: [source: UCzhangxi/kintera issue #54, row D6; run record of `check_ch4_uv.py` as in the
-Derivation layer; the committed `derivation-checks/check_ch4_uv.out` lists 299, 300 and 301 K.]
+Derivation layer, committed output `derivation-checks/check_ch4_uv.out`, line c.]
 
 [^ch04-uv-d12]: [source: UCzhangxi/kintera issue #54, row D12; the solver call in `ThermoYImpl::forward`
 ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}) passes `u0` and `cv0` at the pin; the fix passes the

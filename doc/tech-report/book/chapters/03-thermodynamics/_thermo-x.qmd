@@ -116,11 +116,26 @@ $$ {#eq-ch03-thermo-x-entropy-frozen-factor}
 
 which without the $n_{\mathrm g}$ term reads $1 - (C_{\mathrm{eff}} - S)/(C_p - S)$. The convergence is linear and
 needs $\lvert \phi' \rvert < 1$, that is $0 < T (\mathrm d S/\mathrm d T)/(C_p - S) < 2$; the iterates alternate about
-the root when that ratio exceeds 1 ($\phi' < 0$) and approach it from one side when it lies between 0 and 1. Which case
-holds depends on the entropy constants, since both $S$ and $\mathrm d S/\mathrm d T$ contain them. With the default
-constants $C_p - S > 0$ and latent heat makes $T\, \mathrm d S/\mathrm d T > C_p - S$, so $\phi'$ is negative once
-anything condenses and the iterates alternate: at the state above $\phi' = -0.194276$, and iterating the step gives
-error ratios $-0.194275$ and $-0.194277$ (check line `(f6)`). With the dry gas's `s0_R` = 10 at the same state,
+the root when that ratio exceeds 1 ($\phi' < 0$) and approach it from one side when it lies between 0 and 1. The
+sign and size of $\phi'$ depend on the state as well as on the constants (@tbl-ch03-thermo-x-phi-states): with the
+default constants, $\phi'$ is $-0.194$ at $10^6$ Pa and 299 K, but the frozen step already diverges at $10^4$ Pa
+($\phi' = -1.85$, alternating) and at $10^2$ Pa ($\phi' = +1.39$, monotone, $C_p - S < 0$). At the state above
+$\phi' = -0.194276$, and iterating the step gives error ratios $-0.194275$ and $-0.194277$ (check line `(f6)`).
+
+| $p$ (Pa) | $T^{\ast}$ (K) | $C_p - S$ (J/(K m$^3$)) | $T (\mathrm d S/\mathrm d T)/(C_p - S)$ | $\phi'$ |
+|---|---|---|---|---|
+| $10^6$ | 299 | 20668.058 | 1.194276 | $-0.194276$ |
+| $10^5$ | 280 | 1402.195 | 1.962645 | $-0.962645$ |
+| $10^4$ | 250 | 83.811 | 2.846174 | $-1.846174$ |
+| $10^3$ | 225 | 1.115 | 12.688813 | $-11.688813$ |
+| $10^2$ | 205 | $-0.814$ | $-0.388684$ | $+1.388684$ |
+
+: Root factor of the frozen $\ln T$ step for saturated H2O at the default constants: `tests/jupiter.yaml` with the
+step-3 cards, $x_{\mathrm{H_2O}} = 0.02$, iteration started at $T^{\ast} + 10^{-4}$ K. The gas fraction
+$x_{\mathrm g}$ and the measured error ratios of each row are in the output of check line `(f11)`. The step diverges
+where the ratio lies outside $(0, 2)$. {#tbl-ch03-thermo-x-phi-states}
+
+With the dry gas's `s0_R` = 10 at the $10^6$ Pa state,
 $C_p - S = -12665$ and $T\, \mathrm d S/\mathrm d T = -10626$ J/(K m$^3$), both negative, the ratio is 0.839, and
 $\phi' = +0.160977$: the iterates are monotone, with error ratios $+0.160977$ (check line `(f10)`).
 
@@ -221,7 +236,7 @@ CPU in float32 and float64 and on CUDA when a GPU is present. `TV->cp` and `TV->
 `DeviceTest.thermo_x` but not asserted.
 
 The derivation is checked by `check_ch3_pxs.py`, lines `(f1)`-`(f4)` on a dry parcel of `tests/jupiter.yaml` at 1 bar
-and `(f5)`-`(f8)`, `(f10)` on a saturated one:[^ch03-pxs-check]
+and `(f5)`-`(f8)`, `(f10)`, `(f11)` on saturated ones:[^ch03-pxs-check]
 
 - `(f1)`: @eq-ch03-thermo-x-entropy-slope against a central difference of `TPV->S` at fixed $(p, x)$, 250-600 K, to
   $3.1 \times 10^{-10}$ (tolerance $10^{-7}$).
@@ -246,6 +261,10 @@ and `(f5)`-`(f8)`, `(f10)` on a saturated one:[^ch03-pxs-check]
 - `(f10)`: the `(f6)` state with the dry gas's `s0_R` = 10: @eq-ch03-thermo-x-entropy-frozen-factor, predicted
   $+0.160977$ against the iteration's error ratios (to $5.7 \times 10^{-7}$, tolerance $10^{-3}$), and $\phi' > 0$ with
   $C_p - S < 0$ and monotone iterates.
+- `(f11)`: the five states of @tbl-ch03-thermo-x-phi-states at the default constants:
+  @eq-ch03-thermo-x-entropy-frozen-factor against the iteration's error ratios (to $2.4 \times 10^{-3}$ relative,
+  tolerance $10^{-2}$), and in every row the iteration converges iff the ratio lies in $(0, 2)$ and alternates iff
+  it exceeds 1.
 
 <!-- equation-check: eq-ch03-thermo-x-entropy-slope check_ch3_pxs.py (f1) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-factor check_ch3_pxs.py (f2) -->
@@ -257,14 +276,15 @@ and `(f5)`-`(f8)`, `(f10)` on a saturated one:[^ch03-pxs-check]
 <!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f6) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-factor check_ch3_pxs.py (f7) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f10) -->
+<!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f11) -->
 <!-- equation-check: eq-ch03-thermo-x-totals check_ch3_species_functions.py -->
 
 [^ch03-pxs-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, dry
-    composition, and the same deck with the step-3 cards for `(f5)`-`(f8)` and `(f10)`; run:
+    composition, and the same deck with the step-3 cards for `(f5)`-`(f8)`, `(f10)` and `(f11)`; run:
   `python doc/tech-report/derivation-checks/check_ch3_pxs.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_pxs.out`,
-    10 PASS, 2 EXPECTED-FAIL.]
+    12 PASS, 2 EXPECTED-FAIL.]
 
 [^ch03-d8]: [source: UCzhangxi/kintera#54, row D8 (`PXS->T` slope), merged on the staging branch of that issue.]
 

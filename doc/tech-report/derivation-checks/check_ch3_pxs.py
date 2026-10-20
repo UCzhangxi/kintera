@@ -22,6 +22,9 @@ S taken along the equilibrium path (forward at every temperature):
      differs, the root does not.
 (f10) the sign of phi' depends on the constants: the (f6) state with s0_R of the dry gas 10 gives C_p - S < 0 and
      T dS/dT < 0, phi' > 0, and monotone iterates: prediction against the error ratios, and the sign.
+(f11) ... and on the state: saturated H2O at the default constants, x_H2O = 0.02, p = 1e6 .. 1e2 Pa at T* = 299 ..
+     205 K, iteration started at T* + 1e-4 K: phi' against the error ratios, and the general condition (converges
+     iff 0 < ratio < 2, alternates iff ratio > 1) against the iteration in every row.
 """
 import math
 import os
@@ -52,27 +55,28 @@ SAT_PROBE = r"""
 from kintera import ThermoOptions, ThermoX
 torch.set_default_dtype(torch.float64)
 card = sys.argv[1]
+args = [float(a) for a in sys.argv[3:]]  # optional p (Pa), T* (K), start offset (K); argv[2] "nocode" skips (f8)
 with_code = len(sys.argv) < 3
 op = ThermoOptions.from_yaml(card); op.max_iter(100); op.ftol(1e-14)
 th = ThermoX(op); th.to(torch.float64)
 names = kintera.species_names()
 sp = [names[i] for i in list(op.vapor_ids()) + list(op.cloud_ids())]
 x0 = torch.zeros(1, len(sp)); x0[0, sp.index("H2O")] = 0.02; x0[0, 0] = 0.98
-p = torch.tensor([1e6])
+p = torch.tensor([args[0] if args else 1e6])
 def eq(T0):
     T = torch.tensor([T0]); x = x0.clone(); gain = th.forward(T, p, x)
     c = th.compute("TPX->V", [T, p, x]); ng = c[..., :len(op.vapor_ids())].sum(-1)
     S = th.compute("TPV->S", [T, p, c]).item(); Cp = th.compute("TV->cp", [T, c]).item()
     ceff = (c.sum(-1) * th.effective_cp(T, p, x, gain)).item()
     return S, Cp, ceff, (ng / c[..., 0]).item(), x[0].tolist()
-Ts = 299.0
+Ts = args[1] if args else 299.0
 S, Cp, Ceff, ng, xs = eq(Ts)
 h = 1e-3
 Sp, _, _, ngp, _ = eq(Ts + h); Sm, _, _, ngm, _ = eq(Ts - h)
 TdSdT = Ts * (Sp - Sm) / (2 * h)
 dlnng = (math.log(ngp) - math.log(ngm)) / (2 * h)
 def iterate(step, n):
-    T = Ts + 1e-3; err = []
+    T = Ts + (args[2] if args else 1e-3); err = []
     for _ in range(n):
         Sx, Cpx, _, _, _ = eq(T); T = step(T, Sx, Cpx); err.append(T - Ts)
     return err
@@ -143,6 +147,7 @@ def check_saturated():
     report("(f9) the root does not depend on s0_R: both runs end at 600 K, max |T - 600| (K)", e, 1e-9, e < 1e-9)
     e = abs(d2["steps"][0] - d1["steps"][0])
     report("(f9) the iterates do: first steps differ (K), must EXCEED tol", e, 1.0, e > 1.0)
+    fixed = ch3_card.fixed_deck(deck)
     g = ch3_card.run(ch3_card.fixed_deck(deck.replace(DRY, DRY + "\n    s0_R: 10.", 1)), SAT_PROBE, "nocode")
     S, Cp, TdS = g["S"], g["Cp"], g["TdSdT"]
     phi = 1 - TdS / (Cp - S)
@@ -153,6 +158,18 @@ def check_saturated():
     report("(f10) s0_R 10: root factor 1 - T (dS/dT)/(C_p - S) vs iteration (abs)", e, 1e-3, e < 1e-3)
     report("(f10) s0_R 10: phi' > 0 with C_p - S < 0, monotone iterates, must EXCEED tol", phi, 0.0,
            phi > 0 and Cp - S < 0 and min(r) > 0)
+    worst, bad = 0.0, 0
+    for pp, Tt in ((1e6, 299.0), (1e5, 280.0), (1e4, 250.0), (1e3, 225.0), (1e2, 205.0)):
+        g = ch3_card.run(fixed, SAT_PROBE, "nocode", pp, Tt, 1e-4)
+        S, Cp, TdS = g["S"], g["Cp"], g["TdSdT"]
+        q = TdS / (Cp - S)
+        r = [g["frozen"][i + 1] / g["frozen"][i] for i in range(2)]
+        print(f"   default constants, {pp:.0e} Pa, {Tt:.0f} K: x_g = {g['xg']:.6f}, C_p - S = {Cp - S:.3f} J/(K m^3), "
+              f"ratio {q:.6f}, phi' = {1 - q:+.6f}, error ratios {r[0]:+.6f}, {r[1]:+.6f}")
+        worst = max(worst, max(abs(x / (1 - q) - 1) for x in r))
+        bad += sum(((0 < q < 2) != (abs(x) < 1)) or ((q > 1) != (x < 0)) for x in r)
+    report("(f11) default constants, 1e6-1e2 Pa: phi' vs iteration (rel)", worst, 1e-2, worst < 1e-2)
+    report("(f11) converges iff 0 < ratio < 2, alternates iff ratio > 1: rows against it (count)", bad, 0, bad == 0)
 
 
 if __name__ == "__main__":

@@ -38,7 +38,8 @@ rest as in @sec-ch04-conditions. Local symbols: $u_{0,n}$, the molar internal en
 $T = 0$ [J mol$^{-1}$]; $K'_r$, the saturation constant of reaction $r$ in concentration units, defined in
 @eq-ch04-equilibrate-uv-constant [(mol m$^{-3}$)$^{m}$, $m = \sum_{n<N_{\mathrm g}} \hat\nu_{nr}$]; $F_r$, the
 residual of the concentration condition of reaction $r$ [-]; $\mathsf W$, here the weight matrix of the fixed-energy
-step (active reactions by species) [m$^3$ mol$^{-1}$]. The reference temperature $T_\star$ is the YAML entry
+step (active reactions by species) [m$^3$ mol$^{-1}$]; $\lambda_r$, here the multiplier of the fixed-$U,V$
+problem, the fixed-$T,p$ one of @sec-ch04-conditions divided by $T$ [J mol$^{-1}$ K$^{-1}$]. The reference temperature $T_\star$ is the YAML entry
 `reference-state: Tref` (default 300 K, @sec-ch03-reference-state).
 
 ### Derivation
@@ -58,10 +59,12 @@ with $A_r$ the affinity of reaction $r$. The chemical potentials are those of @s
 temperature that the given $U$ and composition imply, so $A_r = -\mathcal R T\,\Delta_r$ by
 @eq-ch04-conditions-gibbs. The KKT conditions of the maximum, with multiplier $\lambda_r \ge 0$ for
 $\mathcal N_{m_r} \ge 0$, are $A_r/T + \lambda_r q_r = 0$, $\lambda_r \ge 0$ and
-$\lambda_r\mathcal N_{m_r} = 0$. They give $\Delta_r = \lambda_r q_r/\mathcal R \ge 0$, with equality where the
+$\lambda_r\mathcal N_{m_r} = 0$. This $\lambda_r$ is the fixed-$T,p$ multiplier of @sec-ch04-conditions divided
+by $T$, so its unit is J mol$^{-1}$ K$^{-1}$. They give $\Delta_r = \lambda_r q_r/\mathcal R \ge 0$, with equality where the
 condensate is present: the same three conditions as at fixed $T$ and $p$, now at the temperature fixed by $U$. The
-entropy of an ideal mixture with pure condensates is concave in $(U, V, \mathcal N)$, so any point that meets them is
-a global maximum. Uniqueness is a separate question. For the partition sets below it follows from the monotone
+entropy of an ideal mixture with pure condensates is concave in $(U, V, \mathcal N)$, so, for a card consistent
+with its saturation curve, any point that meets them is a global maximum. For an inconsistent card no single entropy
+function yields both the saturation curve and the card energies, so the argument does not apply. Uniqueness is a separate question. For the partition sets below it follows from the monotone
 $U(T)$ of Step 4, under the sign assumption stated there. For general reaction sets the derivation establishes only
 that a point meeting the conditions is an equilibrium, not that it is the only one.
 
@@ -310,11 +313,13 @@ to each cell:
    $\ln K_r/\hat\nu_r - \ln(\mathcal R T) \ge \ln w_r$, and $K_r^{1/\hat\nu_r}/(\mathcal R T)$ otherwise. A zero total
    sets both concentrations to zero.
 3. If the residual $U - U_0$ is positive, halve the lower end of the bracket; if it is negative, double the upper end.
-   Stop when the residual at the new end has the other sign, and fail after 64 steps. Because $U(T)$ is increasing
-   (Step 4 of the Derivation), a sign change brackets the only root.
+   Stop when the residual at the new end has the other sign, and fail after 64 steps. $U(T)$ is continuous, so a sign
+   change always brackets a root. Under the latent-energy sign assumption of Step 4 of the Derivation, $U(T)$ is
+   increasing and that root is the only one.
 4. Take the Newton step $T - (U - U_0)/(\mathrm dU/\mathrm dT)$. Replace it with the midpoint of the bracket when it
    is not finite, falls outside the bracket, or does not move. Then move the bracket end on the side of the residual's
-   sign. The bracket always contains the root, so the iteration cannot diverge, and Newton's quadratic convergence
+   sign. The bracket always contains a root, so the iteration cannot diverge; this needs only the continuity of
+   $U(T)$, not the sign assumption, and Newton's quadratic convergence
    applies once the iterate is on the smooth piece that holds the root.
 5. Stop when $|U - U_0|$ is at most the tolerance below.
 

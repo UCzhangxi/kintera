@@ -194,7 +194,7 @@ a multiphase case.
 `src/kintera_report/ch05/checks/newton_check.py` (line d) and N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase
 at 300 K and $10^5$ Pa (lines d and e); run: `python derivation-checks/check_ch5_equilibrium.py` from a scratch
 directory with `KINTERA_WT` set to a build tree at the pin: lines d and e PASS (line e to round-off, tolerance
-$10^{-14}$ of the largest amount); CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
+$10^{-14}$ of the largest amount and $10^{-5}$ of each amount); CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
 
 [^ch05-newton-refs]: [source: J. Nocedal and S. J. Wright, Numerical Optimization, 2nd ed., Springer (2006),
 <https://doi.org/10.1007/978-0-387-40065-5>, chapter 11 (Newton's method for nonlinear equations, merit functions

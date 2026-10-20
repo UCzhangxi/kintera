@@ -20,7 +20,7 @@
       "term": "Pref",
       "meaning": "reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`",
       "section": "sec-ch11-yaml-input",
-      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52"
+      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics.hpp#L62"
     },
     {
       "kind": "key",

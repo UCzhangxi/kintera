@@ -64,7 +64,7 @@ returned amounts and writes:
 | 1 | input rejected: $T$ or $p$ not positive, an empty species, reaction or phase list, gas phase out of range, or an amount not above `mole-floor` | the input |
 | 2 | `max-iter` iterations without meeting the target | the last iterate |
 | 3 | the bounded Newton step failed (@sec-ch10-newton) | the last iterate |
-| 4 | no step scale down to $10^{-12}$ reduced the largest residual | the last iterate |
+| 4 | no step scale down to $10^{-12}$ gave a trial above the floor with a smaller largest residual | the last iterate |
 
 : Status codes of the log-K solver. {#tbl-ch05-diagnostics-status}
 
@@ -88,7 +88,8 @@ stays positive along the whole path, at least $3.03\times10^{-15}$ mol, so the l
 After 19 accepted steps the plain Newton step would take the liquid, then $3.027\times10^{-15}$ mol, below the
 floor, and the floor test of the line search rejects all 40 scales from 1 down to $10^{-12}$. None is rejected for
 failing to lower the residual. The solve ends with status 4 and error 2.253. A numpy copy of the iteration without
-the fallback gives the same amounts, status, step count and error. A one-species phase also gives no residual a
+the fallback gives the same status, step count and error, and amounts that agree to round-off (0.0 on the build of
+the run record, $5\times10^{-21}$ mol on an arm64 build of the pin). A one-species phase also gives no residual a
 dependence on its amount (`newton_check.py`, `[C3]`), so emptying it cannot by itself satisfy the condition. Its amounts are then close to the one-phase answer, with the phase near the floor, but the error is large:
 the reaction that would form the phase is subsaturated. @fig-ch05-diagnostics-water shows this for water vapour over a
 pure liquid with NASA-9 constants and a fixed total of water. Up to 300 K the solve converges and the water partial
@@ -132,12 +133,14 @@ agree to $1.4\times10^{-8}$, within the tolerance.[^ch05-cuda-run]
 : Tests of convergence and failure reporting. {#tbl-ch05-diagnostics-tests}
 
 No test produces status 1, 2, 3 or 4, checks the iteration count, or checks the gain beyond its shape. The runs above
-show each status except 3. A suite test would build the water card of @fig-ch05-diagnostics-water and assert status 1,
+show statuses 0, 1, 2 and 4 on well-posed systems. Status 3 is seen only on an ill-posed one: the three-phase system
+of `check_ch5_equilibrium.py` lines d and f, whose Jacobian is singular by the phase rule (@sec-ch05-conditions). There
+the status is 3 or 4 depending on rounding (@sec-ch05-newton). A suite test would build the water card of @fig-ch05-diagnostics-water and assert status 1,
 2 and 4 for the three inputs listed.
 
 [^ch05-diagnostics-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase, 300 K, $10^5$ Pa, starts (1, 0.05, 0.05) and (1, 0.01, 0.001) mol; run:
 `python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
-the pin: lines b, d and e PASS; CPU, double; kintera source build at the pin, Python 3.11.13, torch 2.10.0+cu126.]
+the pin: lines b, d and e PASS (line e to round-off); CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
 
 [^ch05-water-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`, the cases of `water_condensation.json`; run: `python -P

@@ -77,7 +77,18 @@ $$
 $$ {#eq-ch05-conditions-extent}
 
 $\mathsf E\mathsf S = 0$ says that every reaction is balanced in every element, so any extents conserve the elements
-exactly, and the element totals need not be stored. There are as many unknowns as conditions, one per reaction. The
+exactly, and the element totals need not be stored. There are as many unknowns as conditions, one per reaction.
+
+**The phase rule.** Independent reactions are not enough for a well-posed problem. With $N$ components, $C$ independent
+elements and the full set of $R = N - C$ independent reactions, the problem also needs $P \le C$: no more phases
+than components. The proof is one line. Every residual depends on the amounts only through the mole fractions
+$\mathcal N_n/\mathcal N_\pi$ within each phase, and the mole fractions of a phase do not change when all its
+amounts are scaled together. So the Jacobian of @sec-ch05-newton has rank at most $N - P$, and with
+$R = N - C$ it is singular whenever $P > C$. The rank check on the stoichiometric matrix (@sec-ch05-options) does not
+detect this, because it tests the reactions, not the phases. The three-phase example of `newton_check.py` is such a
+case ($N = 6$, $C = 2$, $P = 3$, $R = 4$): `check_ch5_equilibrium.py` line f finds the smallest singular value of the
+Jacobian to be $1.6\times10^{-17}$ at its start state (condition number $1.4\times10^{18}$, rank 3) and at most
+$5.5\times10^{-15}$ over 200 random states, against a tolerance of $10^{-12}$.[^ch05-conditions-phase] The
 check `newton_check.py` confirms the element balance of a step (`[C2]`), and that for a vapour-liquid pair with
 $\ln K^\circ_r = \ln(p^\circ/p_{\mathrm{sat}})$ the condition is Raoult's law, liquid mole fraction times
 $p_{\mathrm{sat}}$ equals gas mole fraction times $p$ (`[C4]`).
@@ -164,9 +175,16 @@ both. `IdealGasReaction` passes for CPU float and double on both builds and for 
 build.[^ch05-tests-run] No test compares a multiphase result with an independent solution; the flash above does, and
 it is a measurement outside the suite.
 
+[^ch05-conditions-phase]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-phase system of
+`src/kintera_report/ch05/checks/newton_check.py` (gas A, B, C; liquid A_l, B_l; solid S; four reactions), start
+amounts 0.6, 0.5, 0.1, 0.2, 0.3, 0.05 mol and 200 random states with amounts 0.01 to 1 mol (numpy seed 0); run:
+`python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
+the pin: line f PASS; CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC
+11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
+
 [^ch05-conditions-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase, $\ln K^\circ = \ln(p^\circ/p_{\mathrm{sat}})$, 300 K, $10^5$ Pa, start amounts 1, 0.05, 0.05 mol (line a); 2 H$_2$ + O$_2$ $\rightleftharpoons$ 2 H$_2$O with `Nasa9LogK` at 3500 K (line c); run:
 `python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
-the pin: lines a and c PASS; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
+the pin: lines a and c PASS; CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
 
 [^ch05-flash-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `BINARY` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`, the cells of `flash_binary.json`; run: `python -P
@@ -187,3 +205,7 @@ hidden: 6 passed, the 2 CUDA instances skipped; CUDA build: 8 passed); Release b
 - **No phase can vanish.** Every amount must stay above `mole-floor`; a cell whose equilibrium lacks a phase ends with
   status 4 (@sec-ch05-diagnostics).
 - **Condensed activities do not depend on pressure.** Only the gas activities carry $p/p^\circ$.
+
+<!-- equation-check: eq-ch05-conditions-residual check_ch5_equilibrium.py (a) -->
+<!-- equation-check: eq-ch05-conditions-extent check_ch5_equilibrium.py (a) -->
+<!-- equation-check: eq-ch05-conditions-extent check_ch5_equilibrium.py (c) -->

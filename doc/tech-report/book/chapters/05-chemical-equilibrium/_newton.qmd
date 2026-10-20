@@ -55,7 +55,13 @@ $$ {#eq-ch05-newton-jacobian}
 `phase_stoich` ($\nu_{\pi k}$) once and then `jac[j * nreaction + k]` exactly as in @eq-ch05-newton-jacobian.
 `check_ch5_equilibrium.py` line d checks the code itself. On the three-phase system of `newton_check.py`, with
 `max-iter: 1`, the gain kintera returns (the Jacobian at the input) equals @eq-ch05-newton-jacobian to 0.0 relative
-difference.[^ch05-newton-check] `newton_check.py` is a numpy transcription of the code's formula, not a call to the
+difference.[^ch05-newton-check] That system is a deliberately singular example. It has three phases and two
+elements, so by the phase rule of @sec-ch05-conditions its Jacobian is singular in exact arithmetic (line f: smallest
+singular value $1.6\times10^{-17}$ at the start state). The solve on it is therefore ill-posed, and which status it
+ends with is decided by rounding. An exactly zero LU pivot sends the step to the least-squares fallback (status 3), and a
+tiny non-zero pivot gives a huge direct step that no scale accepts (status 4). On the build of the run record it is
+status 3 with `max-iter: 1` and status 4 after one step with the default; a clean arm64 build of the pin gives status
+4 with `max-iter: 1`. The gain is formed before the step, so the comparison of line d holds either way. `newton_check.py` is a numpy transcription of the code's formula, not a call to the
 built solver. Its line `[C1]` checks that the formula is the derivative of the residual (central differences, on the
 same system), and `[C3]` shows that a one-species phase contributes nothing, because its activity is 1 whatever its
 amount. The Newton direction
@@ -98,8 +104,10 @@ breaks the second condition. The Newton step drives its amount below the floor, 
 scale down to $10^{-12}$, so the loop ends with status 4 (@sec-ch05-diagnostics). The merit function is the largest
 residual, and any decrease is accepted. A sufficient-decrease (Armijo) test would not change this case, because the
 step is cut by the floor, not by a weak decrease.[^ch05-newton-refs] `check_ch5_equilibrium.py` line e reproduces
-kintera with a numpy copy of the iteration that has a plain LU direction and no least-squares fallback. The amounts,
-status, step count and error agree exactly, for a converged start and for a start whose liquid must vanish.
+kintera with a numpy copy of the iteration that has a plain LU direction and no least-squares fallback. For a
+converged start and for a start whose liquid must vanish, the status, step count and error are the same, and the
+amounts agree to round-off: 0.0 on the build of the run record, and $5\times10^{-21}$ mol on an arm64 build of the
+pin. The line therefore tests the amounts to $10^{-14}$ of the largest amount, not bitwise.
 
 ### Numerical method
 
@@ -181,8 +189,8 @@ a multiphase case.
 [^ch05-newton-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-phase system of
 `src/kintera_report/ch05/checks/newton_check.py` (line d) and N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase
 at 300 K and $10^5$ Pa (lines d and e); run: `python derivation-checks/check_ch5_equilibrium.py` from a scratch
-directory with `KINTERA_WT` set to a build tree at the pin: lines d and e PASS; CPU, double; kintera source build at the
-pin, Python 3.11.13, torch 2.10.0+cu126, numpy.]
+directory with `KINTERA_WT` set to a build tree at the pin: lines d and e PASS (line e to round-off, tolerance
+$10^{-14}$ of the largest amount); CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
 
 [^ch05-newton-refs]: [source: J. Nocedal and S. J. Wright, Numerical Optimization, 2nd ed., Springer (2006),
 <https://doi.org/10.1007/978-0-387-40065-5>, chapter 11 (Newton's method for nonlinear equations, merit functions
@@ -200,7 +208,14 @@ CUDA 12.6.85; a measurement outside the suite, not a committed check.]
 - **Convergence is not guaranteed.** The line search only asks that the largest residual decrease; a cell can stop
   with status 4 for reasons other than a vanishing phase. How often that happens on hard systems is not measured.
 - **At most 64 components** (`EquilibriumOptionsImpl::validate`), and the reactions must be linearly independent
-  (@sec-ch05-options).
+  (@sec-ch05-options). Independent reactions still give a singular Jacobian when there are more phases than components
+  (the phase rule, @sec-ch05-conditions); the rank check does not detect it, and such a solve ends with status 3 or 4
+  depending on rounding.
 - **A species cannot reach zero.** The floor test of the line search rejects every step that would take a species
   below `mole-floor`. A species that should vanish stays just above the floor, and the cell ends with status 4
   (@sec-ch05-diagnostics).
+
+<!-- equation-check: eq-ch05-newton-jacobian check_ch5_equilibrium.py (b) -->
+<!-- equation-check: eq-ch05-newton-jacobian check_ch5_equilibrium.py (d) -->
+<!-- equation-check: eq-ch05-newton-jacobian check_ch5_equilibrium.py (f) -->
+<!-- equation-check: eq-ch05-newton-bounds check_ch5_equilibrium.py (e) -->

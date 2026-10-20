@@ -16,7 +16,9 @@ kintera: it evaluates each component's $g^\circ_n/\mathcal R T$ and contracts it
 options. The data file, described in @sec-ch02-nasa9, holds 293 species with two temperature ranges, 200 to 1000 K
 and 1000 to 6000 K. Besides
 gases it has a few condensed entries, such as liquid and solid water, which a component can be mapped to by name. The
-constants are those at the standard pressure; the pressure of a cell enters only through the gas activities.
+constants are those at the standard pressure of the tables, $p^\circ = 10^5$ Pa; the pressure of a cell enters only
+through the gas activities. The kinetics of @sec-ch06 build their concentration-unit constant $K_c$ from the same
+Gibbs energies but with their own reference pressure `Pref`, so the two agree only when `Pref` is $10^5$ Pa (Limits).
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** $\ln K^\circ_r$ of @eq-ch05-conditions-residual from tabulated data, @eq-ch05-log-k-gibbs.
@@ -145,11 +147,17 @@ independent table, or a condensed entry.
 
 [^ch05-logk-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: 2 H$_2$ + O$_2$ $\rightleftharpoons$ 2 H$_2$O with the NASA-9 entries of the package's `data/nasa9.dat`, 3500 K, $10^5$ Pa; run:
 `python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
-the pin: line c PASS (table parse, residual, H and O, van 't Hoff); CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
+the pin: line c PASS (table parse, residual, H and O, van 't Hoff); CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
 
 [^ch05-logk-refs]: [source: P. Atkins and J. de Paula, Atkins' Physical Chemistry, 9th ed., Oxford University Press
 (2010): the Gibbs–Helmholtz equation in the chapter on the Second Law (properties of the Gibbs energy) and the
 van 't Hoff equation in the chapter on chemical equilibrium (response of equilibria to temperature).]
+
+[^ch05-logk-pref]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: species N2, O, O2, O3 with one
+reversible `arrhenius` reaction O + O2 <=> O3 and `reference-state`[^rg-d0ac6d09fa6f] with and without `Pref: 1.e5`, 1500 K, unit
+concentrations; run: `python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set
+to a build tree at the pin: line g PASS; CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout
+v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
 
 [^ch05-logk-water]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
 `src/kintera_report/ch05/runs/run_equilibrium.py` with NASA-9 names N2, H2O and H2O_l_s; run: `python -P
@@ -170,3 +178,19 @@ measurement outside the suite, not a committed check.]
   are stated.
 - **The pressure argument is ignored**, which is right for ideal gases and leaves condensed constants without a
   pressure correction.
+- **The kinetics reference pressure defaults to 101325 Pa.** The NASA-9 tables and this solver use
+  $p^\circ = 10^5$ Pa. The kinetics use `Pref`, whose default is 101325 Pa (`KineticsOptionsImpl`,
+  {{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}), when they convert the constant to concentration
+  units. At the default, $K_c$ differs from the 1-bar value by the factor $(10^5/101325)^{-\Delta n}$, with $\Delta n$
+  the change in the number of gas molecules: about 1.31 % low per unit of $-\Delta n$. `check_ch5_equilibrium.py` line g
+  measures it for O + O$_2$ $\rightleftharpoons$ O$_3$ at 1500 K: $K_c$ is low by $1.3077\times10^{-2}$ at the
+  default, and equal to the 1-bar value to $1.1\times10^{-16}$ with `Pref` set to $10^5$ Pa. A kinetic steady state
+  then matches this solver's equilibrium only with `Pref: 1.e5` in the `reference-state` block. Whether the default
+  should change is being discussed in the code-fix round.[^ch05-logk-pref]
+
+<!-- equation-check: eq-ch05-log-k-gibbs check_ch5_equilibrium.py (c) -->
+<!-- equation-check: eq-ch05-log-k-vant-hoff check_ch5_equilibrium.py (c) -->
+
+<!-- reader glossary notes -->
+[^rg-d0ac6d09fa6f]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+<!-- end reader glossary notes -->

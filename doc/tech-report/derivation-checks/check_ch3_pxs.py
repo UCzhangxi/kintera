@@ -20,6 +20,8 @@ S taken along the equilibrium path (forward at every temperature):
      at 0d9f67f, row D8.
 (f9) entropy constants: dry gas from 300 K to S(600 K), with s0_R of the dry gas 0 and 10; the first Newton step
      differs, the root does not.
+(f10) the sign of phi' depends on the constants: the (f6) state with s0_R of the dry gas 10 gives C_p - S < 0 and
+     T dS/dT < 0, phi' > 0, and monotone iterates: prediction against the error ratios, and the sign.
 """
 import math
 import os
@@ -50,6 +52,7 @@ SAT_PROBE = r"""
 from kintera import ThermoOptions, ThermoX
 torch.set_default_dtype(torch.float64)
 card = sys.argv[1]
+with_code = len(sys.argv) < 3
 op = ThermoOptions.from_yaml(card); op.max_iter(100); op.ftol(1e-14)
 th = ThermoX(op); th.to(torch.float64)
 names = kintera.species_names()
@@ -76,8 +79,8 @@ def iterate(step, n):
 frozen = iterate(lambda T, Sx, Cpx: math.exp(math.log(T) + (S - Sx) / (Cpx - Sx)), 3)
 pin = iterate(lambda T, Sx, Cpx: T * (1 + (S - Sx) / Cpx), 3)
 codes = []
-for k in range(1, 9):
-    o = ThermoOptions.from_yaml(card); o.max_iter(k)
+for k in range(1, 9) if with_code else ():
+    o = ThermoOptions.from_yaml(card); o.max_iter(k); o.ftol(1e-14)
     t = ThermoX(o); t.to(torch.float64)
     codes.append(t.compute("PXS->T", [p, x0.clone(), torch.tensor([S])]).item() - Ts)
 print(json.dumps({"S": S, "Cp": Cp, "Ceff": Ceff, "TdSdT": TdSdT, "dlnng": dlnng, "xg": sum(xs[:len(op.vapor_ids())]),
@@ -100,6 +103,9 @@ for _ in range(10):
 S300, Cp300 = SC(300.0)
 print(json.dumps({"steps": steps, "S300": S300, "CpmS300": Cp300 - S300}))
 """
+
+
+DRY = "  - name: dry\n    composition: {H: 1.5, He: 0.15}\n    cv_R: 2.5"
 
 
 def check_saturated():
@@ -128,9 +134,8 @@ def check_saturated():
     e = abs(got["code"][-1])
     report("(f8) kintera PXS->T in the saturated parcel after 8 passes, |T - T*| (K)", e, 1e-6, e < 1e-6, "D8")
     d1 = ch3_card.run(deck, CONST_PROBE)
-    d2 = ch3_card.run(deck.replace("  - name: dry\n    composition: {H: 1.5, He: 0.15}\n    cv_R: 2.5",
-                                   "  - name: dry\n    composition: {H: 1.5, He: 0.15}\n    cv_R: 2.5\n    s0_R: 10.", 1),
-                      CONST_PROBE)
+    assert DRY in deck
+    d2 = ch3_card.run(deck.replace(DRY, DRY + "\n    s0_R: 10.", 1), CONST_PROBE)
     print(f"   dry gas, s0_R 0: first step {d1['steps'][0]:.3f} K, S(300) = {d1['S300']:.1f}, C_p - S = "
           f"{d1['CpmS300']:.1f}; s0_R 10: first step {d2['steps'][0]:.3f} K, S(300) = {d2['S300']:.1f}, C_p - S = "
           f"{d2['CpmS300']:.1f} J/(K m^3)")
@@ -138,6 +143,16 @@ def check_saturated():
     report("(f9) the root does not depend on s0_R: both runs end at 600 K, max |T - 600| (K)", e, 1e-9, e < 1e-9)
     e = abs(d2["steps"][0] - d1["steps"][0])
     report("(f9) the iterates do: first steps differ (K), must EXCEED tol", e, 1.0, e > 1.0)
+    g = ch3_card.run(ch3_card.fixed_deck(deck.replace(DRY, DRY + "\n    s0_R: 10.", 1)), SAT_PROBE, "nocode")
+    S, Cp, TdS = g["S"], g["Cp"], g["TdSdT"]
+    phi = 1 - TdS / (Cp - S)
+    r = [g["frozen"][i + 1] / g["frozen"][i] for i in range(2)]
+    print(f"   same state, dry s0_R 10: C_p - S = {Cp - S:.0f}, T dS/dT = {TdS:.0f} J/(K m^3), ratio "
+          f"{TdS / (Cp - S):.6f}; phi' = {phi:.6f}, error ratios {r[0]:.6f}, {r[1]:.6f}")
+    e = max(abs(q - phi) for q in r)
+    report("(f10) s0_R 10: root factor 1 - T (dS/dT)/(C_p - S) vs iteration (abs)", e, 1e-3, e < 1e-3)
+    report("(f10) s0_R 10: phi' > 0 with C_p - S < 0, monotone iterates, must EXCEED tol", phi, 0.0,
+           phi > 0 and Cp - S < 0 and min(r) > 0)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,8 @@
 
 `run(card_text, probe_src, *args)` writes the card to a temporary file and runs `probe_src` with
 `sys.argv[1]` = card path and the remaining args, with the same kintera build as common.py ($KINTERA_WT).
-The probe prints one JSON line last; it is returned as a Python object.
+The probe prints one JSON line; the last stdout line that starts with '{' or '[' is returned as a Python object (a
+build may print diagnostics after it).
 """
 import json
 import os
@@ -26,7 +27,7 @@ def run(card_text, probe_src, *args):
                          capture_output=True, text=True, cwd=d, env=env)
     if res.returncode != 0:
         raise RuntimeError(res.stderr[-2000:])
-    return json.loads(res.stdout.strip().splitlines()[-1])
+    return json.loads([ln for ln in res.stdout.splitlines() if ln.startswith(("{", "["))][-1])
 
 
 #: condensate cards that match their saturation curves on the branch where each test cloud forms (C3-g step 3;

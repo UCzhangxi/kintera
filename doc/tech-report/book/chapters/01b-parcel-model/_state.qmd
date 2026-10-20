@@ -206,7 +206,8 @@ the code, so @eq-ch01b-state-energy-change has no check of its own.
 At fixed $U$ and $V$ the energy changes by at most
 $1.6 \times 10^{-15}$ and the water by at most $2.2 \times 10^{-16}$ (relative), with both UV solvers.[^ch01b-uv] Over a saturated step of $\Delta \ln p = -0.01$ the
 molar entropy changes by $4.6 \times 10^{-7}\ \mathrm{J\,mol^{-1}\,K^{-1}}$.[^ch01b-ad] The fixed-$U$ Jacobian agrees
-with a difference quotient taken at fixed $U$ to $1.5 \times 10^{-10}$ (relative; tolerance $10^{-8}$).[^ch01b-jac]
+with a difference quotient taken at fixed $U$ to $1.0 \times 10^{-10}$ (relative; tolerance $10^{-8}$) in the committed
+output; another run at the same pin gives $1.5 \times 10^{-10}$ (@sec-ch06-jacobian).[^ch01b-jac]
 
 [^ch01b-tp]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch4_tp.py` from a scratch directory, with
@@ -228,10 +229,11 @@ with a difference quotient taken at fixed $U$ to $1.5 \times 10^{-10}$ (relative
     `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
     `derivation-checks/check_ch3_adiabat.out`, line `4b |ds|`.]
 
-[^ch01b-jac]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-species card inside the script;
+[^ch01b-jac]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the irreversible `A + B => C` card inside
+    the script;
     run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_jacobian.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch6_jacobian.out`, the `T-feedback Jacobian` line.]
+    `derivation-checks/check_ch6_jacobian.out`, the first `T-feedback Jacobian` line (irreversible card).]
 
 ### Limits
 

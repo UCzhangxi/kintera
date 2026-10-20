@@ -21,4 +21,11 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
    same state, dry s0_R 10: C_p - S = -12665, T dS/dT = -10626 J/(K m^3), ratio 0.839023; phi' = 0.160977, error ratios 0.160977, 0.160977
 (f10) s0_R 10: root factor 1 - T (dS/dT)/(C_p - S) vs iteration (abs): measured 5.676e-07  tol 1e-03  PASS
 (f10) s0_R 10: phi' > 0 with C_p - S < 0, monotone iterates, must EXCEED tol: measured 1.610e-01  tol 0e+00  PASS
-SUMMARY: 10 PASS, 0 FAIL, 2 EXPECTED-FAIL
+   default constants, 1e+06 Pa, 299 K: x_g = 0.983281, C_p - S = 20668.058 J/(K m^3), ratio 1.194276, phi' = -0.194276, error ratios -0.194276, -0.194277
+   default constants, 1e+05 Pa, 280 K: x_g = 0.989820, C_p - S = 1402.195 J/(K m^3), ratio 1.962645, phi' = -0.962645, error ratios -0.962641, -0.962648
+   default constants, 1e+04 Pa, 250 K: x_g = 0.987526, C_p - S = 83.811 J/(K m^3), ratio 2.846174, phi' = -1.846174, error ratios -1.846152, -1.846214
+   default constants, 1e+03 Pa, 225 K: x_g = 0.984870, C_p - S = 1.115 J/(K m^3), ratio 12.688813, phi' = -11.688813, error ratios -11.686448, -11.716503
+   default constants, 1e+02 Pa, 205 K: x_g = 0.983356, C_p - S = -0.814 J/(K m^3), ratio -0.388684, phi' = +1.388684, error ratios +1.388695, +1.388700
+(f11) default constants, 1e6-1e2 Pa: phi' vs iteration (rel): measured 2.369e-03  tol 1e-02  PASS
+(f11) converges iff 0 < ratio < 2, alternates iff ratio > 1: rows against it (count): measured 0.000e+00  tol 0e+00  PASS
+SUMMARY: 12 PASS, 0 FAIL, 2 EXPECTED-FAIL

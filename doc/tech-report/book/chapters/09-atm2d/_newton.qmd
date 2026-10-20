@@ -178,6 +178,14 @@ Run `[R6]`[^ch09-r6] (pinned `python/atm2d` source, torch 2.10.0, CPU, float64):
 three-layer column with a zero-rate source returns with `state.concentration` changed and equal to the post-transport
 result.
 
+<!-- equation-check: eq-ch09-newton-residual check_ch9_newton.py (e1) -->
+<!-- equation-check: eq-ch09-newton-iterate check_ch9_newton.py (e1) -->
+<!-- equation-check: eq-ch09-newton-iterate check_ch9_newton.py (e2) -->
+<!-- equation-check: eq-ch09-newton-iterate check_ch9_newton.py (e2b) -->
+<!-- equation-check: eq-ch09-newton-iterate check_ch9_newton.py (e3) -->
+<!-- equation-check: eq-ch09-newton-steady check_ch9_newton.py (e4a) -->
+<!-- equation-check: eq-ch09-newton-limit check_ch9_newton.py (e4b) -->
+
 ### Limits
 
 Convergence is judged by the relative change between iterates, not by the residual, so a stalled iteration with small

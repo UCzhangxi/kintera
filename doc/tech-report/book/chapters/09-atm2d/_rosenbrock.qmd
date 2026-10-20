@@ -244,6 +244,17 @@ Step 5 is checked by `check_ch9_ros2_error.py`, which compares the returned `err
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, line `c`,
     PASS.]
 
+<!-- equation-check: eq-ch09-rosenbrock-ros2 check_ch9_atm2d.py (c) -->
+<!-- equation-check: eq-ch09-rosenbrock-std check_ch9_atm2d.py (c) -->
+<!-- equation-check: eq-ch09-rosenbrock-expansion check_ch9_atm2d.py (c) -->
+<!-- equation-check: eq-ch09-rosenbrock-order check_ch9_atm2d.py (c) -->
+<!-- equation-check: eq-ch09-rosenbrock-stability check_ch9_ros2_stability.py (s1) -->
+<!-- equation-check: eq-ch09-rosenbrock-stability check_ch9_ros2_stability.py (s2) -->
+<!-- equation-check: eq-ch09-rosenbrock-stability check_ch9_ros2_stability.py (s4) -->
+<!-- equation-check: eq-ch09-rosenbrock-error check_ch9_ros2_error.py (r1) -->
+<!-- equation-check: eq-ch09-rosenbrock-error check_ch9_ros2_error.py (r2) -->
+<!-- equation-check: eq-ch09-rosenbrock-error check_ch9_ros2_error.py (r3) -->
+
 ### Limits
 
 `adaptive_advance` does not use the Rosenbrock error estimate: acceptance is only finiteness, a negativity threshold

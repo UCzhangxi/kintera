@@ -96,6 +96,8 @@ a right side of the wrong shape.
 The CUDA case is skipped unless a GPU and the native cuSolver binding are present (a CPU-only kintera build lacks
 it). The tolerances are read from `tests/test_atm2d.py` at the pin.
 
+<!-- equation-check: eq-ch09-assembly-be check_ch9_newton.py (e1) -->
+
 ### Limits
 
 `build_implicit_step_system` takes no boundary conditions, so a backward-Euler step built with it has no boundary

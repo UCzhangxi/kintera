@@ -201,6 +201,14 @@ $\epsilon/h$ with margin), and all eight lines pass:[^ch09-sources-check]
     torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build; output:
     `doc/tech-report/derivation-checks/check_ch9_sources.out`, 8 PASS, 0 FAIL.]
 
+<!-- equation-check: eq-ch09-sources-sum check_ch9_sources.py (d1) -->
+<!-- equation-check: eq-ch09-sources-stoich check_ch9_sources.py (b) -->
+<!-- equation-check: eq-ch09-sources-mass-action check_ch9_sources.py (a1) -->
+<!-- equation-check: eq-ch09-sources-mass-action check_ch9_sources.py (a2) -->
+<!-- equation-check: eq-ch09-sources-boundary check_ch9_sources.py (c1) -->
+<!-- equation-check: eq-ch09-sources-boundary check_ch9_sources.py (c2) -->
+<!-- equation-check: eq-ch09-sources-fold check_ch9_sources.py (d2) -->
+
 ### Limits
 
 Clamping reactants at zero makes the linearization exact only for non-negative states; a negative iterate is treated

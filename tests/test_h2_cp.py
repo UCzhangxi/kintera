@@ -21,8 +21,8 @@ species:
 PROBE = r"""
 import json, sys, torch
 torch.set_default_dtype(torch.float64)
-from kintera import ThermoY, ThermoOptions
-th = ThermoY(ThermoOptions.from_yaml(sys.argv[1]))
+from kintera import ThermoX, ThermoY, ThermoOptions
+op = ThermoOptions.from_yaml(sys.argv[1]); th, tx = ThermoY(op), ThermoX(op)
 R = 8.314462618
 mu = 1.0 / float(th.inv_mu[0])
 out = {}
@@ -31,6 +31,8 @@ for Tv in (20.0, 50.0, 300.0):
     V = th.compute("DY->V", (rho, torch.zeros((0, 1))))
     U0 = th.compute("VT->U", (V, T)); U1 = th.compute("VT->U", (V, T * 1.000001))
     out[str(Tv)] = ((U1 - U0) / (T * 1e-6) / (rho / mu * R)).item() + 1.0  # cp/R = cv/R + 1
+T, c = torch.linspace(20.0, 1000.0, 50), torch.ones(50, 1); S = lambda t: tx.compute("TPV->S", (t, 1e5 * torch.ones(50), c))
+out["gibbs"] = ((T * (S(T * (1 + 1e-6)) - S(T * (1 - 1e-6))) / (2e-6 * T)) / tx.compute("TV->cp", (T, c)) - 1).abs().max().item()
 print(json.dumps(out))
 """
 
@@ -50,12 +52,14 @@ def _cp_R(tmp_path, mode):
 
 def test_equilibrium_mode_has_the_conversion_peak(tmp_path):
     got = _cp_R(tmp_path, "equilibrium")
+    assert got["gibbs"] < 1e-6  # T ds/dT = cp, 20-1000 K
     for T, want in EXPECTED["equilibrium"].items():
         assert abs(got[T] - want) < 2e-3, (T, got[T], want)
 
 
 def test_normal_mode_freezes_rotation(tmp_path):
     got = _cp_R(tmp_path, "normal")
+    assert got["gibbs"] < 1e-6
     for T, want in EXPECTED["normal"].items():
         assert abs(got[T] - want) < 2e-3, (T, got[T], want)
 

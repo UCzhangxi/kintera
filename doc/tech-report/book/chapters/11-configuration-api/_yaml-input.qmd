@@ -152,7 +152,7 @@ here: this draft has not run the tests (missing evidence). The same file also ch
 
 [^rg-798daee4aacf]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
 
-[^rg-fde49814f26d]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
+[^rg-fde49814f26d]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics.hpp#L62)
 
 [^rg-8435ed329db5]: name — species name, the key every other block uses; required; stored in `species_names`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L156)
 

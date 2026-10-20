@@ -54,6 +54,8 @@ column gives the name kintera uses at the pin of `code_pin.yml`, and is left emp
 | $\nu_{nr}$ | stoichiometric coefficient of species $n$ in reaction $r$, negative for a reactant, positive for a product [-] | `stoich` |
 | $\xi_r$ | extent of reaction $r$: a change $\xi_r$ changes the amount of each species $n$ by $\nu_{nr}\,\xi_r$; in the units of those amounts, mole fraction [-] or concentration [mol m$^{-3}$] | `rhs` in the saturation solvers, after the least-squares solve |
 | $\Delta_r$ | saturation deficit of reaction $r$, $\ln K_r(T) + \sum_{n<N_{\mathrm g}} \nu_{nr} \ln p_n$, positive when subsaturated [-] | `logsvp - log_frac_sum` |
+| $\Lambda_r$ | left side of the mole-fraction saturation condition of reaction $r$, $-\sum_{n<N_{\mathrm g}} \nu_{nr} \ln(x_n/x_{\mathrm g})$ [-] | `log_frac_sum` |
+| $\mathsf W_{rn}$ | weight of the saturation step: $\partial\Lambda_r/\partial x_n$ at fixed $T$, $p$ [-]; in the fixed-energy solver the derivative of the concentration residual at fixed $U$ [m$^3$ mol$^{-1}$] | `weight` |
 | $\mathcal N_n$ | amount of species $n$ in a cell [mol]; molar | `moles` |
 | $a_n$ | activity of species $n$ in its phase: its mole fraction within the phase, times $p/p^\circ$ for a gas [-] | |
 | $p^\circ$ | standard pressure of the equilibrium constants [Pa] | `standard_pressure` (YAML `standard-pressure`) |

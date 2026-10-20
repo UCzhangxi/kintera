@@ -124,8 +124,13 @@ are the vapour fractions left at the two temperatures; more water is condensed a
    @eq-ch04-equilibrate-tp-weight for a gas with $x_n = 0$, keeping only $-\sum_k\hat\nu_{kr}/x_{\mathrm g}$. A
    reader who rebuilds the returned gain, for example for the effective heat capacity of @sec-ch03-adiabat, must use
    this variant, not the weights of the iteration. With an absent gas the clamped logarithm adds about $-708\,\hat\nu_{nr}$
-   in double precision, so such a reaction fails the selection test. Whether a converged state can hold a reaction
-   that belongs in the gain but is dropped from it this way is a hypothesis that no run has reproduced.
+   in double precision, so a reaction with absent gases on one side only fails the selection test. A reaction that
+   lacks both a consumed and a produced gas, whose $\hat\nu$ sum to zero, is the exception: the two clamped terms
+   cancel exactly, and the reaction can pass with both $\hat\nu/x$ terms missing. The iteration skips such a reaction,
+   so it can reach the gain only through the exit block; the condensation decks of this chapter have no gas products.
+   Whether a converged state can return a gain with a reaction wrongly dropped is bounded by one sample: a reach check
+   found no incorrect $\mathrm d\xi_r/\mathrm dT$ in 14,688 sampled converged absent-gas instances (CPU, double, at the
+   code pin).[^ch04-tp-k15] Beyond that sample it is not measured.
 
 The per-cell scratch arrays come from a workspace sized by `equilibrate_tp_space`
 ({{< code src/utils/alloc.h equilibrate_tp_space >}}); on CUDA they live in shared memory, as @sec-ch12 explains.
@@ -193,6 +198,9 @@ GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
   last iteration and is reported in its diagnostic (@sec-ch04-warm-start-failures).
 - The tolerance `logsvp_eps` is passed as a single-precision `float` even in a double-precision solve. The effect on a
   tolerance tighter than about $10^{-7}$ is not measured.
+
+[^ch04-tp-k15]: [source: UCzhangxi/kintera issue #54, row K15 (reach check of the returned gain with absent gases,
+14,688 converged instances, CPU, float64, kintera@0d9f67f97d841147e23283d2dcdab302238d2c45); recorded there as latent.]
 
 [^ch04-tp-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, cells at
 300, 250, 200 and 160 K (line b) and the 13 cold-start cells 130 to 250 K (line c), $10^5$ Pa; run:

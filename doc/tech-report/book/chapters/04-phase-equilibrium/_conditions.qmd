@@ -42,8 +42,8 @@ $g^\circ_n$ of the notation table, $\mu_n$ the chemical potential of species $n$
 standard Gibbs energy of reaction $r$ written from gases to condensate [J mol$^{-1}$], $q_r$ the coefficient of the
 condensate in reaction $r$ [-] and $\lambda_r$ the multiplier of its non-negativity constraint [J mol$^{-1}$];
 $\Lambda_r = \sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln(x_n/x_{\mathrm g})$ the left side of the mole-fraction condition
-of reaction $r$ [-], and $\mathsf W_{rn} = \partial\Lambda_r/\partial x_n$ its derivative with respect to the mole
-fraction of species $n$ (@eq-ch04-equilibrate-tp-weight) [-]. The saturation deficit
+of reaction $r$ [-], and $\mathsf W_{rn} = \partial\Lambda_r/\partial x_n$ its derivative with respect to $x_n$
+(@eq-ch04-equilibrate-tp-weight) [-]. The saturation deficit
 $\Delta_r$ is defined below. $K_r(T)$ has units Pa$^{\sum_{n<N_{\mathrm g}} \hat\nu_{nr}}$.
 
 ### Derivation

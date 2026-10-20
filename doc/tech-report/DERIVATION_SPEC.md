@@ -122,8 +122,8 @@ expected to pass after the fix batch) or INFO.
 | check_ch9_budget_below1.py | C9-f | 4 | 0 | 2 | K9 |
 | check_ch9_atm2d.py | C9-a, C9-b, C9-d, C9-f | all | 0 | 0 | 1 INFO: clamped hog total |
 
-Not yet covered by a script: C3-d round trip, C4-f direct KKT test, C9-c and C9-e
-(proposed in the entries). The overview entries O-1 and O-2 cite lines of the scripts above.
+Not yet covered by a script: C3-d round trip, C4-f direct KKT test. The overview entries O-1 and O-2 cite lines of
+the scripts above.
 
 ---
 

@@ -283,6 +283,10 @@ which `eval_logsvp` dispatches to their own functions. The inline `ideal` path e
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch2_svp.out`, 15 PASS,
     0 FAIL.]
 
+<!-- equation-check: eq-ch02-svp-ideal check_ch2_svp.py -->
+<!-- equation-check: eq-ch02-svp-ideal-ddT check_ch2_svp.py -->
+<!-- equation-check: eq-ch02-svp-latent check_ch2_svp.py -->
+
 ### Limits
 
 The `minT` and `maxT` keys of `rate-constant` are read but not used by any solver, so a fit is evaluated outside its

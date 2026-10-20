@@ -107,7 +107,8 @@ $$
 T \leftarrow T + \frac{U - \sum_i c_i\, u_i(T)}{\sum_i c_i\, \mathrm{d}u_i/\mathrm{d}T} ,
 $$ {#eq-ch01b-state-t-of-u}
 
-  whose denominator is $C_V$ (@sec-ch04-equilibrate-uv), with the kernel's linear energy model. That temperature is
+  whose denominator is $C_V$ (@sec-ch04-equilibrate-uv), with the kernel's energy model (linear with offsets, plus the per-species extra
+  function; @sec-ch01b-shared, Step 4). That temperature is
   a temporary of the kernel and is not returned. A host gets $T$ by calling `compute("VU->T")` afterwards, which runs
   the same Newton step with `eval_intEng_R` and `eval_cv_R`
   ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_intEng_to_temp >}}).
@@ -127,7 +128,7 @@ $$ {#eq-ch01b-state-t-of-u}
 |---|---|---|---|
 | `ThermoX.forward` | $T$, $p$ | gain matrix; mole fractions updated in place | element amounts (element/dry ratios of $x$; not element-weighted fractions) |
 | `ThermoY.forward` | $U$, $V$ | gain matrix; mass fractions updated in place; $T$ from `compute("VU->T")` | elements; $U$ to the $T$ tolerance |
-| `extrapolate_dlnp` | molar $s$ on the new $p$ | $T$, mole fractions | elements (reversible step) |
+| `extrapolate_dlnp` | molar $s$ on the new $p$ | nothing; $T$ and mole fractions updated in place | elements (reversible step) |
 | `Kinetics` with `evolve_temperature` | $U$, $V$ (linearised) | rates, Jacobian | elements |
 | log-K solver (@sec-ch05) | $T$, $p$ | equilibrium amounts | elements (balance checked on input) |
 
@@ -205,8 +206,7 @@ the code, so @eq-ch01b-state-energy-change has no check of its own.
 At fixed $U$ and $V$ the energy changes by at most
 $1.6 \times 10^{-15}$ and the water by at most $2.2 \times 10^{-16}$ (relative), with both UV solvers.[^ch01b-uv] Over a saturated step of $\Delta \ln p = -0.01$ the
 molar entropy changes by $4.6 \times 10^{-7}\ \mathrm{J\,mol^{-1}\,K^{-1}}$.[^ch01b-ad] The fixed-$U$ Jacobian agrees
-with a difference quotient taken at fixed $U$ to at most $1.6 \times 10^{-10}$ ($1.5 \times 10^{-10}$ in the committed
-output, $1.0 \times 10^{-10}$ on a second machine at the same pin).[^ch01b-jac]
+with a difference quotient taken at fixed $U$ to $1.5 \times 10^{-10}$ (relative; tolerance $10^{-8}$).[^ch01b-jac]
 
 [^ch01b-tp]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch4_tp.py` from a scratch directory, with

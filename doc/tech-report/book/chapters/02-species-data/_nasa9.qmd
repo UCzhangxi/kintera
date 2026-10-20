@@ -65,8 +65,8 @@ $T^k/k$, and the constant $a_2$ gives $a_2 \ln T$. The Gibbs energy is $g/(\math
 *Integration constants.* $b_1$ and $b_2$ are the constants of the two integrals, so the polynomial alone does not fix
 them. They are set by tabulated values at a reference temperature. In the NASA-9 convention, $h(298.15\ \mathrm K)$
 is the standard enthalpy of formation and $s(298.15\ \mathrm K)$ the third-law standard entropy at 1 bar (McBride,
-Zehe and Gordon, NASA/TP-2002-211556, 2002); each range carries its own pair. The shipped table follows this
-convention. Its $h$ and $s$ at 298.15 K agree with the CODATA key values for H2O, H2, O2 and CO2 to within
+Zehe & Gordon (2002), Technical Paper TP-2002-211556); each range carries its own pair. The shipped table follows
+this convention. Its $h$ and $s$ at 298.15 K agree with the CODATA key values for H2O, H2, O2 and CO2 to within
 $2.4 \times 10^{-3}$ kJ mol$^{-1}$ and $7.0 \times 10^{-3}$ J mol$^{-1}$ K$^{-1}$.[^ch02-nasa9-join]
 
 *Continuity at $T_{\mathrm{mid}}$.* The two ranges are fitted separately, so whether $c_p$, $h$ and $s$ agree at

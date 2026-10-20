@@ -118,8 +118,7 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
   // add reference species
   vapor_set.insert(species_names[0]);
 
-  // (source, copy) of the one-to-one coagulation reactions
-  std::vector<std::pair<std::string, std::string>> coag_pairs;
+  std::vector<Reaction> coag_rxns;
 
   // register reactions
   if (config["reactions"]) {
@@ -163,13 +162,7 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
     // create temporary coagulation and evaporation options to add species
     auto coagulation = CoagulationOptionsImpl::from_yaml(config["reactions"]);
     add_to_vapor_cloud(vapor_set, cloud_set, coagulation);
-    for (auto const& rxn : coagulation->reactions()) {
-      if (rxn.reactants().size() == 1 && rxn.products().size() == 1 &&
-          rxn.reactants().begin()->second == rxn.products().begin()->second) {
-        coag_pairs.emplace_back(rxn.reactants().begin()->first,
-                                rxn.products().begin()->first);
-      }
-    }
+    coag_rxns = coagulation->reactions();
     if (thermo->verbose()) {
       std::cout << fmt::format(
                        "[ThermoOptions] registered {} Coagulation reactions",
@@ -258,43 +251,36 @@ ThermoOptions ThermoOptionsImpl::from_yaml(YAML::Node const& config,
     thermo->mu().push_back(species_weights[id]);
   }
 
-  // condensate copies: a copy is in no nucleation reaction, has the same
-  // thermodynamic data as its source, and its source is a nucleating
-  // condensate or a copy registered before it
-  std::set<std::string> resolved;
-  if (thermo->nucleation() != nullptr) {
-    for (auto const& rxn : thermo->nucleation()->reactions()) {
-      for (auto const& sp : rxn.products()) resolved.insert(sp.first);
-      for (auto const& sp : rxn.reactants()) resolved.insert(sp.first);
-    }
-  }
-  for (bool added = true; added;) {
-    added = false;
-    for (auto const& [src, dst] : coag_pairs) {
-      if (!cloud_set.count(src) || !cloud_set.count(dst) ||
-          !resolved.count(src) || resolved.count(dst)) {
-        continue;
-      }
-      auto id = [&](std::string const& name) {
-        return static_cast<int>(
-            std::find(species_names.begin(), species_names.end(), name) -
-            species_names.begin());
-      };
-      int i = id(src), j = id(dst);
-      if (species_cref_R[i] != species_cref_R[j] ||
-          species_uref_R[i] != species_uref_R[j] ||
-          species_sref_R[i] != species_sref_R[j] ||
-          species_nasa9_low[i] != species_nasa9_low[j] ||
-          species_nasa9_high[i] != species_nasa9_high[j] ||
-          species_nasa9_Tmid[i] != species_nasa9_Tmid[j] ||
-          species_weights[i] != species_weights[j]) {
-        continue;
-      }
-      thermo->copy_ids().push_back(j);
-      thermo->copy_src_ids().push_back(i);
-      resolved.insert(dst);
-      added = true;
-    }
+  // X => X(p) copies with X's thermo data and no nucleation take X's entropy
+  std::set<std::string> nucleated;
+  for (auto const& r : thermo->reactions())
+    for (auto const& sp : r.products()) nucleated.insert(sp.first);
+  auto ids = thermo->vapor_ids();
+  ids.insert(ids.end(), thermo->cloud_ids().begin(), thermo->cloud_ids().end());
+  auto col = [&](std::string const& name) {
+    int id = std::find(species_names.begin(), species_names.end(), name) -
+             species_names.begin();
+    return std::make_pair(
+        id,
+        static_cast<int>(std::find(ids.begin(), ids.end(), id) - ids.begin()));
+  };
+  auto data = [&](int i) {
+    return std::make_tuple(species_cref_R[i], species_uref_R[i],
+                           species_sref_R[i], species_nasa9_low[i],
+                           species_nasa9_high[i], species_nasa9_Tmid[i],
+                           species_weights[i]);
+  };
+  for (auto const& r : coag_rxns) {
+    if (r.reactants().size() != 1 || r.products().size() != 1) continue;
+    auto [src, a] = *r.reactants().begin();
+    auto [dst, b] = *r.products().begin();
+    auto [i, ci] = col(src);
+    auto [j, cj] = col(dst);
+    if (a != b || nucleated.count(dst) || cj == static_cast<int>(ids.size()) ||
+        data(i) != data(j))
+      continue;
+    thermo->copy_cols().push_back(cj);
+    thermo->copy_src_cols().push_back(ci);
   }
 
   return thermo;

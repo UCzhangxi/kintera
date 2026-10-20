@@ -1,0 +1,9 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+   x = [1.0, 0.0, 0.0]: c = ['4.0090797638e+01', '1.0000000000e-20', '0.0000000000e+00'] mol/m^3
+   x = [0.5, 0.4, 0.1]: c = ['2.2272665355e+01', '1.7818132284e+01', '4.4545330709e+00'] mol/m^3
+(c1) sum_gas c R T = p, gas-only and cloudy states with x_0 > 0 (rel): measured 0.000e+00  tol 1e-13  PASS
+(c1) c_m = x_m p / (R T x_g), cloudy state with x_0 = 0.5 (rel): measured 0.000e+00  tol 1e-13  PASS
+   x = [0.0, 0.9, 0.1]: c = [1e-20, 40.09079763849165, inf] mol/m^3 (x_0 = 0)
+(c2) x_0 = 0: sum_gas c R T = p (rel): measured 0.000e+00  tol 1e-13  PASS
+(c2) x_0 = 0: c_m = x_m p / (R T x_g) (rel; non-finite at the pin): measured inf  tol 1e-13  EXPECTED-FAIL (D16)
+SUMMARY: 3 PASS, 0 FAIL, 1 EXPECTED-FAIL

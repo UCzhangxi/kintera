@@ -1,0 +1,9 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+(f1) dS/dT|_(p,x) vs (C_p - S)/T, dry state, 250-600 K (rel): measured 3.097e-10  tol 1e-07  PASS
+   at 600 K: S = 404.335855, C_p = 583.333333 J/(K m^3); pin map derivative 0.6931471806, S/C_p = 0.6931471806
+(f2) derivative of the pin's fixed-point map at the root vs S/C_p (abs): measured 8.112e-11  tol 1e-07  PASS
+   correct Newton from Tref: 403.972077084, 501.235209722, 568.954669227, 596.240464978, 599.938986432, 599.999983690 K ...
+(f3) correct Newton step, 10 iterations from Tref, |T - 600| (K): measured 0.000e+00  tol 1e-09  PASS
+   kintera PXS->T: 594.1625594241 K
+(f4) kintera PXS->T from the same S, |T - 600| (K): measured 5.837e+00  tol 1e-06  EXPECTED-FAIL (D8)
+SUMMARY: 3 PASS, 0 FAIL, 1 EXPECTED-FAIL

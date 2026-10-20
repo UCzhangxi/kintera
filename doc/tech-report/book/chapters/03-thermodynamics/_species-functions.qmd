@@ -140,37 +140,53 @@ $$
 \end{aligned}
 $$ {#eq-ch03-species-functions-scond}
 
-One row per reaction gives a linear system for the condensate entropies; the matrix is the condensate block of
-$\nu_{nr}$, transposed. @eq-ch03-species-functions-scond is solved in the second `eval_entropy_R`
-({{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=2 >}}) with a Moore-Penrose pseudo-inverse. The
-reactions are the `type: nucleation` reactions only: the stoichiometry matrix is built from
-`ThermoOptionsImpl::reactions` ({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::reactions >}}), which
-returns the nucleation reactions and nothing else (verified by reading at the pin). A condensate with no nucleation
-reaction of its own has a zero column in the block, and the pseudo-inverse gives it the minimum-norm value, zero.
-More reactions than condensates are solved in the least-squares sense. The data key `s0_R` of a condensate is not
-used.
+Each nucleation reaction gives one such linear equation in the condensate entropies, with the left side
+a row of the condensate block of $\nu_{nr}$. When each condensate is the product of exactly one nucleation reaction,
+as for every cloud of `tests/jupiter.yaml`, each equation contains one condensate and gives its entropy directly:
 
-The zero is not a physical entropy. It reaches every condensate that enters only through other reaction types, for
-example the precipitating copies `H2O(l,p)` and `NH3(s,p)` of `tests/jupiter.yaml`, which appear only in a
-`coagulation` and an `evaporation` reaction and carry the same `cv_R` and `u0_R` as their clouds `H2O(l)` and
-`NH3(s)` (verified by reading the deck). Moving condensate from a cloud to its copy at fixed $(T, p)$ leaves $C_p$
-and $H$ unchanged but changes $S$ by the cloud's $s_m$ times the moved amount, and $s_m$ depends on the arbitrary
-constants `s0_R`, `Tref`[^rg-3024f877ff0c] and `Pref`[^rg-b6de325e7bca] (@sec-ch03-reference-state). Giving a copy the entropy of its cloud (same phase)
-would remove the dependence; that is a code change, not made here.
+$$
+\frac{s_m}{\mathcal R} = \frac{1}{\nu_{mr}} \left[ \sum_n \frac{\nu_{nr} h_n}{\mathcal R T}
+- \sum_{n<N_{\mathrm g}} \nu_{nr} \frac{\tilde s_n}{\mathcal R} - \ln K_r(T) \right] ,
+\qquad r \text{ the reaction that forms } m .
+$$ {#eq-ch03-species-functions-scond-one}
 
-The four energy-type functions are exact closed forms. The condensate entropy is exact up to round-off for the
-condensates that have a nucleation reaction when the transposed condensate block (nucleation reactions by
-condensates) has full column rank, so that the system fixes every condensate entropy; for the others it is the zero
-above. The
-executable check is not written yet: it should assert $\sum_n \nu_{nr}(h_n - T s_n) = 0$ for every nucleation
-reaction at a saturated state, and record the cloud-to-copy invariance as an expected failure.
+For one vapour condensing to one condensate this is $s_{\mathrm c} = s_{\mathrm v}(p_{\mathrm{sat}}) -
+(h_{\mathrm v} - h_{\mathrm c})/T$: the entropy of condensation is the enthalpy latent heat over the temperature, the
+statement of Clausius-Clapeyron. A condensate that has no nucleation reaction of its own but is a copy of another
+condensate of the same phase, such as the precipitating `H2O(l,p)` made from `H2O(l)` by coagulation in
+`tests/jupiter.yaml` with the same `cv_R` and `u0_R`, is the same substance: its entropy is its source's. The mixture
+entropy is then $S = \sum_n c_n s_n$, over gases (with their mixing terms) and condensates.
+
+Two things go wrong at the pin. First, the second `eval_entropy_R`
+({{< code src/thermo/eval_uhs.cpp eval_entropy_R overload=2 >}}) solves all the equations at once with a Moore-Penrose
+pseudo-inverse of the transposed condensate block. That reproduces @eq-ch03-species-functions-scond-one for a
+condensate with its own reaction, but a condensate without one has a zero column and gets the minimum-norm value,
+zero, instead of its source's entropy. When equations outnumber condensates the result is a least-squares fit rather
+than a solution. That is the defect D64, whose fix gives a coagulation copy the entropy of its source
+condensate.[^ch03-d64]
+The reactions are the `type: nucleation` reactions only: the stoichiometry matrix is built from
+`ThermoOptionsImpl::reactions` ({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::reactions >}}). The data key
+`s0_R` of a condensate is not used.
+
+Second, the heat-capacity model has to be the same in $h_n$ and $s_n$. With `use-nasa9-cp` or `use-h2-cp` the gas
+enthalpy and $c_p$ are T-dependent, so the gas entropy must be
+$s_n/\mathcal R = \int c_{p,n}(T')/(\mathcal R T')\, \mathrm d T' - \ln(p_n/p_\star) + \text{const}$, which keeps the
+Gibbs relation $T (\partial s_n/\partial T)_p = c_{p,n}$. At the pin the gas entropy keeps the constant
+$c_{p,n} = \mathcal R (c^{\star}_n + 1)$ of @eq-ch03-species-functions-sgas while the enthalpy follows the option. That
+is the defect K6, whose fix makes the gas entropy follow both options.[^ch03-k6] Because
+@eq-ch03-species-functions-scond-one uses the code's own $h$ and $\tilde s$, the reaction Gibbs energy at saturation is
+still zero at the pin; what is wrong is the vapour entropy itself.
+
+The four energy-type functions are exact closed forms, and @eq-ch03-species-functions-scond-one is exact up to
+round-off.
 
 ### Numerical method
 
 Each function is evaluated pointwise over a tensor of cells, with the species as the last dimension. The optional
 extra functions are dispatched per species through a tensor iterator (`call_func2`, `call_func3`), on CPU or CUDA.
-The pseudo-inverse of the condensate block is formed once per call from the stoichiometry matrix and broadcast over
-the cells.
+At the pin the condensate entropies come from a pseudo-inverse of the condensate block, formed once per call from the
+stoichiometry matrix and broadcast over the cells; for condensates that each have one reaction this is the direct
+solve of @eq-ch03-species-functions-scond-one.
 
 The species-function figure is not provided: the figure module is not written yet.
 
@@ -197,9 +213,8 @@ solves @eq-ch03-species-functions-scond, which needs the reactions' saturation f
 hit: both `eval_entropy_R` refuse a `conc` or `stoich` whose species dimension is not $N_{\mathrm g}$ plus the
 number of condensates.
 
-The NASA-9 and H$_2$ options replace $c_v$, $c_p$ and $u$, but not the gas entropy, which keeps the constant
-$c_{p,n} = \mathcal R (c^{\star}_n + 1)$ of @eq-ch03-species-functions-sgas (verified by reading both
-`eval_entropy_R` at the pin).
+At the pin the NASA-9 and H$_2$ options replace $c_v$, $c_p$ and $u$ but not the gas entropy, which keeps the
+constant $c_{p,n} = \mathcal R (c^{\star}_n + 1)$ of @eq-ch03-species-functions-sgas (K6).
 
 ### Tests
 
@@ -213,34 +228,66 @@ $c_{p,n} = \mathcal R (c^{\star}_n + 1)$ of @eq-ch03-species-functions-sgas (ver
 
 : Tests of the per-species functions. {#tbl-ch03-species-functions-tests}
 
-The tolerances are read from the test files at the pin. No test checks @eq-ch03-species-functions-scond directly:
-the condensate entropy is exercised only through the adiabat test of @sec-ch03-adiabat. That is missing evidence.
+The tolerances are read from the test files at the pin.
+
+The derivation is checked by `check_ch3_condensate_entropy.py`, with partial molar quantities at fixed $(T, p)$:
+$h_n = \partial H/\partial c_n$ and $s_n = \partial S/\partial c_n$ (for the gases the mixing terms of the other species
+cancel in that derivative).[^ch03-scond-check]
+
+- `(e1)`: every nucleation reaction of `tests/jupiter.yaml` at a saturated state (`H2O(l)` at 250-300 K, `NH3(s)` at
+  150-220 K, `NH4SH(s)` at 200 and 240 K): $\lvert \sum_n \nu_{nr}(h_n - T s_n)\rvert/(\mathcal R T)$ at most
+  $3.4 \times 10^{-8}$ (tolerance $10^{-6}$, the central difference of $S$).
+- `(e2)`: the copies `H2O(l,p)` and `NH3(s,p)` have $s/\mathcal R = 0$ at the pin, against $-9.342692$ and $-40.716115$
+  for their sources, EXPECTED-FAIL (D64).
+- `(e3)`: $T (\partial s/\partial T)_p = c_p$ for `H2O` gas at 250-900 K holds to $4.9 \times 10^{-11}$ with the flag
+  off. With `use-nasa9-cp` the entropy still follows the constant 33.258 J mol$^{-1}$ K$^{-1}$ while $c_p$ rises to
+  40.0 J mol$^{-1}$ K$^{-1}$ at 900 K, a worst gap of 16.9%, EXPECTED-FAIL (K6).
+
+`check_ch3_gibbs.py` adds a check away from saturation: moving H2O from vapour to liquid at fixed $(T, p)$ changes
+$H - TS$ by $-\mathcal R T \ln \mathrm{RH}$ at four states with RH from 0.024 to 2.6, worst $3.9 \times 10^{-8}$ of
+$\mathcal R T$. The mixture heat capacities of @eq-ch03-species-functions-mixture are checked by
+`check_ch3_species_functions.py`: $C_p$ against a central difference of `TV->H` ($2.7 \times 10^{-11}$) and
+$C_p - C_V = \mathcal R \sum_{n<N_{\mathrm g}} c_n$ ($5.1 \times 10^{-16}$).
+
+<!-- equation-check: eq-ch03-species-functions-mixture check_ch3_species_functions.py -->
+<!-- equation-check: eq-ch03-species-functions-h check_ch3_reference.py (a1) -->
+<!-- equation-check: eq-ch03-species-functions-u check_ch3_reference.py (a1) -->
+<!-- equation-check: eq-ch03-species-functions-sgas check_ch3_reference.py (a2) -->
+<!-- equation-check: eq-ch03-species-functions-sgas check_ch3_condensate_entropy.py (e3) -->
+<!-- equation-check: eq-ch03-species-functions-scond check_ch3_condensate_entropy.py (e1) -->
+<!-- equation-check: eq-ch03-species-functions-scond check_ch3_gibbs.py -->
+<!-- equation-check: eq-ch03-species-functions-scond-one check_ch3_condensate_entropy.py (e1) -->
+<!-- equation-check: eq-ch03-species-functions-scond-one check_ch3_condensate_entropy.py (e2) -->
+
+[^ch03-scond-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, and an
+    H2-H2O card built in the script for the NASA-9 line; run:
+    `python doc/tech-report/derivation-checks/check_ch3_condensate_entropy.py` from a scratch directory, with
+    `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0,
+    numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch3_condensate_entropy.out`, 2 PASS, 2 EXPECTED-FAIL.]
+
+[^ch03-d64]: [source: UCzhangxi/kintera#54, row D64 (entropy of a coagulation copy), merged on the staging branch of
+    that issue.]
+
+[^ch03-k6]: [source: UCzhangxi/kintera#54, row K6 (gas entropy under `use-nasa9-cp` and `use-h2-cp`), merged on
+    the staging branch of that issue.]
 
 ### Limits
 
-With `use-nasa9-cp` or `use-h2-cp`, the entropy keeps a constant $c_p$ while $u$, $h$ and $c_p$ do not, so the
-functions are not mutually consistent for those species (verified by reading; the size of the effect is not
-measured). The condensate enthalpy ignores the extra internal-energy function.
+At the pin, with `use-nasa9-cp` or `use-h2-cp`, the gas entropy keeps a constant $c_p$ while $u$, $h$ and $c_p$ do
+not, so the vapour entropy fails the Gibbs relation by up to 16.9% at 900 K for H2O (check line `(e3)`, K6). The
+condensate enthalpy ignores the extra internal-energy function.
 
-The condensate-entropy solve of @eq-ch03-species-functions-scond mixes the two energy models when `use-nasa9-cp` or
-`use-h2-cp` covers a condensing vapour: its $\sum_n \nu_{nr} h_n$ term uses `eval_enthalpy_R`, which takes the
-NASA-9 or H$_2$ internal energy, while its vapour-entropy term keeps the constant-$c_p$ form (verified by reading the
-second `eval_entropy_R` at the pin). The condensate entropy then carries that mismatch itself. That this changes
-results is a hypothesis, not run: no deck at the pin combines `use-nasa9-cp` with a nucleation reaction. The
-settling check: with `use-nasa9-cp` on a condensing vapour, evaluate $\Delta G/(\mathcal R T)$ of its nucleation
-reaction at saturation using the NASA-9 entropy of the vapour; the hypothesis predicts a non-zero value equal to the
-entropy difference.
+At the pin every condensate without a nucleation reaction of its own has zero entropy (D64, check line `(e2)`). This
+reaches `TPV->S` and `PVT->S`, `PXS->T` (@sec-ch03-thermo-x), and the rain-out target of the adiabat
+(@sec-ch03-adiabat), which removes each condensate with its `eval_entropy_R` value. Moving condensate from a cloud to
+its copy at fixed $(T, p)$ leaves $C_p$ and $H$ unchanged but changes $S$ by the cloud's $s_m$ times the moved
+amount. Because $s_m$ depends on the arbitrary constants `s0_R`, `Tref`[^rg-3024f877ff0c] and
+`Pref`[^rg-b6de325e7bca] (@sec-ch03-reference-state), so do the sign and size of that change.
 
-Every condensate without a nucleation reaction of its own has zero entropy (see the Derivation). This reaches
-`TPV->S` and `PVT->S`, `PXS->T` (@sec-ch03-thermo-x), and the rain-out target of the adiabat (@sec-ch03-adiabat),
-which removes each condensate with its `eval_entropy_R` value. The sign and size of the resulting error are set by
-the reference-state constants. The content review of this chapter measured[^ch03-copy-review], on
-`tests/jupiter.yaml`, that moving $10^{-3}$ of the mixture from `H2O(l)` to `H2O(l,p)` at 280 K and 5 bar changes
-the specific entropy by $+36.2$ J kg$^{-1}$ K$^{-1}$, and $2 \times 10^{-4}$ from `NH3(s)` to `NH3(s,p)` at 140 K
-and 0.5 bar by $+32.0$ J kg$^{-1}$ K$^{-1}$, while $C_p$ and $H$ change by at most a relative
-$1.5 \times 10^{-16}$; with `Tref` = 0 the sign reverses. These are the review's measurements, not rerun here.
-
-[^ch03-copy-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 3, quoted in the description of [UCzhangxi/kintera#23](https://github.com/UCzhangxi/kintera/pull/23).
+The condensate entropy is the entropy of a constant-$c_p$ substance only when the condensate card matches its
+saturation curve (@sec-ch03-reference-state, @eq-ch03-reference-state-sc-slope); the cards of `tests/jupiter.yaml` at
+the pin do not (K8).
 
 <!-- reader glossary notes -->
 [^rg-3024f877ff0c]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)

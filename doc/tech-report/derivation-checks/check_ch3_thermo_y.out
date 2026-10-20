@@ -1,0 +1,12 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+(d1) Y->X vs the mole-fraction formula with the dry species implicit (rel): measured 2.179e-19  tol 1e-14  PASS
+(d2) VT->U then VU->T, constant cv, |T - T0| (K): measured 0.000e+00  tol 1e-10  PASS
+   use-h2-cp off: after ThermoY.forward T = 304.958496 K, cloud = 1.462651e-01 mol/m^3, ln p_v - ln K(T) = +9.178e-07
+(d4) UV saturation adjustment lands on the curve, use-h2-cp off: |ln p_v - ln K(T)|: measured 9.178e-07  tol 1e-05  PASS
+(d3) VT->U then VU->T, use-h2-cp normal, |T - T0| (K): measured 3.666e-12  tol 1e-10  PASS
+   use-h2-cp normal: after ThermoY.forward T = 305.044993 K, cloud = 1.462651e-01 mol/m^3, ln p_v - ln K(T) = -4.612e-03
+(d4) UV saturation adjustment lands on the curve, use-h2-cp normal: |ln p_v - ln K(T)|: measured 4.612e-03  tol 1e-05  EXPECTED-FAIL (D12)
+(d3) VT->U then VU->T, use-h2-cp equilibrium, |T - T0| (K): measured 5.684e-14  tol 1e-10  PASS
+   use-h2-cp equilibrium: after ThermoY.forward T = 305.044345 K, cloud = 1.462651e-01 mol/m^3, ln p_v - ln K(T) = -4.577e-03
+(d4) UV saturation adjustment lands on the curve, use-h2-cp equilibrium: |ln p_v - ln K(T)|: measured 4.577e-03  tol 1e-05  EXPECTED-FAIL (D12)
+SUMMARY: 5 PASS, 0 FAIL, 2 EXPECTED-FAIL

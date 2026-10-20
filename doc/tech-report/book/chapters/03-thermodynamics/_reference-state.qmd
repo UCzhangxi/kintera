@@ -34,7 +34,12 @@ $10^5$ Pa.
 
 Symbols of the notation table (@sec-appa): $L_r$, latent heat of reaction $r$ at constant volume [J mol$^{-1}$]; $T_\star$,
 $p_\star$, $c^{\star}_n$, $u^{\star}_n$, $s^{\star}_n$ as in @sec-ch03-species-functions. Local symbols: $\nu_{nr}$ as
-in @sec-ch03-species-functions.
+in @sec-ch03-species-functions; $l_r$, latent heat of reaction $r$ at constant pressure, the enthalpy released per unit
+extent [J mol$^{-1}$]; $\Delta n^{\mathrm g}_r$, gas moles removed per unit extent [-]; $u^{0}_n$, energy over
+$\mathcal R$ extrapolated to $T = 0$ [K]; $l_{\mathrm{card}}$, $l_{\mathrm{svp}}$, the latent heats implied by the
+species cards and by the saturation formula [J mol$^{-1}$]; $\beta$, $\gamma$, $T_3$ of the ideal formula
+(@sec-ch02-svp); $s_{\mathrm v}$, $s_{\mathrm c}$, $c_{p,\mathrm v}$, $c_{p,\mathrm c}$, molar entropies and heat
+capacities of the vapour and the condensate; $p_{\mathrm{sat}}$, the saturation pressure [Pa].
 
 Species defaults when a key is omitted: `cv_R` is $5/2$, `u0_R` is 0 and `s0_R` is 0, for gases and condensates
 alike (read by `init_species_from_yaml`). The block also carries the switches `use-nasa9-cp`, `use-h2-cp` and
@@ -85,6 +90,93 @@ reactants minus the products and warns when the result is not positive. Since a 
 a condensation reaction whose condensate omits `u0_R` gets $L_r(T_\star) = \mathcal R\, u^{\star}_{\mathrm{vapour}}$,
 which is zero for a vapour that also omits it.
 
+**Enthalpy latent heat.** Clausius-Clapeyron (@sec-ch02-svp) needs the latent heat at constant pressure, the enthalpy
+released per unit extent, $l_r = -\sum_n \nu_{nr} h_n$. With $h_n = u_n + \mathcal R T$ for a gas and $h_m = u_m$ for a
+condensate (@eq-ch03-species-functions-h, $z_n = 1$), the two latent heats differ by the gas moles the reaction
+removes:
+
+$$
+l_r = L_r + \mathcal R T\, \Delta n^{\mathrm g}_r , \qquad \Delta n^{\mathrm g}_r = -\sum_{n<N_{\mathrm g}} \nu_{nr} .
+$$ {#eq-ch03-reference-state-enthalpy-latent}
+
+For one vapour condensing to one condensate $\Delta n^{\mathrm g}_r = 1$ and $l_r = L_r + \mathcal R T$; for NH4SH
+formed from two gases it is $2 \mathcal R T$. This is the quantity that must match the saturation curve (below).
+
+**One energy model for every module.** The offsets above belong to the constant-$c_v$ energy. With `use-nasa9-cp` or
+`use-h2-cp` the energy of the species concerned is $\mathcal R$ times the constant-$c_v$ value plus a deviation that
+vanishes at a fixed $T_0 = 300$ K, not at `Tref` (`eval_intEng_R`,
+{{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}). So $u^{\star}_n$ is the energy at 300 K for those species, and
+equals the energy at $T_\star$ only when `Tref` is 300 K. Every module that needs $u_n(T)$ must use this same function,
+because the latent heat of every reaction is a difference of these energies. At the pin the saturation-adjustment
+kernel of `ThermoY` receives only the shifted constants `u0` and `cv` (`ThermoYImpl::forward`,
+{{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}). With `use-h2-cp` it therefore releases a different
+latent heat from the one `VU->T` uses, and the adjusted state lies off the saturation curve. That is the defect D12,
+whose fix passes the H2 rotational energy to the kernel.[^ch03-d12] The check measures the offset
+(@sec-ch03-thermo-y).
+
+**Latent heat consistent with the saturation curve.** A condensate card carries its own `u0_R` and `cv_R`, and its
+nucleation reaction carries a saturation formula
+(@sec-ch02-svp). Both imply a latent heat. The question is what the card must satisfy so that the two agree at every
+temperature, and what goes wrong when they do not. Take `vapour -> condensate` with the ideal formula, constant
+heat capacities and energies referenced to $T = 0$ (after the shift above, $u_n/\mathcal R = u^{0}_n + c^{\star}_n T$
+with $u^{0}_n = u^{\star}_n - c^{\star}_n T_\star$).
+
+*Step 1: the card's latent heat.* With @eq-ch03-species-functions-h,
+
+$$
+l_{\mathrm{card}}(T) = h_{\mathrm v} - h_{\mathrm c}
+= \mathcal R \left[\left(u^{0}_{\mathrm v} - u^{0}_{\mathrm c}\right)
++ \left(c^{\star}_{\mathrm v} + 1 - c^{\star}_{\mathrm c}\right) T\right] ,
+$$ {#eq-ch03-reference-state-lcard}
+
+a straight line in $T$.
+
+*Step 2: the curve's latent heat.* From @eq-ch02-svp-latent, $l_{\mathrm{svp}}(T) = \mathcal R (\beta T_3 - \gamma T)$,
+also a straight line.
+
+*Step 3: equate the two lines.* They agree at every temperature exactly when the intercepts and the slopes agree:
+
+$$
+u^{0}_{\mathrm v} - u^{0}_{\mathrm c} = \beta T_3 , \qquad c^{\star}_{\mathrm c} = c^{\star}_{\mathrm v} + 1 + \gamma .
+$$ {#eq-ch03-reference-state-card}
+
+In the card's own terms, at `Tref`: $u^{\star}_{\mathrm c} = u^{\star}_{\mathrm v} - \beta T_3 +
+(c^{\star}_{\mathrm c} - c^{\star}_{\mathrm v}) T_\star$. For water on the liquid branch of `h2o_ideal`
+($\beta = 24.845$, $\gamma = 4.986009$, $T_3 = 273.16$ K) with a vapour of $c^{\star} = 2.5$, $u^{\star} = 0$ and
+$T_\star = 300$ K, this gives $c^{\star}_{\mathrm c} = 8.486009$ and $u^{\star}_{\mathrm c} = -4990.8575$ K. One
+constant-$c_v$ card matches one branch only, because the two branches have different $\beta$, $\gamma$.
+
+*Step 4: what the condensate entropy then is.* The condensate entropy is solved from saturation
+(@eq-ch03-species-functions-scond): on the curve, $s_{\mathrm c} = s_{\mathrm v}(p_{\mathrm{sat}}) -
+l_{\mathrm{card}}/T$. Along the curve the vapour entropy changes by $\mathrm d s_{\mathrm v}/\mathrm d T = c_{p,\mathrm
+v}/T -
+\mathcal R\, \mathrm d \ln p_{\mathrm{sat}}/\mathrm d T = c_{p,\mathrm v}/T - l_{\mathrm{svp}}/T^2$, and
+$\mathrm d l_{\mathrm{card}}/\mathrm d T = c_{p,\mathrm v} - c_{p,\mathrm c}$. Differentiating,
+
+$$
+T \frac{\mathrm d s_{\mathrm c}}{\mathrm d T} = c_{p,\mathrm c} + \frac{l_{\mathrm{card}} - l_{\mathrm{svp}}}{T} .
+$$ {#eq-ch03-reference-state-sc-slope}
+
+So the solved condensate entropy is that of a constant-$c_p$ substance, $T\, \mathrm d s_{\mathrm c}/\mathrm d T =
+c_{p,\mathrm c}$, exactly when @eq-ch03-reference-state-card holds. Otherwise it carries a spurious temperature
+dependence. Then the Gibbs relation $\mathrm d h_{\mathrm c} = T\, \mathrm d s_{\mathrm c}$ fails, a closed parcel no
+longer has
+$\mathrm d H = T\, \mathrm d S$ at fixed $p$,
+and the energy released by condensation differs from the latent heat in the
+saturation curve, so the moist adiabat (@sec-ch03-adiabat) and the UV temperature (@sec-ch04) are biased.
+
+*Step 5: other heat-capacity models.* With NASA-9 or the H2 heat capacity the same requirement holds with the
+T-dependent $h$ and $s$ of the vapour, which then also have to satisfy $T\, \mathrm d s/\mathrm d T = c_p$; that is row
+K6
+(@sec-ch03-species-functions).
+
+The cards of `tests/jupiter.yaml` at the pin do not satisfy @eq-ch03-reference-state-card. `H2O(l)` has
+$c^{\star} = 9.0$ and $u^{\star} = -3430$ K, so $l_{\mathrm{card}}/l_{\mathrm{svp}}$ is 0.70 at 300 K, and `NH3(s)`
+gives 1.73-1.76 on its solid branch at 150-190 K. This is a property of the test cards, not of the method. It is
+defect K8, whose fix sets the cards to the values of step 3 for the branch where each test cloud forms.[^ch03-k8]
+For water, @eq-ch03-reference-state-sc-slope predicts $T\, \mathrm d s_{\mathrm c}/\mathrm d T = 74.83 - 43.26 = 31.57$
+J mol$^{-1}$ K$^{-1}$ at 300 K, that is 0.4219 of $c_{p,\mathrm c}$, which the check measures.
+
 ### Numerical method
 
 No numerical method: the offsets are shifted once, in `reset`
@@ -128,12 +220,51 @@ kinetics different reference values (@sec-ch11-yaml-input).
 : Tests of the reference state. {#tbl-ch03-reference-state-tests}
 
 `tests/test_latent_heat_sign.py` runs in CTest inside the single entry `test_python_subprocess`, which runs the
-`subprocess_tests` list of `tests/CMakeLists.txt` at the pin, and so in the CI of kintera (`ctest --output-on-failure`). No test checks the offset shifts against @eq-ch03-reference-state-latent; that is missing
-evidence.
+`subprocess_tests` list of `tests/CMakeLists.txt` at the pin, and so in the CI of kintera (`ctest --output-on-failure`).
+
+The derivation is checked by `check_ch3_reference.py`:[^ch03-reference-check]
+
+- `(a1)`: $h/\mathcal R = (u^{\star} - c^{\star} T_\star) + c^{\star} T$ (plus $T$ for a gas) for `H2O`, `H2O(l)` and
+  `NH3(s)` at 200-400 K, exact (0 against $10^{-13}$).
+- `(a2)`: pure-gas entropy $(c^{\star}+1)\ln(T/T_\star) - \ln(p/p_\star)$, to $1.8 \times 10^{-15}$.
+- `(a3)`: @eq-ch03-reference-state-enthalpy-latent, $l - L = \mathcal R T$ from `TV->H` and `ThermoY` `VT->U`, to
+  $4.7 \times 10^{-17}$ relative (at 300 K: $l$ = 31012.9358, $L$ = 28518.5978 J mol$^{-1}$).
+- `(g1)`: the `tests/jupiter.yaml` cards against their curves on the forming branch, worst
+  $\lvert l_{\mathrm{card}}/l_{\mathrm{svp}} - 1\rvert$ = 0.764, EXPECTED-FAIL (K8). The curve's
+  $l_{\mathrm{svp}} = \mathcal R T^2\, \mathrm d \ln K/\mathrm d T$ is a central difference of kintera's own $\ln K$.
+- `(g2)`: the cards of @eq-ch03-reference-state-card match to $5.2 \times 10^{-11}$.
+- `(g3)`: @eq-ch03-reference-state-sc-slope. With the `jupiter.yaml` cards, $T\, \mathrm d s_{\mathrm c}/\mathrm d T$
+  over
+  $c_{p,\mathrm c}$ is 0.385-0.454 for `H2O(l)` (0.4219 at 300 K, as predicted) and 2.50-3.03 for `NH3(s)`,
+  EXPECTED-FAIL (K8). With the cards of step 3 it is 1 to $2.2 \times 10^{-9}$.
+
+The older `check_ch3_card_latent.py` gives the same card ratios as information lines and builds a consistent card,
+$\lvert l_{\mathrm{card}}/l_{\mathrm{svp}} - 1\rvert \le 1.1 \times 10^{-13}$ (PASS).
+
+<!-- equation-check: eq-ch03-reference-state-latent check_ch3_reference.py (a3) -->
+<!-- equation-check: eq-ch03-reference-state-enthalpy-latent check_ch3_reference.py (a3) -->
+<!-- equation-check: eq-ch03-reference-state-lcard check_ch3_reference.py (g1) -->
+<!-- equation-check: eq-ch03-reference-state-card check_ch3_reference.py (g2) -->
+<!-- equation-check: eq-ch03-reference-state-card check_ch3_card_latent.py -->
+<!-- equation-check: eq-ch03-reference-state-sc-slope check_ch3_reference.py (g3) -->
+
+[^ch03-reference-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and
+    the same deck with the step-3 cards, built in the script; run:
+    `python doc/tech-report/derivation-checks/check_ch3_reference.py` from a scratch directory, with `KINTERA_WT`
+    set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_reference.out`,
+    5 PASS, 2 EXPECTED-FAIL.]
+
+[^ch03-d12]: [source: UCzhangxi/kintera#54, row D12 (UV saturation kernel and the H2 heat capacity), merged on the
+    staging branch of that issue.]
+
+[^ch03-k8]: [source: UCzhangxi/kintera#54, row K8 (`tests/jupiter.yaml` condensate cards and their saturation
+    curves), merged on the staging branch of that issue.]
 
 ### Limits
 
-The latent-heat check uses $u^{\star}$ only, so it ignores the NASA-9 and H$_2$ options. Those options reference
-their internal energy to 300 K, a fixed constant, not to `Tref`; with `Tref` other than 300 K, a NASA-9 species'
-energy at $T_\star$ is not $\mathcal R u^{\star}_n$ (verified by reading `eval_intEng_R`; the size of the effect is
-not measured).
+The latent-heat sign check of `from_yaml` uses $u^{\star}$ only, so it ignores the NASA-9 and H$_2$ options, whose
+energies are referenced to 300 K (Derivation); with `Tref` other than 300 K the size of that difference is not
+measured. The check does not test @eq-ch03-reference-state-card either: a card inconsistent with its saturation
+curve is accepted without a warning (the `tests/jupiter.yaml` cards at the pin are such cards, K8).
+At the pin the UV saturation kernel uses the constant-$c_v$ energy under `use-h2-cp` (D12).[^ch03-d12]

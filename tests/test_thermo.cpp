@@ -975,6 +975,10 @@ TEST_P(DeviceTest, coagulation_copy_entropy) {  // D64
   auto conc = thermo->compute("TPX->V", {temp, pres, x});
   auto s = thermo->compute("TPV->S", {temp, pres, conc}).cpu();
   EXPECT_NEAR(s[1].item<double>(), s[0].item<double>(), 1e-9);
+  auto card = YAML::LoadFile("jupiter.yaml");  // H2O(l,p) data != H2O(l)
+  for (auto sp : card["species"])
+    if (sp["name"].as<std::string>() == "H2O(l,p)") sp["cv_R"] = 8.0;
+  EXPECT_EQ(ThermoOptionsImpl::from_yaml(card)->copy_cols().size(), 1u);
 }
 
 TEST_P(DeviceTest, pxs_to_t_batched) {  // D8

@@ -16,9 +16,9 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
   water card, status 0 after 4 steps: gain=2.6288369104611e+01 J(iterate 3, status 2)=2.6288369104611e+01 rel=0.0e+00 tol 1e-14 PASS; J(returned)=2.6288311745887e+01 rel 2.2e-06
   water card, start (1, .01, .001), status 4: gain=8.9919971225634e+01 J(returned)=8.9919971225634e+01 rel=0.0e+00 tol 1e-14 PASS
 == e. numpy copy of the iteration, plain LU direction, no least-squares fallback, vs kintera
-  start (1.0, 0.05, 0.05): kintera status 0 steps 4 error 2.217e-12; copy status 0 steps 4 error 2.217e-12; max |n_kintera - n_copy|=0.0e+00 mol (rel 0.0e+00, tol 1e-14) PASS
+  start (1.0, 0.05, 0.05): kintera status 0 steps 4 error 2.217e-12; copy status 0 steps 4 error 2.217e-12; max |n_kintera - n_copy|=0.0e+00 mol (rel 0.0e+00, tol 1e-14; per amount 0.0e+00, tol 1e-5) PASS
     smallest slack n - floor along the path=3.44e-02 mol (> 0: the fallback test d <= 0 never holds) PASS
-  start (1.0, 0.01, 0.001): kintera status 4 steps 19 error 2.253e+00; copy status 4 steps 19 error 2.253e+00; max |n_kintera - n_copy|=0.0e+00 mol (rel 0.0e+00, tol 1e-14) PASS
+  start (1.0, 0.01, 0.001): kintera status 4 steps 19 error 2.253e+00; copy status 4 steps 19 error 2.253e+00; max |n_kintera - n_copy|=0.0e+00 mol (rel 0.0e+00, tol 1e-14; per amount 0.0e+00, tol 1e-5) PASS
     smallest slack n - floor along the path=3.03e-15 mol (> 0: the fallback test d <= 0 never holds) PASS
     returned liquid=3.027e-15 mol; last halving loop: 40 scales rejected by the floor test, 0 by no decrease of max|r| (INFO)
 == f. phase rule P <= C: three-phase system of line d (N=6, C=2, P=3, R=4), J singular

@@ -85,6 +85,8 @@ $10^{-8}$).[^ch05-diagnostics-check]
 towards `mole-floor` and the cell ends with status 4. The mechanism is measured (`check_ch5_equilibrium.py` line e,
 the vapour-liquid case started from 1, 0.01 and 0.001 mol). The slack $\mathcal N_n - \mathcal N_{\mathrm{floor}}$
 stays positive along the whole path, at least $3.03\times10^{-15}$ mol, so the least-squares fallback never runs.
+That value is measured on the numpy copy's path, which agrees with kintera's to round-off, so it holds for kintera
+too.
 After 19 accepted steps the plain Newton step would take the liquid, then $3.027\times10^{-15}$ mol, below the
 floor, and the floor test of the line search rejects all 40 scales from 1 down to $10^{-12}$. None is rejected for
 failing to lower the residual. The solve ends with status 4 and error 2.253. A numpy copy of the iteration without

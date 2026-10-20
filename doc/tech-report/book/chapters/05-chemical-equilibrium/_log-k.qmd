@@ -179,8 +179,8 @@ measurement outside the suite, not a committed check.]
 - **The pressure argument is ignored**, which is right for ideal gases and leaves condensed constants without a
   pressure correction.
 - **The kinetics reference pressure defaults to 101325 Pa.** The NASA-9 tables and this solver use
-  $p^\circ = 10^5$ Pa. The kinetics use `Pref`, whose default is 101325 Pa (`KineticsOptionsImpl`,
-  {{< code src/kinetics/kinetics.hpp KineticsOptionsImpl >}}), when they convert the constant to concentration
+  $p^\circ = 10^5$ Pa. The kinetics use `Pref`, whose default is 101325 Pa (`KineticsOptionsImpl::Pref`,
+  {{< code src/kinetics/kinetics.hpp KineticsOptionsImpl::Pref >}}), when they convert the constant to concentration
   units. At the default, $K_c$ differs from the 1-bar value by the factor $(10^5/101325)^{-\Delta n}$, with $\Delta n$
   the change in the number of gas molecules: about 1.31 % low per unit of $-\Delta n$. `check_ch5_equilibrium.py` line g
   measures it for O + O$_2$ $\rightleftharpoons$ O$_3$ at 1500 K: $K_c$ is low by $1.3077\times10^{-2}$ at the

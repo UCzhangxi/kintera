@@ -43,6 +43,28 @@ step (active reactions by species) [m$^3$ mol$^{-1}$]. The reference temperature
 
 ### Derivation
 
+**Why the same conditions hold at fixed $U$ and $V$.** The conditions of @sec-ch04-conditions were derived as the
+minimum of $G$ at fixed $T$ and $p$. At fixed internal energy and volume the equilibrium is instead the maximum of the
+entropy $S$ over the reaction extents, with every condensate amount non-negative.[^ch04-uv-entropy-ref] The
+fundamental relation $T\,\mathrm dS = \mathrm dU + p\,\mathrm dV - \sum_n \mu_n\,\mathrm d\mathcal N_n$ gives,
+at fixed $U$ and $V$ with $\mathrm d\mathcal N_n = \nu_{nr}\,\mathrm d\xi_r$,
+
+$$
+\frac{\partial S}{\partial \xi_r}\Big|_{U,V} = -\frac{1}{T}\sum_n \nu_{nr}\,\mu_n = \frac{A_r}{T} ,
+\qquad A_r = -\sum_n \nu_{nr}\,\mu_n ,
+$$
+
+with $A_r$ the affinity of reaction $r$. The chemical potentials are those of @sec-ch04-conditions, evaluated at the
+temperature that the given $U$ and composition imply, so $A_r = -\mathcal R T\,\Delta_r$ by
+@eq-ch04-conditions-gibbs. The KKT conditions of the maximum, with multiplier $\lambda_r \ge 0$ for
+$\mathcal N_{m_r} \ge 0$, are $A_r/T + \lambda_r q_r = 0$, $\lambda_r \ge 0$ and
+$\lambda_r\mathcal N_{m_r} = 0$. They give $\Delta_r = \lambda_r q_r/\mathcal R \ge 0$, with equality where the
+condensate is present: the same three conditions as at fixed $T$ and $p$, now at the temperature fixed by $U$. The
+entropy of an ideal mixture with pure condensates is concave in $(U, V, \mathcal N)$, so any point that meets them is
+a global maximum. Uniqueness is a separate question. For the partition sets below it follows from the monotone
+$U(T)$ of Step 4, under the sign assumption stated there. For general reaction sets the derivation establishes only
+that a point meeting the conditions is an equilibrium, not that it is the only one.
+
 In concentrations, the gas partial pressure of an ideal gas is $p_n = c_n \mathcal R T$. Substituting into the
 deficit of @sec-ch04-conditions gives the condition in concentration units:
 
@@ -231,15 +253,18 @@ The first sum is the heat capacity at fixed composition. The second is the laten
 temperature: warming evaporates condensate, and that absorbs $L_r$ per unit extent. The first line is what
 `partition_uv_state` computes, with `eval_logsvp_ddT` for $\mathrm d\ln K_r/\mathrm dT$.
 
-*Step 4: one root.* The heat capacities are positive, so the first sum is positive. In the second line each latent term
-is a square times a positive factor. For a condensate card that is inconsistent with its saturation curve
-(@sec-ch03-reference-state), the first bracket of the first line comes from the curve and the second from the card.
-The term is then non-negative when the two latent energies have the same sign. $U(T)$ is continuous, because
-$c_{v_r}(T)$ is a minimum of continuous functions. It has a kink where a reaction reaches saturation,
-$K_r^{1/\hat\nu_r}/(\mathcal R T) = w_r$, and its slope is positive on each piece. So $U(T)$ is strictly increasing, and
-$U(T) = U_0$ has at most one root. A sign change of $U(T) - U_0$ between two temperatures then brackets that root,
-which is what the numerical method relies on. The general method solves the same conditions at the same $U$. It must
-therefore reach the same temperature when it converges.
+*Step 4: one root, under a sign assumption.* The heat capacities are positive, so the first sum is positive. In the
+second line each latent term is a square times a positive factor. That line assumes a condensate card consistent with
+its saturation curve (@sec-ch03-reference-state). For an inconsistent card the first bracket of the first line comes
+from the curve and the second from the card, and `partition_uv_state` evaluates exactly this mixed product. The term
+is then non-negative only when the two latent energies have the same sign. **Assume** that they do for every reaction.
+$U(T)$ is continuous, because $c_{v_r}(T)$ is a minimum of continuous functions. It has a kink where a reaction
+reaches saturation, $K_r^{1/\hat\nu_r}/(\mathcal R T) = w_r$, and under the assumption its slope is positive on each
+piece. So $U(T)$ is strictly increasing, and $U(T) = U_0$ has at most one root. A sign change of $U(T) - U_0$ between
+two temperatures then brackets that root, which is what the numerical method relies on. The general method solves the
+same conditions at the same $U$, so under the same assumption it must reach the same temperature when it converges.
+Without the assumption a latent term can be negative, $U(T)$ need not be monotone, and neither the uniqueness of the
+root nor the bracket is established (Limits).
 
 `check_ch4_uv.py` line b compares the partition temperature with the bisection oracle of line a on three cells
 (agreement $5.7\times10^{-14}$ K, tolerance $10^{-9}$ K) and with `uv-solver: kkt` ($1.4\times10^{-8}$ K, tolerance
@@ -379,6 +404,10 @@ $9.2\times10^{-7}$) and on the cold-start cells of `tests/jupiter.yaml` with `ma
 It fails where it should: with `max-iter: 2` on the same cells ($\ln\mathrm{RH}$ up to 14) and with `use-h2-cp`
 (Limits; $|\ln\mathrm{RH}| = 3.5\times10^{-3}$).[^ch04-uv-host-rh]
 
+[^ch04-uv-entropy-ref]: [source: H. B. Callen, Thermodynamics and an Introduction to Thermostatistics, 2nd ed., Wiley
+(1985), chapters 1 and 2 (entropy maximum principle, chemical potential and affinity) and chapter 8 (concavity of the
+entropy).]
+
 [^ch04-uv-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the one-vapour card of the script (dry
 gas, `H2O`, `H2O(l)`, `h2o_ideal`, $T_\star$ = 300 K), cells started at 280, 250 and 320 K with water mole fractions
 0.02, 0.01 and 0.05 (lines a, b, d) and at 296 to 304 K with 0.05 (line c); run:
@@ -417,6 +446,10 @@ outside the suite, not a committed check.]
   from 296 to 304 K, those at 299, 300 and 301 K return diagnostic $-1$ with the temperature left 3.0 to 3.5 K from the
   oracle (EXPECTED-FAIL). The scaled tolerance of the Numerical method lies above the rounding error by construction;
   that it removes these failures is not measured at the code pin.[^ch04-uv-d6-limit]
+- **Uniqueness of the partition root rests on a sign assumption.** The proof that $U(T)$ increases needs, for every
+  reaction, the latent energy implied by the saturation curve and that of the condensate card to have the same sign
+  (Derivation, Step 4); the code uses their product as it stands. For a card that breaks this, the bracket and the
+  uniqueness of the root are not established. No run has shown the method failing for this reason.
 - **`max-iter` also caps the partition method at the code pin**, as above; lowering it below 4 to save time loses
   partition cells. The correct bound is independent of it (Numerical method).
 - **The default `max-iter` of 10 fails cold starts here too.** On the cold-start cells of @sec-ch04-equilibrate-tp the

@@ -81,13 +81,14 @@ exactly, and the element totals need not be stored. There are as many unknowns a
 
 **The phase rule.** Independent reactions are not enough for a well-posed problem. With $N$ components, $C$ independent
 elements and the full set of $R = N - C$ independent reactions, the problem also needs $P \le C$: no more phases
-than components. The proof is one line. Every residual depends on the amounts only through the mole fractions
+than independent elements. The proof is one line. Every residual depends on the amounts only through the mole fractions
 $\mathcal N_n/\mathcal N_\pi$ within each phase, and the mole fractions of a phase do not change when all its
 amounts are scaled together. So the Jacobian of @sec-ch05-newton has rank at most $N - P$, and with
 $R = N - C$ it is singular whenever $P > C$. The rank check on the stoichiometric matrix (@sec-ch05-options) does not
 detect this, because it tests the reactions, not the phases. The three-phase example of `newton_check.py` is such a
 case ($N = 6$, $C = 2$, $P = 3$, $R = 4$): `check_ch5_equilibrium.py` line f finds the smallest singular value of the
-Jacobian to be $1.6\times10^{-17}$ at its start state (condition number $1.4\times10^{18}$, rank 3) and at most
+Jacobian to be $1.6\times10^{-17}$ at its start state on the x86_64 build of the run record ($2.5\times10^{-16}$ on
+an arm64 build of the pin; condition number $1.4\times10^{18}$, rank 3) and at most
 $5.5\times10^{-15}$ over 200 random states, against a tolerance of $10^{-12}$.[^ch05-conditions-phase] The
 check `newton_check.py` confirms the element balance of a step (`[C2]`), and that for a vapour-liquid pair with
 $\ln K^\circ_r = \ln(p^\circ/p_{\mathrm{sat}})$ the condition is Raoult's law, liquid mole fraction times

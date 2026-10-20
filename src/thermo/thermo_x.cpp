@@ -48,10 +48,9 @@ void ThermoXImpl::reset() {
   if (options->nucleation() == nullptr) {
     options->nucleation() = NucleationOptionsImpl::create();
   }
-  check_svp_formulas(options->nucleation());
+  check_nucleation_options(options->nucleation());
 
   check_dimensions(options);
-  check_temperature_range(options->nucleation());
 
   auto const& mu_vec = options->mu();
   mu = register_buffer("mu", torch::tensor(mu_vec, torch::kFloat64));
@@ -218,11 +217,7 @@ torch::Tensor ThermoXImpl::forward(torch::Tensor temp, torch::Tensor pres,
   vec[xfrac.dim() - 1] = reactions.size() * reactions.size();
   auto gain = torch::zeros(vec, xfrac.options());
 
-  // Each call starts from the full reaction set. equilibrate_tp re-tests every
-  // reaction against the current composition in each outer iteration and
-  // never reads the incoming nactive, so a kept active set could not save
-  // iterations; it only reordered the reactions. warm_start has no effect.
-  (void)warm_start;
+  // warm_start has no effect: equilibrate_tp never reads the incoming nactive
   auto vec2 = temp.sizes().vec();
   vec2.push_back(reactions.size());
   reaction_set = torch::arange(0, (int)reactions.size(),

@@ -143,8 +143,7 @@ class KineticsImpl : public torch::nn::Cloneable<KineticsImpl> {
    *               concentration, shape (..., nspecies, nreaction_aug)
    * \param rc_ddT optional derivative of the raw rate constants with respect
    *               to temperature [mol/(m^3 K s)], shape (..., nreaction_aug);
-   *               a reverse column is dk_r/dT of k_r = k_f / Kc, i.e.
-   *               (dk_f/dT) / Kc - k_r d(ln Kc)/dT
+   *               reverse columns are dk_r/dT of k_r = k_f / Kc
    * \param rate_constants optional raw forward coefficients, shape
    *               (..., nreaction_orig), required at zero solid abundance
    * \return       reaction-space Jacobian d(rate_i)/dC_j,

@@ -46,6 +46,25 @@ positive [m s$^{-2}$]; $\Delta z$, height change, positive upward [m]; $\nu_{nr}
 
 ### Derivation
 
+**The dry limit: Poisson's law.** Start with nothing condensing. The question is what the routine reduces to and how
+that connects to the potential temperature. With no active reaction the gain matrix is empty and the heat capacity is
+the frozen $\bar c_p = \sum_n x_n c_{p,n}$ (`effective_cp`,
+{{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::effective_cp >}}). For an ideal-gas mixture of fixed composition
+and constant heat capacities, the molar entropy is $\bar s = \bar c_p \ln T - \mathcal R \ln p + \text{const}$
+(@eq-ch03-species-functions-sgas, summed with the mole fractions; the mixing terms are constant at fixed
+composition). Setting $\mathrm d \bar s = 0$ and integrating from $(T_0, p_0)$ gives
+
+$$
+T_1 = T_0 \exp\!\left(\frac{\mathcal R}{\bar c_p}\, \Delta \ln p\right) , \qquad
+\theta = T \left(\frac{p_0}{p}\right)^{\mathcal R/\bar c_p} \ \text{unchanged} ,
+$$ {#eq-ch03-adiabat-poisson}
+
+Poisson's law, with $\theta$ the potential temperature referred to $p_0$. The update of the routine (below) with
+$\bar c_p^{\mathrm{eff}} = \bar c_p$ is $T \leftarrow T [1 + \ln(T_1/T)]$ at the new pressure. Its fixed point is $T_1$,
+and the derivative of the map there is $1 - 1 = 0$, so it converges quadratically to @eq-ch03-adiabat-poisson. kintera
+has no separate potential-temperature function at the pin. With condensation there is no single potential
+temperature to conserve: the conserved quantity is the molar entropy of the saturated parcel, derived next.
+
 **Effective heat capacity.** Hold $p$ fixed and let $T$ change by $\mathrm d T$ in a saturated parcel. The frozen
 part of the enthalpy change per mole of mixture is $\bar c_p\, \mathrm d T$ with $\bar c_p = \sum_n x_n c_{p,n}$.
 The reaction extents change too, by $\mathrm d \xi_r$, releasing $-\Delta h_r\, \mathrm d \xi_r$. Saturation is
@@ -87,12 +106,39 @@ $$ {#eq-ch03-adiabat-target}
 the first line for `extrapolate_dlnp` and the second for `extrapolate_dz`, with the rates the arguments `ds_dlnp`
 and `ds_dz` (default 0). Both functions compute their target at entry.
 
-**Temperature update in $\ln p$.** At the new pressure, $\partial \bar s / \partial T = \bar c_p^{\mathrm{eff}} / T$
-along the saturated path, so Newton's method gives
+**The entropy slope along the saturated path.** The Newton step needs $\mathrm d \bar s/\mathrm d T$ along the
+saturated path at fixed $p$. For a closed parcel (fixed element amounts) the fundamental relation at fixed $p$ is
+$\mathrm d H = T\, \mathrm d S + \sum_n \mu_n\, \mathrm d \mathcal N_n$, with $\mu_n = h_n - T s_n$ the molar Gibbs
+energy.
+Along the saturated path every active reaction stays at zero Gibbs energy, $\sum_n \nu_{nr} \mu_n = 0$
+(@sec-ch03-species-functions), and the amounts change only through the extents,
+$\mathrm d \mathcal N_n = \sum_r \nu_{nr}\, \mathrm d \xi_r$, so the last term vanishes:
+
+$$
+\mathrm d H = T\, \mathrm d S \quad \text{(closed parcel, fixed } p \text{, equilibrium path)} .
+$$ {#eq-ch03-adiabat-gibbs}
+
+This also needs each species to satisfy its own Gibbs relation, $\mathrm d h_n = T\, \mathrm d s_n$ at fixed $p$. That
+holds for the gases, and for a condensate whose entropy is solved from saturation only when its card matches its
+curve (@eq-ch03-reference-state-sc-slope). Per mole of mixture, with $n$ moles in the parcel,
+$T\, \mathrm d(S/n) = \mathrm d(H/n) + (H - T S)\, \mathrm d n / n^2$. When the condensation leaves $n$ unchanged
+(one vapour mole per condensate mole) this is
+$T\, \mathrm d \bar s = \mathrm d \bar h = \bar c_p^{\mathrm{eff}}\, \mathrm d T$:
+
+$$
+\frac{\mathrm d \bar s}{\mathrm d T} = \frac{\bar c_p^{\mathrm{eff}}}{T} .
+$$ {#eq-ch03-adiabat-dsdt}
+
+When $n$ changes (NH$_4$SH forms from two gas moles), the slope differs by $\bar g\, \mathrm d \ln n/\mathrm d T$,
+with $\bar g = \bar h - T \bar s$. The step below then uses an approximate slope, which changes the rate of the
+iteration but not its fixed point.
+
+**Temperature update in $\ln p$.** At the new pressure, Newton's method on $\bar s(T) = \bar s_{\mathrm{target}}$ with
+the slope @eq-ch03-adiabat-dsdt, written in relative form, is
 
 $$
 T \leftarrow T \left(1 + \frac{\bar s_{\mathrm{target}} - \bar s(T)}{\bar c_p^{\mathrm{eff}}}\right) ,
-$$
+$$ {#eq-ch03-adiabat-newton}
 
 computed in `extrapolate_dlnp` ({{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::extrapolate_dlnp >}}).
 
@@ -134,12 +180,11 @@ What is exact and what is truncated: the reversible step of `extrapolate_dlnp` (
 in $\Delta \ln p$; its end state satisfies $\bar s(T, p_1) = \bar s_{\mathrm{target}}$ to within 10 times `ftol`, in
 J mol$^{-1}$ K$^{-1}$, whatever the step; $\bar s$ is the parcel's total entropy only when the condensation leaves
 the number of moles unchanged (see the entropy target above). With `rainout` the step has the first-order error of the rectangle rule
-above. The content review of this chapter measured[^ch03-rainout-review] it against an independent fine-step
-integration, for a dry gas with water from saturation at 1 bar to 0.5 bar: the pseudo-adiabatic end temperature was
-off by $+6.27 \times 10^{-3}$, $+3.18 \times 10^{-3}$, $+1.63 \times 10^{-3}$, $+8.3 \times 10^{-4}$ and
-$+4.5 \times 10^{-4}$ K with 35, 70, 139, 277 and 555 steps, halving with the step, while the reversible error stayed
-at $7 \times 10^{-5}$ K or below. These are the review's measurements, not rerun here. `extrapolate_dz` adds the trapezoidal error of @eq-ch03-adiabat-hydrostatic, second order in $\Delta z$ for a
-smooth $\rho(z)$ (a standard property of the trapezoidal rule; no test measures it). The executable check is not written yet.
+above, measured by check line `(h3)`: for $\Delta \ln p = -0.2$ from 300 K and 10 bar, the end temperature with
+$N$ = 4, 8, 16, 32 steps differs from the $N = 512$ result by $7.52 \times 10^{-2}$, $3.73 \times 10^{-2}$,
+$1.84 \times 10^{-2}$ and $8.88 \times 10^{-3}$ K, observed orders 1.012, 1.023 and 1.048. `extrapolate_dz` adds the
+trapezoidal error of @eq-ch03-adiabat-hydrostatic, second order in $\Delta z$ for a smooth $\rho(z)$ (a standard
+property of the trapezoidal rule; no test measures it).
 
 ### Numerical method
 
@@ -182,17 +227,55 @@ every iteration. Both functions overwrite `temp`, `pres` and `xfrac` in place.
 and keeps the latent term. It runs in CTest inside the single entry `test_python_subprocess`, which runs the
 `subprocess_tests` list of `tests/CMakeLists.txt` at the pin, and so in the CI of kintera (`ctest --output-on-failure`).
 `test_jupiter_tp_adiabat.py` builds a deep adiabat with repeated `forward` calls and its own temperature bracket; it
-does not call `extrapolate_dlnp` or `extrapolate_dz`, so it is not evidence for this section. No test covers
-`extrapolate_dz`, `rainout`, or the trapezoidal order: missing evidence.
+does not call `extrapolate_dlnp` or `extrapolate_dz`, so it is not evidence for this section. No kintera test covers
+`extrapolate_dz`, `rainout`, or the trapezoidal order.
+
+The derivation is checked by two derivation checks. `check_ch3_adiabat.py`:[^ch03-adiabat-check]
+
+- `4a`: the dry limit @eq-ch03-adiabat-poisson. A dry parcel stepped by $\Delta \ln p = -0.5$ ends within
+  $2.0 \times 10^{-9}$ of $300 \exp(-0.5\, \mathcal R/\bar c_p)$ at `ftol` $10^{-6}$, and within 0 at $10^{-12}$
+  (tolerance $10^{-8}$).
+- `4b`: @eq-ch03-adiabat-cpeff, `effective_cp` = 31.3465 J mol$^{-1}$ K$^{-1}$ at 280 K and 10 bar, against a central
+  difference of the equilibrium molar enthalpy, $3.4 \times 10^{-9}$. A saturated reversible step
+  $\Delta \ln p = -0.01$ changes $\bar s$ by $4.6 \times 10^{-7}$ J mol$^{-1}$ K$^{-1}$ (tolerance $10^{-5}$).
+
+`check_ch3_adiabat_slope.py`:[^ch03-adiabat-slope-check]
+
+- `(h1)`: @eq-ch03-adiabat-gibbs for a closed parcel at 280 K and 10 bar (per mole of dry gas). With the cards of
+  `tests/jupiter.yaml` $T\, \mathrm d S/\mathrm d T$ and $\mathrm d H/\mathrm d T$ differ by $2.2 \times 10^{-3}$,
+  because the solved condensate entropies fail their Gibbs relation, EXPECTED-FAIL (K8). With the cards of
+  @eq-ch03-reference-state-card they agree to $2.3 \times 10^{-10}$.
+- `(h2)`: $\mathrm d \bar h/\mathrm d T$ along the path equals `effective_cp` to $3.4 \times 10^{-9}$.
+- `(h3)`: the rain-out branch is first order in $\Delta \ln p$, observed orders 1.012-1.048 (tolerance 0.15 on the
+  order).
+
+<!-- equation-check: eq-ch03-adiabat-poisson check_ch3_adiabat.py -->
+<!-- equation-check: eq-ch03-adiabat-cpeff check_ch3_adiabat.py -->
+<!-- equation-check: eq-ch03-adiabat-cpeff check_ch3_adiabat_slope.py (h2) -->
+<!-- equation-check: eq-ch03-adiabat-gibbs check_ch3_adiabat_slope.py (h1) -->
+<!-- equation-check: eq-ch03-adiabat-dsdt check_ch3_adiabat_slope.py (h1) -->
+<!-- equation-check: eq-ch03-adiabat-target check_ch3_adiabat.py -->
+<!-- equation-check: eq-ch03-adiabat-newton check_ch3_adiabat.py -->
+
+[^ch03-adiabat-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
+    `python doc/tech-report/derivation-checks/check_ch3_adiabat.py` from a scratch directory, with `KINTERA_WT` set to
+    the build tree, CPU, double; output: `doc/tech-report/derivation-checks/check_ch3_adiabat.out`, 4 PASS,
+    1 EXPECTED-FAIL (line `4c`, D8, @sec-ch03-thermo-x).]
+
+[^ch03-adiabat-slope-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and
+    the same deck with the step-3 cards of @sec-ch03-reference-state, built in the script; run:
+    `python doc/tech-report/derivation-checks/check_ch3_adiabat_slope.py` from a scratch directory, with `KINTERA_WT`
+    set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
+    kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch3_adiabat_slope.out`, 3 PASS, 1 EXPECTED-FAIL.]
 
 ### Limits
 
-`extrapolate_dz` and `rainout` are untested. With `rainout`, a column built in steps of $\Delta \ln p$ carries a
-first-order step error (Derivation); a precipitating copy of a condensate that has no nucleation reaction of its own
+`extrapolate_dz` is untested. With `rainout`, a column built in steps of $\Delta \ln p$ carries a first-order step
+error (Derivation, check line `(h3)`); this is the documented accuracy limit K5, not a code defect; a precipitating copy
+of a condensate that has no nucleation reaction of its own
 leaves with zero entropy (@sec-ch03-species-functions). The CUDA path of `effective_cp` uses an absolute pseudo-inverse
 tolerance of $10^{-6}$ on the row-scaled matrix, while the CPU path uses `gelsd`; whether the two agree on
 ill-conditioned gain matrices is not measured. The entropy target uses the constant-$c_p$ gas entropy of
-@sec-ch03-species-functions, so with `use-nasa9-cp` the step conserves that entropy, not the NASA-9 one (verified by
-reading `eval_entropy_R`; the size of the effect is not measured).
-
-[^ch03-rainout-review]: Content review of chapter 3 at the head 923b47a1 of [UCzhangxi/kintera#16](https://github.com/UCzhangxi/kintera/pull/16), item 4, quoted in the description of [UCzhangxi/kintera#23](https://github.com/UCzhangxi/kintera/pull/23).
+@sec-ch03-species-functions, so with `use-nasa9-cp` the step conserves that entropy, not the NASA-9 one (K6; the size
+of the effect on the adiabat is not measured).

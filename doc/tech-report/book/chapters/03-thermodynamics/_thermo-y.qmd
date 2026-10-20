@@ -97,6 +97,17 @@ the constant heat capacity per unit mass. With no extra functions and no NASA-9 
 $T$ and the start is exact. @eq-ch03-thermo-y-newton is computed in `_intEng_to_temp`
 ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_intEng_to_temp >}}).
 
+Why the start is exact: with constant heat capacities $U = \sum_n \rho_n (u_{0,n} + c_{v0,n} T)$ is linear in $T$,
+and the start is the root of that line. Newton's slope is the exact $\mathrm d U/\mathrm d T = C_V$, so with the
+NASA-9 or H$_2$ option, where $U$ is curved, the iteration converges quadratically from that start.
+
+**One energy model for the conversion and the saturation adjustment.** The saturation adjustment at fixed
+$(\rho, U)$ (@sec-ch04) must release latent heat and set $T$ with the same $u_n(T)$ that `VU->T` inverts. Otherwise
+a parcel adjusted to saturation and then converted back with `VU->T` sits off its saturation curve. At the pin the
+kernel receives the constant-$c_v$ offsets even under `use-h2-cp` (`ThermoYImpl::forward`,
+{{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}): the defect D12, whose fix gives the kernel the H2
+rotational energy (@sec-ch03-reference-state).[^ch03-thermo-y-d12]
+
 ### Numerical method
 
 Every conversion is pointwise. The two iterations, `VU->T` (@eq-ch03-thermo-y-newton) and `PV->T`
@@ -145,8 +156,36 @@ The tolerances are read from `tests/test_thermo.cpp` at the pin; they are much l
 these conversions, and their reason is missing evidence. The cases run on CPU in float32 and float64 and on CUDA
 when a GPU is present. `PVT->S` is computed but not asserted in `DeviceTest.thermo_y`.
 
+The derivation is checked by `check_ch3_thermo_y.py`:[^ch03-thermo-y-check]
+
+- `(d1)`: `Y->X` against @eq-ch03-thermo-y-xfrac on `tests/jupiter.yaml` with random mass fractions, to
+  $2.2 \times 10^{-19}$ (tolerance $10^{-14}$).
+- `(d2)`: `VT->U` then `VU->T` returns $T$ exactly (0 against $10^{-10}$ K) at 150-400 K with constant $c_v$.
+- `(d3)`: the same round trip with `use-h2-cp`, both modes, to $3.7 \times 10^{-12}$ K.
+- `(d4)`: a supersaturated H2 + H2O parcel adjusted at fixed $(\rho, U)$ by `ThermoY.forward` and converted back with
+  `VU->T`. With the flag off it ends on the saturation curve,
+  $\lvert \ln p_{\mathrm v} - \ln K(T)\rvert = 9.2 \times 10^{-7}$
+  (tolerance $10^{-5}$). With `use-h2-cp` it ends $4.6 \times 10^{-3}$ off the curve in both modes, EXPECTED-FAIL
+  (D12).
+
+<!-- equation-check: eq-ch03-thermo-y-xfrac check_ch3_thermo_y.py (d1) -->
+<!-- equation-check: eq-ch03-thermo-y-totals check_ch3_thermo_y.py (d2) -->
+<!-- equation-check: eq-ch03-thermo-y-newton check_ch3_thermo_y.py (d2) -->
+<!-- equation-check: eq-ch03-thermo-y-newton check_ch3_thermo_y.py (d3) -->
+<!-- equation-check: eq-ch03-thermo-y-newton check_ch3_thermo_y.py (d4) -->
+
+[^ch03-thermo-y-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, and an
+    H2-H2O card built in the script for `(d3)`, `(d4)`; run:
+    `python doc/tech-report/derivation-checks/check_ch3_thermo_y.py` from a scratch directory, with `KINTERA_WT` set
+    to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
+    kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_thermo_y.out`,
+    5 PASS, 2 EXPECTED-FAIL.]
+
+[^ch03-thermo-y-d12]: [source: UCzhangxi/kintera#54, row D12 (UV saturation kernel and the H2 heat capacity),
+    merged on the staging branch of that issue.]
+
 ### Limits
 
 The convergence test is a global maximum with a host copy per iteration, which serialises GPU work (a performance
-hypothesis, not measured). No test exercises `VU->T` with a temperature-dependent heat capacity, where the start is
-not exact.
+hypothesis, not measured). With `use-h2-cp` the round trip itself is exact (check line `(d3)`), but at the pin the
+saturation adjustment uses a different energy model and ends off the curve (D12, check line `(d4)`).

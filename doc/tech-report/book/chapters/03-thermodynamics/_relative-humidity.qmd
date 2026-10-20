@@ -90,6 +90,8 @@ The tolerances and assertions are read from the test files at the pin. The `Devi
 check that RH equals 1 where condensate is present. A direct check of @eq-ch03-relative-humidity-rh against a hand
 value is missing evidence.
 
+<!-- equation-check: eq-ch03-relative-humidity-rh check_ch3_species_functions.py -->
+
 ### Limits
 
 Ideal gas only: the code carries a to-do for a non-ideal correction, and a set compressibility function is ignored

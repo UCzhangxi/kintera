@@ -68,7 +68,8 @@ The lines are computed in `_cp_vol` ({{< code src/thermo/thermo.hpp ThermoXImpl:
 **Temperature from entropy at fixed pressure.** `PXS->T` solves $S(T) = S_{\mathrm{given}}$ for the entropy per
 unit volume $S$ of @eq-ch03-thermo-x-totals, recomputing the concentrations from @eq-ch03-eos-conc at every
 iterate. At fixed $p$ and $x$ every concentration scales as $1/T$, so $\partial c_n / \partial T = -c_n / T$. For a
-gas, $\partial s_n / \partial T = c_{p,n} / T$ at fixed $p$ and $x_n$; assume the same for the condensates. Then
+gas, $\partial s_n / \partial T = c_{p,n} / T$ at fixed $p$ and $x_n$. For a condensate, whose entropy is solved from
+saturation, the same holds when its card matches its saturation curve (@eq-ch03-reference-state-sc-slope). Then
 
 $$
 \begin{aligned}
@@ -78,7 +79,15 @@ $$
 \end{aligned}
 $$ {#eq-ch03-thermo-x-entropy-slope}
 
-The code does not use this slope. Its update, computed in `_entropy_to_temp`
+Newton's method on $S(T) = S_{\mathrm{given}}$ with this slope is
+
+$$
+T \leftarrow T + T\, \frac{S_{\mathrm{given}} - S(T)}{C_p(T) - S(T)} ,
+$$ {#eq-ch03-thermo-x-entropy-correct}
+
+which converges quadratically near the root and does not depend on the entropy constants, because $S$ and $C_p - S$
+shift together. An equivalent route is to invert the molar entropy, as the adiabat does (@sec-ch03-adiabat). At the
+pin the code does not use this slope. Its update, computed in `_entropy_to_temp`
 ({{< code src/thermo/thermo_x.cpp ThermoXImpl::_entropy_to_temp >}}), is
 
 $$
@@ -100,7 +109,9 @@ contains the arbitrary entropy constants `s0_R` and the reference state $T_\star
 (@sec-ch03-reference-state), so whether `PXS->T` converges depends on constants that should not change any
 physical answer. (3) By @eq-ch03-thermo-x-entropy-slope, $S(T)$ at fixed $p$ has a turning point where
 $S = C_p$, so a given $S_{\mathrm{given}}$ can have a second, spurious root, to which the iteration may converge.
-The adiabat code avoids all three by inverting the molar entropy $\bar s$ instead (@sec-ch03-adiabat).
+The adiabat code avoids all three by inverting the molar entropy $\bar s$ instead (@sec-ch03-adiabat). This is the
+defect D8, whose fix uses the slope $(C_p - S)/T$ of @eq-ch03-thermo-x-entropy-correct.[^ch03-d8]
+<!-- equation-source: eq-ch03-thermo-x-entropy-newton code at the pin, not the correct step (D8) -->
 
 After each step the code calls `forward`, the saturation adjustment at the new $(T, p)$, which changes the
 composition in place. The slope $C_p$ is also frozen: it omits the latent heat of the condensation that `forward`
@@ -154,6 +165,32 @@ The tolerances are read from `tests/test_thermo.cpp` at the pin; their reason is
 CPU in float32 and float64 and on CUDA when a GPU is present. `TV->cp` and `TV->H` are computed in
 `DeviceTest.thermo_x` but not asserted.
 
+The derivation is checked by `check_ch3_pxs.py` on a dry parcel of `tests/jupiter.yaml` at 1 bar:[^ch03-pxs-check]
+
+- `(f1)`: @eq-ch03-thermo-x-entropy-slope against a central difference of `TPV->S` at fixed $(p, x)$, 250-600 K, to
+  $3.1 \times 10^{-10}$ (tolerance $10^{-7}$).
+- `(f2)`: the derivative of the pin's map @eq-ch03-thermo-x-entropy-newton at the root equals $S/C_p$ =
+  0.6931471806 at 600 K (@eq-ch03-thermo-x-entropy-factor), to $8.1 \times 10^{-11}$.
+- `(f3)`: the step @eq-ch03-thermo-x-entropy-correct, written with kintera's $S$ and $C_p$ and started at
+  $T_\star = 300$ K, recovers 600 K from $S(600\ \mathrm K)$ in the 10 allowed iterations (error 0 against
+  $10^{-9}$ K; 599.99998 K after 6).
+- `(f4)`: kintera's `PXS->T` on the same input returns 594.1625594 K, EXPECTED-FAIL (D8). `check_ch3_adiabat.py`
+  line `4c` gives the same 5.837 K.
+
+<!-- equation-check: eq-ch03-thermo-x-entropy-slope check_ch3_pxs.py (f1) -->
+<!-- equation-check: eq-ch03-thermo-x-entropy-factor check_ch3_pxs.py (f2) -->
+<!-- equation-check: eq-ch03-thermo-x-entropy-correct check_ch3_pxs.py (f3) -->
+<!-- equation-check: eq-ch03-thermo-x-entropy-newton check_ch3_pxs.py (f4) -->
+<!-- equation-check: eq-ch03-thermo-x-totals check_ch3_species_functions.py -->
+
+[^ch03-pxs-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, dry
+    composition; run: `python doc/tech-report/derivation-checks/check_ch3_pxs.py` from a scratch directory, with
+    `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0,
+    numpy 2.4.6, kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_pxs.out`,
+    3 PASS, 1 EXPECTED-FAIL.]
+
+[^ch03-d8]: [source: UCzhangxi/kintera#54, row D8 (`PXS->T` slope), merged on the staging branch of that issue.]
+
 ### Limits
 
 `PXS->T` returns wrong temperatures, not merely slow ones, away from $T_\star$. The content review of this
@@ -163,8 +200,8 @@ $T_\star = 300$ K: target 600 K gave 594.16 K with `max-iter` 10 and 599.9987 K 
 `s0_R` 15.7 or 30 it gave NaN or overflow. In saturated parcels of `tests/jupiter.yaml` equilibrated at $T_\star$
 and 1 bar the same review measured: 5 % H$_2$O, $T_\star = 300$ K, returned 321.605 K with `max-iter` 10 and 100;
 the Jupiter composition at 150 K returned NaN; 5 % H$_2$O at 280 K returned 280.871 K (10) and 280.0001 K (100).
-These numbers are the review's measurements; they were not rerun for this text, and no executable check at the pin
-reproduces them yet (missing evidence). They agree with
+The 600 K case with `max-iter` 10 is rerun by check line `(f4)` (594.1625594 K, D8); the other numbers are the
+review's measurements and were not rerun for this text. They agree with
 @eq-ch03-thermo-x-entropy-factor: only a start at the answer is exact, and the frozen slope adds a latent-heat
 error in saturated parcels. The only test of `PXS->T` starts at $T_\star$, where the answer is the start.
 

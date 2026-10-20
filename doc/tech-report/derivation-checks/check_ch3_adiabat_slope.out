@@ -1,0 +1,10 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+   tests/jupiter.yaml, 280 K, 1e6 Pa, per mole of dry gas: dH/dT = 31.4370245170, T dS/dT = 31.3673271336 J/(mol K); per mole of mixture dh/dT = 31.3464858864
+(h1) closed parcel at fixed p, tests/jupiter.yaml: T dS/dT vs dH/dT (rel): measured 2.217e-03  tol 1e-05  EXPECTED-FAIL (K8)
+   effective_cp = 31.3464857806 J/(mol K)
+(h2) per mole: dh/dT along the equilibrium path vs effective_cp (rel): measured 3.375e-09  tol 1e-05  PASS
+   corrected cards, 280 K, 1e6 Pa, per mole of dry gas: dH/dT = 32.3120996315, T dS/dT = 32.3120996239 J/(mol K); per mole of mixture dh/dT = 32.2190407845
+(h1) closed parcel at fixed p, corrected cards: T dS/dT vs dH/dT (rel): measured 2.342e-10  tol 1e-05  PASS
+   rain-out, d ln p = -0.2 from 300 K, 1e6 Pa: |T_N - T_512| = 7.5237e-02, 3.7305e-02, 1.8352e-02, 8.8786e-03 K for N = 4, 8, 16, 32; observed orders 1.012, 1.023, 1.048
+(h3) rain-out step is first order in d ln p: max |observed order - 1|: measured 4.751e-02  tol 0.15  PASS
+SUMMARY: 3 PASS, 0 FAIL, 1 EXPECTED-FAIL

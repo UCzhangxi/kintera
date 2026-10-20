@@ -173,8 +173,8 @@ not in the species list.
 
 The test names and assertions are read from `tests/test_falloff.cpp` at the pin. Only the three-body form is compared
 with its closed form; the Lindemann, Troe and SRI tests assert only that the rate is non-zero, so among the registered tests
-@eq-ch06-falloff-blend and @eq-ch06-falloff-broadening have no reference-value test. The derivation check below gives
-the Lindemann case of @eq-ch06-falloff-blend one. The test
+@eq-ch06-falloff-blend and @eq-ch06-falloff-broadening have no reference-value test. The derivation check `[c1]` in the table above
+gives the Lindemann case of @eq-ch06-falloff-blend one. The test
 `real_chemistry_sample_reaction_full` was not read for this section. The derivation checks measure
 $4.4 \times 10^{-16}$ for `[c1]` and $1.0 \times 10^{-6}$ for both limits, the size of $P_r$ at the ends of the
 range.[^ch06-check-c] The Troe and SRI broadening still has no reference-value test.

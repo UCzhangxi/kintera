@@ -73,9 +73,10 @@ $$
 $$ {#eq-ch06-jacobian-dtdc}
 
 Raising the concentration of a species with a large (positive) energy content at fixed $U$ cools the cell, because
-that energy has to come from the thermal part. `jacobian` does not form @eq-ch06-jacobian-dtdc on its own: it uses
-$u_k$ from `eval_intEng_R` ({{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}) and divides by the caller's $C_V$
-inside the term below.
+that energy has to come from the thermal part. `jacobian`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}) does not form @eq-ch06-jacobian-dtdc on its own: it
+takes $u_k$ from `eval_intEng_R` ({{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}), which returns $u_k/\mathcal R$,
+and divides by the caller's $C_V$ inside the term below.
 
 **Chain rule.** The rate depends on $c$ directly and through $T(c)$. At fixed $U$,
 
@@ -103,6 +104,7 @@ with the reversible `O + O2 <=> O3` gives $3.5 \times 10^{-10}$ for the forward 
 expected failure: it is off by a factor of up to $5.9 \times 10^{9}$, because its $\partial k/\partial T$ is the
 copied forward one (@sec-ch06-mass-action, Limits).[^ch06-check-g]
 <!-- equation-check: eq-ch06-jacobian-feedback check_ch6_jacobian.py -->
+<!-- equation-source: eq-ch06-jacobian-feedback reverse-column input differs (D65) -->
 
 ### Numerical method
 

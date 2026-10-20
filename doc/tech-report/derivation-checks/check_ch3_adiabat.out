@@ -9,5 +9,5 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
    saturated step dlnp=-0.01: T 280.0 -> 279.24698789 K, s -21.1429530619 -> -21.1429525986 J/(mol K)
 4b |ds| over saturated extrapolate_dlnp step (J/(mol K)): measured 4.634e-07  tol 1e-05  PASS
    S(600 K) = 404.3358553266 J/(K m^3); PXS->T returns 594.1625594241 K (start guess Tref = 300.0 K, max_iter = 10)
-4c PXS->T round trip |T - 600| (K): measured 5.837e+00  tol 1e-06  EXPECTED-FAIL
+4c PXS->T round trip |T - 600| (K): measured 5.837e+00  tol 1e-06  EXPECTED-FAIL (D8)
 SUMMARY: 4 PASS, 0 FAIL, 1 EXPECTED-FAIL

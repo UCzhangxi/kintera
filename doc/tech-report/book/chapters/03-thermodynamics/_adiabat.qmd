@@ -129,8 +129,12 @@ $$
 \frac{\mathrm d \bar s}{\mathrm d T} = \frac{\bar c_p^{\mathrm{eff}}}{T} .
 $$ {#eq-ch03-adiabat-dsdt}
 
-When $n$ changes (NH$_4$SH forms from two gas moles), the slope differs by $\bar g\, \mathrm d \ln n/\mathrm d T$,
-with $\bar g = \bar h - T \bar s$. The step below then uses an approximate slope, which changes the rate of the
+When $n$ changes (NH$_4$SH forms from two gas moles), dividing the identity above by $n$ and $T$ gives
+
+$$
+\frac{\mathrm d \bar s}{\mathrm d T} = \frac{\bar c_p^{\mathrm{eff}}}{T}
++ \frac{\bar g}{T}\, \frac{\mathrm d \ln n}{\mathrm d T} , \qquad \bar g = \bar h - T \bar s .
+$$ {#eq-ch03-adiabat-dsdt-n} The step below then uses an approximate slope, which changes the rate of the
 iteration but not its fixed point.
 
 **Temperature update in $\ln p$.** At the new pressure, Newton's method on $\bar s(T) = \bar s_{\mathrm{target}}$ with

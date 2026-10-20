@@ -150,6 +150,10 @@ $K_{zz} = 1$, a Dirichlet value 1 on one side and a Neumann value 0.5 on the oth
 the solution has $\mathrm d c/\mathrm d x_1 = 0.5$, an outward normal derivative of $-0.5$; at the top it has
 $\mathrm d c/\mathrm d x_1 = 0.5$, an outward normal derivative of $+0.5$.
 
+<!-- equation-check: eq-ch09-transport-flux check_ch9_atm2d.py (a2) -->
+<!-- equation-check: eq-ch09-transport-mr check_ch9_atm2d.py (a1) -->
+<!-- equation-check: eq-ch09-transport-mr check_ch9_atm2d.py (a2) -->
+
 ### Limits
 
 A Neumann value is imposed as $\mathrm d c / \mathrm d x$ along the positive axis on every side (run `[R1]`), while

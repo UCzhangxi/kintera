@@ -192,6 +192,13 @@ These two lines are expected to pass when the fix lands.
 
 [^ch09-r57]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, lines `[R5]` and `[R7]`.
 
+<!-- equation-check: eq-ch09-conservation-trim check_ch9_atm2d.py (d) -->
+<!-- equation-check: eq-ch09-conservation-trim check_ch9_budget_exact.py (x1) -->
+<!-- equation-check: eq-ch09-conservation-trim check_ch9_budget_below1.py (y1) -->
+<!-- equation-check: eq-ch09-conservation-exact check_ch9_budget_exact.py (x2) -->
+<!-- equation-check: eq-ch09-conservation-exact check_ch9_budget_exact.py (x3) -->
+<!-- equation-check: eq-ch09-conservation-code check_ch9_budget_below1.py (y1) -->
+
 ### Limits
 
 The atom count of a species with a two-digit subscript is wrong (for example `C4H10` is counted as 1 hydrogen, not

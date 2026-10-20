@@ -218,6 +218,11 @@ has a single face (information line).
     numpy 2.4.6, kintera 2.6.5 from the source build; output:
     `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, lines `b1`, `b2`, PASS.]
 
+<!-- equation-check: eq-ch09-molecular-centred check_ch9_atm2d.py (b1) -->
+<!-- equation-check: eq-ch09-molecular-exp check_ch9_atm2d.py (b1) -->
+<!-- equation-check: eq-ch09-molecular-exp check_ch9_atm2d.py (b2) -->
+<!-- equation-check: eq-ch09-molecular-centred-error check_ch9_atm2d.py (b2) -->
+
 ### Limits
 
 In the concentration form, molecular diffusion lacks the background scale-height term, so a hydrostatic profile is not

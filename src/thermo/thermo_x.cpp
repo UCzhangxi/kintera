@@ -280,30 +280,24 @@ void ThermoXImpl::_entropy_to_temp(torch::Tensor pres, torch::Tensor xfrac,
   int iter = 0;
   bool converged = false;
   torch::Tensor logt_pre, entropy_pre;
-  // columns of a batch stop moving once they have converged
   auto active = torch::ones_like(out, out.options().dtype(torch::kBool));
   while (iter++ < options->max_iter()) {
     auto conc = compute("TPX->V", {out, pres, xfrac});
     auto cp_vol = compute("TV->cp", {out, conc});
     auto entropy_vol = compute("TPV->S", {out, pres, conc});
     auto temp_pre = out.clone();
-
-    // Newton step in ln T. c ~ 1/T at fixed p and x, so the frozen slope is
-    // dS_vol/dlnT = cp_vol - S_vol; after the first step the secant slope
-    // along the equilibrium path also carries the latent heat.
+    // Newton step in ln T: dS_vol/dlnT = cp_vol - S_vol, then the secant
     auto slope = cp_vol - entropy_vol;
-    auto logt = out.log();
     if (logt_pre.defined()) {
-      auto secant = (entropy_vol - entropy_pre) / (logt - logt_pre);
+      auto secant = (entropy_vol - entropy_pre) / (out.log() - logt_pre);
       slope = torch::where(secant.isfinite() & (secant != 0.), secant, slope);
     }
-    logt_pre = logt;
+    logt_pre = out.log();
     entropy_pre = entropy_vol;
     out.copy_(torch::where(
         active, out * torch::exp((entropy - entropy_vol) / slope), out));
     forward(out, pres, xfrac);
-    // a NaN step fails the comparison and keeps its column active
-    active &= ~((1. - temp_pre / out).abs() < options->ftol());
+    active &= ~((1. - temp_pre / out).abs() < options->ftol());  // NaN stays
     if (!active.any().item<bool>()) {
       converged = true;
       break;

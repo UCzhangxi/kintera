@@ -33,8 +33,7 @@ inline torch::Tensor nasa9_h_R(torch::Tensor const& a, torch::Tensor const& T) {
          a.select(-1, 4) * T.pow(3) / 3 + a.select(-1, 5) * T.pow(4) / 4 +
          a.select(-1, 6) * T.pow(5) / 5 + a.select(-1, 7);
 }
-//   s/R  = -a0/(2T^2) - a1/T + a2 lnT + a3 T + a4 T^2/2 + a5 T^3/3 + a6 T^4/4
-//   + a8   (a8=b2; S continuous at Tmid)
+// NASA-9 s/R; a8 is the entropy constant
 inline torch::Tensor nasa9_s_R(torch::Tensor const& a, torch::Tensor const& T) {
   return -a.select(-1, 0) * T.pow(-2) / 2 - a.select(-1, 1) / T +
          a.select(-1, 2) * T.log() + a.select(-1, 3) * T +
@@ -110,9 +109,7 @@ inline H2Thermo eval_h2cp(torch::Tensor temp, SpeciesThermo const& op,
 
 inline bool h2_on(SpeciesThermo const& op) { return op->use_h2_cp(); }
 
-// Temperature part of the gas entropy, (..., ngas): cp ln T for constant cp.
-// With use-nasa9-cp / use-h2-cp it is cp ln T0 + (s(T) - s(T0)), referenced
-// to T0 like the internal energy, so that T ds/dT = cp at fixed p.
+// gas entropy T part: cp ln T, or cp ln T0 + s(T) - s(T0) under the flags
 inline torch::Tensor gas_entropy_T_R(torch::Tensor temp,
                                      torch::Tensor const& cp_gas_R,
                                      SpeciesThermo const& op) {
@@ -438,17 +435,10 @@ torch::Tensor eval_entropy_R(torch::Tensor temp, torch::Tensor pres,
   entropy_R.narrow(-1, ngas, ncloud) =
       sp_inv.view(vec2).matmul(b.unsqueeze(-1)).squeeze(-1);
 
-  // (7) A condensate copy in no nucleation reaction, with the thermodynamic
-  // data of its source, has the entropy of its source
-  auto column = [&](int id) {
-    auto const& clouds = op->cloud_ids();
-    return ngas + static_cast<int>(std::find(clouds.begin(), clouds.end(), id) -
-                                   clouds.begin());
-  };
-  for (size_t k = 0; k < op->copy_ids().size(); ++k) {
-    entropy_R.select(-1, column(op->copy_ids()[k])) =
-        entropy_R.select(-1, column(op->copy_src_ids()[k]));
-  }
+  // (7) a coagulation copy takes the entropy of its source
+  for (size_t k = 0; k < op->copy_cols().size(); ++k)
+    entropy_R.select(-1, op->copy_cols()[k]) =
+        entropy_R.select(-1, op->copy_src_cols()[k]);
 
   // std::cout << "entropy_R = " << entropy_R << std::endl;
 

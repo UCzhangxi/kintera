@@ -27,6 +27,11 @@ TMP = tempfile.mkdtemp(prefix="ch1b_")
 TOL = 1e-6  # the solver tolerance of check_ch3_species_functions.py line 1d
 
 
+def worst_of(a, b):
+    """max that propagates NaN: Python's max(0.0, nan) is 0.0, which would hide a NaN and let the line PASS."""
+    return a if a != a else (b if b != b else max(a, b))
+
+
 def report(name, val, tol, ok, tag=None):
     tag = tag or ("PASS" if ok and math.isfinite(val) else "FAIL")
     RES.append(tag)
@@ -90,8 +95,8 @@ def check_tp(deck, label, info=False):
             r = ratio[k].item()
             print(f"   {label} T={Ts[k].item():.0f} {vap}: RH - 1 = {rh[k, j].item() - 1:+.3e}, "
                   f"rate / rate(c_v = 0) = {r:.3e}")
-            worst = max(worst, abs(r))
-            worst_rh = max(worst_rh, abs(rh[k, j].item() - 1))
+            worst = worst_of(worst, abs(r))
+            worst_rh = worst_of(worst_rh, abs(rh[k, j].item() - 1))
     print(f"   {label}: {n} (cell, reaction) pairs with condensate; {nfail} cells report non-convergence")
     return worst, worst_rh, n, nfail
 
@@ -147,7 +152,7 @@ reactions:
                                        len(top.vapor_ids()))[0, 0].item()
         print(f"   UV T0={T0:.0f} yv={yv}: diag={diag.item():.0f} T={T1.item():.6f}, RH - 1 = {rh - 1:+.3e}, "
               f"rate / rate(c_v = 0) = {ratio.item():.3e}")
-        worst, worst_rh = max(worst, abs(ratio.item())), max(worst_rh, abs(rh - 1))
+        worst, worst_rh = worst_of(worst, abs(ratio.item())), worst_of(worst_rh, abs(rh - 1))
     return worst, worst_rh, n, nfail, 3
 
 

@@ -58,8 +58,10 @@ rate constant divided by an equilibrium constant built from NASA-9 Gibbs energie
 `nasa9_gibbs_RT`, in concentration units
 (`KineticsImpl::forward_with_rate_constants`,
 {{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}). A reversible gas-phase network
-that reaches a steady state therefore meets the gas-phase form of @eq-ch05-conditions-residual, with the same
-constants when the two read the same NASA-9 coefficients. No code in kintera checks that the two agree.
+that reaches a steady state meets the gas-phase form of @eq-ch05-conditions-residual with the same constants only
+when the two read the same NASA-9 coefficients and the kinetics reference pressure `Pref`[^rg-e445947e1f9f] is $10^5$ Pa, the standard
+pressure of the tables and of this solver. At the kinetics default of 101325 Pa, $K_c$ is about 1.31 % low per unit of
+$-\Delta n$ (@sec-ch05-log-k, Limits). No code in kintera checks that the two agree.
 
 {{< include 05-chemical-equilibrium/_conditions.qmd >}}
 
@@ -73,4 +75,6 @@ constants when the two read the same NASA-9 coefficients. No code in kintera che
 
 <!-- reader glossary notes -->
 [^rg-68e2b4731605]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+
+[^rg-e445947e1f9f]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L51-L52)
 <!-- end reader glossary notes -->

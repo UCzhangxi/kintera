@@ -9,7 +9,15 @@ d. kintera's returned gain against the Jacobian formula: at the input (max-iter 
    returned amounts (status 4);
 e. a numpy copy of the iteration of phase_equilibrate_tp with a plain LU direction and no least-squares
    fallback against kintera, for a converged start and a start whose liquid must vanish (status 4): amounts,
-   status, steps, error, smallest slack n - floor, and why the last halving loop rejects every scale.
+   status, steps, error, smallest slack n - floor, and why the last halving loop rejects every scale. The amounts
+   are compared to round-off: max |n_kintera - n_copy| <= 1e-14 max |n_kintera| (norm-wise relative), because the
+   LU solves of kintera and numpy round differently on different platforms.
+f. phase rule: the three-phase system of line d has N = 6 species, C = 2 elements, P = 3 phases and R = 4
+   independent reactions; the residuals depend only on mole fractions within each phase, so rank J <= N - P = 3 < R
+   and J is singular (P > C). Asserts sigma_min(J) < 1e-12 at the start state and over 200 random states (seed 0);
+   kintera's status on it is decided by rounding (3 or 4), so it is printed, not tested;
+g. reference pressure of the kinetics: K_c = k_f/k_r of O + O2 <=> O3 at 1500 K from Kinetics with the default
+   Pref (101325 Pa) and with Pref = 1e5 Pa, against the 1-bar NASA-9 value; the default is low by (1e5/101325)^(-dn).
 """
 import math
 import os
@@ -181,7 +189,7 @@ def check_d():
     J = jac_matrix(n0, three["stoich"], three["pids"])
     rel = np.max(np.abs(gain - J)) / np.max(np.abs(J))
     print(f"  three-phase system, max-iter 1 (gain formed at the input): max rel |gain - J(n0)|={rel:.1e}"
-          f" tol 1e-14 {pf(rel <= 1e-14)}  (status {dg[0]:.0f})")
+          f" tol 1e-14 {pf(rel <= 1e-14)}  (status {dg[0]:.0f}; J singular, P > C: line f)")
     T, P, p0 = 300.0, 1.0e5, 1.0e5
     lnk = water_lnk(T, p0)
     _, n, gain, dg = solve(WATER, T, P, p0, [1.0, 0.05, 0.05], lnk)
@@ -241,9 +249,10 @@ def check_e():
         m, st, it, err, minslack, last = newton_copy(n0, WATER["stoich"], WATER["pids"], 0, P, p0, lnk,
                                                      op.mole_floor(), op.ftol(), op.max_iter())
         dn = np.max(np.abs(m - n))
-        same = st == int(dg[0]) and it == int(dg[1]) and dn == 0.0
+        dnrel = dn / np.max(np.abs(n))
+        same = st == int(dg[0]) and it == int(dg[1]) and dnrel <= 1e-14
         print(f"  start {tuple(n0)}: kintera status {dg[0]:.0f} steps {dg[1]:.0f} error {dg[2]:.3e};"
-              f" copy status {st} steps {it} error {err:.3e}; max |n_kintera - n_copy|={dn:.1e}"
+              f" copy status {st} steps {it} error {err:.3e}; max |n_kintera - n_copy|={dn:.1e} mol (rel {dnrel:.1e}, tol 1e-14)"
               f" {pf(same)}")
         print(f"    smallest slack n - floor along the path={minslack:.2e} mol (> 0: the fallback test"
               f" d <= 0 never holds) {pf(minslack > 0)}")
@@ -252,9 +261,68 @@ def check_e():
                   f" test, {last[1]} by no decrease of max|r| (INFO)")
 
 
+THREE = dict(names=["A", "B", "C", "A_l", "B_l", "S"], phases=["gas", "liquid", "solid"], pids=[0, 0, 0, 1, 1, 2],
+             rxns=["A <=> A_l", "B <=> B_l", "A + B <=> C", "C <=> S"],
+             stoich=[[-1, 0, -1, 0], [0, -1, -1, 0], [0, 0, 1, -1], [1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
+
+
+def check_f():
+    print("== f. phase rule P <= C: three-phase system of line d (N=6, C=2, P=3, R=4), J singular")
+    n0 = [0.6, 0.5, 0.1, 0.2, 0.3, 0.05]
+    S = np.asarray(THREE["stoich"], float)
+    print(f"  rank S={np.linalg.matrix_rank(S)} (reactions independent), N - P = {6 - 3}")
+    sv = np.linalg.svd(jac_matrix(n0, S, THREE["pids"]), compute_uv=False)
+    print(f"  start state: sigma_min(J)={sv[-1]:.1e} sigma_max={sv[0]:.3e} cond={sv[0] / sv[-1]:.1e}"
+          f" rank={np.linalg.matrix_rank(jac_matrix(n0, S, THREE['pids']))} tol 1e-12 {pf(sv[-1] < 1e-12)}")
+    rng = np.random.default_rng(0)
+    worst = max(np.linalg.svd(jac_matrix(rng.uniform(0.01, 1.0, 6), S, THREE["pids"]), compute_uv=False)[-1]
+                for _ in range(200))
+    print(f"  200 random states (seed 0, amounts 0.01..1 mol): max sigma_min(J)={worst:.1e} tol 1e-12 {pf(worst < 1e-12)}")
+    st = []
+    for mi in (1, None):
+        _, _, _, dg = solve(THREE, 300.0, 3.0e5, 1.0e5, n0, [0.7, -0.3, 2.0, 0.4], max_iter=mi)
+        st.append(f"max-iter {mi or 'default'}: status {dg[0]:.0f} after {dg[1]:.0f} steps")
+    print(f"  kintera on it: {'; '.join(st)} (INFO: status 3 or 4 is decided by rounding)")
+
+
+def check_g():
+    print("== g. kinetics reference pressure: K_c of O + O2 <=> O3 at 1500 K (dn = -1)")
+    import tempfile
+    T, R = 1500.0, 8.31446
+    tmp = tempfile.mkdtemp(prefix="ch5g_")
+
+    def kc(ref):
+        card = (f"reference-state: {ref}\nspecies:\n" + "".join(
+            f"  - {{name: {n}, composition: {{{c}}}, cv_R: 2.5}}\n"
+            for n, c in [("N2", "N: 2"), ("O", "O: 1"), ("O2", "O: 2"), ("O3", "O: 3")])
+            + "reactions:\n  - equation: O + O2 <=> O3\n    type: arrhenius\n"
+            "    rate-constant: {A: 1.7e-14, b: -2.4, Ea_R: 0.}\n")
+        path = os.path.join(tmp, "k.yaml")
+        with open(path, "w") as f:
+            f.write(card)
+        op = kintera.KineticsOptions.from_yaml(path)
+        kin = kintera.Kinetics(op)
+        cc = torch.ones(1, len(op.species()))
+        rate, _, _, kf = kin.forward_with_rate_constants(torch.tensor([T]), torch.tensor([1.0e5]), cc)
+        return kf[0, 0].item() / rate[0, 1].item(), op.Pref()
+
+    k_def, p_def = kc("{Tref: 300.}")
+    k_bar, p_bar = kc("{Tref: 300., Pref: 1.e5}")
+    g = nasa9_gibbs_rt(torch.tensor([T]), ["O", "O2", "O3"])[0]
+    k_ref = math.exp(-(g[2] - g[0] - g[1]).item()) * (1.0e5 / (R * T)) ** (-1)
+    r_bar = abs(k_bar / k_ref - 1)
+    print(f"  Pref={p_bar:.0f} Pa: K_c={k_bar:.10e} vs 1-bar NASA-9 {k_ref:.10e} rel={r_bar:.1e} tol 1e-12 {pf(r_bar <= 1e-12)}")
+    want = (1.0e5 / p_def) ** 1
+    r_def = abs((k_def / k_bar) / want - 1)
+    print(f"  default Pref={p_def:.0f} Pa: K_c/K_c(1 bar)={k_def / k_bar:.6f}, i.e. {k_def / k_bar - 1:.4e}; expected"
+          f" (1e5/Pref)^(-dn)={want:.6f}, rel={r_def:.1e} tol 1e-12 {pf(r_def <= 1e-12)}")
+
+
 if __name__ == "__main__":
     print(version_line())
     check_ab()
     check_c()
     check_d()
     check_e()
+    check_f()
+    check_g()

@@ -1,6 +1,6 @@
 {
   "eq-ch05-conditions-residual": "Reaction equilibrium, the weighted sum of chemical potentials equal to zero, written as one residual per reaction; checked by `derivation-checks/check_ch5_equilibrium.py`, line a (vapour-liquid closed form).",
-  "eq-ch05-newton-jacobian": "Differentiating the residual in the reaction extents gives the Jacobian; checked against kintera's returned gain by `derivation-checks/check_ch5_equilibrium.py`, line d (0.0 relative), and against central differences, line b.",
+  "eq-ch05-newton-jacobian": "Differentiating the residual in the reaction extents gives the Jacobian; checked against kintera's returned gain by `derivation-checks/check_ch5_equilibrium.py`, line d (0.0 relative), and against central differences, line b; it is singular when there are more phases than components, line f.",
   "eq-ch05-newton-bounds": "The amounts after a scaled step must stay above `mole-floor`; the slack stays positive, so the floor acts in the line search, not in the direction; checked by `derivation-checks/check_ch5_equilibrium.py`, line e.",
   "eq-ch05-log-k-gibbs": "The NASA-9 Gibbs energies give the dimensionless constant; checked by `derivation-checks/check_ch5_equilibrium.py`, line c (independent table parse).",
   "eq-ch05-log-k-vant-hoff": "Gibbs–Helmholtz on the NASA-9 forms gives the van 't Hoff equation $\\mathrm d\\ln K^\\circ_r/\\mathrm dT = \\Delta_r h^\\circ/(\\mathcal R T^2)$; checked by `derivation-checks/check_ch5_equilibrium.py`, line c."

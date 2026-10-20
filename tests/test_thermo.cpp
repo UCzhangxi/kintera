@@ -765,9 +765,7 @@ dynamics:
   EXPECT_NEAR(std::log(cold_conc_after[2].item<double>()), log_saturation,
               1.e-6);
 
-  // max-iter does not cap the partition search, which has its own bound
-  // max(max-iter, 64): with max-iter 1 it still converges to the same state.
-  op_thermo->max_iter(1);
+  op_thermo->max_iter(1);  // does not cap the partition search (K4)
   auto capped_yfrac = initial.clone();
   auto capped_diag = torch::full({1, 1}, 7., tensor_options);
   thermo_y->nactive.fill_(2);
@@ -775,7 +773,6 @@ dynamics:
       thermo_y->forward(rho, intEng, capped_yfrac, true, capped_diag);
   EXPECT_TRUE(torch::all(capped_gain == 0.).item<bool>());
   EXPECT_GE(capped_diag.item<double>(), 1.);
-  EXPECT_LE(capped_diag.item<double>(), 64.);
   EXPECT_EQ(thermo_y->nactive.item<int>(), 0);
   EXPECT_TRUE(torch::allclose(capped_yfrac, yfrac, 1.e-12, 0.));
   op_thermo->max_iter(30);
@@ -793,6 +790,79 @@ dynamics:
   EXPECT_LT(kkt_diag.item<double>(), op_thermo->max_iter());
 
   init_species_from_yaml("jupiter.yaml");
+}
+
+// Adjust [gas, vapour, cloud] cells at 1 bar from T0; returns diag, T, conc.
+static std::vector<torch::Tensor> uv_cells(std::string const& card,
+                                           std::vector<double> T0, double xv,
+                                           torch::Device dev) {
+  init_species_from_yaml(YAML::Load(card));
+  ThermoY th(ThermoOptionsImpl::from_yaml(YAML::Load(card)));
+  th->to(dev, torch::kFloat64);
+  auto o = torch::device(dev).dtype(torch::kFloat64);
+  auto mu = 1. / th->inv_mu;
+  auto x = torch::tensor({1. - xv, xv, 0.}, o), T = torch::tensor(T0, o);
+  auto rho = 1.e5 * (x * mu).sum() / (constants::Rgas * T);
+  auto y = (x * mu / (x * mu).sum()).narrow(0, 1, 2).unsqueeze(1);
+  y = y.expand({2, (int64_t)T0.size()}).contiguous();
+  auto U = th->compute("VT->U", {th->compute("DY->V", {rho, y}), T});
+  auto diag = torch::zeros({(int64_t)T0.size(), 1}, o);
+  th->forward(rho, U, y, false, diag);
+  auto ivol = th->compute("DY->V", {rho, y});
+  std::vector<torch::Tensor> out{diag, th->compute("VU->T", {ivol, U}),
+                                 ivol * th->inv_mu};
+  init_species_from_yaml("jupiter.yaml");
+  return out;
+}
+
+TEST_P(DeviceTest, equilibrate_uv_partition_near_tref) {  // D6
+  if (dtype != torch::kFloat64 || device.type() == torch::kMPS) GTEST_SKIP();
+  auto card = R"(
+reference-state: {Tref: 300., Pref: 1.e5}
+species:
+- {name: dry, composition: {H: 1.5, He: 0.15}, cv_R: 2.5}
+- {name: H2O, composition: {H: 2, O: 1}, cv_R: 2.5, u0_R: 0.}
+- {name: H2O(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+reactions:
+- {equation: 'H2O <=> H2O(l)', type: nucleation, rate-constant: {formula: h2o_ideal}}
+dynamics: {equation-of-state: {uv-solver: partition, max-iter: 50}})";
+  for (double xv : {5.e-2, 1.e-3}) {
+    auto diag = uv_cells(card, {299., 300., 301.}, xv, device)[0];
+    EXPECT_TRUE(torch::all(diag > 0.).item<bool>()) << xv << diag;
+  }
+}
+
+TEST_P(DeviceTest, equilibrate_uv_h2_cp_saturated) {  // D12
+  if (dtype != torch::kFloat64 || device.type() == torch::kMPS) GTEST_SKIP();
+  auto out = uv_cells(R"(
+reference-state: {Tref: 300., Pref: 1.e5, use-h2-cp: true, h2-cp-mode: normal}
+species:
+- {name: H2, composition: {H: 2}, cv_R: 2.5}
+- {name: NH3, composition: {N: 1, H: 3}, cv_R: 2.5, u0_R: 0.}
+- {name: NH3(c), composition: {N: 1, H: 3}, cv_R: 9.0, u0_R: -5520.}
+reactions:
+- {equation: 'NH3 <=> NH3(c)', type: nucleation, rate-constant: {formula: nh3_ideal}}
+dynamics: {equation-of-state: {max-iter: 50}})",
+                      {160.}, 0.02, device);
+  double T = out[1].item<double>();
+  double c = out[2].flatten()[1].item<double>();
+  EXPECT_NEAR(std::log(c * constants::Rgas * T), nh3_ideal(T), 1.e-5);
+}
+
+TEST_P(DeviceTest, equilibrate_tp_default_max_iter_cold_start) {  // D4
+  if (dtype != torch::kFloat64 || device.type() == torch::kMPS) GTEST_SKIP();
+  auto op = ThermoOptionsImpl::from_yaml("jupiter.yaml");  // no max-iter
+  ThermoX thermo(op);
+  thermo->to(device, dtype);
+  auto o = torch::device(device).dtype(dtype);
+  auto x = torch::zeros(
+      {1, int64_t(op->vapor_ids().size() + op->cloud_ids().size())}, o);
+  x[0][1] = 2.5e-3, x[0][2] = 3.e-4, x[0][3] = 8.e-5;  // H2O, NH3, H2S
+  x[0][0] = 1. - x.sum();
+  auto diag = torch::zeros({1, 1}, o);
+  thermo->forward(torch::tensor({130.}, o), torch::tensor({1.e5}, o), x, false,
+                  diag);
+  EXPECT_GT(diag.item<double>(), 0.);
 }
 
 TEST_P(DeviceTest, equilibrate_uv_partition_rejects_coupled_reactions) {

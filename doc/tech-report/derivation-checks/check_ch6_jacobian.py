@@ -75,7 +75,9 @@ fails = int(tag == "FAIL")
 
 # Reversible reaction O + O2 <=> O3 (K_c from the NASA-9 data of the species, as in check_ch6_rates.py [d]),
 # cv_R 2.5/2.5/3.5, u0_R 0/0/-1000, Tref 0; T = 300 K, c = (1e-3, 0.2, 0.1), step 1e-5 c_j. The reverse column's feedback term uses rc_ddT, which at
-# the pin is a copy of dk_f/dT (D65), so that column is expected to fail.
+# the pin is a copy of dk_f/dT (D65), so that column is expected to fail. K_c (NASA-9) and the card's u0/cv are not
+# one consistent thermodynamics; that is harmless, because the reference differentiates the code's own forward with T
+# solved from the card's U, so the check tests the implemented formula, not the thermodynamics of ozone.
 card = """
 reference-state: {Tref: 0., Pref: 1.e5}
 species:

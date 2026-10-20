@@ -53,7 +53,8 @@ $$ {#eq-ch06-mass-action-rate}
 ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), with the orders $\nu_{ij}$ held in
 the buffer `forward_orders`, equal to the reactant coefficients except for evaporation columns
 (@sec-ch06-evaporation).
-<!-- equation-check: eq-ch06-mass-action-rate check_ch6_rates.py [a1] --> Since $r_j$ is in $\mathrm{mol\,m^{-3}\,s^{-1}}$ and each concentration in
+<!-- equation-check: eq-ch06-mass-action-rate check_ch6_rates.py [a1] -->
+Since $r_j$ is in $\mathrm{mol\,m^{-3}\,s^{-1}}$ and each concentration in
 $\mathrm{mol\,m^{-3}}$, a reaction of total order $n_j = \sum_i \nu_{ij}$ has $k_j$ in
 $(\mathrm{mol\,m^{-3}})^{1 - n_j}\,\mathrm{s^{-1}}$; @sec-ch06-arrhenius converts the input units to these.
 

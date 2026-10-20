@@ -59,6 +59,7 @@ extent of `EvaporationExtent`. @eq-ch06-evaporation-kappa is computed in `forwar
 ({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}); the factor $c_p$ is applied in
 `forward_with_rate_constants` ({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}).
 <!-- equation-check: eq-ch06-evaporation-kappa check_ch6_evaporation.py (a1) -->
+
 **Where $\kappa$ comes from.** Consider one spherical particle of radius $a = d/2$ at rest in a gas whose vapour
 concentration far away is $c_v$, and whose surface is at saturation, $c = K$. The vapour diffuses with diffusivity
 $D$, and the particle changes slowly compared with the diffusion time. The concentration around it is then

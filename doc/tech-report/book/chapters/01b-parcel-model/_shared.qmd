@@ -98,14 +98,19 @@ and NH$_3$. The same argument holds for multi-vapour reactions, with the product
 
 **Step 3: one latent heat.** Both the UV solver and the kinetics differentiate $U = \sum_i c_i\, u_i(T)$ at fixed
 $U$, which gives $\mathrm{d}T = -\sum_i u_i\, \mathrm{d}c_i / C_V$ (the energy balance of @sec-ch06-jacobian and
-@sec-ch04-equilibrate-uv). Along reaction $r$,
-$\mathrm{d}c_i = S_{ir}\, \mathrm{d}\xi_r$, so
+@sec-ch04-equilibrate-uv). Along reaction $r$ the amounts change by $\mathrm{d}N_i = S_{ir}\, \mathrm{d}\xi_r$,
+with the extent $\xi_r$ in mol as in @sec-ch01b-state, so in a cell of fixed volume $V$ the concentrations change by
+$\mathrm{d}c_i = S_{ir}\, \mathrm{d}\xi_r / V$ and
 
 $$
-\frac{\mathrm{d}T}{\mathrm{d}\xi_r} = -\frac{\sum_i S_{ir}\, u_i}{C_V} = \frac{L_r}{C_V} ,
+\frac{\mathrm{d}T}{\mathrm{d}\xi_r} = -\frac{\sum_i S_{ir}\, u_i}{V\, C_V} = \frac{L_r}{V\, C_V}
+\quad [\mathrm{K\,mol^{-1}}] ,
 $$ {#eq-ch01b-shared-latent}
 
-with $L_r = -\sum_i S_{ir} u_i$, positive for condensation because the condensate has the lower energy.
+with $L_r = -\sum_i S_{ir} u_i$ [$\mathrm{J\,mol^{-1}}$], positive for condensation because the condensate has the
+lower energy, and $C_V$ the heat capacity per volume [$\mathrm{J\,m^{-3}\,K^{-1}}$], so $V C_V$ is the parcel's heat
+capacity. The UV solver and the kinetics work in concentrations, that is per concentration extent $\xi_r/V$, for which
+the same relation reads $\mathrm{d}T/\mathrm{d}(\xi_r/V) = L_r/C_V$.
 @eq-ch01b-shared-latent enters the UV solver as the weight $(\mathrm{d}\ln K_r/\mathrm{d}T)\, u_i / C_V$ of its Newton
 rows ({{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}). In the kinetics it enters as the term
 $-P_j (\partial k_j/\partial T)\, u_k / C_V$ of the temperature-feedback Jacobian (@sec-ch06-jacobian)

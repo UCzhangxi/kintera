@@ -57,11 +57,12 @@ $$ {#eq-ch05-newton-jacobian}
 `max-iter: 1`, the gain kintera returns (the Jacobian at the input) equals @eq-ch05-newton-jacobian to 0.0 relative
 difference.[^ch05-newton-check] That system is a deliberately singular example. It has three phases and two
 elements, so by the phase rule of @sec-ch05-conditions its Jacobian is singular in exact arithmetic (line f: smallest
-singular value $1.6\times10^{-17}$ at the start state). The solve on it is therefore ill-posed, and which status it
-ends with is decided by rounding. An exactly zero LU pivot sends the step to the least-squares fallback (status 3), and a
-tiny non-zero pivot gives a huge direct step that no scale accepts (status 4). On the build of the run record it is
-status 3 with `max-iter: 1` and status 4 after one step with the default; a clean arm64 build of the pin gives status
-4 with `max-iter: 1`. The gain is formed before the step, so the comparison of line d holds either way. `newton_check.py` is a numpy transcription of the code's formula, not a call to the
+singular value $1.6\times10^{-17}$ at the start state on x86_64, $2.5\times10^{-16}$ on arm64). The solve on it is therefore ill-posed, and which status it
+ends with is decided by rounding. An exactly zero LU pivot sends the step to the least-squares fallback, and status 3
+follows only if that fallback fails too (with `max-iter: 1` it has a single inner iteration). A tiny non-zero pivot
+gives a huge direct step that no scale accepts (status 4). On the build of the run record it is status 3 with
+`max-iter: 1` and status 4 after one step with the default. A clean arm64 build of the pin gives status 4 with
+`max-iter: 1`, as does the PyPI 2.6.4 wheel, whose equilibrium code is the same. The gain is formed before the step, so the comparison of line d holds either way. `newton_check.py` is a numpy transcription of the code's formula, not a call to the
 built solver. Its line `[C1]` checks that the formula is the derivative of the residual (central differences, on the
 same system), and `[C3]` shows that a one-species phase contributes nothing, because its activity is 1 whatever its
 amount. The Newton direction
@@ -79,7 +80,8 @@ The second line, at $\lambda = 1$, is the constraint form $\mathsf C\boldsymbol\
 The code sets these rows as `constraints` and `bounds`. In this solver they never change the direction. The slack
 $\mathbf d$ is strictly positive in every state the iteration sees: the input passes the status-1 test
 $\mathcal N_n > \mathcal N_{\mathrm{floor}}$, every accepted trial passes the same test, and in floating point
-$x > f$ implies $x - f > 0$. `constrained_newton_step` leaves the direct direction only for a bound with no slack, or
+$x > f$ implies $x - f > 0$ (with gradual underflow; with flush-to-zero it still holds for the default floor
+$10^{-30}$, whose spacing is a normal number in double and single precision). `constrained_newton_step` leaves the direct direction only for a bound with no slack, or
 when the LU solve fails (an exactly zero pivot) or returns non-finite values. So here the least-squares fallback runs
 only in the last case. The floor acts in the line search instead (Numerical method, step 6).
 
@@ -107,7 +109,9 @@ step is cut by the floor, not by a weak decrease.[^ch05-newton-refs] `check_ch5_
 kintera with a numpy copy of the iteration that has a plain LU direction and no least-squares fallback. For a
 converged start and for a start whose liquid must vanish, the status, step count and error are the same, and the
 amounts agree to round-off: 0.0 on the build of the run record, and $5\times10^{-21}$ mol on an arm64 build of the
-pin. The line therefore tests the amounts to $10^{-14}$ of the largest amount, not bitwise.
+pin. The line therefore tests the amounts to round-off, not bitwise: to $10^{-14}$ of the largest amount, and each
+amount to $10^{-5}$ of itself. The second test is needed because the first, $10^{-14}$ mol here, is larger than the
+returned liquid of $3.03\times10^{-15}$ mol and alone would not resolve it.
 
 ### Numerical method
 
@@ -208,7 +212,7 @@ CUDA 12.6.85; a measurement outside the suite, not a committed check.]
 - **Convergence is not guaranteed.** The line search only asks that the largest residual decrease; a cell can stop
   with status 4 for reasons other than a vanishing phase. How often that happens on hard systems is not measured.
 - **At most 64 components** (`EquilibriumOptionsImpl::validate`), and the reactions must be linearly independent
-  (@sec-ch05-options). Independent reactions still give a singular Jacobian when there are more phases than components
+  (@sec-ch05-options). Independent reactions still give a singular Jacobian when there are more phases than independent elements
   (the phase rule, @sec-ch05-conditions); the rank check does not detect it, and such a solve ends with status 3 or 4
   depending on rounding.
 - **A species cannot reach zero.** The floor test of the line search rejects every step that would take a species

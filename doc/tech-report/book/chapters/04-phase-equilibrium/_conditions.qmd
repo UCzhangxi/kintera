@@ -40,7 +40,10 @@ negative for one it produces [-]; $p_n = p\,x_n/x_{\mathrm g}$ the partial press
 condensate that reaction $r$ produces, so $c_{m_r}$ is its concentration [mol m$^{-3}$]; $\mathcal N_n$ and
 $g^\circ_n$ of the notation table, $\mu_n$ the chemical potential of species $n$ [J mol$^{-1}$], $\Delta_r G^\circ$ the
 standard Gibbs energy of reaction $r$ written from gases to condensate [J mol$^{-1}$], $q_r$ the coefficient of the
-condensate in reaction $r$ [-] and $\lambda_r$ the multiplier of its non-negativity constraint [J mol$^{-1}$]. The saturation deficit
+condensate in reaction $r$ [-] and $\lambda_r$ the multiplier of its non-negativity constraint [J mol$^{-1}$];
+$\Lambda_r = \sum_{n<N_{\mathrm g}} \hat\nu_{nr} \ln(x_n/x_{\mathrm g})$ the left side of the mole-fraction condition
+of reaction $r$ [-], and $\mathsf W_{rn} = \partial\Lambda_r/\partial x_n$ its derivative with respect to the mole
+fraction of species $n$ (@eq-ch04-equilibrate-tp-weight) [-]. The saturation deficit
 $\Delta_r$ is defined below. $K_r(T)$ has units Pa$^{\sum_{n<N_{\mathrm g}} \hat\nu_{nr}}$.
 
 ### Derivation
@@ -152,11 +155,14 @@ $\mathcal R T\,[\sum_n a_n^2/\mathcal N_n - (\sum_n a_n)^2/\mathcal N_{\mathrm g
 Cauchy–Schwarz inequality, $(\sum_n a_n)^2 \le (\sum_n a_n^2/\mathcal N_n)(\sum_n \mathcal N_n)$. So $G$ is convex in the
 extents, any KKT point is a global minimum, and a solver that satisfies the conditions has found one. Equality in
 Cauchy–Schwarz holds when $a_n = t\,\mathcal N_n$ for every gas, that is, when the step changes every gas amount in
-proportion to it, including $a_n = 0$. The minimum is therefore unique (strict convexity) only if no non-zero
-combination of reactions leaves the gas change proportional to the gas amounts. The condition can fail. Two
+proportion to it, including $a_n = 0$. So $G$ is strictly convex, and the minimum therefore unique, if no non-zero
+combination of reactions leaves the gas change proportional to the gas amounts. This is a sufficient condition, not a
+necessary one, and it can fail. Two
 condensates drawn from one vapour, such as `H2O(l)` and `H2O(s)` from `H2O`, give the combination $y = (1, -1)$ with
 $a_n = 0$: it trades one condensate for the other and leaves every gas unchanged. Along it $G$ is linear (only the
-condensate $g^\circ$ terms change), so the minimum need not be unique. The gain
+condensate $g^\circ$ terms change), so strict convexity is lost. The minimum may still be unique: with unequal
+standard Gibbs energies of the two condensates $G$ decreases along that direction, and the minimum sits at a bound
+where one condensate is absent; with equal ones every point along it is a minimum. The gain
 $\mathsf W\mathsf S$ of the fixed-temperature step (@eq-ch04-equilibrate-tp-weight), whose extents are in mole-fraction
 units, is this matrix times $-\mathcal N_{\mathrm{tot}}/(\mathcal R T)$, with $\mathcal N_{\mathrm{tot}}$ the total
 amount. That is why that step is a Newton step on $G$.
@@ -267,7 +273,13 @@ $$
 where the last step uses the choice of $\ln\rho_r$ above. The slope of the linearised logarithm with respect to
 $x_n$ is $1/x^\ast_n$, so the weight of an absent gas is $\hat\nu_{nr}/(|\hat\nu_{nr}|\,\rho_r)$. The deficit
 that the step removes is therefore $\nu_{\mathcal A}$. In the code, `log_r` is $\ln\rho_r$, `log_frac_sum` is set to
-`logsvp - nu_absent`, and the weight of an absent gas is $\pm$`exp(-log_r)` (`equilibrate_tp`). A reaction that lacks both a gas it consumes and a gas it produces cannot move in either direction and is
+`logsvp - nu_absent`, and the weight of an absent gas is $\pm$`exp(-log_r)` (`equilibrate_tp`). The identity holds
+as long as the clip $|\ln\rho_r| \le \tfrac12\ln x_{\max}$ is inactive. When it is active, the code clips `log_r` and
+uses the clipped value in the weight, but still sets `log_frac_sum` to `logsvp - nu_absent`, the value that holds for
+the unclipped $\rho_r$. The linearised condition at the clipped boundary amount then differs from
+$\ln\tilde K_r - \nu_{\mathcal A}$ by $\nu_{\mathcal A}$ times the clipped part of $\ln\rho_r$, and the step
+removes the unclipped deficit with the clipped weight. The clip needs $|\ln\rho_r| > 354.9$ in double precision;
+whether the chapter's decks reach it is not measured. A reaction that lacks both a gas it consumes and a gas it produces cannot move in either direction and is
 skipped for that iteration (`equilibrate_tp`, {{< code src/thermo/equilibrate_tp.h equilibrate_tp >}}). The
 fixed-energy solver does the same in concentrations, without $x_{\mathrm g}$ (`equilibrate_uv`,
 {{< code src/thermo/equilibrate_uv.h equilibrate_uv >}}).

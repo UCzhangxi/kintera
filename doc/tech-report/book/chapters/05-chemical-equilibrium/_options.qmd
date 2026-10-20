@@ -73,7 +73,7 @@ The same defaults apply when the block is absent or the options are built throug
 stoichiometric matrix from the equation strings in component order, and refuses it unless its rank equals the number
 of reactions. A reaction that is a combination of others would make the Jacobian of @sec-ch05-newton singular. That is
 not the only cause: with independent reactions the Jacobian is still singular when there are more phases than
-components (the phase rule of @sec-ch05-conditions), and the rank check does not detect that case.
+independent elements (the phase rule of @sec-ch05-conditions), and the rank check does not detect that case.
 @fig-ch05-options-path follows a YAML file to the solver.
 
 ```{python}

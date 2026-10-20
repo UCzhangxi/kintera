@@ -10,7 +10,8 @@ d. kintera's returned gain against the Jacobian formula: at the input (max-iter 
 e. a numpy copy of the iteration of phase_equilibrate_tp with a plain LU direction and no least-squares
    fallback against kintera, for a converged start and a start whose liquid must vanish (status 4): amounts,
    status, steps, error, smallest slack n - floor, and why the last halving loop rejects every scale. The amounts
-   are compared to round-off: max |n_kintera - n_copy| <= 1e-14 max |n_kintera| (norm-wise relative), because the
+   are compared to round-off: max |n_kintera - n_copy| <= 1e-14 max |n_kintera| (norm-wise relative), and each
+   amount to 1e-5 of itself (the norm-wise bound alone exceeds a vanishing liquid of ~3e-15 mol), because the
    LU solves of kintera and numpy round differently on different platforms.
 f. phase rule: the three-phase system of line d has N = 6 species, C = 2 elements, P = 3 phases and R = 4
    independent reactions; the residuals depend only on mole fractions within each phase, so rank J <= N - P = 3 < R
@@ -250,9 +251,10 @@ def check_e():
                                                      op.mole_floor(), op.ftol(), op.max_iter())
         dn = np.max(np.abs(m - n))
         dnrel = dn / np.max(np.abs(n))
-        same = st == int(dg[0]) and it == int(dg[1]) and dnrel <= 1e-14
+        dncomp = np.max(np.abs(m - n) / np.abs(n))
+        same = st == int(dg[0]) and it == int(dg[1]) and dnrel <= 1e-14 and dncomp <= 1e-5
         print(f"  start {tuple(n0)}: kintera status {dg[0]:.0f} steps {dg[1]:.0f} error {dg[2]:.3e};"
-              f" copy status {st} steps {it} error {err:.3e}; max |n_kintera - n_copy|={dn:.1e} mol (rel {dnrel:.1e}, tol 1e-14)"
+              f" copy status {st} steps {it} error {err:.3e}; max |n_kintera - n_copy|={dn:.1e} mol (rel {dnrel:.1e}, tol 1e-14; per amount {dncomp:.1e}, tol 1e-5)"
               f" {pf(same)}")
         print(f"    smallest slack n - floor along the path={minslack:.2e} mol (> 0: the fallback test"
               f" d <= 0 never holds) {pf(minslack > 0)}")

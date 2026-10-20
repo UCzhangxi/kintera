@@ -118,7 +118,14 @@ are the vapour fractions left at the two temperatures; more water is condensed a
    in the full reaction order, with zero rows and columns for every other reaction. It is the matrix that
    @sec-ch03-adiabat inverts for $\mathrm d\xi_r/\mathrm dT$. A reaction left off its curve by a failed solve is not
    in it, so a failed cell can return a zero gain; the fixed-energy solver returns a different gain
-   (@sec-ch04-warm-start-failures).
+   (@sec-ch04-warm-start-failures). The exit block (`equilibrate_tp`) does not use the absent-gas replacement of
+   @sec-ch04-conditions. It evaluates each logarithm as $\ln\max(x_n/x_{\mathrm g}, x_{\min})$, with $x_{\min}$ the
+   smallest normal number of the precision, and it leaves out the term $\hat\nu_{nr}/x_n$ of
+   @eq-ch04-equilibrate-tp-weight for a gas with $x_n = 0$, keeping only $-\sum_k\hat\nu_{kr}/x_{\mathrm g}$. A
+   reader who rebuilds the returned gain, for example for the effective heat capacity of @sec-ch03-adiabat, must use
+   this variant, not the weights of the iteration. With an absent gas the clamped logarithm adds about $-708\,\hat\nu_{nr}$
+   in double precision, so such a reaction fails the selection test. Whether a converged state can hold a reaction
+   that belongs in the gain but is dropped from it this way is a hypothesis that no run has reproduced.
 
 The per-cell scratch arrays come from a workspace sized by `equilibrate_tp_space`
 ({{< code src/utils/alloc.h equilibrate_tp_space >}}); on CUDA they live in shared memory, as @sec-ch12 explains.

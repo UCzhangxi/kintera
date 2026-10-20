@@ -6,4 +6,16 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
 (f3) correct Newton step, 10 iterations from Tref, |T - 600| (K): measured 0.000e+00  tol 1e-09  PASS
    kintera PXS->T: 594.1625594241 K
 (f4) kintera PXS->T from the same S, |T - 600| (K): measured 5.837e+00  tol 1e-06  EXPECTED-FAIL (D8)
-SUMMARY: 3 PASS, 0 FAIL, 1 EXPECTED-FAIL
+   saturated state 299 K, 1e6 Pa, x_H2O 0.02: x_g = 0.983281, S = -8479.79, C_p = 12188.27, C_eff = 15700.77 J/(K m^3)
+   T dS/dT: central difference 24683.374353, (C_eff - S) - S T dln n_g/dT = 24683.374354, C_eff - S = 24180.56
+(f5) saturated T dS/dT vs (C_eff - S) - S T d ln n_g/dT (rel): measured 2.732e-11  tol 1e-06  PASS
+   frozen ln T step: predicted phi' = -0.194276, error ratios -0.194275, -0.194277
+(f6) frozen-slope step: root factor 1 - T (dS/dT)/(C_p - S) vs iteration (abs): measured 1.658e-06  tol 1e-03  PASS
+   pin step: predicted 1 - T (dS/dT)/C_p = -1.025175 (S/C_p = -0.695734), error ratios -1.025161, -1.025190
+(f7) pin step: root factor 1 - T (dS/dT)/C_p vs iteration (abs): measured 1.429e-05  tol 1e-03  PASS
+   kintera PXS->T from Tref, max_iter 1..8: T - T* = -28.1, +13.8, -23.0, +20.1, -30.0, +21.3, -29.4, +21.1 K
+(f8) kintera PXS->T in the saturated parcel after 8 passes, |T - T*| (K): measured 2.114e+01  tol 1e-06  EXPECTED-FAIL (D8)
+   dry gas, s0_R 0: first step 403.972 K, S(300) = 0.0, C_p - S = 1166.7; s0_R 10: first step 474.784 K, S(300) = 3333.3, C_p - S = -2166.7 J/(K m^3)
+(f9) the root does not depend on s0_R: both runs end at 600 K, max |T - 600| (K): measured 1.137e-13  tol 1e-09  PASS
+(f9) the iterates do: first steps differ (K), must EXCEED tol: measured 7.081e+01  tol 1e+00  PASS
+SUMMARY: 8 PASS, 0 FAIL, 2 EXPECTED-FAIL

@@ -129,13 +129,22 @@ $$
 \frac{\mathrm d \bar s}{\mathrm d T} = \frac{\bar c_p^{\mathrm{eff}}}{T} .
 $$ {#eq-ch03-adiabat-dsdt}
 
-When $n$ changes (NH$_4$SH forms from two gas moles), dividing the identity above by $n$ and $T$ gives
+When $n$ changes (NH$_4$SH forms from two gas moles), the slope depends on which heat capacity is meant.
+`effective_cp` ({{< code src/thermo/extrapolate_ad.cpp ThermoXImpl::effective_cp >}}) returns
+$\sum_n x_n c_{p,n} + \sum_r \Delta h_r\, \mathrm d \xi_r/\mathrm d T$, which is $(1/n)\, \mathrm d H/\mathrm d T$ for
+the
+parcel, not $\mathrm d \bar h/\mathrm d T$. With that quantity, $T\, \mathrm d S = \mathrm d H$ and $S = n \bar s$ give
 
 $$
 \frac{\mathrm d \bar s}{\mathrm d T} = \frac{\bar c_p^{\mathrm{eff}}}{T}
-+ \frac{\bar g}{T}\, \frac{\mathrm d \ln n}{\mathrm d T} , \qquad \bar g = \bar h - T \bar s .
-$$ {#eq-ch03-adiabat-dsdt-n} The step below then uses an approximate slope, which changes the rate of the
-iteration but not its fixed point.
+- \bar s\, \frac{\mathrm d \ln n}{\mathrm d T} .
+$$ {#eq-ch03-adiabat-dsdt-n}
+
+Where NH4SH forms (NH3 = H2S = $5 \times 10^{-3}$ in dry gas, 170-240 K, $10^5$ Pa), `effective_cp` equals a central
+difference of $(1/n)\, \mathrm d H/\mathrm d T$ to $6.8 \times 10^{-8}$ and differs from $\mathrm d \bar h/\mathrm d T$
+by up
+to $3.6 \times 10^{-3}$ (check line `(h4)`). The step below uses the slope of @eq-ch03-adiabat-dsdt even then, which
+changes the rate of the iteration but not its fixed point.
 
 **Temperature update in $\ln p$.** At the new pressure, Newton's method on $\bar s(T) = \bar s_{\mathrm{target}}$ with
 the slope @eq-ch03-adiabat-dsdt, written in relative form, is
@@ -250,6 +259,8 @@ The derivation is checked by two derivation checks. `check_ch3_adiabat.py`:[^ch0
   because the solved condensate entropies fail their Gibbs relation, EXPECTED-FAIL (K8). With the cards of
   @eq-ch03-reference-state-card they agree to $2.3 \times 10^{-10}$.
 - `(h2)`: $\mathrm d \bar h/\mathrm d T$ along the path equals `effective_cp` to $3.4 \times 10^{-9}$.
+- `(h4)`: where NH4SH forms, `effective_cp` equals $(1/n)\, \mathrm d H/\mathrm d T$ to $6.8 \times 10^{-8}$
+  (@eq-ch03-adiabat-dsdt-n), and differs from $\mathrm d \bar h/\mathrm d T$ by up to $3.6 \times 10^{-3}$.
 - `(h3)`: the rain-out branch is first order in $\Delta \ln p$, observed orders 1.012-1.048 (tolerance 0.15 on the
   order).
 
@@ -258,6 +269,7 @@ The derivation is checked by two derivation checks. `check_ch3_adiabat.py`:[^ch0
 <!-- equation-check: eq-ch03-adiabat-cpeff check_ch3_adiabat_slope.py (h2) -->
 <!-- equation-check: eq-ch03-adiabat-gibbs check_ch3_adiabat_slope.py (h1) -->
 <!-- equation-check: eq-ch03-adiabat-dsdt check_ch3_adiabat_slope.py (h1) -->
+<!-- equation-check: eq-ch03-adiabat-dsdt-n check_ch3_adiabat_slope.py (h4) -->
 <!-- equation-check: eq-ch03-adiabat-target check_ch3_adiabat.py -->
 <!-- equation-check: eq-ch03-adiabat-newton check_ch3_adiabat.py -->
 
@@ -271,7 +283,7 @@ The derivation is checked by two derivation checks. `check_ch3_adiabat.py`:[^ch0
     `python doc/tech-report/derivation-checks/check_ch3_adiabat_slope.py` from a scratch directory, with `KINTERA_WT`
     set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
     kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch3_adiabat_slope.out`, 3 PASS, 1 EXPECTED-FAIL.]
+    `doc/tech-report/derivation-checks/check_ch3_adiabat_slope.out`, 4 PASS, 1 EXPECTED-FAIL.]
 
 ### Limits
 

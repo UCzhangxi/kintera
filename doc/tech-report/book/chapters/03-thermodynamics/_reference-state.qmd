@@ -105,8 +105,11 @@ formed from two gases it is $2 \mathcal R T$. This is the quantity that must mat
 **One energy model for every module.** The offsets above belong to the constant-$c_v$ energy. With `use-nasa9-cp` or
 `use-h2-cp` the energy of the species concerned is $\mathcal R$ times the constant-$c_v$ value plus a deviation that
 vanishes at a fixed $T_0 = 300$ K, not at `Tref` (`eval_intEng_R`,
-{{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}). So $u^{\star}_n$ is the energy at 300 K for those species, and
-equals the energy at $T_\star$ only when `Tref` is 300 K. Every module that needs $u_n(T)$ must use this same function,
+{{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}). So with these flags the energy at 300 K is
+$\mathcal R [u^{\star}_n + c^{\star}_n (300\ \mathrm K - T_\star)]$, and $u^{\star}_n$ equals the energy at $T_\star$
+(or at 300 K) only when $T_\star = 300$ K. For H2O with `u0_R` 1000, `cv_R` 3 and `use-nasa9-cp`, $T_\star$ = 250 K
+gives $u(300\ \mathrm K)/\mathcal R = 1150$ and $u(T_\star)/\mathcal R = 998.513$ (check line `(a4)`). Every module that
+needs $u_n(T)$ must use this same function,
 because the latent heat of every reaction is a difference of these energies. At the pin the saturation-adjustment
 kernel of `ThermoY` receives only the shifted constants `u0` and `cv` (`ThermoYImpl::forward`,
 {{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}). With `use-h2-cp` it therefore releases a different
@@ -227,6 +230,8 @@ The derivation is checked by `check_ch3_reference.py`:[^ch03-reference-check]
 - `(a1)`: $h/\mathcal R = (u^{\star} - c^{\star} T_\star) + c^{\star} T$ (plus $T$ for a gas) for `H2O`, `H2O(l)` and
   `NH3(s)` at 200-400 K, exact (0 against $10^{-13}$).
 - `(a2)`: pure-gas entropy $(c^{\star}+1)\ln(T/T_\star) - \ln(p/p_\star)$, to $1.8 \times 10^{-15}$.
+- `(a4)`: with `use-nasa9-cp`, $u(300\ \mathrm K)/\mathcal R = u^{\star} + c^{\star}(300\ \mathrm K - T_\star)$ for
+  $T_\star$ = 300 and 250 K, exact (1000 and 1150).
 - `(a3)`: @eq-ch03-reference-state-enthalpy-latent, $l - L = \mathcal R T$ from `TV->H` and `ThermoY` `VT->U`, to
   $4.7 \times 10^{-17}$ relative (at 300 K: $l$ = 31012.9358, $L$ = 28518.5978 J mol$^{-1}$).
 - `(g1)`: the `tests/jupiter.yaml` cards against their curves on the forming branch, worst
@@ -253,7 +258,7 @@ $\lvert l_{\mathrm{card}}/l_{\mathrm{svp}} - 1\rvert \le 1.1 \times 10^{-13}$ (P
     `python doc/tech-report/derivation-checks/check_ch3_reference.py` from a scratch directory, with `KINTERA_WT`
     set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_reference.out`,
-    5 PASS, 2 EXPECTED-FAIL.]
+    6 PASS, 2 EXPECTED-FAIL.]
 
 [^ch03-d12]: [source: UCzhangxi/kintera#54, row D12 (UV saturation kernel and the H2 heat capacity), merged on the
     staging branch of that issue.]

@@ -223,7 +223,7 @@ atom-conserving, and it passes in both builds of @sec-ch13-results, on the CPU d
 The derivation check is indirect as well. `check_ch4_tp.py` line a runs the fixed-temperature solver on
 `tests/jupiter.yaml`, where ammonia is shared by ammonia ice and ammonium hydrosulfide, which are the dependent rows of
 Step 5. At 200 and 160 K, with ammonium hydrosulfide present, the conditions of @sec-ch04-conditions hold to
-$1.3\times10^{-7}$ (tolerance $10^{-6}$), and nitrogen and sulfur change by at most $3.3\times10^{-16}$ (relative,
+$6.95\times10^{-8}$ (tolerance $10^{-6}$), and nitrogen and sulfur change by at most $3.3\times10^{-16}$ (relative,
 tolerance $10^{-14}$). The line does not assert non-negativity; the condensate amounts it prints are non-negative
 (run record in @sec-ch04-conditions).
 

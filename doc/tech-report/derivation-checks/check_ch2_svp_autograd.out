@@ -5,10 +5,15 @@ kintera.Evaporation, CH4(s,p) => CH4, ideal formula beta=12.87 gamma=1.5, c_v=0.
    T=80.0: dw/dT autograd 4.2554209540e+01 analytic 4.2554209540e+01; d2w/dT2 autograd 6.473172e+00 predicted(no lnp'') 6.473172e+00 true 5.255282e+00
    T=85.0: dw/dT autograd 7.5413600080e+01 analytic 7.5413600080e+01; d2w/dT2 autograd 1.004116e+01 predicted(no lnp'') 1.004116e+01 true 7.990166e+00
 (a1) autograd dw/dT vs kappa K ((ln p)' - 1/T), worst rel: measured 1.332e-15  tol 1e-12  PASS
-(a2) torch.autograd.gradcheck at 78 K (eps 1e-6, rtol 1e-7) fails (1) or not (0): measured 0.000e+00  tol 0e+00  PASS
+(a2) torch.autograd.gradcheck at 78 K (eps 1e-6, atol 1e-10, rtol 1e-7) fails (1) or not (0): measured 0.000e+00  tol 0e+00  PASS
    two reactions at 78 K: d w_CH4 / d T[:, CH4 column] = 3.2978402808e+01 (analytic 3.2978402808e+01), on the other column 0.0e+00
-(a3) per-column gradient: rel error on own column + |value on the other column|: measured 2.220e-16  tol 1e-12  PASS
+(a3) expanded leaf (step 1, diagonal Jacobian): rel error on own column + |value on the other column|: measured 2.220e-16  tol 1e-12  PASS
+   T=78.0: rc_ddT [CH4 column, NH3 column] = [3.297840e+01, 0.000000e+00]; own derivatives [3.297840e+01, 0.000000e+00]; their sum 3.297840e+01
+   T=150.0: rc_ddT [CH4 column, NH3 column] = [1.862054e+03, 1.654926e-01]; own derivatives [1.862054e+03, 1.654926e-01]; their sum 1.862219e+03
+(a4) forward_with_rate_constants rc_ddT: each column is its own reaction's dk_r/dT, worst rel (abs if 0): measured 2.155e-16  tol 1e-12  PASS
+   unexpanded T = 150.0 K through Evaporation.forward: d(w_CH4 + 2 w_NH3)/dT = 1.8623847678e+03, sum of own derivatives 1.8623847678e+03
+(a5) unexpanded T: gradient is the weighted sum over reactions, rel: measured 2.220e-16  tol 1e-12  PASS
 (b1) autograd d2w/dT2 vs prediction without (ln p)'', worst rel: measured 1.776e-15  tol 1e-12  PASS
 (b2) |autograd d2w/dT2 / true - 1|, must EXCEED tol (the dropped (ln p)'' term): measured 2.567e-01  tol 1e-02  PASS
-(b3) torch.autograd.gradgradcheck passes (1) or not (0); step 3 predicts 0: measured 0.000e+00  tol 0e+00  PASS
+(b3) torch.autograd.gradgradcheck passes (1) or not (0); step 4 predicts 0: measured 0.000e+00  tol 0e+00  PASS
 ALL PASS

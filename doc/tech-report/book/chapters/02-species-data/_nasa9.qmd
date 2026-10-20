@@ -71,14 +71,14 @@ $2.4 \times 10^{-3}$ kJ mol$^{-1}$ and $7.0 \times 10^{-3}$ J mol$^{-1}$ K$^{-1}
 
 *Continuity at $T_{\mathrm{mid}}$.* The two ranges are fitted separately, so whether $c_p$, $h$ and $s$ agree at
 $T_{\mathrm{mid}} = 1000$ K is a property of the data. The code selects a range by $T < T_{\mathrm{mid}}$ and does not
-enforce or blend continuity: kintera's $g/(\mathcal R T)$ jumps across 1000 K by exactly the table's jump between the
-two ranges (to $2.1 \times 10^{-14}$). For the common gases the jumps are negligible: $h/\mathcal R$ jumps by
-$2.0 \times 10^{-6}$ K (H2), $4.1 \times 10^{-5}$ K (H2O), $-2.4 \times 10^{-5}$ K (CH4) and $-8.8 \times 10^{-6}$ K
-(NH3), and $c_p/\mathcal R$ by less than $10^{-8}$. Five of the 293 entries jump by more than 1 K in $h/\mathcal R$:
-`H2O_l_s` ($-1.1 \times 10^{7}$ K), `HNO3` ($-1.0 \times 10^{5}$ K), `TiH` ($-1.1 \times 10^{4}$ K), `C_graphite`
-($-1.2 \times 10^{2}$ K) and `PN` ($+1.0 \times 10^{2}$ K).[^ch02-nasa9-join] Above 1000 K `eval_nasa9` subtracts the
-low-range $h(300\ \mathrm K)$ from the high-range $h(T)$, so $b_1$ does not cancel there, and such a jump enters the
-internal energy directly.
+enforce or blend continuity: kintera's $g/(\mathcal R T)$ at 1000 K and at $1000 - 10^{-7}$ K differ by exactly the
+table's high range at 1000 K minus its low range at $1000 - 10^{-7}$ K (to $2.1 \times 10^{-14}$). For the common
+gases the jumps are negligible: $h/\mathcal R$ jumps by $2.0 \times 10^{-6}$ K (H2), $4.1 \times 10^{-5}$ K (H2O),
+$-2.4 \times 10^{-5}$ K (CH4) and $-8.8 \times 10^{-6}$ K (NH3), and $c_p/\mathcal R$ by less than $10^{-8}$. Five of
+the 293 entries jump by more than 1 K in $h/\mathcal R$: `H2O_l_s` ($-1.1 \times 10^{7}$ K), `HNO3`
+($-1.0 \times 10^{5}$ K), `TiH` ($-1.1 \times 10^{4}$ K), `C_graphite` ($-1.2 \times 10^{2}$ K) and `PN`
+($+1.0 \times 10^{2}$ K).[^ch02-nasa9-join] Above 1000 K `eval_nasa9` subtracts the low-range $h(300\ \mathrm K)$ from
+the high-range $h(T)$, so $b_1$ does not cancel there, and such a jump enters the internal energy directly.
 
 [^ch02-nasa9-join]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the package's `data/nasa9.dat`;
     reference values: Cox, Wagman and Medvedev, *CODATA Key Values for Thermodynamics*, 1989; run:

@@ -6,6 +6,9 @@ constant for CH4(s,p) => CH4 is  w(T) = kappa (K(T) - c_v),  K = exp(ln p(T)) / 
 so every T-derivative of w is a closed form in ln p, (ln p)' and (ln p)'' of the ideal formula.
 
 (a) first derivative: autograd dw/dT against kappa K ((ln p)' - 1/T), and torch.autograd.gradcheck.
+(a3)-(a5) step 1 (an expanded leaf gives the diagonal Jacobian), and step 3: forward_with_rate_constants with
+    evolve_temperature makes the expanded temperature the leaf, so rc_ddT is per reaction; an unexpanded T passed
+    to Evaporation.forward gets the sum over reactions from the backward pass of the expansion.
 (b) second derivative: the backward multiplies by a derivative evaluated outside autograd, so a second
     differentiation sees (ln p)' as a constant and drops the (ln p)'' term. Predicted autograd value:
     kappa K [((ln p)' - 1/T)^2 + 1/T^2]; true value adds kappa K (ln p)''.
@@ -103,9 +106,9 @@ for T in Ts:
 report("(a1) autograd dw/dT vs kappa K ((ln p)' - 1/T), worst rel", worst1, 1e-12, worst1 <= 1e-12)
 Tg = torch.tensor([78.0], requires_grad=True)
 ok = torch.autograd.gradcheck(lambda x: w(x), (Tg,), eps=1e-6, atol=1e-10, rtol=1e-7, raise_exception=False)
-report("(a2) torch.autograd.gradcheck at 78 K (eps 1e-6, rtol 1e-7) fails (1) or not (0)", float(not ok), 0, ok)
-# (a3) two reactions, temperature expanded to one column per reaction (the layout Kinetics.forward uses):
-# the gradient of reaction j lands on column j only.
+report("(a2) torch.autograd.gradcheck at 78 K (eps 1e-6, atol 1e-10, rtol 1e-7) fails (1) or not (0)", float(not ok), 0, ok)
+# (a3) two reactions with an already-expanded (1, 2) temperature leaf: the gradient of reaction j lands on column j
+# only, which is the diagonal Jacobian of step 1.
 card2 = card + f"""  - equation: NH3(s,p) => NH3
     type: evaporation
     rate-constant: {{formula: ideal, T3: 195.4, P3: 6060., beta: 20.64, gamma: 1.43,
@@ -138,12 +141,75 @@ off = gcol[0, 1 - irx].abs().item()
 e3 = abs(gcol[0, irx].item() / ref - 1)
 print(f"   two reactions at 78 K: d w_CH4 / d T[:, CH4 column] = {gcol[0, irx].item():.10e} (analytic {ref:.10e}),"
       f" on the other column {off:.1e}")
-report("(a3) per-column gradient: rel error on own column + |value on the other column|", e3 + off, 1e-12,
+report("(a3) expanded leaf (step 1, diagonal Jacobian): rel error on own column + |value on the other column|", e3 + off, 1e-12,
        e3 + off <= 1e-12)
+def lnp_g(T, T3_, P3_, b, g):
+    t = T / T3_
+    return math.log(P3_) + b * (1.0 - 1.0 / t) - g * math.log(t)
+
+
+def dlnp_g(T, T3_, b, g):
+    t = T / T3_
+    return (b / t**2 - g / t) / T3_
+
+
+FITS = {"CH4": (T3, P3, beta, gamma), "NH3": (195.4, 6060.0, 20.64, 1.43)}
+
+
+def own_dwdT(gas, T, cgas):
+    """d w_r/dT of one evaporation reaction alone: kappa K (L' - 1/T) if subsaturated, else 0 (rate clamped)."""
+    T3_, P3_, b, g = FITS[gas]
+    K = math.exp(lnp_g(T, T3_, P3_, b, g)) / (R * T)
+    return kappa * K * (dlnp_g(T, T3_, b, g) - 1.0 / T) if K > cgas else 0.0
+
+
+# (a4) the kinetics path: forward_with_rate_constants expands T and makes the expanded copy the autograd leaf
+# (temp1), so rc_ddT holds each reaction's own dk_r/dT in its own column; nothing is summed.
+op2.evolve_temperature(True)
+kin2e = kt.Kinetics(op2)
+col = {"CH4": irx, "NH3": 1 - irx}
+worst4 = 0.0
+for Tq, cnh3 in ((78.0, 1e-3), (150.0, 1e-3)):
+    cc = torch.zeros(1, len(n2))
+    cc[0, n2.index("CH4")] = cv
+    cc[0, n2.index("NH3")] = cnh3
+    cc[0, n2.index("CH4(s,p)")] = cp
+    cc[0, n2.index("NH3(s,p)")] = cp
+    out = kin2e.forward_with_rate_constants(torch.tensor([Tq]), P, cc)
+    rcT = out[2][0]
+    own = {gname: own_dwdT(gname, Tq, cc[0, n2.index(gname)].item()) for gname in col}
+    for gname, j in col.items():
+        ref_ = own[gname]
+        e = abs(rcT[j].item() - ref_) / max(abs(ref_), 1e-300) if ref_ != 0 else abs(rcT[j].item())
+        worst4 = max(worst4, e)
+    print(f"   T={Tq}: rc_ddT [CH4 column, NH3 column] = [{rcT[col['CH4']].item():.6e}, {rcT[col['NH3']].item():.6e}];"
+          f" own derivatives [{own['CH4']:.6e}, {own['NH3']:.6e}]; their sum {own['CH4'] + own['NH3']:.6e}")
+report("(a4) forward_with_rate_constants rc_ddT: each column is its own reaction's dk_r/dT, worst rel (abs if 0)",
+       worst4, 1e-12, worst4 <= 1e-12)
+
+# (a5) an unexpanded T with requires_grad, passed to Evaporation.forward, which expands it itself: the gradient of
+# sum_r g_r w_r with respect to the one cell temperature is sum_r g_r dw_r/dT (backward of the expansion).
+Tq = 150.0
+cu = torch.zeros(1, len(n2))
+cu[0, n2.index("CH4")] = cv
+cu[0, n2.index("NH3")] = 1e-3
+cu[0, n2.index("CH4(s,p)")] = cp
+cu[0, n2.index("NH3(s,p)")] = cp
+Tu = torch.tensor([Tq], requires_grad=True)
+wu = ev2.forward(Tu, P, cu, {"stoich": st2})
+gw = torch.zeros(2)
+gw[col["CH4"]], gw[col["NH3"]] = 1.0, 2.0
+(gsum,) = torch.autograd.grad((wu[0] * gw).sum(), Tu)
+refsum = 1.0 * own_dwdT("CH4", Tq, cv) + 2.0 * own_dwdT("NH3", Tq, 1e-3)
+e5 = abs(gsum.item() / refsum - 1)
+print(f"   unexpanded T = {Tq} K through Evaporation.forward: d(w_CH4 + 2 w_NH3)/dT = {gsum.item():.10e},"
+      f" sum of own derivatives {refsum:.10e}")
+report("(a5) unexpanded T: gradient is the weighted sum over reactions, rel", e5, 1e-12, e5 <= 1e-12)
+
 report("(b1) autograd d2w/dT2 vs prediction without (ln p)'', worst rel", worst2, 1e-12, worst2 <= 1e-12)
 report("(b2) |autograd d2w/dT2 / true - 1|, must EXCEED tol (the dropped (ln p)'' term)", worstp, 1e-2,
        worstp >= 1e-2)
 ok2 = torch.autograd.gradgradcheck(lambda x: w(x), (Tg,), eps=1e-6, atol=1e-10, rtol=1e-7,
                                    raise_exception=False)
-report("(b3) torch.autograd.gradgradcheck passes (1) or not (0); step 3 predicts 0", float(ok2), 0, not ok2)
+report("(b3) torch.autograd.gradgradcheck passes (1) or not (0); step 4 predicts 0", float(ok2), 0, not ok2)
 print("ALL PASS" if fails == 0 else f"{fails} FAIL")

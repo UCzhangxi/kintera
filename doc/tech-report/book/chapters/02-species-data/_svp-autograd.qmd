@@ -60,11 +60,19 @@ $$ {#eq-ch02-svp-autograd-backward}
 This is the element-by-element product `backward` returns ({{< code src/thermo/log_svp.cpp LogSVPFunc::backward >}}).
 No finite difference is taken.
 
-*Step 3: why the temperature is expanded.* Because the input already has one column per reaction, each column's
-gradient goes to its own temperature entry. A caller that starts from one temperature per cell and expands it, as
-`forward_with_rate_constants` does when the temperature evolves
-({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), gets the cell's total
-$\sum_r \bar g_r\, \mathrm d \ln K_r/\mathrm d T$ from the backward pass of that expansion, which is ordinary autograd.
+*Step 3: who expands the temperature, and what the gradient then holds.* The input of `apply` already has one column
+per reaction, so by @eq-ch02-svp-autograd-backward each column's gradient goes to its own entry. What a caller
+receives depends on where its autograd leaf sits. `forward_with_rate_constants`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), when the temperature evolves,
+expands the cell temperature to one column per reaction and marks that expanded copy as the leaf. Its gradient
+therefore holds, in column $r$, the derivative of reaction $r$'s own rate constant, $\mathrm d k_r/\mathrm d T$, and
+nothing is summed. That tensor is `rc_ddT`, and `jacobian`
+({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}) uses it reaction by reaction. Expanding the
+temperature is how one `backward` call returns every reaction's own derivative. A caller that differentiates with
+respect to one unexpanded temperature per cell does get a sum. An example is passing a temperature with
+`requires_grad` straight to the evaporation module, which expands it itself
+({{< code src/kinetics/evaporation.cpp EvaporationImpl::forward >}}). The backward pass of that expansion then returns
+$\sum_r \bar g_r\, \mathrm d \ln K_r/\mathrm d T$ for the cell.
 
 *Step 4: second derivatives.* Differentiating once more, with the graph of the first backward pass recorded, needs
 the derivative of @eq-ch02-svp-autograd-backward with respect to $T_r$. The derivative factor was computed by a kernel
@@ -127,13 +135,21 @@ The derivation is checked by the derivation check `check_ch2_svp_autograd.py`.[^
 `LogSVPFunc::apply` through its one caller, the evaporation module (`kintera.Evaporation`), for `CH4(s,p) => CH4` with
 the ideal form ($\beta = 12.87$, $\gamma = 1.5$, below $T_3$) and a temperature-independent prefactor $\kappa$, so the
 rate constant is $w(T) = \kappa\,(K(T) - c_v)$ with $K = e^{L}/(\mathcal R T)$. That is
-@eq-ch02-svp-autograd-second with $h = \kappa(e^{L}/(\mathcal R T) - c_v)$. All six lines pass:
+@eq-ch02-svp-autograd-second with $h = \kappa(e^{L}/(\mathcal R T) - c_v)$. All eight lines pass:
 
 - @eq-ch02-svp-autograd-backward: autograd $\mathrm d w/\mathrm d T$ against $\kappa K (L' - 1/T)$ at 70, 75, 80
   and 85 K, worst $1.332 \times 10^{-15}$ relative (tolerance $10^{-12}$, round-off); `torch.autograd.gradcheck` at
-  78 K ($\epsilon = 10^{-6}$, relative tolerance $10^{-7}$) passes.
-- Step 3: with two evaporation reactions and the temperature expanded to two columns, the gradient of one reaction
-  lands on its own column (relative error $2.2 \times 10^{-16}$) and is exactly 0 on the other.
+  78 K ($\epsilon = 10^{-6}$, absolute tolerance $10^{-10}$, relative tolerance $10^{-7}$) passes.
+- Step 1 (@eq-ch02-svp-autograd-jacobian): with two evaporation reactions and an already-expanded two-column
+  temperature as the leaf, the gradient of one reaction lands on its own column (relative error $2.2 \times 10^{-16}$)
+  and is exactly 0 on the other.
+- Step 3, the kinetics path: `forward_with_rate_constants` with `evolve_temperature(True)` on the same two-reaction
+  card returns `rc_ddT` = [32.978, 0.000] at 78 K, where the NH3 reaction is clamped. At 150 K, with both reactions
+  subsaturated, it returns [1862.054, 0.1655]. Each column equals that reaction's own derivative to
+  $2.2 \times 10^{-16}$ relative; their sum (1862.219) appears in no column.
+- Step 3, an unexpanded temperature: at 150 K through `kintera.Evaporation` with a one-entry temperature,
+  $\mathrm d(w_{\mathrm{CH4}} + 2 w_{\mathrm{NH3}})/\mathrm d T$ equals the weighted sum of the two reactions' own
+  derivatives to $2.2 \times 10^{-16}$ relative.
 - @eq-ch02-svp-autograd-second: the autograd second derivative equals the prediction without $L''$ to
   $1.776 \times 10^{-15}$ relative (tolerance $10^{-12}$). It differs from the true value by up to 25.7% at these
   temperatures (the line requires more than 1%). `torch.autograd.gradgradcheck` returns false, without an error.
@@ -142,7 +158,7 @@ rate constant is $w(T) = \kappa\,(K(T) - c_v)$ with $K = e^{L}/(\mathcal R T)$. 
     the script; run: `python doc/tech-report/derivation-checks/check_ch2_svp_autograd.py` from a scratch directory,
     with `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13,
     torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch2_svp_autograd.out`, 6 PASS, 0 FAIL.]
+    `doc/tech-report/derivation-checks/check_ch2_svp_autograd.out`, 8 PASS, 0 FAIL.]
 
 ### Limits
 

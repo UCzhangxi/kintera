@@ -25,6 +25,10 @@ S taken along the equilibrium path (forward at every temperature):
 (f11) ... and on the state: saturated H2O at the default constants, x_H2O = 0.02, p = 1e6 .. 1e2 Pa at T* = 299 ..
      205 K, iteration started at T* + 1e-4 K: phi' against the error ratios, and the general condition (converges
      iff 0 < ratio < 2, alternates iff ratio > 1) against the iteration in every row.
+(f12) several roots: along the saturated equilibrium path at 1e3 Pa (T* = 225 K) and 1e2 Pa (T* = 205 K), S_vol(T)
+     has a local maximum above T*, so S(T*) has a second root above it (and a third below T* at 1e2 Pa). kintera's
+     PXS->T from Tref returns T*: EXPECTED-FAIL, row K16 (the pin gives NaN at 1e2 Pa; the D8 fix returns the
+     upper root and reports success).
 """
 import math
 import os
@@ -171,6 +175,57 @@ def check_saturated():
     report("(f11) default constants, 1e6-1e2 Pa: phi' vs iteration (rel)", worst, 1e-2, worst < 1e-2)
     report("(f11) converges iff 0 < ratio < 2, alternates iff ratio > 1: rows against it (count)", bad, 0, bad == 0)
 
+K16_PROBE = r"""
+from kintera import ThermoOptions, ThermoX
+torch.set_default_dtype(torch.float64)
+card = sys.argv[1]
+op = ThermoOptions.from_yaml(card); op.max_iter(100); op.ftol(1e-14)
+th = ThermoX(op); th.to(torch.float64)
+names = kintera.species_names()
+sp = [names[i] for i in list(op.vapor_ids()) + list(op.cloud_ids())]
+x0 = torch.zeros(1, len(sp)); x0[0, sp.index("H2O")] = 0.02; x0[0, 0] = 0.98
+def bis(a, b, f):
+    fa = f(a)
+    for _ in range(60):
+        m = 0.5 * (a + b); fm = f(m)
+        if (fm > 0) == (fa > 0): a, fa = m, fm
+        else: b = m
+    return 0.5 * (a + b)
+out = {}
+for pp, Ts in ((1e3, 225.0), (1e2, 205.0)):
+    p = torch.tensor([pp])
+    def S(T0):
+        T = torch.tensor([T0]); x = x0.clone(); th.forward(T, p, x)
+        c = th.compute("TPX->V", [T, p, x]); return th.compute("TPV->S", [T, p, c]).item()
+    St = S(Ts)
+    grid = [150.0 + 0.05 * k + 0.0123 for k in range(5000)]
+    v = [S(T) - St for T in grid]
+    roots = [bis(grid[i], grid[i + 1], lambda T: S(T) - St) for i in range(len(grid) - 1) if v[i] * v[i + 1] < 0]
+    hi = [k for k in range(len(grid)) if Ts < grid[k] < roots[-1]]
+    k = max(hi, key=lambda i: v[i])
+    peak = bis(grid[k - 1], grid[k + 1], lambda T: S(T + 1e-5) - S(T - 1e-5))
+    T = th.compute("PXS->T", [p, x0.clone(), torch.tensor([St])]).item()
+    out[str(pp)] = {"Ts": Ts, "roots": roots, "peak": peak, "pxs": T, "res": (S(T) - St) / abs(St) if T == T else T}
+print(json.dumps(out))
+"""
+
+
+def check_k16():
+    with open(DECK) as f:
+        deck = f.read()
+    g = ch3_card.run(ch3_card.fixed_deck(deck), K16_PROBE)
+    ok, err = True, 0.0
+    for key, want in (("1000.0", 2), ("100.0", 3)):
+        v = g[key]
+        print(f"   {float(key):.0e} Pa, T* = {v['Ts']:.0f} K: roots of S_vol(T) = S_vol(T*): "
+              + ", ".join(f"{r:.2f}" for r in v["roots"]) + f" K; local maximum of S_vol at {v['peak']:.2f} K; "
+              f"PXS->T from Tref = {v['pxs']:.2f} K (relative entropy residual {v['res']:.1e})")
+        ok = ok and len(v["roots"]) == want and v["roots"][-1] > v["peak"] > v["Ts"]
+        err = max(err, abs(v["pxs"] - v["Ts"])) if v["pxs"] == v["pxs"] else float("nan")
+    report("(f12) S_vol(T) = S_vol(T*) has 2 roots at 1e3 Pa and 3 at 1e2 Pa, one above the local maximum (count)",
+           0.0 if ok else 1.0, 0, ok)
+    report("(f12) kintera PXS->T from Tref returns T*, max |T - T*| over both states (K)", err, 1e-6, err < 1e-6, "K16")
+
 
 if __name__ == "__main__":
     print(version_line())
@@ -219,4 +274,5 @@ if __name__ == "__main__":
     e = abs(Tb - 600.0)
     report("(f4) kintera PXS->T from the same S, |T - 600| (K)", e, 1e-6, e < 1e-6, "D8")
     check_saturated()
+    check_k16()
     print("SUMMARY: " + ", ".join(f"{RES.count(k)} {k}" for k in ("PASS", "FAIL", "EXPECTED-FAIL")))

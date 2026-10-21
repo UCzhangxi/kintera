@@ -181,6 +181,15 @@ $2.1 \times 10^{-3}$ and $-6.9 \times 10^{-8}$ K). With `ftol` $10^{-14}$, as in
 within $5.7 \times 10^{-14}$ K; at the deck's default `ftol` they settle at $2.2 \times 10^{-6}$ K. The first step
 is large because the first pass evaluates $S$ on the composition passed in, before `forward`, so from a
 supersaturated input that first $S$ is off the equilibrium path.
+The fix does not remove consequence (3) for a saturated parcel. Along the equilibrium path $S$ is not monotone
+in $T$: with the step-3 cards, $x_{\mathrm{H_2O}} = 0.02$ and the default constants, $S$ has a local maximum where the
+cloud vanishes, at 237.11 K for $10^3$ Pa and 217.80 K for $10^2$ Pa. So $S(T^{\ast})$ has a second root above that
+maximum: 347.12 K for $T^{\ast} = 225$ K at $10^3$ Pa, and at $10^2$ Pa three roots, 199.18, 205 and 240.48 K for
+$T^{\ast} = 205$ K. Started from `Tref` = 300 K, which lies above both maxima, the fixed `PXS->T` returns 347.12 K and
+240.48 K and reports success, since both are true roots (entropy residuals $5.9 \times 10^{-16}$ and
+$1.7 \times 10^{-16}$). At the pin the same calls give 225.00 K and NaN (check line `(f12)`, EXPECTED-FAIL, K16).
+This is row K16.[^ch03-k16] The adiabat path is not affected: `extrapolate_ad` inverts the molar entropy starting
+from the previous level (@sec-ch03-adiabat), not from `Tref`.
 <!-- equation-source: eq-ch03-thermo-x-entropy-newton code at the pin, not the correct step (D8) -->
 
 After each step the code calls `forward`, the saturation adjustment at the new $(T, p)$, which changes the
@@ -236,7 +245,7 @@ CPU in float32 and float64 and on CUDA when a GPU is present. `TV->cp` and `TV->
 `DeviceTest.thermo_x` but not asserted.
 
 The derivation is checked by `check_ch3_pxs.py`, lines `(f1)`-`(f4)` on a dry parcel of `tests/jupiter.yaml` at 1 bar
-and `(f5)`-`(f8)`, `(f10)`, `(f11)` on saturated ones:[^ch03-pxs-check]
+and `(f5)`-`(f8)`, `(f10)`-`(f12)` on saturated ones:[^ch03-pxs-check]
 
 - `(f1)`: @eq-ch03-thermo-x-entropy-slope against a central difference of `TPV->S` at fixed $(p, x)$, 250-600 K, to
   $3.1 \times 10^{-10}$ (tolerance $10^{-7}$).
@@ -265,6 +274,9 @@ and `(f5)`-`(f8)`, `(f10)`, `(f11)` on saturated ones:[^ch03-pxs-check]
   @eq-ch03-thermo-x-entropy-frozen-factor against the iteration's error ratios (to $2.4 \times 10^{-3}$ relative,
   tolerance $10^{-2}$), and in every row the iteration converges iff the ratio lies in $(0, 2)$ and alternates iff
   it exceeds 1.
+- `(f12)`: at $10^3$ Pa ($T^{\ast} = 225$ K) and $10^2$ Pa ($T^{\ast} = 205$ K), $S(T) = S(T^{\ast})$ along `forward`
+  has 2 and 3 roots, one above the local maximum of $S$ (PASS), and kintera's `PXS->T` from `Tref` returns $T^{\ast}$:
+  EXPECTED-FAIL (K16). At the pin it returns 225.00 K and NaN; on a build of the fix branch, 347.12 K and 240.48 K.
 
 <!-- equation-check: eq-ch03-thermo-x-entropy-slope check_ch3_pxs.py (f1) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-factor check_ch3_pxs.py (f2) -->
@@ -277,16 +289,21 @@ and `(f5)`-`(f8)`, `(f10)`, `(f11)` on saturated ones:[^ch03-pxs-check]
 <!-- equation-check: eq-ch03-thermo-x-entropy-factor check_ch3_pxs.py (f7) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f10) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f11) -->
+<!-- equation-check: eq-ch03-thermo-x-entropy-slope-eq check_ch3_pxs.py (f12) -->
 <!-- equation-check: eq-ch03-thermo-x-totals check_ch3_species_functions.py -->
 
 [^ch03-pxs-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, dry
-    composition, and the same deck with the step-3 cards for `(f5)`-`(f8)`, `(f10)` and `(f11)`; run:
+    composition, and the same deck with the step-3 cards for `(f5)`-`(f8)` and `(f10)`-`(f12)`; run:
   `python doc/tech-report/derivation-checks/check_ch3_pxs.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_pxs.out`,
-    12 PASS, 2 EXPECTED-FAIL.]
+    13 PASS, 3 EXPECTED-FAIL. On a build of the fix branch (kintera 2.6.6.dev44), same recipe: 15 PASS,
+    1 EXPECTED-FAIL, the `(f12)` line.]
 
 [^ch03-d8]: [source: UCzhangxi/kintera#54, row D8 (`PXS->T` slope), merged on the staging branch of that issue.]
+
+[^ch03-k16]: [source: UCzhangxi/kintera#54, row K16 (`PXS->T` from `Tref` can return a second root of the
+    entropy per volume), latent; the numbers are check line `(f12)` on a build of the staging branch of that issue.]
 
 [^ch03-d8-measured]: [source: theory re-check of UCzhangxi/kintera#82, on a build of the
     staging branch of UCzhangxi/kintera#54; these fix-branch numbers are the re-check's measurements, not rerun for

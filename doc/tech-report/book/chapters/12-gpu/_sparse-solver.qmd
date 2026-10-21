@@ -106,8 +106,8 @@ confirming the two devices agree on whether they raise.[^ch12-sparse-run] Neithe
   $1/\Delta t$ is small enough it vanishes when added to $-\mathsf L$, and the assembled matrix becomes bytewise
   equal to $-\mathsf L$, which is exactly singular. At $\Delta t = 10^{18}$ in double and $10^{8}$ in single, the
   host raises while `newton_implicit_step` on CUDA reports **converged in two iterations** and the default
-  acceptance returns true, having lost 98.44 % and 70.94 % of the conserved mass. Neither test can see the error:
-  convergence is a per-species *relative change* between successive iterates
+  acceptance returns true, having lost 98.44 % and 70.94 % of the conserved mass.[^ch12-sparse-k43] Neither test
+  can see the error: convergence is a per-species *relative change* between successive iterates
   ({{< code python/atm2d/newton/coupled.py newton_implicit_step >}}), which is satisfied once the iterate stops
   moving, and `default_accept` ({{< code python/atm2d/timestep.py default_accept >}}) compares the
   updated concentrations with the previous ones rather than testing a residual or a conserved quantity. Reduced in-tree example and test systems at
@@ -186,8 +186,16 @@ assembled matrix is asserted bytewise equal to $-\mathsf L$ once the shift is lo
 check_ch12_atm2d_reach.py` and the same with `--newton-only` from `derivation-checks/ch12/`, outputs
 `check_ch12_atm2d_reach.out` and `check_ch12_atm2d_newton.out`, exit 0; mass error is $|\sum x - 3|/3$ on unit
 cell volumes, an exact invariant of that source-free state; one CUDA build on one host; targeted cases, not a
-production-deck result. K43 is the designation this chapter uses for the behaviour; it has no row on the fix list,
-so this paragraph rests on the measurement above rather than on a cited row.]
+production-deck result.]
+
+[^ch12-sparse-k43]: [source: UCzhangxi/kintera#54, row K43 (the identity shift of $\mathsf I/\Delta t - \mathsf L$
+lost to rounding at very large $\Delta t$), **LATENT** at the pin: the row records that no in-tree example or
+reference case reaches it. It cites
+`python/atm2d/assembly.py:189-194`, `python/atm2d/matrix.py:156-170`, `src/math/sparse_solver.cu:158-162` and
+`python/atm2d/newton/coupled.py:150-164`, all at
+kintera@0d9f67f97d841147e23283d2dcdab302238d2c45, and gives the same measured outcome as the Limits bullet above:
+CPU raises, CUDA accepts the solve with no residual or conservation check, and the Newton loop reports convergence
+while losing 98.44 % and 70.94 % of conserved mass.]
 
 <!-- reader glossary notes -->
 [^rg-0c875aff78a2]: tol — tolerance argument handed unchanged to the cuSOLVER QR solve; Python default 0, argument of `cuda_csr_solve_cusolver`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92)

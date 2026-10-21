@@ -41,32 +41,75 @@ The launcher `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) picks 
 of one cell:
 
 $$
-N_{\mathrm{thr}} = \min\left(32,\ \max\left(1,\ \left\lfloor M / b \right\rfloor\right)\right)
+N_{\mathrm{thr}} = \min\left(N_{\max},\ \max\left(1,\ \left\lfloor M / b \right\rfloor\right)\right)
 $$ {#eq-ch12-kernels-threads}
 
-and it stops with an error when $N_{\mathrm{thr}}\,b > M$, which happens exactly when $b > M$.
-@eq-ch12-kernels-threads is computed in `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}), with $M$
-from `get_max_dynamic_shared_memory` ({{< code src/loops.cuh get_max_dynamic_shared_memory >}}). That function takes
-the larger of the ordinary per-block limit and the opt-in limit the device reports.
+@eq-ch12-kernels-threads is computed in `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}),
+and it stops with an error when $N_{\mathrm{thr}}\,b > M$, which happens exactly when $b > M$. Both directions
+follow from the formula. If $b \le M$ then $\lfloor M/b \rfloor \ge 1$, so $N_{\mathrm{thr}} \le \lfloor M/b \rfloor$
+and $N_{\mathrm{thr}}\,b \le M$: no error. If $b > M$ then $\lfloor M/b \rfloor = 0$, the inner $\max$ raises it to
+1, and the requested $1 \cdot b$ already exceeds $M$.
 
-For the implicit kinetics step, `evolve_implicit_space`
-({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}) counts four $n_{\mathrm{s}}\times
-n_{\mathrm{s}}$ matrices and six vectors of length $n_{\mathrm{s}}$. Two of the matrices and two of the vectors come
-from the pseudo-inverse fallback, `psolve_space` ({{< code src/utils/alloc.h psolve_space >}}). Every allocation is
-rounded up to a multiple of 8 bytes, so in double precision (8 bytes per entry)
+Here $N_{\max}$ is the launcher's `Threads` template parameter, not a property of the hardware. It is **32 at every
+call site** at the code pin: the implicit kinetics step ({{< code src/kinetics/evolve_implicit_dispatch.cu
+call_evolve_implicit_cuda >}}) and the two saturation-adjustment drivers
+({{< code src/thermo/thermo_dispatch.cu call_equilibrate_tp_cuda >}} and `call_equilibrate_uv_cuda`) all instantiate
+`gpu_mem_kernel<32, ...>`, so $N_{\max} = 32$ throughout this chapter. A per-cell function that needs no scratch
+passes `work_size` $=0$; the launcher then skips the division and keeps the full $N_{\max}$, and
+@eq-ch12-kernels-threads, which divides by $b$, does not apply.
+
+$M$ comes from `get_max_dynamic_shared_memory` ({{< code src/loops.cuh get_max_dynamic_shared_memory >}}), cached
+once per device. It starts from the ordinary per-block limit `sharedMemPerBlock` and raises it to the opt-in limit,
+which it reads through the CUDA device attribute `cudaDevAttrMaxSharedMemoryPerBlockOptin`. It falls back to the
+device property `sharedMemPerBlockOptin` only when that query fails, and never lets either value *lower* the ordinary
+limit. The code's comment gives the reason: some runtimes report the property as 1, and taking it at face value would
+cap every block at a single byte.
+
+**Scratch bytes of the implicit step.** Two size functions contribute, and it matters which gives what:
+
+| source | matrices $n_{\mathrm{s}}\times n_{\mathrm{s}}$ | vectors of length $n_{\mathrm{s}}$ |
+|---|---|---|
+| `evolve_implicit_space` ({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}) | 2: `A`, `Alu` | 2: `sr`, `x` |
+| `psolve_space`, the pseudo-inverse fallback ({{< code src/utils/alloc.h psolve_space >}}) | 2: `ATA`, `V` | 4: `eval`, `vi`, `Avi`, `b0` |
+| total | 4 | 6 |
+
+: Scratch allocations of the per-cell implicit step. {#tbl-ch12-kernels-implicit-parts}
+
+Each allocation is rounded up on its own to a multiple of 8 bytes by `pool_allocation_bytes`
+({{< code src/utils/alloc.h pool_allocation_bytes >}}), matching the 8-byte alignment of the shared-memory block.
+Writing $\lceil x \rceil_8$ for that rounding and $s$ for the bytes of one entry, the scratch of one cell is
 
 $$
-\begin{aligned}
-b &= 4 \cdot 8\,n_{\mathrm{s}}^2 + 6 \cdot 8\,n_{\mathrm{s}} \\
-  &= 32\,n_{\mathrm{s}}^2 + 48\,n_{\mathrm{s}} .
-\end{aligned}
+b(n_{\mathrm{s}}, s) = 4\,\big\lceil s\,n_{\mathrm{s}}^2 \big\rceil_8 + 6\,\big\lceil s\,n_{\mathrm{s}} \big\rceil_8 .
 $$ {#eq-ch12-kernels-implicit-bytes}
 
-On a device with $M = 49152$ bytes, @eq-ch12-kernels-threads and @eq-ch12-kernels-implicit-bytes give
-$N_{\mathrm{thr}} = 32$ for $n_{\mathrm{s}} \le 6$, because $32 \cdot 36 + 48 \cdot 6 = 1440 \le 49152/32 = 1536$
-while $n_{\mathrm{s}} = 7$ gives 1904. They give a launch error for $n_{\mathrm{s}} \ge 39$, because
-$32 \cdot 39^2 + 48 \cdot 39 = 50544 > 49152$ while $n_{\mathrm{s}} = 38$ gives 48032. These numbers are arithmetic
-on the code; they have not been run (Limits).
+@eq-ch12-kernels-implicit-bytes is the sum of the allocations of `evolve_implicit_space`
+({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}). In double precision $s = 8$, every term is already a multiple of 8, the rounding does nothing, and
+
+$$
+b(n_{\mathrm{s}}, 8) = 4 \cdot 8\,n_{\mathrm{s}}^2 + 6 \cdot 8\,n_{\mathrm{s}}
+ = 32\,n_{\mathrm{s}}^2 + 48\,n_{\mathrm{s}} .
+$$ {#eq-ch12-kernels-implicit-bytes-double}
+
+That is the value `evolve_implicit_space`
+({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}) returns for `double`.
+In single precision $s = 4$ the rounding is not idle, and $b$ is **not** $16\,n_{\mathrm{s}}^2 + 24\,n_{\mathrm{s}}$.
+A term $4n_{\mathrm{s}}$ or $4n_{\mathrm{s}}^2$ is a multiple of 8 only when $n_{\mathrm{s}}$, respectively
+$n_{\mathrm{s}}^2$, is even, so each odd-sized allocation is padded by 4 bytes. At $n_{\mathrm{s}} = 3$, for example,
+@eq-ch12-kernels-implicit-bytes gives $4 \cdot 40 + 6 \cdot 16 = 256$ bytes against the 216 the unrounded expression
+would give. Single precision is not a side case: every C++ test built on `DeviceTest` runs in both precisions
+(Tests layer), so the block-size bounds below have to be read with the precision stated.
+
+On a device with $M = 49152$ bytes, in double precision, @eq-ch12-kernels-threads and
+@eq-ch12-kernels-implicit-bytes-double give $N_{\mathrm{thr}} = 32$ for $n_{\mathrm{s}} \le 6$, because
+$32 \cdot 36 + 48 \cdot 6 = 1440 \le 49152/32 = 1536$ while $n_{\mathrm{s}} = 7$ gives 1904 and so 25 threads. They
+give a launch error for $n_{\mathrm{s}} \ge 39$, because $32 \cdot 39^2 + 48 \cdot 39 = 50544 > 49152$ while
+$n_{\mathrm{s}} = 38$ gives 48032. `check_ch12_twins.py` recomputes both from the code's own allocation list: line g
+reads "implicit-step scratch from the size function equals 32 ns^2 + 48 ns for ns = 1..59 PASS", and line h reads
+"M=49152: threads ns=6 32, ns=7 25; launch error ns=38 False, ns=39 True (report: 32 up to 6, error from 39)
+PASS".[^ch12-kernels-check] $M = 49152$ is a value of one device generation, not a constant: the check fixes it to
+compare with this text, and a device with a larger opt-in limit moves both bounds. Neither the shrunken block nor
+the launch error has been run on a GPU (Limits).
 
 ### Numerical method
 
@@ -102,9 +145,9 @@ TODO: the walk-through for the saturation-adjustment kernels (`call_equilibrate_
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_cuda_workspace.py` | TP and UV saturation adjustment with shared-memory scratch, CUDA against CPU | TODO | TODO |
-| `test_alloc_space` | scratch sizes of the per-cell solvers | TODO | TODO |
-| `test_kinetics` | the implicit step on CUDA | TODO | TODO |
+| `test_cuda_workspace.py` | TP and UV saturation adjustment with shared-memory scratch, CUDA against CPU | `rtol=1e-10`, `atol=1e-14` | not stated in the test |
+| `test_alloc_space.release` | that three per-cell solvers stay *inside* their declared budget; not the budget's value | exact (a guard byte) | the pool guard |
+| `test_kinetics` | the implicit step on CUDA | exact status | the return code |
 
 : Tests of the CUDA element loops. {#tbl-ch12-kernels-tests}
 
@@ -112,6 +155,17 @@ All three pass in a CUDA build on a compute capability 6.1 GPU.[^ch12-kernels-ru
 $M$ is 49152 bytes, and the opt-in limit is the same, so @eq-ch12-kernels-threads applies with
 $M = 49152$.[^ch12-kernels-smem] No test covers a species count large enough to shrink the block or to reach the
 launch error.
+
+**What `test_alloc_space` does and does not cover.** It is easy to read its name as a check of
+@eq-ch12-kernels-implicit-bytes; it is not. It holds three typed cases, `leastsq_kkt_stays_in_budget`,
+`leastsq_kkt_feasible_origin_stays_in_budget` and `equilibrate_uv_stays_in_budget`, each of which runs the solver
+on a poisoned pool and asserts that a guard byte past the declared size is still intact. That is a containment
+statement: the solver does not write beyond what its size function promised. It does not assert that the size
+function returns the value this chapter derives, it does not touch `evolve_implicit_space` at all, and it is a plain
+typed test rather than a `DeviceTest`, so it runs on the host only and never checks a budget on CUDA. The equality
+in @eq-ch12-kernels-implicit-bytes-double is instead checked by `check_ch12_twins.py` line g, from the code's own
+allocation list, without a GPU.[^ch12-kernels-check] The alignment rule of @eq-ch12-kernels-implicit-bytes in single
+precision is checked by neither (Limits).
 
 [^ch12-kernels-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `ctest --timeout 1800
 --output-on-failure`, serial, in `build/tests` of a `-DCUDA=ON` Release build, two compute capability 6.1 GPUs; CUDA
@@ -127,11 +181,28 @@ same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python
 
 ::: {.callout-warning title="Limits"}
 - **Large species counts on small shared memory (hypothesis, not measured).** By
-  @eq-ch12-kernels-implicit-bytes, the implicit step on a 49152-byte device runs fewer than 32 threads per block for
-  more than 6 species and cannot launch for 39 species or more, in double precision. Neither the slowdown nor the
-  launch error has been run.
+  @eq-ch12-kernels-implicit-bytes-double, the implicit step on a 49152-byte device runs fewer than 32 threads per
+  block for more than 6 species and cannot launch for 39 species or more, in double precision. Both bounds are
+  arithmetic on the code, reproduced by `check_ch12_twins.py` line h; neither the slowdown nor the launch error has
+  been run on a GPU. Both move on a device with a larger opt-in limit.
+- **The single-precision scratch size is derived but unchecked.** @eq-ch12-kernels-implicit-bytes carries the
+  rounding for any entry size, but `check_ch12_twins.py` evaluates its helper only at $s = 8$ (line g, "ns = 1..59"),
+  so the 4-byte padding at odd $n_{\mathrm{s}}$, and the block-size bounds that follow from it in single precision,
+  are not covered by any committed check.
 :::
 
 - The comment in `gpu_mem_kernel` names a 64 KiB limit for one GPU generation. The limit is read from the device
   at run time, and 49152 bytes is measured on compute capability 6.1.
+- `test_alloc_space` is a containment test on the host, not a size equality and not a CUDA test (Tests layer).
 - TODO: the scratch formulas of the saturation-adjustment solvers, and the same bounds for them.
+  `check_ch12_twins.py` lines f-equilibrate_tp and f-equilibrate_uv already show that their size functions list 8 and
+  10 allocations matching the `pmalloc` sequences in order, which is the input such a derivation needs.
+
+[^ch12-kernels-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the check parses the
+source tree and calls `evolve_implicit`; run: `python derivation-checks/check_ch12_twins.py` from a scratch
+directory with `KINTERA_WT` set to a build tree at the pin; lines a to j PASS and line k INFO; CPU, double and
+single; supplied with the round-2 check bundle and committed here unchanged as the historical output at the pin, not
+re-run for this revision.]
+
+<!-- equation-check: eq-ch12-kernels-threads check_ch12_twins.py (h) -->
+<!-- equation-check: eq-ch12-kernels-implicit-bytes-double check_ch12_twins.py (g) -->

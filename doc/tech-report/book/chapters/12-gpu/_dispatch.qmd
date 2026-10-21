@@ -63,7 +63,23 @@ Each solver follows the same four steps:
    The CUDA driver is registered in the `.cu` file, for example `call_evolve_implicit_cuda`
    ({{< code src/kinetics/evolve_implicit_dispatch.cu call_evolve_implicit_cuda >}}).
 4. The CPU driver loops over cells with a host scratch buffer per chunk of cells. The CUDA driver launches one
-   thread per cell with a scratch buffer in shared memory (@sec-ch12-kernels).
+   thread per cell (@sec-ch12-kernels).
+
+**Two CUDA launch paths.** Step 4 is not one launcher but two, and which one a stub uses follows from whether its
+per-cell function needs scratch:
+
+| launcher | used by | threads per block | per-thread scratch |
+|---|---|---|---|
+| `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) | `call_evolve_implicit`, `call_equilibrate_tp`, `call_equilibrate_uv` | $N_{\mathrm{thr}}$ of @eq-ch12-kernels-threads, at most 32 | a slice of the block's dynamic shared memory |
+| `gpu_kernel` ({{< code src/loops.cuh gpu_kernel >}}) | `call_logsvp_inline`, `call_func1` to `call_func3` | 128, fixed | none |
+
+: The two CUDA launchers. {#tbl-ch12-dispatch-launchers}
+
+`gpu_kernel` forwards to torch's `launch_legacy_kernel<128, 1>` and passes the per-cell function only the data
+pointers and offsets. Its callers evaluate one closed-form expression per cell — a saturation curve or a named user
+function — so they allocate nothing and need no shared memory. Everything @sec-ch12-kernels says about block sizes,
+scratch bytes and the launch error applies to `gpu_mem_kernel` alone; the four stubs in the second row are
+unaffected by the species count.
 
 TODO: a figure of the call path (public function, tensor iterator, stub, CPU or CUDA driver, per-cell function).
 
@@ -168,11 +184,29 @@ and `call_func1` to `call_func3` ({{< code src/utils/utils_dispatch.cpp >}}).
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| `test_kinetics` | the implicit step runs on CPU and CUDA | TODO | TODO |
-| `test_cuda_workspace.py` | TP and UV saturation adjustment, CUDA against CPU | TODO | TODO |
-| `test_evaporation_general.py` | evaporation rate and Jacobian, CUDA against CPU | TODO | TODO |
+| `test_kinetics` | the implicit step runs on CPU and CUDA | exact status | the return code |
+| `test_cuda_workspace.py` | TP and UV saturation adjustment, CUDA against CPU | `rtol=1e-10`, `atol=1e-14` | not stated in the test |
+| `test_evaporation_general.py` | evaporation rate and Jacobian, CUDA against CPU | `rtol=1e-10`, `atol=1e-14` | not stated in the test |
 
 : Tests of device dispatch. {#tbl-ch12-dispatch-tests}
+
+The tolerances of the two comparison tests are double-precision ones. Both run in double only; what a single-precision
+comparison needs is the subject of the Limits layer.
+
+**What the twins share, checked without a GPU.** The agreement this chapter claims rests on the two drivers calling
+one per-cell function with the same arguments and the same workspace layout. `check_ch12_twins.py` checks that
+statically, from the source at the pin, so it passes on a machine with no GPU:[^ch12-kernels-check] line c reads
+"8 stubs, each with a CPU and a CUDA registration; missing [] PASS", line d "8 driver twins unpack the same pointers
+in the same data[] order; mismatches [] PASS", and line e "sentinel name swap: cpp 2, cu 2 (expected 2 and 2) PASS".
+The seven `f-` lines compare each size function with the `pmalloc` sequence of its per-cell solver, for example
+"(f-evolve_implicit) 4 pmalloc calls vs 4 size-function terms, same sizes in order: True PASS". Lines a and b cover
+the device function tables (@sec-ch12-device-functions) and lines i and j the per-cell implicit step itself, against
+a numpy solve (max relative difference $1.78\times10^{-13}$, tolerance $10^{-12}$) and against numpy's pseudo-inverse
+on a singular cell (exact agreement).
+
+Line k is reported as INFO, not as a pass: "float32 evolve_implicit vs float64 numpy: max rel diff 5.35e-05". It
+measures how far the single-precision per-cell step sits from an exact answer, which is the scale any
+single-precision CPU-CUDA comparison has to be read against; it is not itself a CUDA result.
 
 Every C++ test built on `DeviceTest` ({{< code tests/device_testing.hpp DeviceTest >}}) runs four times, on CPU and
 CUDA in single and double precision, and skips the CUDA instances when no GPU is present. In a CUDA build on a
@@ -224,11 +258,34 @@ each device, double precision, and prints the largest difference over the larges
   error leaves the process's CUDA context unusable. A `stoich` with fewer reaction columns than the rates is
   accepted silently, on CPU and on CUDA. A `stoich` of another precision raises a clear type
   error.[^ch12-dispatch-stoich]
+- **A `ftol` below single-precision resolution makes the convergence *status* device-dependent.** The agreement
+  this chapter reports is of returned values. The iteration *count*, and with it the success flag, is decided by a
+  stopping test on quantities of order $\epsilon_{\mathrm{mach}}$ apart on the two devices, and in single precision
+  $\epsilon_{\mathrm{mach}} \approx 1.2\times10^{-7}$. A saturation-adjustment run of `tests/jupiter.yaml` in
+  `float32` with `ftol` $= 10^{-12}$ — six orders of magnitude below that resolution — therefore puts the stopping
+  test in the noise: one cell of the sweep, at $T = 250.7538$ K and $10^5$ Pa, returns diagnostic 11 on the CPU and
+  $-2050$ on CUDA, that is, converged in 11 passes against not converged within 50. The composition still agrees:
+  the 17 mole fractions of that cell differ by at most $3.73\times10^{-9}$ in absolute value, inside the
+  $\texttt{atol} = 10^{-6}$, $\texttt{rtol} = 10^{-4}$ of the comparison. The returned gain does not, and follows
+  from the status rather than from the arithmetic: a converged solve returns the gain of the reactions within
+  $\pm\epsilon$ of saturation and a failed one the gain of its last active set (@sec-ch04-equilibrate-tp), so 15 of
+  its 64 entries fall outside the same tolerance. Raising `ftol` to $10^{-5}$, above the single-precision floor,
+  makes both devices return diagnostic 11 and brings the fractions to $1.86\times10^{-9}$.[^ch12-dispatch-ftol32]
+  This is a tolerance that cannot be met in the precision asked for, measured at one state on one pair of builds.
+  It is **not** evidence of a defect in either driver, and it says nothing about which status is the intended one;
+  what `ftol` should mean in single precision, and who owns that choice, are open.
 :::
 
 - The saturation-adjustment drivers also read `stoich` through a raw pointer (`call_equilibrate_tp_cuda`,
   {{< code src/thermo/thermo_dispatch.cu call_equilibrate_tp_cuda >}}). A `ThermoX` left on the host with CUDA inputs
   ends the process with the same illegal memory access (@tbl-ch12-dispatch-contract).
+- **The absent-gas exit path has been surveyed on the CPU only.** `call_equilibrate_tp_cuda` runs the same per-cell
+  `equilibrate_tp` as the CPU driver, including the exit pass whose activity test and weights differ from those of
+  the iteration when a reaction's gas is exactly zero (@sec-ch04-equilibrate-tp, Limits). A survey of the in-tree
+  nucleation decks found 14688 converged states with an absent gas and no disagreement between the returned gain and
+  a finite-difference $\mathrm d\xi_r/\mathrm dT$ there, but that survey was **CPU and double precision throughout**;
+  it is a sampled result on a grid, not a proof, and the CUDA leg of it has not been run.[^ch12-dispatch-absent] It
+  is therefore not evidence that the two devices agree on those states.
 
 [^ch12-dispatch-move]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and a
 two-species gas `A <=> B`; run: `python -P src/kintera_report/ch12/runs/device_probe.py <case>` with `KINTERA_REPO`
@@ -243,6 +300,24 @@ kintera checkout at the pin, CPU, double; torch 2.10.0+cu126, Python 3.11.13.]
 `tests/test_coagulation_pressure_switch.py`; run: `python -P ei_case.py cuda ok` against a `-DCUDA=OFF` build, which
 calls `evolve_implicit` on CUDA tensors;
 torch 2.10.0+cu126, Python 3.11.13.]
+
+[^ch12-dispatch-ftol32]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, the
+single cell at $T = 250.75376892089844$ K and $10^5$ Pa of a 45-cell sweep, `float32`, `max-iter` 50; run:
+`ThermoX.forward` on CPU and on CUDA tensors of the same inputs, once with `ftol: 1.e-12` and once with
+`ftol: 1.e-5`, comparing diagnostics, the 17 mole fractions and the 64 gain entries at
+$\texttt{atol} = 10^{-6}$, $\texttt{rtol} = 10^{-4}$; at `1.e-12` the diagnostics are 11 (CPU) and $-2050$ (CUDA),
+fractions differ by at most $3.73\times10^{-9}$ with 0 entries outside tolerance and the gain by up to 5110 with 15
+of 64 outside; at `1.e-5` both diagnostics are 11 and the fractions differ by at most $1.86\times10^{-9}$; one pair
+of builds, one state, not a sweep over states or devices; a measurement outside the suite, not a committed check.]
+
+[^ch12-dispatch-absent]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: `tests/jupiter.yaml`,
+`tests/earth.yaml` and `examples/jupiter_kcl_mgsio3.yaml` over 110 to 1600 K and $10^2$ to $10^7$ Pa, five vapour
+amounts and every one- and two-vapour-zeroed variant, 12750 cells; run: `ThermoX.forward` with `max-iter` 400 and
+`ftol` $10^{-13}$, CPU, double, comparing the returned gain converted through `effective_cp`'s own least-squares
+solve with a finite-difference $\mathrm d\xi_r/\mathrm dT$; 14790 absent-gas reaction instances, 14688 at a
+converged exit, none with a live condensate or a non-zero gain row; `tests/jup-thermo.yaml` could not be loaded
+through `ThermoX`; CPU and double precision only, no CUDA leg; a measurement outside the suite, not a committed
+check.]
 
 [^ch12-dispatch-stoich]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML input of
 `tests/test_coagulation_pressure_switch.py`, 64 cells; run: `python -P ei_case.py cuda cpu`, `python -P ei_case.py

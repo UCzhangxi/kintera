@@ -113,7 +113,15 @@ make_fig()
 
 The CUDA instance of `test_documented_native_curves` would catch a shifted device table for those 11 names: a shift
 returns another curve's values. It passes on a CUDA build, and its CUDA instance skips on a CPU build.[^ch12-devfn-test]
-No test evaluates the `_ddT` entries on CUDA, and none checks that the three lists have the same length and order.
+No test evaluates the `_ddT` entries on CUDA.
+
+The length-and-order property that no test covers is checked instead by `check_ch12_twins.py`, statically and with
+no GPU: line a reads "func1: 22 names, 22 host, 23 device slots; host==names True, device==[nullptr]+names True
+PASS", which is @eq-ch12-device-functions-index asserted over the whole table rather than over the 11 named curves,
+and line b, "func2/func3: host []/[], device ['nullptr']/['nullptr'] PASS", records that the two- and
+three-argument tables hold only the placeholder at the pin.[^ch12-kernels-check] A check that reads the source
+cannot replace the runtime test: it would not catch a device table whose *entries* point at the wrong functions,
+only one whose names or length disagree.
 
 [^ch12-devfn-test]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the curve catalogue of
 `docs/reaction_catalogue.py`; run: `python -m pytest -q "tests/test_reaction_equilibrium.py::test_documented_native_curves"`
@@ -143,6 +151,8 @@ build, so that only the CPU library and its tables change, then `python -P probe
 evaluates $\ln K$ at 250 K and 300 K through `relative_humidity` on CPU and CUDA tensors; source restored and the
 library rebuilt bit-identical afterwards; GeForce GTX 1080 Ti, CUDA 12.6.85, GCC 11.5.0, torch 2.10.0+cu126,
 Python 3.11.13.]
+
+<!-- equation-check: eq-ch12-device-functions-index check_ch12_twins.py (a) -->
 
 <!-- reader glossary notes -->
 [^rg-d2b95ba9579e]: formula — name of the saturation vapour pressure function of a nucleation or evaporation entry; required; stored in `logsvp`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/thermo/nucleation.cpp#L68-L72)

@@ -14,16 +14,21 @@ the CPU when the tensors live in host memory and on an NVIDIA GPU when they live
 explains how one call reaches the right code, how the CUDA kernels lay out their work, how much memory each GPU
 thread needs, how to build the CUDA library, and how far CPU and CUDA results agree.
 
-TODO (structure draft): a dependency-map figure of the five schemes (build enables the CUDA kernels; dispatch
-selects them; the element loops and their workspaces run them; the device function tables and the sparse solver are
-CUDA back ends of other chapters' schemes).
+The five schemes depend on each other in one direction: the build (@sec-ch12-build) enables the CUDA kernels;
+dispatch (@sec-ch12-dispatch) selects them from the inputs' device; the element loops and their workspaces
+(@sec-ch12-kernels) run the per-cell solvers that dispatch chose; and the device function tables
+(@sec-ch12-device-functions) and the sparse solver (@sec-ch12-sparse-solver) are CUDA back ends of schemes derived
+in other chapters. What the CPU and CUDA sides must share, and what `check_ch12_twins.py` checks statically at the
+code pin, is listed in @sec-ch12-dispatch, Tests.
+
+TODO: the dependency-map figure of those five schemes.
 
 | scheme | option | default | main test |
 |---|---|---|---|
 | @sec-ch12-build | `-DCUDA=ON` | off | `test_cuda_workspace.py` |
 | @sec-ch12-dispatch | device of the inputs | CPU | `test_kinetics` |
 | @sec-ch12-kernels | always on CUDA | on CUDA | `test_cuda_workspace.py` |
-| @sec-ch12-device-functions | always on CUDA | on CUDA | missing evidence |
+| @sec-ch12-device-functions | always on CUDA | on CUDA | `test_reaction_equilibrium.py` |
 | @sec-ch12-sparse-solver | always on CUDA | on CUDA | `test_atm2d.py` |
 
 : Schemes of this chapter. {#tbl-ch12-schemes}

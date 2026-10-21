@@ -1,4 +1,4 @@
-"""Shared setup for the Q346b checks: kintera built at 0d9f67f (v2.6.5)."""
+"""Shared setup for the round-2 derivation checks: kintera built at 0d9f67f (v2.6.5)."""
 import os
 import sys
 import warnings

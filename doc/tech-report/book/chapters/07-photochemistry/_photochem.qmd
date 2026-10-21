@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/photochem/photochem.cpp, src/photochem/photolysis.cpp, src/photochem/jacobian_photolysis.cpp, tests/test_ch4_photolysis.cpp, tests/test_photolysis_kinetics.cpp
+sources: src/photochem/photochem.cpp, src/photochem/photolysis.cpp, src/photochem/jacobian_photolysis.cpp, tests/test_ch4_photolysis.cpp, tests/test_photolysis_kinetics.cpp, python/atm2d/chemistry.py, data/ch4_photolysis.yaml
 status: draft
 author: XinyueWang05
 reviewer: requested
@@ -31,25 +31,80 @@ weight the branches by their share of the rate, or map rates into a species-spac
 
 Local symbols: $r_j$, rate of reaction $j$ [$\mathrm{mol\,m^{-3}\,s^{-1}}$]; $c_n$, molar concentration of species $n$
 [$\mathrm{mol\,m^{-3}}$] (as in @sec-appa); $\nu_{nj}$, reactant coefficient of species $n$ in reaction $j$ [-]; $f_b$, share of branch
-$b$ in the branch-weighted rate [-].
+$b$ in the branch-weighted rate [-]; $s_b$, composition of branch $b$, a vector over species ($s_0$ the reactant) [-];
+$A_{en}$, number of atoms of element $e$ in species $n$ [-]; $S$, stoichiometric matrix of the equations [-].
 
 ### Derivation
 
-The reaction rate and its reaction-space Jacobian are
+**Step 1, first-order loss of the absorber.** By @eq-ch07-rate-dissociative, each molecule of the absorber $A$ of
+reaction $j$ dissociates at the rate $J_j$ per second, independently of the others, so the number destroyed per unit
+volume per second is $r_j = J_j c_A$. $J_j$ depends on the flux and, through $\sigma(T)$, on temperature, but not on
+any concentration.
+
+**Step 2, the general form and the power rule.** The code writes the rate as a mass-action product over the reactant
+coefficients $\nu_{nj}$ of the equation, which reduces to $J_j c_A$ for the usual one-molecule absorber. Differentiating
+the product with respect to one concentration, by the power rule, gives
 
 $$
 \begin{aligned}
 r_j &= J_j \prod_n c_n^{\nu_{nj}} ,\\
-\frac{\partial r_j}{\partial c_m} &= \nu_{mj}\, \frac{r_j}{c_m} .
+\frac{\partial r_j}{\partial c_m} &= J_j\, \nu_{mj}\, c_m^{\nu_{mj} - 1} \prod_{n \ne m} c_n^{\nu_{nj}}
+= \nu_{mj}\, \frac{r_j}{c_m} .
 \end{aligned}
 $$ {#eq-ch07-photochem-rate}
 
 @eq-ch07-photochem-rate is computed in `forward` and `jacobian`
 ({{< code src/photochem/photochem.cpp PhotoChemImpl::forward >}},
-{{< code src/photochem/photochem.cpp PhotoChemImpl::jacobian >}}). $J_j$ does not depend on $c$, so the Jacobian has no
-rate-constant term; it has no temperature term either.
+{{< code src/photochem/photochem.cpp PhotoChemImpl::jacobian >}}), with every $c$ floored at $10^{-300}$ so that the
+division is defined. Because $J_j$ does not depend on $c$, the Jacobian has no rate-constant term.
 
-The branch-weighted stoichiometry of one reaction is
+**Step 3, no temperature column.** `jacobian` returns $\partial r/\partial c$ at fixed $T$ only. $J_j$ does depend on
+$T$, through the cross sections, but only through the cache that `update_xs_diss_stacked(T)` fills; the caller
+refreshes it when $T$ changes, and no $\partial r/\partial T$ is formed. A caller that treats $T$ as an unknown of an
+implicit step gets no photolysis term in the temperature column.
+
+**Step 4, species space.** The species tendency is $\mathrm d c_n/\mathrm dt = \sum_j S_{nj} r_j$ with the stoichiometric
+matrix $S$ of `PhotoChem.stoich`, so its Jacobian is $S\, (\partial r/\partial c)$. The atm2d solver forms exactly this
+product in `build_photochemistry_jacobian`
+({{< code python/atm2d/chemistry.py build_photochemistry_jacobian >}}).
+
+**Check (steps 1–2).** `derivation-checks/check_ch07_photolysis.py` evaluates `PhotoChem.forward` and `jacobian` for
+`H2O => OH + H` at 250 K and compares the Jacobian with a central difference of `forward` in each
+concentration.[^ch07-check-pc]
+
+```text
+[e1] rel |r - J c_H2O|: 1.110e-16 (tol 1e-13) PASS
+[e2] max |dr/dc (jacobian) - central FD| / |dr/dc_H2O|: 1.389e-11 (tol 1e-08) PASS
+```
+
+<!-- equation-check: eq-ch07-photochem-rate check_ch07_photolysis.py [e2] -->
+
+**Channel stoichiometry and element conservation.** Which species does one photolysis event remove and create? Four
+steps.
+
+*Step 1.* Channel $b$ turns one absorber into the composition $s_b$ of branch $b$ (a vector over species); branch 0
+holds the reactant composition $s_0$. One event in channel $b$ changes the concentrations by $s_b - s_0$.
+
+*Step 2.* Let $A$ be the atom matrix, $A_{en}$ the number of atoms of element $e$ in species $n$. A channel conserves
+every element if and only if
+
+$$
+A\, (s_b - s_0) = 0 .
+$$ {#eq-ch07-photochem-balance}
+
+No code tests @eq-ch07-photochem-balance: `reset` ({{< code src/photochem/photochem.cpp PhotoChemImpl::reset >}}) builds
+the stoichiometry without comparing atoms, and the readers do not compare the branches.
+
+*Step 3.* Channel $b$ carries the fraction $f_b = J_b / J$ of the events (@sec-ch07-rate), so the correct tendency of a
+reaction is
+
+$$
+\frac{\mathrm d c}{\mathrm d t} = \sum_j \sum_{b \ge 1} J_{jb}\, c_{A_j}\, (s_{jb} - s_{j0})
+= \sum_j r_j \sum_{b \ge 1} f_{jb}\, (s_{jb} - s_{j0}) .
+$$
+
+A weighted sum of columns that each satisfy @eq-ch07-photochem-balance satisfies it too, so this tendency conserves
+atoms whenever every branch does. `get_effective_stoich` computes a related weighted composition,
 
 $$
 \begin{aligned}
@@ -58,11 +113,40 @@ f_b &= \frac{\int \sigma_b F\, \mathrm d\lambda}{\sum_{b'} \int \sigma_{b'} F\, 
 \end{aligned}
 $$ {#eq-ch07-photochem-effective}
 
-with $s_{bn}$ the composition of branch $b$. @eq-ch07-photochem-effective is computed in `get_effective_stoich`
-({{< code src/photochem/photolysis.cpp PhotolysisImpl::get_effective_stoich >}}). The sum over $b'$ includes the
-absorption branch 0, whose composition is the reactant. Verified by a run[^ch07-eff-src]: for `O2 => O + O` with the
+computed in `get_effective_stoich` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::get_effective_stoich >}}).
+Its sum over $b'$ includes branch 0 with the stored column 0. Under the column convention of @sec-ch07-rate that column
+is the total absorption, so the denominator counts the dissociating absorption twice, once in column 0 and once in
+the channels; the share of step 3 needs the non-dissociating part $\sigma_0 - \sum_{b \ge 1} \sigma_b$ as the weight
+of branch 0 instead (row K18, whose fix weights branch 0 by that remainder). Verified by a run[^ch07-eff-src]: for `O2 => O + O` with the
 rows of @sec-ch07-rate, the result is $\bar s = (0.727, 0.545, 0)$ for $(\mathrm{O_2}, \mathrm{O}, \mathrm{O_3})$. Only a
 test calls this function; `PhotoChem` does not.
+
+*Step 4, what the code books.* `PhotoChem` does not use the branches. Its `stoich` is products minus reactants of the
+equation ({{< code src/photochem/photochem.cpp PhotoChemImpl::reset >}}), so every event of every channel is booked as
+the equation's products, $\mathrm dc/\mathrm dt = S r$, in `PhotoChem` and in the atm2d assembly. This
+conserves atoms only if the equation itself balances, and it gives the wrong product shares whenever the channels
+differ from the equation (S7-1, row K22).
+
+**Check (channel balance).** The same script computes $A$ times each column for the `H2O` card, with branches
+`OH:1 H:1` and `H2:1 O:1`, and for the equation and branches of the in-tree deck `data/ch4_photolysis.yaml`, copied
+into a deck with inline cross sections because that deck has no `reference-state` and needs a KINETICS7 file that
+is not in the tree.[^ch07-check-stoich]
+
+```text
+[f1] max |atoms @ stoich| for 'H2O => OH + H': 0.000e+00 (tol 0e+00) PASS
+[f2] max |atoms @ (branch_b - reactant)| over branches 1, 2: 0.000e+00 (tol 0e+00) PASS
+[f3] channel 2 (H2 + O) carries 0.213 of J but PhotoChem.stoich books it as OH + H (S7-1, quantified) INFO
+[g] max |atoms @ stoich| of 'CH4 => CH4 + CH3 + ...' (C, H) = (4, 11); stoich[CH4] = 0: 1.100e+01 (tol 0e+00) EXPECTED-FAIL  (S7-1)
+[g2] max |atoms @ (branch_b - CH4)| over the four product branches of the same deck: 0.000e+00 (tol 0e+00) PASS
+```
+
+`[f1]` and `[f2]`: for `H2O` the equation and both channels balance, yet `[f3]` shows that 21.3 % of the events are
+booked as the wrong products. `[g]` and `[g2]`: the four product branches of the CH4 deck balance, but its equation
+`CH4 => CH4 + CH3 + (1)CH2 + (3)CH2 + CH + H2 + H` lists CH4 on both sides and every channel's products at once, so
+one booked event creates 4 C and 11 H atoms and consumes no CH4. `[g]` is an expected failure that documents S7-1
+(row K22). The defect is latent in the tree: the CH4 deck cannot be loaded as it stands, and no in-tree deck or
+test runs a branched reaction through `PhotoChem`.
+<!-- equation-check: eq-ch07-photochem-balance check_ch07_photolysis.py [g2] -->
 
 ### Numerical method
 
@@ -71,7 +155,11 @@ the equation) and the reactant orders, then creates the `Photolysis` module. `fo
 and multiplies by the floored concentration product; it does not refresh the cross-section cache, so the caller
 calls `update_xs_diss_stacked` first. The species-space helper `jacobian_photolysis_species`
 ({{< code src/photochem/jacobian_photolysis.cpp jacobian_photolysis_species >}}) returns
-$\sum_r S_{nr}\, x_r\, \nu_{mr} / c_m$ for an input $x_r$ that its comment calls the rate constant.
+$\sum_r S_{nr}\, x_r\, o_{mr} / c_m$ for an input $x_r$ that its comment calls the rate constant, with the order
+$o_{mr} = \max(-S_{mr}, 0)$ taken from the net stoichiometry $S$, not the reactant coefficient $\nu_{mr}$. The two agree
+only when no species appears on both sides of the equation: for `CH4 => CH4 + CH3` the net coefficient of CH4 is 0,
+so its column is zero, where the reactant order is 1 (measured with a C++ driver against the pin's library: the
+helper gives $\partial \dot c_{\mathrm{CH_3}}/\partial c_{\mathrm{CH_4}} = 0$ for a true $10^{-5}$).[^ch07-jac-src]
 
 The figure of the call order is not provided: the figure module is not written yet.
 
@@ -97,19 +185,42 @@ The figure of the call order is not provided: the figure module is not written y
 | `test_ch4_photolysis` | effective stoichiometry has one entry per species | exact | shape only |
 | `test_ch4_photolysis` | species Jacobian signs for $A \to B$ | sign | the test |
 | `test_chapman_cycle` | forward rates and Jacobian are consistent | missing evidence | not yet read |
+| check (`check_ch07_photolysis.py`) | @eq-ch07-photochem-rate against a central difference (`[e1]`, `[e2]`); @eq-ch07-photochem-balance for the equation and the branches of two decks (`[f1]`, `[f2]`, `[g2]`; `[g]` EXPECTED-FAIL, S7-1, K22) | $10^{-13}$, $10^{-8}$ rel.; exact | round-off; central-difference error |
 
 : Tests of photolysis reaction rates. {#tbl-ch07-photochem-tests}
 
 ### Limits
 
-Open questions, not tested:
-
-- For a branched reaction, `stoich` comes from the equation. `data/ch4_photolysis.yaml` lists every branch product in
-  one equation, so one photolysis event would produce all of them. Whether the branch weights of
-  @eq-ch07-photochem-effective should replace `stoich` is a chemistry question.
+- For a branched reaction, `stoich` comes from the equation, so every channel is booked as the equation's products
+  (step 4 of the channel derivation, S7-1, row K22). The correct tendency weights the branch columns by their
+  share of $J$ (step 3). `data/ch4_photolysis.yaml` lists every channel product and CH4 itself in one equation:
+  measured in check line `[g]`, one booked event creates 4 C and 11 H atoms and consumes no CH4. Latent in the tree.
 - `jacobian_photolysis_species` equals $\partial (\mathrm d c_n/\mathrm dt)/\partial c_m$ only if its input is the
-  reaction rate $J c$; with the rate constant, as its comment says, the result is too small by a factor $c_m$. The
-  only test checks signs.
+  reaction rate $J c$ and no species appears on both sides of an equation; with the rate constant, as its comment
+  says, the result is too small by a factor $c_m$, and a species on both sides gets a zero column (Numerical method).
+  The only test checks signs. The atm2d route of step 4 does not use this helper.
+- `get_effective_stoich` weights branch 0 by the stored column 0, the total absorption, instead of the
+  non-dissociating part, so its shares are not the event shares of step 3 (row K18).
+
+[^ch07-check-pc]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the `H2O => OH + H` card inside the
+    script, $c = (2 \times 10^{-2}, 10^{-4}, 3 \times 10^{-4}, 5 \times 10^{-5}, 10^{-6})\ \mathrm{mol\,m^{-3}}$ for
+    (H2O, OH, H, H2, O), step $10^{-6} c_m$; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch07_photolysis.out` lines `[e1]`, `[e2]`.]
+
+[^ch07-check-stoich]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: the `H2O => OH + H` card inside
+    the script, and the first reaction and species of `data/ch4_photolysis.yaml` at the pin with inline cross
+    sections of $10^{-18}$ on three nodes; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch07_photolysis.out` lines `[f1]`–`[g2]`; `[g]` is EXPECTED-FAIL by design (S7-1, #54
+    row K22).]
+
+[^ch07-jac-src]: [source: a C++ driver linked against libkintera built from the pin, calling
+    `jacobian_photolysis_species` for `A => B` with $k = 10^{-5}\ \mathrm{s^{-1}}$ and $c_A = 10^3$ (input $k$: $-10^{-8}$;
+    input $k c_A$: $-10^{-5}$, the exact value) and for `CH4 => CH4 + CH3` with input $k c$; CPU, float64, torch 2.10.0.
+    A probe of the round-2 read, not a committed check script.]
 
 [^ch07-eff-src]: [source: the run of @sec-ch07-rate, `Photolysis.get_effective_stoich(0, wavelength, F, T)`;
     kintera 2.6.5 built from the pin, torch 2.10.0, Python 3.12.10.]

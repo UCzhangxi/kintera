@@ -42,7 +42,48 @@ x = \sum_{i:\ \lambda_i > \epsilon_\lambda} \frac{u_i^{\mathrm T} b}{\sigma_i}\,
 $$ {#eq-ch10-pseudo-inverse-sum}
 
 where the threshold is $\epsilon_\lambda = 10^{-12} \lambda_0$ when $\lambda_0 > 0$ and $10^{-12}$ otherwise.
-@eq-ch10-pseudo-inverse-sum is computed in `psolve` ({{< code src/math/psolve.h psolve >}}).
+@eq-ch10-pseudo-inverse-sum is computed in `psolve` ({{< code src/math/psolve.h psolve >}}). Four steps derive it
+and state its limits.
+
+*Step 1: the sum from the singular value decomposition.* Write $\mathsf A = \mathsf U\Sigma\mathsf V^{\mathrm T}$
+with orthonormal $\mathsf U$, $\mathsf V$. Then
+
+$$
+\mathsf A^{\mathrm T}\mathsf A = \mathsf V\Sigma^2\mathsf V^{\mathrm T} , \qquad
+\mathsf A v_i = \sigma_i u_i , \qquad
+\mathsf A^{+} b = \sum_{\sigma_i > 0} \frac{u_i^{\mathrm T} b}{\sigma_i}\, v_i ,
+$$ {#eq-ch10-pseudo-inverse-svd}
+
+so the eigenvectors of $\mathsf A^{\mathrm T}\mathsf A$ are the right singular vectors, its eigenvalues are
+$\lambda_i = \sigma_i^2$, and each left vector follows as $u_i = \mathsf A v_i/\sigma_i$. The last expression is the
+minimum-norm least-squares solution; `psolve` evaluates it with the left vectors computed this way.
+
+*Step 2: the cut-off in terms of $\sigma$.* Keeping $\lambda_i > 10^{-12}\lambda_0$ is keeping
+$\sigma_i > 10^{-6}\sigma_{\max}$, the same as `numpy.linalg.pinv` with `rcond` $= 10^{-6}$. Working with
+$\mathsf A^{\mathrm T}\mathsf A$ squares the condition number, which is why the cut is $10^{-12}$ in $\lambda$.
+
+*Step 3: the rotation budget.* A classical Jacobi rotation on the largest off-diagonal pair reduces the sum of squares
+of the off-diagonal entries by at least the factor $1 - 2/(n(n-1))$ (Golub and Van Loan 2013, section
+8.5).[^ch10-pinv-refs] That bound is a worst case. In practice Jacobi converges quadratically once the off-diagonal
+part is small, after a few sweeps of $n(n-1)/2$ rotations each. The loop allows 100 rotations in total: about three
+and a half sweeps at $n = 8$ (28 rotations per sweep) but under one sweep at $n = 16$ (120 per sweep). The eigen-solve
+is therefore converged only for small $n$, and the cap is reached silently.
+
+*Step 4: the absolute stop.* The loop stops when the largest off-diagonal entry is below $10^{-12}$ in absolute
+terms. If all entries of $\mathsf A^{\mathrm T}\mathsf A$ are small (entries of $\mathsf A$ below about $10^{-6}$),
+the loop stops at once and the diagonal is taken as the eigenvalues, so the result depends on the units of
+$\mathsf A$.
+
+`check_ch10_dense.py` compares `psolve` with `numpy.linalg.pinv`:[^ch10-pinv-check]
+
+- "(g1) psolve n=4 full rank rel err 3.9e-13; rank-3 4x4 vs pinv (cut sigma/sigma_max 1e-6) 1.7e-14 (tol 1e-8) PASS"
+- "(g2) psolve vs pinv, worst of 5 well-conditioned matrices per n: n=6 1.1e-13, n=8 3.1e-12, n=10 2.6e-02, n=12
+  9.9e-01, n=16 1.0e+00 (tol 1e-8) EXPECTED-FAIL (S10-2: 100 Jacobi rotations in total)", row K21 of the defect list
+- "(g3) psolve on A scaled by s (exact answer unchanged): s=1e-03 8.5e-08, s=1e-06 2.5e-01, s=1e-07 8.7e-01, s=1e-09
+  8.7e-01 (tol 1e-8) EXPECTED-FAIL (S10-3: absolute 1e-12 off-diagonal stop)", row K21
+
+The only caller is the exact-zero-pivot fallback of the implicit kinetics step (@sec-ch10-dense, step 4), which no
+in-tree deck, example or test reaches at the pin.
 
 ### Numerical method
 
@@ -80,8 +121,23 @@ No test at the pin calls `psolve` or reaches the singular branch knowingly (sear
 ### Limits
 
 - The loop variable is called `sweep`, but each pass applies one rotation, so `max_sweeps = 100` caps the rotations
-  at 100 ({{< code src/math/psolve.h jacobi_eigen_symmetric >}}). A cyclic Jacobi sweep of an $n \times n$ matrix has
-  $n(n-1)/2$ rotations. Whether 100 rotations suffice for the species counts in use is a hypothesis, not measured.
+  at 100 ({{< code src/math/psolve.h jacobi_eigen_symmetric >}}). The result is wrong for $n \ge 10$ (relative error
+  $2.6\times10^{-2}$ at $n = 10$, 0.99 at $n = 12$, step 3; row K21).[^ch10-pinv-k21]
 - The stopping test ($10^{-12}$) and the clean-up of negative eigenvalues ($10^{-14}$) are absolute, not relative to
-  the size of the entries. Their effect for badly scaled matrices is not measured.
+  the size of the entries; for $\mathsf A$ scaled by $10^{-6}$ the relative error is 0.25 (step 4; row K21).
 - Convergence is not reported: the loop ends silently at the rotation limit.
+
+[^ch10-pinv-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the script builds its matrices and compiles
+the pinned headers of `src/math` into a scratch shared library called through ctypes; run: `python
+derivation-checks/check_ch10_dense.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
+committed output `derivation-checks/check_ch10_dense.out`: 15 PASS, 0 FAIL, 5 EXPECTED-FAIL; a rerun on a clean
+v2.6.5 build (x86_64, GCC 11.5.0, Python 3.11.13, numpy 2.4.6) gives the same verdicts, with round-off differences
+in the quoted numbers.]
+
+[^ch10-pinv-refs]: [source: G. H. Golub and C. F. Van Loan, Matrix Computations, 4th ed., Johns Hopkins University
+Press (2013), section 8.5 (Jacobi methods).]
+
+[^ch10-pinv-k21]: [source: UCzhangxi/kintera issue #54, row K21 (spec suspects S10-2, S10-3).]
+
+<!-- equation-check: eq-ch10-pseudo-inverse-sum check_ch10_dense.py (g1) -->
+<!-- equation-check: eq-ch10-pseudo-inverse-svd check_ch10_dense.py (g1) -->

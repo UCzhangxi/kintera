@@ -37,7 +37,19 @@ through unchanged.
 
 No derivation: the factorization is the library's sparse QR, called through `cusolverSpDcsrlsvqr` or
 `cusolverSpScsrlsvqr` in `cuda_csr_solve_cusolver` ({{< code src/math/sparse_solver.cu cuda_csr_solve_cusolver >}}).
-kintera adds the argument checks and the context handling.
+kintera adds the argument checks and the context handling. Two facts about the arguments matter to a user. The
+library's `tol` decides when a diagonal entry of the triangular factor counts as zero. With the Python default
+`tol` = 0 only an exactly zero entry does, so a numerically singular system is solved without an error. A
+sparse-against-dense comparison is the natural check, and it can only run on a GPU.
+
+Measured on the CUDA build at the pin (GTX 1080 Ti, float64):[^ch10-sparse-run]
+
+- random diagonally dominant CSR systems of size 10, 100 and 1000 (densities 0.3, 0.05, 0.005), five each: the sparse
+  QR solution agrees with `torch.linalg.solve` to a relative $7.9\times10^{-16}$, $1.1\times10^{-15}$ and
+  $1.6\times10^{-15}$;
+- a 3 by 3 matrix with two equal rows: with `tol` = 0 and a consistent right-hand side it returns a solution
+  silently; with an inconsistent right-hand side it returns a finite $x$ of size $10^{16}$ (residual 3.7) with no
+  error; with `tol` = $10^{-12}$ it raises "cusolver sparse solve detected singularity at row 2".
 
 ### Numerical method
 
@@ -80,7 +92,15 @@ record is attached in this draft (missing evidence).
 - One system per call; batched or multi-device solves are not supported.
 - Only int32 indices are accepted, which bounds the number of nonzeros to $2^{31} - 1$.
 - The checks read the last CSR offset with `.item()`, which copies one value from the device.
-- `tol` is passed as a float for float32 systems; its meaning is the library's and is not restated here.
+- `tol` is passed as a float for float32 systems. With the default 0, a singular system is not reported: an
+  inconsistent one returns a finite but meaningless $x$ (above).
+
+[^ch10-sparse-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, random CSR systems
+(torch seed 0) and a 3 by 3 rank-deficient matrix; run: `python -P src/kintera_report/ch10/runs/sparse_vs_dense.py`
+with the `-DCUDA=ON` build at the pin installed, which calls `kintera.cuda_csr_solve_cusolver` against
+`torch.linalg.solve`; GTX 1080 Ti, CUDA 12.6, torch 2.10.0+cu126; the in-tree
+CUDA cases of `tests/test_atm2d.py` (`-k "cusolver or cuda"`) pass on the same build (4 passed); a measurement
+outside the suite, not a committed check.]
 
 <!-- reader glossary notes -->
 [^rg-ae97af8e8ad8]: CSR — compressed sparse row; the sparse-matrix layout passed to `cuda_csr_solve_cusolver`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92)

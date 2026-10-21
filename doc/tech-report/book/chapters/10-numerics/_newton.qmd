@@ -42,8 +42,10 @@ $$
 c_i\, p \le 0 ,
 $$ {#eq-ch10-newton-usable}
 
-that is, unless it points out of a bound with no slack left. A bound with slack ($d_i > 0$) does not reject the
-direction, because a positive step scale can still keep it. @eq-ch10-newton-usable is tested in
+that is, unless it points out of a bound with no slack left. The reason is one line. Along the direction the
+constraint value grows as $c_i(z + s\,p) = c_i z + s\,c_i p$, so a row with slack $d_i > 0$ and $c_i p > 0$ is still
+met for every scale $s \le d_i/(c_i p)$, which the caller's step reduction can reach. A row with no slack,
+$d_i \le 0$, and $c_i p > 0$ is crossed by every $s > 0$; only such rows send the step to the constrained solve. @eq-ch10-newton-usable is tested in
 `constrained_newton_step` ({{< code src/math/constrained_newton.h constrained_newton_step >}}). Otherwise the step
 solves $\min \lVert \mathsf J p - g \rVert$ with $\mathsf C p \le d$ by `leastsq_kkt` with no equality rows.
 
@@ -87,9 +89,20 @@ yet.
 
 : Tests of the bounded Newton step. {#tbl-ch10-newton-tests}
 
-The cases are in {{< code tests/test_thermo.cpp >}}. No run record is attached in this draft (missing evidence).
+The cases are in {{< code tests/test_thermo.cpp >}}. `check_ch10_dense.py` checks both branches: "(j)
+constrained_newton_step: bounds with slack keep the direct solve (status 0, iters 1, diff 1.1e-16); zero-slack bounds
+crossed -> KKT (status 0, diff to brute force 1.4e-17) (tol 1e-10) PASS".[^ch10-newton-check]
 
 ### Limits
 
 - A direction may leave a bound with slack; only the caller's step reduction keeps the state feasible.
 - The fallback ignores the direct solution and starts the active-set solve from scratch.
+
+[^ch10-newton-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the script builds its matrices and compiles
+the pinned headers of `src/math` into a scratch shared library called through ctypes; run: `python
+derivation-checks/check_ch10_dense.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
+committed output `derivation-checks/check_ch10_dense.out`: 15 PASS, 0 FAIL, 5 EXPECTED-FAIL; a rerun on a clean
+v2.6.5 build (x86_64, GCC 11.5.0, Python 3.11.13, numpy 2.4.6) gives the same verdicts, with round-off differences
+in the quoted numbers.]
+
+<!-- equation-check: eq-ch10-newton-usable check_ch10_dense.py (j) -->

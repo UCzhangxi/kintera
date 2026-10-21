@@ -47,7 +47,43 @@ $$ {#eq-ch10-interpolation-weight}
 Applying @eq-ch10-interpolation-weight dimension after dimension, each time with $f_0$ and $f_1$ interpolated in the
 remaining dimensions, gives multilinear interpolation. @eq-ch10-interpolation-weight is computed in `interpn_recur`
 ({{< code src/math/interpolation.cpp interpn_recur >}}). Without extrapolation, $w$ is clamped to $[0, 1]$, so a query
-outside the grid takes the end value.
+outside the grid takes the end value. Four steps show which cell is used, what is reproduced exactly, and how large
+the error is.
+
+*Step 1: the bracket.* For an increasing grid, `searchsorted` with `right=true` returns the number of nodes
+$\le q$; minus one, that is the index of the last node $x_0 \le q$, so $x_0 \le q < x_1$. For a decreasing grid the
+code searches the reversed (increasing) grid with `right=false`, which counts the nodes $< q$, and takes $N$ minus
+that count: the number of nodes $\ge q$, so the lower index is the last node with $x_0 \ge q > x_1$. In both cases the
+lower index is clamped to $[0, N-2]$. A query exactly on the last node then uses the last cell with $w = 1$, and a
+query outside the grid uses the end cell.
+
+*Step 2: exactness.* @eq-ch10-interpolation-weight is linear in $q$ between the two nodes and matches $f$ at both.
+Applied one dimension at a time it is linear in each coordinate separately, so it reproduces exactly every function
+that is linear in each coordinate, including cross terms such as $x\,y$ (multilinear functions), and in particular
+every grid value.
+
+*Step 3: the error.* For a twice-differentiable $f$ on a cell of width $h$, the linear interpolant satisfies
+
+$$
+|f(q) - p(q)| \le \frac{h^2}{8} \max_{[x_0, x_1]} |f''| ,
+$$ {#eq-ch10-interpolation-error}
+
+from the error formula $f(q) - p(q) = \tfrac12 f''(\xi)(q - x_0)(q - x_1)$ and $\max|(q-x_0)(q-x_1)| = h^2/4$. In
+several dimensions the bound holds per axis and the terms add.
+
+*Step 4: outside the grid.* With `extrapolate` false the clamp $w \in [0, 1]$ returns the value at the clamped
+coordinate. With `extrapolate` true, $w$ is not clamped and the end cell's linear function is continued.
+
+`check_ch10_interp.py` checks each step:[^ch10-interp-check]
+
+- "(a) bilinear table, increasing x and decreasing y grids, 200 interior queries: max error 1.8e-15, 3.6e-15 (tol
+  1e-12) PASS"
+- "(b) all 20 grid nodes, including the last node of each axis: max error 0.0e+00 (tol 1e-13) PASS"
+- "(c) outside the grid: extrapolate=False gives the clamped-coordinate value (err 0.0e+00); extrapolate=True continues
+  the end cells linearly, exact for a bilinear table (err 8.9e-15) (tol 1e-12) PASS"
+- "(d) quadratic on h = 1/8: error 6.000e-04, bound h^2/8 = 1.953e-03 PASS"
+- "(e) increasing grid whose first two nodes differ by 1e-9 (equal in float32): interpn(2.5) = 1.000, exact 2.500
+  EXPECTED-FAIL (S10-7: direction test casts to float)", row K24 of the defect list
 
 ### Numerical method
 
@@ -89,11 +125,24 @@ draft (missing evidence).
 
 ### Limits
 
-- The direction test reads `coord[1].item<float>()` and `coord[0].item<float>()`. A grid needs at least two points,
-  and on a
-  CUDA grid each call copies two values to the host (read from the code; not measured).
+- The direction test reads `coord[1].item<float>()` and `coord[0].item<float>()`. Two nodes that differ but are equal in
+  float32 make an increasing grid look decreasing, and the wrong cell is used: `interpn(2.5)` returns 1.0 instead of
+  2.5 (check line e; row K24).[^ch10-interp-k24] A grid needs at least two points, and on a CUDA grid each call copies
+  two values to the host (read from the code; not measured).
 - A non-monotonic grid is not detected.
 - With `extrapolate` true, $w$ is not clamped and the end interval is extended linearly.
+
+[^ch10-interp-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the script builds its
+tables and compiles `src/math/interpolation.cpp` at the pin into a torch extension (needs ninja); run: `python
+derivation-checks/check_ch10_interp.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
+committed output `derivation-checks/check_ch10_interp.out`: 4 PASS, 1 EXPECTED-FAIL; a rerun on a clean v2.6.5 build
+(x86_64, Python 3.11.13, torch 2.10.0+cu126) gives the identical output.]
+
+[^ch10-interp-k24]: [source: UCzhangxi/kintera issue #54, row K24 (spec suspect S10-7).]
+
+<!-- equation-check: eq-ch10-interpolation-weight check_ch10_interp.py (a) -->
+<!-- equation-check: eq-ch10-interpolation-weight check_ch10_interp.py (b) -->
+<!-- equation-check: eq-ch10-interpolation-error check_ch10_interp.py (d) -->
 
 <!-- reader glossary notes -->
 [^rg-49e301347274]: extrapolate — flag of the table interpolation; when `extrapolate` is false, queries outside a grid take the end values; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/interpolation.cpp#L51-L55)

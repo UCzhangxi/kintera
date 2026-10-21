@@ -1,0 +1,49 @@
+{"label": "jupiter_tp/status", "dtype": "torch.float32", "device": "cpu", "cells": 45, "diag_values": {"-2010.0": 19, "1.0": 18, "3.0": 1, "6.0": 2, "8.0": 2, "9.0": 1, "10.0": 2}, "max_sum_fraction_error": 5.960464477539063e-08}
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+{"label": "jupiter_tp/status", "dtype": "torch.float32", "device": "cuda", "cells": 45, "diag_values": {"-2010.0": 19, "1.0": 18, "3.0": 1, "6.0": 2, "8.0": 2, "9.0": 1, "10.0": 2}, "max_sum_fraction_error": 5.960464477539063e-08}
+{"label": "jupiter_tp/fractions", "dtype": "torch.float32", "count": 405, "finite_cpu": 405, "finite_cuda": 405, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 9.778887033462524e-09, "max_rel_symmetric": 1.2165591073932035e-05, "max_abs_over_cpu_max": 1.0029627481371868e-08, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001}
+{"label": "jupiter_tp/gain", "dtype": "torch.float32", "count": 405, "finite_cpu": 405, "finite_cuda": 405, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 0.0008544921875, "max_rel_symmetric": 5.128662011209204e-07, "max_abs_over_cpu_max": 2.652198896427617e-07, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001}
+{"label": "jupiter_tp/branches", "dtype": "torch.float32", "diag_exact_mismatch": 0, "success_mask_mismatch": 0, "positive_fraction_mask_mismatch": 0, "mismatch_TP": []}
+{"label": "nasa9/status", "dtype": "torch.float32", "device": "cpu", "diag": [[0.0, 7.0, 8.94069742685133e-08], [0.0, 4.0, 2.9802322387695312e-08], [0.0, 4.0, 0.0], [0.0, 3.0, 4.768372718899627e-07], [0.0, 3.0, 1.1920928955078125e-07], [0.0, 3.0, 1.1920928955078125e-07], [0.0, 2.0, 1.1920928955078125e-07], [0.0, 3.0, 2.3841860752327193e-07], [0.0, 4.0, 2.3841860752327193e-07]], "max_H_balance_error": 1.1920928955078125e-07, "max_O_balance_error": 5.960464477539063e-08}
+{"label": "nasa9/status", "dtype": "torch.float32", "device": "cuda", "diag": [[0.0, 7.0, 1.1920928955078125e-07], [0.0, 4.0, 0.0], [0.0, 4.0, 1.1920928955078125e-07], [0.0, 3.0, 3.5762786865234375e-07], [0.0, 3.0, 2.384185791015625e-07], [0.0, 3.0, 1.1920928955078125e-07], [0.0, 2.0, 1.1920928955078125e-07], [0.0, 3.0, 2.384185791015625e-07], [0.0, 4.0, 2.384185791015625e-07]], "max_H_balance_error": 1.1920928955078125e-07, "max_O_balance_error": 2.9802322387695312e-08}
+{"label": "nasa9/moles", "dtype": "torch.float32", "count": 27, "finite_cpu": 27, "finite_cuda": 27, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 2.9802322387695312e-08, "max_rel_symmetric": 2.324329500668942e-07, "max_abs_over_cpu_max": 4.4213062749389305e-08, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001}
+{"label": "nasa9/gain", "dtype": "torch.float32", "count": 9, "finite_cpu": 9, "finite_cuda": 9, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 0.0, "max_rel_symmetric": 0.0, "max_abs_over_cpu_max": 0.0, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001}
+{"label": "nasa9/diagnostics", "dtype": "torch.float32", "count": 27, "finite_cpu": 27, "finite_cuda": 27, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 1.1920940323761897e-07, "max_rel_symmetric": 0.11920940323761897, "max_abs_over_cpu_max": 1.7029914748231282e-08, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001}
+{"label": "nasa9/branches", "dtype": "torch.float32", "status_mismatch": 0, "iteration_mismatch": 0}

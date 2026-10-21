@@ -123,16 +123,39 @@ $n_{\mathrm{s}}^2$, is even, so each odd-sized allocation is padded by 4 bytes. 
 would give. Single precision is not a side case: every C++ test built on `DeviceTest` runs in both precisions
 (Tests layer), so the block-size bounds below have to be read with the precision stated.
 
-On a device with $M = 49152$ bytes, in double precision, @eq-ch12-kernels-threads and
-@eq-ch12-kernels-implicit-bytes-double give $N_{\mathrm{thr}} = 32$ for $n_{\mathrm{s}} \le 6$, because
-$32 \cdot 36 + 48 \cdot 6 = 1440 \le 49152/32 = 1536$ while $n_{\mathrm{s}} = 7$ gives 1904 and so 25 threads. They
-give a launch error for $n_{\mathrm{s}} \ge 39$, because $32 \cdot 39^2 + 48 \cdot 39 = 50544 > 49152$ while
-$n_{\mathrm{s}} = 38$ gives 48032. `check_ch12_twins.py` recomputes both from the code's own allocation list: line g
-reads "implicit-step scratch from the size function equals 32 ns^2 + 48 ns for ns = 1..59 PASS", and line h reads
-"M=49152: threads ns=6 32, ns=7 25; launch error ns=38 False, ns=39 True (report: 32 up to 6, error from 39)
-PASS".[^ch12-kernels-check] $M = 49152$ is a value of one device generation, not a constant: the check fixes it to
-compare with this text, and a device with a larger opt-in limit moves both bounds. Neither the shrunken block nor
-the launch error has been run on a GPU (Limits).
+**$M$ is a property of the device, and both bounds move with it.** On a device with $M = 49152$ bytes, in double
+precision, @eq-ch12-kernels-threads and @eq-ch12-kernels-implicit-bytes-double give $N_{\mathrm{thr}} = 32$ for
+$n_{\mathrm{s}} \le 6$, because $32 \cdot 36 + 48 \cdot 6 = 1440 \le 49152/32 = 1536$ while $n_{\mathrm{s}} = 7$
+gives 1904 and so 25 threads; and a launch error for $n_{\mathrm{s}} \ge 39$, because
+$32 \cdot 39^2 + 48 \cdot 39 = 50544 > 49152$ while $n_{\mathrm{s}} = 38$ gives 48032. `check_ch12_twins.py`
+recomputes both from the code's own allocation list: line g reads "implicit-step scratch from the size function
+equals 32 ns^2 + 48 ns for ns = 1..59 PASS", and line h "M=49152: threads ns=6 32, ns=7 25; launch error ns=38
+False, ns=39 True (report: 32 up to 6, error from 39) PASS".[^ch12-kernels-check]
+
+Those are the numbers for $M = 49152$, which is the *ordinary* per-block limit of several generations. They are not
+the numbers for every GPU, because `get_max_dynamic_shared_memory` takes the opt-in limit when it is larger. On an
+RTX 5090 the two attributes read 49152 and 101376 bytes, so $M = 101376$, and the implicit step was run there one
+cell at a time:
+
+| $n_{\mathrm{s}}$ | $b = 32n_{\mathrm{s}}^2 + 48n_{\mathrm{s}}$ | CPU | CUDA at $M = 101376$ |
+|---:|---:|---|---|
+| 39 | 50544 | finite, matches the oracle | finite, matches the oracle |
+| 55 | 99440 | finite, matches the oracle | finite, matches the oracle |
+| 56 | 103040 | finite, matches the oracle | refused: `Requested shared memory (103040 bytes) exceeds device maximum (101376 bytes).` |
+
+: The launch boundary measured on one device, $M = 101376$ bytes. {#tbl-ch12-kernels-launch}
+
+So the species count at which the launch is refused is 39 on a 49152-byte device and 56 on this one; the *rule*,
+$b > M$, is the same, and it is the rule that belongs in @eq-ch12-kernels-threads. The refusal at
+$n_{\mathrm{s}} = 56$ is the launcher's own resource check doing its job, not a numerical defect and not a failing
+check.[^ch12-kernels-launch]
+
+A case between the two extremes has also been run: a `ThermoX` deck with 17 species and 8 reactions, 200 cells,
+converged on CUDA in double and agreed with the CPU. Summing its rounded outer allocations and its nested
+feasible-origin, KKT and LU workspace gives 10152 bytes per cell, hence 9 threads per block by
+@eq-ch12-kernels-threads — a block well below 32, as the formula requires. That thread count is **computed from the
+source and the formula, not read from a profiler**: what the run demonstrates is that a deck needing a shrunken
+block executes and agrees with the CPU, not that the block was the predicted size.[^ch12-kernels-launch]
 
 ### Numerical method
 
@@ -203,11 +226,14 @@ same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- **Large species counts on small shared memory (hypothesis, not measured).** By
-  @eq-ch12-kernels-implicit-bytes-double, the implicit step on a 49152-byte device runs fewer than 32 threads per
-  block for more than 6 species and cannot launch for 39 species or more, in double precision. Both bounds are
-  arithmetic on the code, reproduced by `check_ch12_twins.py` line h; neither the slowdown nor the launch error has
-  been run on a GPU. Both move on a device with a larger opt-in limit.
+- **The measured launch boundary is one device's, and the block size was never profiled.**
+  @tbl-ch12-kernels-launch is a single RTX 5090 at $M = 101376$ bytes; the 49152-byte figures beside it are
+  arithmetic, not a run on such a device. No profiler confirmed the 9-thread block of the 17-species deck, and no
+  timing was taken, so nothing here measures the slowdown a shrunken block causes.
+- **The workspace check is an expression comparison, not a capacity proof.** The seven `f-` lines of
+  `check_ch12_twins.py` compare each size function's terms with its solver's `pmalloc` sequence. They do not check
+  nested capacity, pool lifetime and rewinds, allocator-state overhead, or the float32 padding of
+  @eq-ch12-kernels-implicit-bytes. An exhaustive workspace or padding proof does not exist.
 - **The single-precision scratch size is derived but unchecked.** @eq-ch12-kernels-implicit-bytes carries the
   rounding for any entry size, but `check_ch12_twins.py` evaluates its helper only at $s = 8$ (line g, "ns = 1..59"),
   so the 4-byte padding at odd $n_{\mathrm{s}}$, and the block-size bounds that follow from it in single precision,
@@ -219,7 +245,9 @@ same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python
   therefore wrap on CUDA while the CPU loop, which uses 64-bit strides, stays correct: wrong numbers with no error.
   Reaching it needs roughly $6\times10^{7}$ cells for a three-reaction gain tensor in double, and no in-tree test or
   example comes near that, so the defect is latent. This is a reading of the source, not a measurement; settling it
-  needs a CUDA run on a batch above the threshold, comparing its last cells with a CPU run.
+  needs a CUDA run on a batch above the threshold, comparing its last cells with a CPU run. It is the same location
+  and mechanism as K25 on the fix list; that correspondence is a source-level match, and no check of this chapter
+  produces a failing line for it.
 :::
 
 - The comment in `gpu_mem_kernel` names a 64 KiB limit for one GPU generation. The limit is read from the device
@@ -229,11 +257,21 @@ same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python
   `check_ch12_twins.py` lines f-equilibrate_tp and f-equilibrate_uv already show that their size functions list 8 and
   10 allocations matching the `pmalloc` sequences in order, which is the input such a derivation needs.
 
+[^ch12-kernels-launch]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none for the launch rows,
+one-cell implicit systems with $\mathsf S = \mathsf I$, $\mathsf J = 0$, $\Delta t = 1$ and
+$r_i = (i+1)/n_{\mathrm s}$, whose exact answer is $\mathbf r$; run: `python check_ch12_spec_complement.py launch`
+from `derivation-checks/ch12/`, exit 0, empty stderr, on an RTX 5090 whose `cudaDeviceGetAttribute` reports 49152
+ordinary and 101376 opt-in bytes; the 17-species case is a saved `ThermoX` run of eight vapour/condensate pairs plus
+a dry gas, 200 cells, 250 to 400 K at $10^5$ Pa, `max-iter` 50, double, CPU against CUDA; the 9-thread block is
+computed from the size functions, not profiled; committed outputs
+`derivation-checks/ch12/check_ch12_spec_complement.launch.out` and the saved preparation beside it.]
+
 [^ch12-kernels-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the check parses the
 source tree and calls `evolve_implicit`; run: `python derivation-checks/check_ch12_twins.py` from a scratch
-directory with `KINTERA_WT` set to a build tree at the pin; lines a to j PASS and line k INFO; CPU, double and
-single; supplied with the round-2 check bundle and committed here unchanged as the historical output at the pin, not
-re-run for this revision.]
+directory with `KINTERA_WT` set to a build tree at the pin; 17 PASS and 1 INFO, exit 0, empty stderr, confirmed by
+`derivation-checks/ch12/validate_ch12_output.py`; CPU, double and single; the script is the one supplied with the
+round-2 check bundle, committed unchanged, and the committed `.out` is our own run of it on a verified pin build,
+with the bundle's output kept beside it as `derivation-checks/ch12/check_ch12_twins.supplied.out`.]
 
 <!-- equation-check: eq-ch12-kernels-threads check_ch12_twins.py (h) -->
 <!-- equation-check: eq-ch12-kernels-implicit-bytes-double check_ch12_twins.py (g) -->

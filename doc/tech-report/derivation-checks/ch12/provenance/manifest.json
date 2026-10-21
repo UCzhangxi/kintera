@@ -1,0 +1,35 @@
+{
+  "bundle_bytes": 80380,
+  "bundle_lines": 1394,
+  "bundle_sha256": "e997abfcb04ba59a4f004af3e1317d063bec2455ad9c4a714e556ccd026290d9",
+  "headings": [
+    "common.py",
+    "check_ch07_photolysis.py",
+    "check_ch08_eddy.py",
+    "check_ch10_dense.py",
+    "check_ch10_interp.py",
+    "check_ch12_twins.py",
+    "check_ch14_coupling.py",
+    "check_ch07_photolysis.out",
+    "check_ch08_eddy.out",
+    "check_ch10_dense.out",
+    "check_ch10_interp.out",
+    "check_ch12_twins.out",
+    "check_ch14_coupling.out"
+  ],
+  "extracted": {
+    "common.py": {
+      "bytes": 1553,
+      "sha256": "424bf765e0e718bb45fce7e848668df24399267fcd24a20f4cf63f1e8a63a43e"
+    },
+    "check_ch12_twins.py": {
+      "bytes": 9442,
+      "sha256": "0eb92e33f391f4f6fc79c2713b82714e0d08a7b5607cccd124953871dfa11319"
+    },
+    "check_ch12_twins.out": {
+      "bytes": 1812,
+      "sha256": "98b47efb81d238655755e7ab6e54cf5423c50b54338d5d2f31ab222dbe2447ef"
+    }
+  },
+  "C12_literal_occurrences": 0
+}

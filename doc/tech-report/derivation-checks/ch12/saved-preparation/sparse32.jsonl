@@ -1,0 +1,12 @@
+{"label": "in_tree_12/status", "dtype": "torch.float32", "device": "cpu", "status": "returned", "finite": 12, "max_residual": 2.153679168337419e-08}
+{"label": "in_tree_12/status", "dtype": "torch.float32", "device": "cuda", "status": "returned", "finite": 12, "max_residual": 2.384185791015625e-07}
+{"label": "in_tree_12", "dtype": "torch.float32", "count": 12, "finite_cpu": 12, "finite_cuda": 12, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 5.960464477539063e-08, "max_rel_symmetric": 2.630991993825588e-07, "max_abs_over_cpu_max": 1.1320949949967061e-07, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001}
+{"label": "tridiagonal_63/status", "dtype": "torch.float32", "device": "cpu", "status": "returned", "finite": 63, "max_residual": 3.5762786865234375e-07}
+{"label": "tridiagonal_63/status", "dtype": "torch.float32", "device": "cuda", "status": "returned", "finite": 63, "max_residual": 5.662441253662109e-07}
+{"label": "tridiagonal_63", "dtype": "torch.float32", "count": 63, "finite_cpu": 63, "finite_cuda": 63, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 2.980232238769531e-07, "max_rel_symmetric": 4.13240003078638e-06, "max_abs_over_cpu_max": 3.670517871898339e-07, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001}
+{"label": "singular_3/status", "dtype": "torch.float32", "device": "cpu", "status": "exception", "error": "Factor is exactly singular"}
+{"label": "singular_3/status", "dtype": "torch.float32", "device": "cuda", "status": "exception", "error": "cusolver sparse solve detected singularity at row 2"}
+{"label": "singular_3/status_agreement", "dtype": "torch.float32", "same_return_status": true}
+{"label": "near_singular_3/status", "dtype": "torch.float32", "device": "cpu", "status": "returned", "finite": 3, "max_residual": 6.621107218052202e-09}
+{"label": "near_singular_3/status", "dtype": "torch.float32", "device": "cuda", "status": "returned", "finite": 3, "max_residual": 1.4350412413932645e-08}
+{"label": "near_singular_3", "dtype": "torch.float32", "count": 3, "finite_cpu": 3, "finite_cuda": 3, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 2097152.0, "max_rel_symmetric": 7.013652635948084e-08, "max_abs_over_cpu_max": 7.013652635948084e-08, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001}

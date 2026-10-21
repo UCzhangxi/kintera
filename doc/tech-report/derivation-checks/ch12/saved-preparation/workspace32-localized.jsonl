@@ -1,0 +1,232 @@
+{"label": "TP/status", "dtype": "torch.float32", "device": "cpu", "cells": 200, "diag_values": {"-2050.0": 15, "1.0": 119, "4.0": 2, "5.0": 6, "6.0": 4, "7.0": 10, "8.0": 8, "9.0": 11, "10.0": 6, "11.0": 10, "12.0": 6, "13.0": 3}, "max_pair_conservation_error": 7.450580596923828e-09, "cloudy": 446}
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+equilibrate_tp did not converge after 50 iterations.
+{"label": "TP/status", "dtype": "torch.float32", "device": "cuda", "cells": 200, "diag_values": {"-2050.0": 13, "1.0": 119, "3.0": 1, "4.0": 4, "5.0": 6, "6.0": 3, "7.0": 10, "8.0": 6, "9.0": 9, "10.0": 9, "11.0": 12, "12.0": 6, "13.0": 2}, "max_pair_conservation_error": 7.450580596923828e-09, "cloudy": 446}
+{"label": "TP/fractions", "dtype": "torch.float32", "count": 3400, "finite_cpu": 3400, "finite_cuda": 3400, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 1.1920928955078125e-07, "max_rel_symmetric": 0.005876983898378316, "max_abs_over_cpu_max": 1.419157951144636e-07, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001, "cells": 200}
+{"label": "TP/gain", "dtype": "torch.float32", "count": 12800, "finite_cpu": 12800, "finite_cuda": 12800, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 5110.3115234375, "max_rel_symmetric": 1.0, "max_abs_over_cpu_max": 0.9299021045130725, "outside_tolerance": 348, "atol": 1e-06, "rtol": 0.0001, "cells": 200}
+{"label": "TP/branches", "dtype": "torch.float32", "diag_exact_mismatch": 44, "success_mask_mismatch": 22, "cloud_mask_mismatch": 0}
+{"label": "TP/gain/both_success", "dtype": "torch.float32", "count": 11200, "finite_cpu": 11200, "finite_cuda": 11200, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 0.00244140625, "max_rel_symmetric": 1.011834642834738e-06, "max_abs_over_cpu_max": 4.442525273526281e-07, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001, "cells": 175}
+{"label": "TP/gain/either_failed", "dtype": "torch.float32", "count": 1600, "finite_cpu": 1600, "finite_cuda": 1600, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 5110.3115234375, "max_rel_symmetric": 1.0, "max_abs_over_cpu_max": 1.0, "outside_tolerance": 348, "atol": 1e-06, "rtol": 0.0001, "cells": 25}
+{"label": "TP/mismatch_cells", "dtype": "torch.float32", "ftol": "1.e-12", "cells": [{"index": 1, "T": 250.75376892089844, "cpu_diag": 11.0, "cuda_diag": -2050.0}, {"index": 3, "T": 252.2613067626953, "cpu_diag": -2050.0, "cuda_diag": 11.0}, {"index": 8, "T": 256.0301513671875, "cpu_diag": 13.0, "cuda_diag": 11.0}, {"index": 9, "T": 256.7839050292969, "cpu_diag": -2050.0, "cuda_diag": 11.0}, {"index": 10, "T": 257.5376892089844, "cpu_diag": -2050.0, "cuda_diag": 11.0}, {"index": 12, "T": 259.04522705078125, "cpu_diag": 10.0, "cuda_diag": 12.0}, {"index": 13, "T": 259.7989807128906, "cpu_diag": 11.0, "cuda_diag": 10.0}, {"index": 14, "T": 260.5527648925781, "cpu_diag": -2050.0, "cuda_diag": 13.0}, {"index": 15, "T": 261.3065185546875, "cpu_diag": 11.0, "cuda_diag": 12.0}, {"index": 16, "T": 262.060302734375, "cpu_diag": 12.0, "cuda_diag": 11.0}, {"index": 18, "T": 263.5678405761719, "cpu_diag": -2050.0, "cuda_diag": 10.0}, {"index": 19, "T": 264.32159423828125, "cpu_diag": 11.0, "cuda_diag": 10.0}, {"index": 24, "T": 268.0904541015625, "cpu_diag": 13.0, "cuda_diag": -2050.0}, {"index": 26, "T": 269.5979919433594, "cpu_diag": 10.0, "cuda_diag": 11.0}, {"index": 27, "T": 270.35174560546875, "cpu_diag": -2050.0, "cuda_diag": 11.0}, {"index": 29, "T": 271.8592834472656, "cpu_diag": 11.0, "cuda_diag": -2050.0}, {"index": 32, "T": 274.12060546875, "cpu_diag": -2050.0, "cuda_diag": 9.0}, {"index": 35, "T": 276.38189697265625, "cpu_diag": 12.0, "cuda_diag": -2050.0}, {"index": 36, "T": 277.13568115234375, "cpu_diag": 10.0, "cuda_diag": 11.0}, {"index": 37, "T": 277.8894348144531, "cpu_diag": -2050.0, "cuda_diag": 10.0}, {"index": 38, "T": 278.6432189941406, "cpu_diag": 10.0, "cuda_diag": 9.0}, {"index": 40, "T": 280.1507568359375, "cpu_diag": 9.0, "cuda_diag": -2050.0}, {"index": 44, "T": 283.16583251953125, "cpu_diag": 9.0, "cuda_diag": -2050.0}, {"index": 45, "T": 283.9195861816406, "cpu_diag": 8.0, "cuda_diag": -2050.0}, {"index": 47, "T": 285.4271240234375, "cpu_diag": 11.0, "cuda_diag": 10.0}, {"index": 48, "T": 286.180908203125, "cpu_diag": -2050.0, "cuda_diag": 10.0}, {"index": 49, "T": 286.9346618652344, "cpu_diag": 9.0, "cuda_diag": 10.0}, {"index": 51, "T": 288.44219970703125, "cpu_diag": 9.0, "cuda_diag": -2050.0}, {"index": 52, "T": 289.19598388671875, "cpu_diag": 8.0, "cuda_diag": 9.0}, {"index": 56, "T": 292.2110595703125, "cpu_diag": 8.0, "cuda_diag": 7.0}, {"index": 58, "T": 293.7185974121094, "cpu_diag": -2050.0, "cuda_diag": 7.0}, {"index": 59, "T": 294.47235107421875, "cpu_diag": 7.0, "cuda_diag": 6.0}, {"index": 60, "T": 295.22613525390625, "cpu_diag": 9.0, "cuda_diag": 8.0}, {"index": 64, "T": 298.2412109375, "cpu_diag": 7.0, "cuda_diag": -2050.0}, {"index": 65, "T": 298.9949645996094, "cpu_diag": 7.0, "cuda_diag": -2050.0}, {"index": 66, "T": 299.7487487792969, "cpu_diag": 6.0, "cuda_diag": 7.0}, {"index": 69, "T": 302.0100402832031, "cpu_diag": 6.0, "cuda_diag": 5.0}, {"index": 70, "T": 302.7638244628906, "cpu_diag": -2050.0, "cuda_diag": 6.0}, {"index": 72, "T": 304.2713623046875, "cpu_diag": 6.0, "cuda_diag": 5.0}, {"index": 75, "T": 306.53265380859375, "cpu_diag": 5.0, "cuda_diag": 4.0}, {"index": 76, "T": 307.28643798828125, "cpu_diag": 4.0, "cuda_diag": 5.0}, {"index": 77, "T": 308.0401916503906, "cpu_diag": 5.0, "cuda_diag": 4.0}, {"index": 79, "T": 309.5477294921875, "cpu_diag": 5.0, "cuda_diag": 4.0}, {"index": 80, "T": 310.301513671875, "cpu_diag": -2050.0, "cuda_diag": 3.0}]}
+{"label": "UV-partition/status", "dtype": "torch.float32", "device": "cpu", "cells": 200, "diag_values": {"1.0": 110, "2.0": 2, "3.0": 15, "4.0": 48, "5.0": 20, "6.0": 5}, "max_pair_conservation_error": 3.725290298461914e-09, "cloudy": 261}
+{"label": "UV-partition/status", "dtype": "torch.float32", "device": "cuda", "cells": 200, "diag_values": {"1.0": 110, "2.0": 2, "3.0": 15, "4.0": 48, "5.0": 20, "6.0": 5}, "max_pair_conservation_error": 3.725290298461914e-09, "cloudy": 261}
+{"label": "UV-partition/fractions", "dtype": "torch.float32", "count": 3200, "finite_cpu": 3200, "finite_cuda": 3200, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 5.3085386753082275e-08, "max_rel_symmetric": 9.281897787741562e-05, "max_abs_over_cpu_max": 2.6542691497835745e-06, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001, "cells": 200}
+{"label": "UV-partition/gain", "dtype": "torch.float32", "count": 12800, "finite_cpu": 12800, "finite_cuda": 12800, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 0.0, "max_rel_symmetric": 0.0, "max_abs_over_cpu_max": 0.0, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001, "cells": 200}
+{"label": "UV-partition/branches", "dtype": "torch.float32", "diag_exact_mismatch": 0, "success_mask_mismatch": 0, "cloud_mask_mismatch": 0}
+{"label": "UV-partition/gain/both_success", "dtype": "torch.float32", "count": 12800, "finite_cpu": 12800, "finite_cuda": 12800, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 0.0, "max_rel_symmetric": 0.0, "max_abs_over_cpu_max": 0.0, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001, "cells": 200}
+{"label": "UV-partition/gain/either_failed", "dtype": "torch.float32", "count": 0, "finite_cpu": 0, "finite_cuda": 0, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": null, "max_rel_symmetric": null, "max_abs_over_cpu_max": null, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001, "cells": 0}
+{"label": "UV-partition/mismatch_cells", "dtype": "torch.float32", "ftol": "1.e-12", "cells": []}
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+{"label": "UV-kkt/status", "dtype": "torch.float32", "device": "cpu", "cells": 200, "diag_values": {"-2050.0": 90, "1.0": 110}, "max_pair_conservation_error": 3.725290298461914e-08, "cloudy": 261}
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+[Warning] equilibrate_uv did not converge after 50 iterations.
+{"label": "UV-kkt/status", "dtype": "torch.float32", "device": "cuda", "cells": 200, "diag_values": {"-2050.0": 90, "1.0": 110}, "max_pair_conservation_error": 2.7939677238464355e-08, "cloudy": 261}
+{"label": "UV-kkt/fractions", "dtype": "torch.float32", "count": 3200, "finite_cpu": 3200, "finite_cuda": 3200, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 4.516914486885071e-08, "max_rel_symmetric": 7.495258579728806e-05, "max_abs_over_cpu_max": 2.2584570835877785e-06, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001, "cells": 200}
+{"label": "UV-kkt/gain", "dtype": "torch.float32", "count": 12800, "finite_cpu": 12800, "finite_cuda": 12800, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 4.528553009033203, "max_rel_symmetric": 1.0, "max_abs_over_cpu_max": 0.9415858808874623, "outside_tolerance": 78, "atol": 1e-06, "rtol": 0.0001, "cells": 200}
+{"label": "UV-kkt/branches", "dtype": "torch.float32", "diag_exact_mismatch": 0, "success_mask_mismatch": 0, "cloud_mask_mismatch": 0}
+{"label": "UV-kkt/gain/both_success", "dtype": "torch.float32", "count": 7040, "finite_cpu": 7040, "finite_cuda": 7040, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 0.0, "max_rel_symmetric": 0.0, "max_abs_over_cpu_max": 0.0, "outside_tolerance": 0, "atol": 1e-06, "rtol": 0.0001, "cells": 110}
+{"label": "UV-kkt/gain/either_failed", "dtype": "torch.float32", "count": 5760, "finite_cpu": 5760, "finite_cuda": 5760, "finite_mask_mismatch": 0, "nan_mask_mismatch": 0, "inf_sign_mismatch": 0, "max_abs": 4.528553009033203, "max_rel_symmetric": 1.0, "max_abs_over_cpu_max": 0.9415858808874623, "outside_tolerance": 78, "atol": 1e-06, "rtol": 0.0001, "cells": 90}
+{"label": "UV-kkt/mismatch_cells", "dtype": "torch.float32", "ftol": "1.e-12", "cells": []}

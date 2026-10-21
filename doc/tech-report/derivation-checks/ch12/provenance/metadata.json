@@ -1,0 +1,22 @@
+{
+  "timestamp_utc": "2026-10-21T00:53:51.414150+00:00",
+  "python": "3.11.13",
+  "numpy": "2.4.6",
+  "torch": "2.10.0+cu128",
+  "threads": 1,
+  "pin": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+  "same_binary_hashes_as_preparation": true,
+  "common_and_supplied_script_byte_identical": true,
+  "new_commit": null,
+  "issue54_state": "OPEN",
+  "integration_sha256": {
+    "check_ch12_numeric_devices.out": "ef9b6f89288c14ace1b73cf37a84f13f19b8d3bc5a498870c9633d0f6fde803f",
+    "check_ch12_numeric_devices.py": "0c5532ec0e66b8932586b46aee2763ba1f6f45e104d80d351ed618e832ee8fa1",
+    "check_ch12_twins.out": "3f962584efcd274637560929f1e390cdd0f0aab628dcfe57581819b670ac877f",
+    "check_ch12_twins.py": "0eb92e33f391f4f6fc79c2713b82714e0d08a7b5607cccd124953871dfa11319",
+    "check_ch12_twins.supplied.out": "98b47efb81d238655755e7ab6e54cf5423c50b54338d5d2f31ab222dbe2447ef",
+    "common.py": "424bf765e0e718bb45fce7e848668df24399267fcd24a20f4cf63f1e8a63a43e",
+    "validate_ch12_output.out": "57ffbe5e5da9e2f468cc265f943fc5b0a30d740c88a497dd36ccb3d9997bb136",
+    "validate_ch12_output.py": "1840600ec918e3b716ff136696482abba5426f600013e1b41d7ee61da9a885a5"
+  }
+}

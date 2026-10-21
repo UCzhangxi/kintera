@@ -14,6 +14,9 @@ The two-dimensional atmosphere solver needs large sparse linear solves, which ki
 CUDA devices through a cached solver context per device. The entry point is `cuda_csr_solve_cusolver`
 ({{< code src/math/sparse_solver.cu cuda_csr_solve_cusolver >}}).
 
+The two back ends now have one measured comparison against each other (Tests), on a single small assembled
+system; the Limits say what that does and does not cover.
+
 TODO: the At a glance box and the remaining summary paragraphs.
 
 What is settled about this scheme is its contract, which @sec-ch12-dispatch states: it is **not** a dispatch stub.
@@ -62,26 +65,50 @@ TODO: the code table and the walk-through.
 
 TODO: the test table. `check_ch12_twins.py` does not reach this scheme: its static twin comparison covers the eight
 dispatch stubs, and the sparse solve is not one of them. The chapter's scheme table names `test_atm2d.py` as the
-main test, through the two-dimensional solver that calls it; no test exercises `cuda_csr_solve_cusolver` directly,
-and **no committed check covers this scheme at all** — alone among the five schemes of this chapter. Missing
-evidence.
+main test, through the two-dimensional solver that calls it, and no test in the suite exercises
+`cuda_csr_solve_cusolver` directly.
 
-A check is not possible without a GPU, which is why none exists: the QR path has no host build. What would settle
-the Derivation is one CUDA run of the atm2d sparse solve against the host LU on the same assembled matrix, on a
-grid small enough that $\kappa(\mathsf A)$ can be estimated from a dense condition number, reporting the largest
-relative difference against $\kappa(\mathsf A)\,\epsilon$. That run has not been made.
+**The two back ends have been compared, on one assembled system.** Step 3 is measured, not only argued. An atm2d
+transport matrix was assembled by the in-tree code — two columns, three layers, two species, so 12 unknowns and 40
+non-zeros — and the *same* rounded $\mathsf A$ and $\mathbf b$ were given to the host SciPy LU and to the CUDA QR
+entry at its pinned `tol` $=0$, `reorder` $=0$. The results agree:
+
+The matrix has $\kappa_2(\mathsf A) = 8.838$, so $\kappa_2\epsilon$ is $1.96\times10^{-15}$ in double and
+$1.05\times10^{-6}$ in single. The largest absolute difference between the two solutions is
+$5.55\times10^{-16}$ in double and $4.77\times10^{-7}$ in single; as a global relative difference,
+$8.31\times10^{-16}$ and $7.14\times10^{-7}$, which is 0.423 and 0.677 of $\kappa_2\epsilon$. Both land *below*
+the bound step 3 predicts. All 48 returned components are finite, both devices return normally in both precisions,
+and the largest absolute residuals are $5.55\times10^{-16}$ and $2.78\times10^{-15}$ in double.[^ch12-sparse-run]
+
+Step 4 is measured too, at the ends of its range rather than across it. A matrix with an exact zero on the diagonal
+raises on both back ends — the host says "Factor is exactly singular", cuSOLVER "cusolver sparse solve detected
+singularity at row 2" — while one with $10^{-14}$ there returns finite values on both, as step 4 says it must.
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- **Nothing in this section is measured.** Steps 1 to 5 of the Derivation are read from the source and from the
-  standard properties of QR and LU; no CPU-CUDA comparison of the two sparse back ends has been run, here or in
-  the check bundle.
-- **A near-singular matrix passes silently on both back ends.** With `tol` $= 0$ the CUDA solve reports singularity
-  only for an exactly zero diagonal of $\mathsf R$, and the host LU only for an exactly zero pivot. Neither
-  reports conditioning, so a badly conditioned atm2d system returns a number rather than a warning, and the
-  $\kappa(\mathsf A)\,\epsilon$ of step 3 is then large without anything saying so.
+- **One system, and a well-conditioned one.** @tbl-ch12-sparse-agreement rests on a single 12-unknown matrix with
+  $\kappa_2 \approx 8.8$. It says nothing about large grids, about ill-conditioned systems, or about how the two
+  back ends classify an arbitrary singular or rank-deficient matrix; the zero and near-zero diagonals above are two
+  points of a one-parameter family, not a survey. The acceptance factor used in that comparison was declared by the
+  check, not derived from a theorem.
+- **The matrix is assembled on the host.** It is built on the CPU and copied to the device, so GPU-side assembly is
+  not exercised; only the solve is compared.
+- **A near-singular matrix still passes silently on both back ends.** With `tol` $= 0$ the CUDA solve reports
+  singularity only for an exactly zero diagonal of $\mathsf R$, and the host LU only for an exactly zero pivot.
+  Neither reports conditioning, so a badly conditioned atm2d system returns a number rather than a warning, and the
+  $\kappa_2(\mathsf A)\,\epsilon$ of step 3 is then large without anything saying so. The $10^{-14}$ case above has
+  a mathematical $\kappa \approx 4\times10^{14}$: the two devices still agree exactly in double, but in single the
+  largest absolute difference is $2.1\times10^{6}$, at a global relative $7.0\times10^{-8}$.
 :::
+
+[^ch12-sparse-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, an atm2d transport matrix
+assembled by `build_eddy_diffusion_matrix` and `affine_with_identity` with seed 20261020, 2 columns, 3 layers, 2
+species, 12 unknowns, 40 non-zeros, $T = 250$ K, $p = 10^5$, $10^4$, $10^3$ Pa per column, closed no-flux boundaries;
+run: `python check_ch12_spec_complement.py sparse` from `derivation-checks/ch12/`, which gives the same rounded
+$\mathsf A$ and $\mathbf b$ to the host SciPy LU and to `cuda_csr_solve_cusolver` at `tol` $= 0$, `reorder` $= 0$,
+and compares both with a dense numpy solve; exit 0, the only stderr being PyTorch's sparse-CSR beta warning;
+one CUDA build on one host, one system; committed output `derivation-checks/ch12/check_ch12_spec_complement.sparse.out`.]
 
 - No CPU fallback: the entry point exists only in the CUDA build, so a sparse solve has no host twin inside this
   scheme to be compared against; the comparison has to be made against the atm2d host path. That is a structural

@@ -1,0 +1,17 @@
+
+reference-state: {Tref: 0., Pref: 1.e5}
+species:
+  - {name: dry, composition: {H: 1.696, He: 0.152}, cv_R: 1.82}
+  - {name: CH4, composition: {C: 1, H: 4}, cv_R: 3.0}
+  - {name: H2S, composition: {H: 2, S: 1}, cv_R: 3.0}
+  - {name: "CH4(s)", composition: {C: 1, H: 4}, cv_R: 4.0}
+  - {name: "H2S(s)", composition: {H: 2, S: 1}, cv_R: 5.0}
+  - {name: "CH4(s,p)", composition: {C: 1, H: 4}, cv_R: 4.0}
+  - {name: "H2S(s,p)", composition: {H: 2, S: 1}, cv_R: 5.0}
+reactions:
+  - equation: CH4(s) => CH4(s,p)
+    type: coagulation
+    rate-constant: {A: 1.e-4, b: 0, Ea_R: 0., p-threshold: 1.e4, factor: 1.e2}
+  - equation: H2S(s) => H2S(s,p)
+    type: coagulation
+    rate-constant: {A: 1.e-4, b: 0, Ea_R: 0., p-threshold: 1.e4, factor: 1.e4}

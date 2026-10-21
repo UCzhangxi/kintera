@@ -1,0 +1,29 @@
+reference-state: {Tref: 0., Pref: 1.e5}
+dynamics: {equation-of-state: {max-iter: 50, ftol: 1.e-5}}
+species:
+  - {name: dry, composition: {N: 2}, cv_R: 2.5}
+  - {name: V0, composition: {H: 2, O: 1}, cv_R: 2.5}
+  - {name: V1, composition: {H: 2, O: 1}, cv_R: 2.5}
+  - {name: V2, composition: {H: 2, O: 1}, cv_R: 2.5}
+  - {name: V3, composition: {H: 2, O: 1}, cv_R: 2.5}
+  - {name: V4, composition: {H: 2, O: 1}, cv_R: 2.5}
+  - {name: V5, composition: {H: 2, O: 1}, cv_R: 2.5}
+  - {name: V6, composition: {H: 2, O: 1}, cv_R: 2.5}
+  - {name: V7, composition: {H: 2, O: 1}, cv_R: 2.5}
+  - {name: V0(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+  - {name: V1(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+  - {name: V2(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+  - {name: V3(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+  - {name: V4(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+  - {name: V5(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+  - {name: V6(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+  - {name: V7(l), composition: {H: 2, O: 1}, cv_R: 9.0, u0_R: -3430.}
+reactions:
+  - {equation: V0 <=> V0(l), type: nucleation, rate-constant: {formula: antoine, A: 5.40221, B: 1700.0, C: -31.737}}
+  - {equation: V1 <=> V1(l), type: nucleation, rate-constant: {formula: antoine, A: 5.40221, B: 1740.0, C: -31.737}}
+  - {equation: V2 <=> V2(l), type: nucleation, rate-constant: {formula: antoine, A: 5.40221, B: 1780.0, C: -31.737}}
+  - {equation: V3 <=> V3(l), type: nucleation, rate-constant: {formula: antoine, A: 5.40221, B: 1820.0, C: -31.737}}
+  - {equation: V4 <=> V4(l), type: nucleation, rate-constant: {formula: antoine, A: 5.40221, B: 1860.0, C: -31.737}}
+  - {equation: V5 <=> V5(l), type: nucleation, rate-constant: {formula: antoine, A: 5.40221, B: 1900.0, C: -31.737}}
+  - {equation: V6 <=> V6(l), type: nucleation, rate-constant: {formula: antoine, A: 5.40221, B: 1940.0, C: -31.737}}
+  - {equation: V7 <=> V7(l), type: nucleation, rate-constant: {formula: antoine, A: 5.40221, B: 1980.0, C: -31.737}}

@@ -49,8 +49,8 @@ $$
 $$ {#eq-ch08-tendency-jacobian}
 
 and $\partial (\mathrm d y_{j,s}/\mathrm d t)/\partial y_{l,r}$ follows from Step 3 of @sec-ch08-operator, a
-difference of these divided by $w_j$. Check line `g1`: "Jacobian: autograd vs FD $2.0 \times 10^{-10}$, derived
-analytic (with dn/dy terms) vs FD $2.0 \times 10^{-10}$", PASS.
+difference of these divided by $w_j$. Check line `g1`: autograd and the derived analytic Jacobian (with the dn/dy
+terms) both match a finite difference to better than $10^{-9}$, PASS.
 
 *Step 2: which part is the tridiagonal matrix.* The $\delta_{sr}$ term of @eq-ch08-tendency-jacobian gives, for
 example, $\partial F_{j+1/2,s}/\partial y_{j+1,s} \supset -g\, \bar n_{j+1/2}/n_{j+1} = -D_{j+1/2}/n_{j+1}$, which is
@@ -59,13 +59,18 @@ $-g [\tfrac12 (X_{j+1,s} - X_{j,s}) \mp \bar n\, X_{l,s}/n_l]$, does not depend 
 it sees only the level sums $\sum_r v_{l,r}$. Hence:
 
 - the tridiagonal matrix is the exact Jacobian for every perturbation that leaves each level total unchanged
-  ($\sum_r v_{l,r} = 0$). Check line `j2`: "Jacobian = frozen-n (A,B,C) x I on perturbations with zero level sums
-  $5.3 \times 10^{-17}$", PASS;
+  ($\sum_r v_{l,r} = 0$). Check line `j2`: Jacobian = frozen-n (A, B, C) ⊗ I on perturbations with zero level sums,
+  below $10^{-15}$, PASS;
 - for other perturbations it is not: it differs from the true Jacobian by 0.63 of its largest entry (`g2`, INFO);
 - in the extreme case, scale one level of a uniform mixing-ratio profile by $1 + 10^{-3}$. $X$ does not change
   anywhere, so the true response is zero, but the tridiagonal matrix predicts $3.4 \times 10^{-3}$. Check line
-  `g3`: "true response $3.3 \times 10^{-16}$, frozen-n Jacobian predicts $3.4 \times 10^{-3}$ (the dn/dy terms cancel
-  it)", PASS.
+  `g3`: the true response is below $10^{-15}$, while the frozen-n Jacobian predicts $3.4 \times 10^{-3}$ (the dn/dy
+  terms cancel it), PASS.
+
+Both matrices agree on one direction, $v = y$ itself. $A$, $B$ and $C$ depend on $y$ only through ratios of level
+totals ($\bar n/n$), so the tendency is homogeneous of degree one, $f(\lambda y) = \lambda f(y)$. Euler's relation
+then gives $\mathsf J\, y = f(y)$ for the true Jacobian, and $f(y) = (A, B, C) \otimes I\, y$ holds by definition.
+Check line `j6`: both products equal $f(y)$ to better than $10^{-15}$, PASS.
 
 *Step 3: what this means for an implicit step.* By @prp-ch08-operator-level-total, diffusion alone never changes a
 level total. Within a step that holds $n$ fixed, the tridiagonal matrix is therefore the exact Jacobian of the
@@ -73,8 +78,10 @@ diffusion part. When other processes change $n_j$ within the step, it is a froze
 implicit and Rosenbrock steps do not use this function. `rosenbrock2_step`
 ({{< code python/atm2d/rosenbrock.py rosenbrock2_step >}}) and `build_implicit_operator`
 ({{< code python/atm2d/assembly.py build_implicit_operator >}}) call `build_transport_matrix` (@sec-ch09-transport),
-passing the density as a separate field (`density=`) that is held fixed during the step. That matrix is linear in
-the concentrations, and it is its own exact Jacobian.
+and pass the density as a separate field (`density=`), held fixed during the step, when the caller passes one. The
+argument is optional in both. Without it the matrix falls back to the concentration form, and an environment setting
+(`KINTERA_TRANSPORT_FORM`) can override the form. In every case that matrix is linear in the concentrations at a given
+density, and it is its own exact Jacobian.
 
 ### Numerical method
 
@@ -125,6 +132,7 @@ stretched grid the mixing-ratio form differs by 0.26 (`f3`); only @eq-ch08-opera
 <!-- equation-check: eq-ch08-tendency-jacobian check_ch08_eddy.py (g1) -->
 <!-- equation-check: eq-ch08-tendency-jacobian check_ch08_eddy.py (j2) -->
 <!-- equation-check: eq-ch08-tendency-jacobian check_ch08_eddy.py (g3) -->
+<!-- equation-check: eq-ch08-tendency-jacobian check_ch08_eddy.py (j6) -->
 
 ### Limits
 

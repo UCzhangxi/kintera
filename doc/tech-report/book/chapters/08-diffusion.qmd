@@ -3,7 +3,8 @@
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
 sources: src/diffusion/diffusion.hpp, src/diffusion/diffusion.cpp, python/csrc/pydiffusion.cpp,
-  tests/test_diffusion.cpp, tests/test_atm2d.py
+  tests/test_diffusion.cpp, tests/test_atm2d.py, python/atm2d/sources/indexed.py,
+  python/kinetics_base/titan/transport_diffusion.py
 status: draft
 author: jihenghu
 reviewer: gitlinffff (requested)
@@ -12,19 +13,23 @@ reviewer: gitlinffff (requested)
 This chapter describes the vertical eddy-diffusion operator of kintera. It moves each species up or down a column
 so that its mixing ratio evens out, at a rate set by an eddy diffusion coefficient on the faces between levels.
 The operator returns a tendency; it does not take a time step. Two functions carry it: one builds the three
-coefficients of each level, and one applies them to the species profiles. Molecular diffusion is not part of this
-code; it lives in the two-dimensional solver of @sec-ch09.
+coefficients of each level, and one applies them to the species profiles. The column exchanges species with its
+surroundings through boundary sources, and molecular diffusion needs a coefficient per species; both are in
+@sec-ch08-boundary. The molecular-diffusion operator itself lives in the two-dimensional solver of @sec-ch09.
 
-The dependency map of the two schemes (a figure) is not drawn yet: the tendency of @sec-ch08-tendency uses the
-coefficients of @sec-ch08-operator and nothing else.
+The dependency map of the schemes (a figure) is not drawn yet: the tendency of @sec-ch08-tendency uses the
+coefficients of @sec-ch08-operator and nothing else, and @sec-ch08-boundary uses the cell widths of the 2-D grid.
 
 | scheme | option | default | main test |
 |---|---|---|---|
 | @sec-ch08-operator | `diffusion_coefficients` | always | `test_diffusion` |
 | @sec-ch08-tendency | `diffusion_tendency` | always | `test_diffusion`, `test_atm2d.py` |
+| @sec-ch08-boundary | `IndexedBoundaryFluxSource`, `kinetics_base_titan_cheng_diffusion` | API | `check_ch08_eddy.py` |
 
 : Schemes of this chapter. {#tbl-ch08-schemes}
 
 {{< include 08-diffusion/_operator.qmd >}}
 
 {{< include 08-diffusion/_tendency.qmd >}}
+
+{{< include 08-diffusion/_boundary.qmd >}}

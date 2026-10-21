@@ -2,7 +2,8 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/diffusion/diffusion.cpp, python/csrc/pydiffusion.cpp, tests/test_diffusion.cpp, tests/test_atm2d.py
+sources: src/diffusion/diffusion.cpp, python/csrc/pydiffusion.cpp, tests/test_diffusion.cpp, tests/test_atm2d.py,
+  python/atm2d/rosenbrock.py, python/atm2d/assembly.py
 status: draft
 author: jihenghu
 reviewer: gitlinffff (requested)
@@ -23,7 +24,7 @@ same coefficients to build an implicit matrix, and takes the time step itself.
 
 **Activation.** Always available; Python `kintera.diffusion_tendency`.
 
-**Guarantee / limits.** As @sec-ch08-operator; explicit stepping needs a small step.
+**Guarantee / limits.** As @sec-ch08-operator; the tridiagonal matrix is the Jacobian only at fixed level totals; explicit stepping needs a small step.
 
 **Evidence.** `test_diffusion`, `test_atm2d.py`; see the Tests layer.
 :::
@@ -32,8 +33,48 @@ The symbols are those of @sec-ch08-operator. The scheme has no option and no def
 
 ### Derivation
 
-No derivation beyond @sec-ch08-operator: the tendency is @eq-ch08-operator-tendency evaluated with the
-coefficients of @eq-ch08-operator-inner and @eq-ch08-operator-boundary.
+The tendency itself is @eq-ch08-operator-tendency, evaluated with the coefficients of @eq-ch08-operator-inner and
+@eq-ch08-operator-boundary. What a caller needs beyond it is its Jacobian, for an implicit or Rosenbrock step.
+
+*Step 1: the coefficients depend on the state.* $A$, $B$ and $C$ contain $n_j = \sum_s y_{j,s}$, so the tendency is
+not linear in $y$: the tridiagonal matrix $(A, B, C) \otimes I$ (the same three coefficients for every species) is
+not its Jacobian. Write $g = K_{j+1/2}/h_{j+1/2}$ for the face between levels $j$ and $j+1$. Differentiate
+@eq-ch08-operator-flux with $\partial \bar n_{j+1/2}/\partial y_{l,r} = \tfrac12$ and
+$\partial X_{l,s}/\partial y_{l,r} = (\delta_{sr} - X_{l,s})/n_l$ for $l \in \{j, j+1\}$:
+
+$$
+\frac{\partial F_{j+1/2,s}}{\partial y_{l,r}}
+= -g \left[ \tfrac12 \left( X_{j+1,s} - X_{j,s} \right) \pm \bar n_{j+1/2}\, \frac{\delta_{sr} - X_{l,s}}{n_l} \right] ,
+\qquad + \text{ for } l = j+1 , \ - \text{ for } l = j ,
+$$ {#eq-ch08-tendency-jacobian}
+
+and $\partial (\mathrm d y_{j,s}/\mathrm d t)/\partial y_{l,r}$ follows from Step 3 of @sec-ch08-operator, a
+difference of these divided by $w_j$. Check line `g1`: "Jacobian: autograd vs FD $2.0 \times 10^{-10}$, derived
+analytic (with dn/dy terms) vs FD $2.0 \times 10^{-10}$", PASS.
+
+*Step 2: which part is the tridiagonal matrix.* The $\delta_{sr}$ term of @eq-ch08-tendency-jacobian gives, for
+example, $\partial F_{j+1/2,s}/\partial y_{j+1,s} \supset -g\, \bar n_{j+1/2}/n_{j+1} = -D_{j+1/2}/n_{j+1}$, which is
+$-w_j B_j$. So the $\delta_{sr}$ terms are exactly $(A, B, C) \otimes I$. The rest,
+$-g [\tfrac12 (X_{j+1,s} - X_{j,s}) \mp \bar n\, X_{l,s}/n_l]$, does not depend on $r$. Acting on a perturbation $v$,
+it sees only the level sums $\sum_r v_{l,r}$. Hence:
+
+- the tridiagonal matrix is the exact Jacobian for every perturbation that leaves each level total unchanged
+  ($\sum_r v_{l,r} = 0$). Check line `j2`: "Jacobian = frozen-n (A,B,C) x I on perturbations with zero level sums
+  $5.3 \times 10^{-17}$", PASS;
+- for other perturbations it is not: it differs from the true Jacobian by 0.63 of its largest entry (`g2`, INFO);
+- in the extreme case, scale one level of a uniform mixing-ratio profile by $1 + 10^{-3}$. $X$ does not change
+  anywhere, so the true response is zero, but the tridiagonal matrix predicts $3.4 \times 10^{-3}$. Check line
+  `g3`: "true response $3.3 \times 10^{-16}$, frozen-n Jacobian predicts $3.4 \times 10^{-3}$ (the dn/dy terms cancel
+  it)", PASS.
+
+*Step 3: what this means for an implicit step.* By @prp-ch08-operator-level-total, diffusion alone never changes a
+level total. Within a step that holds $n$ fixed, the tridiagonal matrix is therefore the exact Jacobian of the
+diffusion part. When other processes change $n_j$ within the step, it is a frozen-coefficient approximation. kintera's
+implicit and Rosenbrock steps do not use this function. `rosenbrock2_step`
+({{< code python/atm2d/rosenbrock.py rosenbrock2_step >}}) and `build_implicit_operator`
+({{< code python/atm2d/assembly.py build_implicit_operator >}}) call `build_transport_matrix` (@sec-ch09-transport),
+passing the density as a separate field (`density=`) that is held fixed during the step. That matrix is linear in
+the concentrations, and it is its own exact Jacobian.
 
 ### Numerical method
 
@@ -66,7 +107,7 @@ explicit step is not derived here. The test below uses a forward-Euler step of $
 | `test_diffusion` | `TendencySignCorrect`: negative at the peak, positive near the edge | sign only | the test |
 | `test_diffusion` | `GaussianSmooths`: 100 Euler steps lower the peak by over 5% | peak ratio below 0.95 | the test |
 | `test_diffusion` | `GaussianSmooths`: total of species 0 kept within 1% | relative 0.01 | the test, after clamping at zero |
-| `test_atm2d.py` | the 2-D eddy matrix equals this tendency per column | rtol and atol $10^{-12}$ | `assert_close` arguments |
+| `test_atm2d.py` | the 2-D eddy matrix equals this tendency per column, uniform grid and level totals | rtol and atol $10^{-12}$ | `assert_close` arguments |
 
 : Tests of the eddy-diffusion tendency. {#tbl-ch08-tendency-tests}
 
@@ -74,8 +115,16 @@ The C++ cases are in {{< code tests/test_diffusion.cpp >}}, on the uniform 20-le
 float64 on CPU and CUDA. The Python case is `test_vertical_eddy_transport_matches_columnwise_reference`
 ({{< code tests/test_atm2d.py test_vertical_eddy_transport_matches_columnwise_reference >}}). It builds the
 two-dimensional eddy matrix of @sec-ch09 for two columns of five levels, with face coefficients taken as the mean of
-the centre values. It then compares each column with this function at $10^{-12}$. This draft has not run the tests
-and attaches no run record (missing evidence).
+the centre values. It then compares each column with this function at $10^{-12}$. On the pin build the 12 C++
+cases and this Python case pass. The Python case does not test what its row says in general. Its grid is uniform,
+every level total is 1, and it builds the matrix without a density, i.e. in the concentration form. On a uniform
+grid with varying totals that form differs from this function by 0.58 of scale (check line `f2`), and on a
+stretched grid the mixing-ratio form differs by 0.26 (`f3`); only @eq-ch08-operator-atm2d holds in general (`f1`,
+`j1`).
+
+<!-- equation-check: eq-ch08-tendency-jacobian check_ch08_eddy.py (g1) -->
+<!-- equation-check: eq-ch08-tendency-jacobian check_ch08_eddy.py (j2) -->
+<!-- equation-check: eq-ch08-tendency-jacobian check_ch08_eddy.py (g3) -->
 
 ### Limits
 

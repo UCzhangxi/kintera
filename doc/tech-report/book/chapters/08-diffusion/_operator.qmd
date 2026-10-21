@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/diffusion/diffusion.hpp, src/diffusion/diffusion.cpp, tests/test_diffusion.cpp
+sources: src/diffusion/diffusion.hpp, src/diffusion/diffusion.cpp, tests/test_diffusion.cpp, python/atm2d/transport.py
 status: draft
 author: jihenghu
 reviewer: gitlinffff (requested)
@@ -25,9 +25,9 @@ neighbours. A level's tendency is then a three-term sum.
 
 **Activation.** Always available; no option.
 
-**Guarantee / limits.** Conserves a weighted column total; uniform mixing ratio gives zero tendency.
+**Guarantee / limits.** Conserves the column total of its own cells (@eq-ch08-operator-widths); a uniform mixing ratio gives zero tendency; second order inside, first order in the end rows.
 
-**Evidence.** `test_diffusion`; see the Tests layer.
+**Evidence.** `test_diffusion` (12 of 12 pass); `check_ch08_eddy.py` lines `a`-`f`, `j1`, `j3`, `j4`.
 :::
 
 Local symbols: $y_{j,s}$, number density of species $s$ at level $j$ (any unit, the same for all species);
@@ -42,8 +42,9 @@ number densities, levels first.
 
 ### Derivation
 
-The flux of species $s$ through the face $j+1/2$ is the eddy flux of mixing ratio, with the face density taken as
-the mean of the two levels:
+*Step 1: the flux law.* Eddy mixing carries species $s$ down its gradient of mixing ratio, not of number density,
+so a well-mixed column carries no flux, whatever its density profile. The flux through the face $j+1/2$ is the
+eddy flux of mixing ratio, with the face density taken as the mean of the two levels:
 
 $$
 \begin{aligned}
@@ -52,26 +53,42 @@ F_{j+1/2,s} &= -K_{j+1/2}\, \bar n_{j+1/2}\, \frac{X_{j+1,s} - X_{j,s}}{h_{j+1/2
 \end{aligned}
 $$ {#eq-ch08-operator-flux}
 
-Define the face conductance $D_{j+1/2} = K_{j+1/2}\, \bar n_{j+1/2} / h_{j+1/2}$, so that
-$F_{j+1/2,s} = -D_{j+1/2} (X_{j+1,s} - X_{j,s})$. The conductance `D` is computed in `diffusion_coefficients`
+$F$ is positive upward, in units of $y$ times length per time. Define the face conductance
+$D_{j+1/2} = K_{j+1/2}\, \bar n_{j+1/2} / h_{j+1/2}$, so that $F_{j+1/2,s} = -D_{j+1/2} (X_{j+1,s} - X_{j,s})$. The
+conductance `D` is computed in `diffusion_coefficients`
 ({{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}).
 
-For an inner level $1 \le j \le N-2$, the cell width is the mean of its two face spacings,
-$\Delta_j = \tfrac12 (h_{j-1/2} + h_{j+1/2})$, and the finite-volume balance is
+*Step 2: the cells.* The values $y_{j,s}$ sit at the level centres $z_j$, with $h_{j+1/2} = z_{j+1} - z_j$. Put the
+faces of cell $j$ at the midpoints between centres, and the two outer faces half a spacing beyond the end centres.
+The widths are then
 
 $$
-\frac{\mathrm d y_{j,s}}{\mathrm d t} = -\frac{F_{j+1/2,s} - F_{j-1/2,s}}{\Delta_j} .
+w_0 = h_{1/2} , \qquad w_j = \Delta_j = \tfrac12 \left( h_{j-1/2} + h_{j+1/2} \right) \ (1 \le j \le N-2) , \qquad
+w_{N-1} = h_{N-3/2} ,
+$$ {#eq-ch08-operator-widths}
+
+because the bottom cell runs from $z_0 - h_{1/2}/2$ to $z_0 + h_{1/2}/2$, an inner cell from $z_j - h_{j-1/2}/2$ to
+$z_j + h_{j+1/2}/2$, and the top cell is the mirror image of the bottom one. These are exactly the widths the code
+divides by: `dz_avg` for the inner rows, and one spacing, `dzi[0]` and `dzi[nz-2]`, for the end rows. Check line
+`d3`: "C++ weights equal the widths of cells with faces at centre midpoints and outer faces h/2 beyond the end
+centres", PASS. Nothing passes through the outer faces: $F_{-1/2,s} = F_{N-1/2,s} = 0$.
+
+*Step 3: the finite-volume balance.* Integrating $\partial y/\partial t = -\partial F/\partial z$ over cell $j$ and
+dividing by its width gives
+
+$$
+\frac{\mathrm d y_{j,s}}{\mathrm d t} = -\frac{F_{j+1/2,s} - F_{j-1/2,s}}{w_j} .
 $$
 
-Substituting the fluxes and $X = y/n$:
+*Step 4: the three coefficients.* Substituting the fluxes and $X = y/n$:
 
 $$
 \begin{aligned}
 \frac{\mathrm d y_{j,s}}{\mathrm d t}
-&= \frac{D_{j+1/2} (X_{j+1,s} - X_{j,s}) - D_{j-1/2} (X_{j,s} - X_{j-1,s})}{\Delta_j} \\
-&= -\frac{D_{j+1/2} + D_{j-1/2}}{\Delta_j\, n_j}\, y_{j,s}
-   + \frac{D_{j+1/2}}{\Delta_j\, n_{j+1}}\, y_{j+1,s}
-   + \frac{D_{j-1/2}}{\Delta_j\, n_{j-1}}\, y_{j-1,s} .
+&= \frac{D_{j+1/2} (X_{j+1,s} - X_{j,s}) - D_{j-1/2} (X_{j,s} - X_{j-1,s})}{w_j} \\
+&= -\frac{D_{j+1/2} + D_{j-1/2}}{w_j\, n_j}\, y_{j,s}
+   + \frac{D_{j+1/2}}{w_j\, n_{j+1}}\, y_{j+1,s}
+   + \frac{D_{j-1/2}}{w_j\, n_{j-1}}\, y_{j-1,s} .
 \end{aligned}
 $$
 
@@ -93,10 +110,8 @@ $$ {#eq-ch08-operator-inner}
 
 @eq-ch08-operator-inner is computed in `diffusion_coefficients`
 ({{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}), on the slices `dz_avg`, `D_lo` and `D_hi`.
-The coefficients are the same for every species; only $y_{j,s}$ carries the species index.
-
-At the bottom level the flux through the lower boundary is zero, and the code uses the one face spacing next to
-it, $h_{1/2}$, as the width of the level. The top level is treated the same way with $h_{N-3/2}$:
+The coefficients are the same for every species; only $y_{j,s}$ carries the species index. The end rows keep
+only their one inner face:
 
 $$
 \begin{aligned}
@@ -111,7 +126,12 @@ $$ {#eq-ch08-operator-boundary}
 
 @eq-ch08-operator-boundary is computed in `diffusion_coefficients`
 ({{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}); $C_0$ and $B_{N-1}$ keep the zeros the
-coefficient vectors are created with.
+coefficient vectors are created with. The check compares the code with a numpy finite-volume operator written from
+@eq-ch08-operator-flux and @eq-ch08-operator-widths, on a random non-uniform grid of 17 levels and 4 species. They
+agree to $4.6 \times 10^{-16}$ (check line `a`, tolerance $10^{-13}$, PASS), and line `a2` confirms the shapes and the
+zeros $C_0 = B_{N-1} = 0$ (PASS). The same stencil, term by term, is the eddy part of VULCAN's `diffdf_no_mol`, which
+the file header names as its model. kintera has neither VULCAN's advection terms nor its option to sum only the gases
+into $n_j$.
 
 Three identities follow; each is exact in exact arithmetic.
 
@@ -119,35 +139,96 @@ Three identities follow; each is exact in exact arithmetic.
 A profile with the same mixing ratio at every level has zero tendency.
 :::
 
-If $X_{j,s} = X_s$ for all $j$, every face flux in @eq-ch08-operator-flux is zero, and so is every tendency.
+If $X_{j,s} = X_s$ for all $j$, every face flux in @eq-ch08-operator-flux is zero, and so is every tendency. Check
+line `b`[^rg-04e2f56397e1]: "uniform mixing ratio: max |tendency| / scale $8.7 \times 10^{-16}$", PASS.
 
 ::: {#prp-ch08-operator-level-total}
 The operator does not change the total $n_j$ of any level: $\sum_s \mathrm d y_{j,s}/\mathrm d t = 0$.
 :::
 
-Summing @eq-ch08-operator-tendency over $s$ gives $A_j n_j + B_j n_{j+1} + C_j n_{j-1}$. For an inner level this is
-$\left[-(D_{j+1/2} + D_{j-1/2}) + D_{j+1/2} + D_{j-1/2}\right]/\Delta_j = 0$, and the two boundary rows cancel the
-same way.
+Summing @eq-ch08-operator-tendency over $s$ gives $A_j n_j + B_j n_{j+1} + C_j n_{j-1}$, because the coefficients do not
+depend on $s$. For an inner level this is $\left[-(D_{j+1/2} + D_{j-1/2}) + D_{j+1/2} + D_{j-1/2}\right]/\Delta_j = 0$,
+and the two end rows cancel the same way. Equivalently, $\sum_s X_{j,s} = 1$ at every level, so
+$\sum_s F_{j+1/2,s} = 0$ on every face. Check line `c`: $1.2 \times 10^{-15}$ of scale, PASS.
 
 ::: {#prp-ch08-operator-column-total}
-With weights $w_0 = h_{1/2}$, $w_j = \Delta_j$ for the inner levels and $w_{N-1} = h_{N-3/2}$, the weighted column
-total $\sum_j w_j\, y_{j,s}$ of every species is conserved.
+The weighted column total $\sum_j w_j\, y_{j,s}$ of every species, with the widths of @eq-ch08-operator-widths, is
+conserved.
 :::
 
-Multiplying each row by its weight gives $w_j\, \mathrm d y_{j,s}/\mathrm d t = -(F_{j+1/2,s} - F_{j-1/2,s})$
-with $F_{-1/2,s} = F_{N-1/2,s} = 0$, and the sum over $j$ telescopes to zero. On a uniform grid all weights equal
-$h$, so the plain sum of the tendencies over the levels is zero; on a non-uniform grid it is not, because the
-boundary levels are weighted with a full face spacing and the inner levels with a mean of two.
+Multiplying each row by its width gives $w_j\, \mathrm d y_{j,s}/\mathrm d t = -(F_{j+1/2,s} - F_{j-1/2,s})$, with
+$F_{-1/2,s} = F_{N-1/2,s} = 0$. The sum over $j$ telescopes to zero:
 
-No published derivation is cited; the steps above are re-derived from the code at the pin.
+$$
+\frac{\mathrm d}{\mathrm d t} \sum_{j=0}^{N-1} w_j\, y_{j,s} = F_{-1/2,s} - F_{N-1/2,s} = 0 .
+$$ {#eq-ch08-operator-conservation}
+
+Check line `d1`: "weighted column sum_j w_j dy/dt (w = h_1/2, Delta_j, h_N-3/2): $4.5 \times 10^{-16}$", PASS. On a
+non-uniform grid two other totals are not conserved:
+
+- The plain sum $\sum_j \mathrm d y_{j,s}/\mathrm d t$ is not zero: $4.3 \times 10^{-1}$ of scale (check line `d2`,
+  INFO).
+- Nor is a total weighted with other cell widths. A grid given by its faces, as in @sec-ch09-transport, has cell
+  widths $\Delta x_{1,j}$, and $\Delta_j \ne \Delta x_{1,j}$ once the spacing changes. On a geometric grid of ratio
+  1.3 the ratios $w_j/\Delta x_{1,j}$ are 1.150, 1.017, …, 1.017, 0.885 (check line `j1`).
+
+The operator conserves the total of its own cells, and a caller that budgets a column must use the same widths.
+
+*Step 5: the order of accuracy.* Expand about the face midpoint $m = (z_j + z_{j+1})/2$. The difference quotient
+$(X_{j+1} - X_j)/h$ equals $X'(m) + h^2 X'''(m)/24 + O(h^4)$, and the mean $\bar n$ equals
+$n(m) + h^2 n''(m)/8 + O(h^4)$, so every face flux is second order.
+
+- In an inner row the errors of the two faces are smooth functions of $z$, so they cancel to leading order in the
+  divergence. The divergence is centred at $(m_{j-1/2} + m_{j+1/2})/2 = z_j + (h_{j+1/2} - h_{j-1/2})/4$, not at $z_j$.
+  On a smoothly stretched grid $h_{j+1/2} - h_{j-1/2} = O(h^2)$, so the row stays second order. On a rough grid the
+  offset is $O(h)$, and the row is first order.
+- In an end row the wall flux is exact, so nothing cancels the $O(h^2)$ error of the one inner face, and dividing it
+  by $h$ leaves first order, unless $X'''$ also vanishes at the wall.
+
+The measured error ratios per halving of the spacing bear this out. The grid is smooth and stretched, with centres
+$z = (e^{1.5 s} - 1)/(e^{1.5} - 1)$, $K = 1 + 0.5 \sin 2z$ and $n = e^{-z/0.35}$:
+
+- `e1`, inner rows: 3.76, 3.88, 3.94 (second order, expect 4), PASS;
+- `e2`, end rows: 1.66, 1.84, 1.92 (first order, expect 2), PASS;
+- `e2b`, end rows for a profile whose third derivative is zero at the walls: 3.92, 3.96 (INFO);
+- `e3`, inner rows with 20% random jitter of the centres: 1.70, 1.81 (first order, INFO).
+
+*Step 6: the two-dimensional operator.* `build_eddy_diffusion_matrix` of @sec-ch09-transport, in its mixing-ratio form
+(`mr_diffusion`, with the density passed in), uses the same face flux @eq-ch08-operator-flux, with $K$ at a face taken
+as the mean of the two centre values. It divides by the cell widths $\Delta x_{1,j}$ of its face grid instead of by
+$w_j$:
+
+$$
+\Delta x_{1,j} \left( \frac{\mathrm d y_{j,s}}{\mathrm d t} \right)_{\mathrm{2D}}
+= w_j \left( \frac{\mathrm d y_{j,s}}{\mathrm d t} \right)_{\mathrm{1D}}
+= -(F_{j+1/2,s} - F_{j-1/2,s}) .
+$$ {#eq-ch08-operator-atm2d}
+
+How the two operators compare:
+
+- **Uniform grid:** $w_j = \Delta x_{1,j}$, so the two tendencies are equal. Check line `f1`: "uniform grid, varying
+  n: C++ vs atm2d mr_diffusion (density = species sum) $2.1 \times 10^{-16}$", PASS.
+- **Stretched grid:** the tendencies differ by 0.26 of scale (`f3`, INFO), but @eq-ch08-operator-atm2d holds to
+  $4.4 \times 10^{-16}$ (`j1`, PASS). The 2-D operator keeps $\sum_j \Delta x_{1,j} c_{j,s}$ to $4.5 \times 10^{-16}$
+  (`f3`).
+- **No density passed:** the 2-D matrix falls back to the concentration form `c_diffusion`, whose flux is
+  $-K\, \partial c/\partial z$. That differs from this operator as soon as $n$ varies, by 0.58 of scale on a uniform
+  grid (`f2`, INFO).
+
+The in-tree test that compares the two operators (@sec-ch08-tendency) passes only because all its level totals are 1.
+
+No published derivation is cited. The steps above are derived from the flux law, and each identity is checked
+against the code at the pin.[^ch08-eddy-check]
 
 ### Numerical method
 
-The operator is a three-point, flux-form stencil on cell centres: values $y_{j,s}$ live at level centres,
-$K_{j+1/2}$ and $h_{j+1/2}$ on the $N-1$ inner faces, and the boundary faces carry no flux. It is a spatial operator
-only. It does not step in time, and it does not iterate. Every coefficient is a whole-tensor expression, so the
-same code runs on CPU and CUDA tensors. The order of accuracy on a non-uniform grid is not measured. The stencil
-figure is not provided: the figure module is not written yet.
+The operator is a three-point, flux-form stencil on cell centres. The values $y_{j,s}$ live at the level centres,
+$K_{j+1/2}$ and $h_{j+1/2}$ on the $N-1$ inner faces, and the outer faces carry no flux. It is a spatial operator
+only: it does not step in time, and it does not iterate. Every coefficient is a whole-tensor expression, so the
+same code runs on CPU and CUDA tensors. Check line `j3` compares the two on two Quadro RTX 4000 GPUs:
+$1.2 \times 10^{-15}$, PASS (the committed output is the CPU run, where `j3` is INFO). The operator is second order
+inside on a smoothly stretched grid, and first order in the end rows and on rough grids (Step 5). The stencil figure
+is not provided: the figure module is not written yet.
 
 ### Code
 
@@ -172,26 +253,49 @@ No argument is checked: shapes, signs and zero totals are not validated (see Lim
 |---|---|---|---|
 | `test_diffusion` | `CoefficientsShape`: length $N$; $C_0 = 0$, $B_{N-1} = 0$ | absolute $10^{-30}$ | `EXPECT_NEAR` in the test |
 | `test_diffusion` | `UniformProfileNoFlux`: @prp-ch08-operator-uniform | max below $10^{-10}\, n$ | the test |
-| `test_diffusion` | `MassConservation`: @prp-ch08-operator-column-total, uniform grid | relative $10^{-10}$ | the test |
+| `test_diffusion` | `MassConservation`: @prp-ch08-operator-column-total, uniform grid | $10^{-10}$, in s$^{-1}$ | the test |
 
 : Tests of the eddy-diffusion operator. {#tbl-ch08-operator-tests}
 
 The cases are in {{< code tests/test_diffusion.cpp >}}. They use a uniform grid of 20 levels, two species,
-`Kzz` $= 10^5$ and spacing $10^5$ (the test comments say cm and $\mathrm{cm^2\,s^{-1}}$), in float64. They are
-instantiated for CPU and CUDA; the CUDA case needs a GPU. @prp-ch08-operator-level-total is not tested directly, and
-@prp-ch08-operator-column-total is tested only on a uniform grid. This draft has not run the tests and attaches no run
-record (missing evidence).
+`Kzz` $= 10^5$ and spacing $10^5$ (the test comments say cm and $\mathrm{cm^2\,s^{-1}}$), in float64, on CPU and CUDA.
+On the pin build all 12 cases pass (6 CPU, 6 CUDA).
+
+What these tests do not cover:
+
+- Every case has the same total $n_j = 10^{12}$ at all levels. So the dependence of the coefficients on $n$, which is
+  what makes this the mixing-ratio form, is not tested: a face density taken from one level instead of the mean
+  passes all of them.
+- `MassConservation` divides a rate by a density, so its tolerance is in $\mathrm{s^{-1}}$, against
+  $K/h^2 = 10^{-5}\ \mathrm{s^{-1}}$.
+- @prp-ch08-operator-level-total is not tested, and @prp-ch08-operator-column-total is tested on a uniform grid only.
+  The derivation checks `c` and `d1` cover both on a non-uniform grid.
+
+<!-- equation-check: eq-ch08-operator-flux check_ch08_eddy.py (a) -->
+<!-- equation-check: eq-ch08-operator-tendency check_ch08_eddy.py (a) -->
+<!-- equation-check: eq-ch08-operator-inner check_ch08_eddy.py (a) -->
+<!-- equation-check: eq-ch08-operator-boundary check_ch08_eddy.py (a2) -->
+<!-- equation-check: eq-ch08-operator-widths check_ch08_eddy.py (d3) -->
+<!-- equation-check: eq-ch08-operator-conservation check_ch08_eddy.py (d1) -->
+<!-- equation-check: eq-ch08-operator-atm2d check_ch08_eddy.py (f1) -->
+<!-- equation-check: eq-ch08-operator-atm2d check_ch08_eddy.py (j1) -->
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- One column at a time: `y` must be (levels, species), and `Kzz` and `dzi` are vectors of length $N-1$. A batched call
-  is not supported by the slicing; what it does is not tested.
-- $N \ge 2$ is needed; with one level the code indexes an empty `D` (read from the code; not tested).
-- A level with zero total $n_j$ divides by zero; no guard exists.
+- One column at a time: `y` must be (levels, species), and `Kzz` and `dzi` are vectors of length $N-1$. A batched
+  (columns, levels, species) input raises a size-mismatch `RuntimeError` (check line `j4`).
+- $N \ge 2$ is needed; with one level the code indexes an empty `D` and raises `IndexError` (`j4`).
+- A level with zero total $n_j$ divides by zero. Setting the top level of the `a` grid to zero gives 8 non-finite
+  entries of 68 (`j4`). There is no guard; the 2-D operator skips any face that touches an empty cell.
+- The mixing ratio is relative to the sum of all species in `y`, so a species that should not diffuse, such as a
+  condensate, still counts in $n_j$ and is diffused itself. Put one at a single level with 20% of the level total:
+  the other species' tendencies on the three levels around it change by factors of 1.81, $-0.67$ and 0.90, and the
+  added species gets a tendency of its own (`j4`). In-tree callers pass gases only; a caller with condensates must
+  leave them out.
 - Signs of `Kzz` and `dzi` are not checked.
-- The mixing ratio is relative to the sum of all species in `y`. If `y` holds condensed species, they count in
-  $n_j$; whether callers pass gases only is not checked here (hypothesis).
+- The conserved total is the one over the cells of @eq-ch08-operator-widths. A caller that budgets a non-uniform
+  column with other cell widths sees a drift (@eq-ch08-operator-conservation).
 :::
 
 The header comment gives `Kzz` in $\mathrm{cm^2\,s^{-1}}$ and `dzi` in cm
@@ -199,8 +303,16 @@ The header comment gives `Kzz` in $\mathrm{cm^2\,s^{-1}}$ and `dzi` in cm
 $K/h^2$, so any consistent unit system works, and $A$, $B$, $C$ come out in $\mathrm{s^{-1}}$. The column test of
 @sec-ch08-tendency passes SI values.
 
+[^ch08-eddy-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the grids and profiles are
+    built in the script (seeds 8 and 80); run: `python doc/tech-report/derivation-checks/check_ch08_eddy.py` from a
+    scratch directory, with `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python
+    3.11.13, torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build; output:
+    `doc/tech-report/derivation-checks/check_ch08_eddy.out`, 17 PASS, 0 FAIL, 1 EXPECTED-FAIL (K27), 12 INFO.]
+
 <!-- reader glossary notes -->
 [^rg-5972ec96a93f]: Kzz — eddy diffusion coefficient on the N-1 inner faces of a column, argument of `diffusion_coefficients`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/diffusion/diffusion.cpp#L12-L20)
 
 [^rg-13c0414b85aa]: dzi — distances between neighbouring level centres on the N-1 inner faces, argument of `diffusion_coefficients`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/diffusion/diffusion.cpp#L12-L20)
+
+[^rg-04e2f56397e1]: b — exponent of the temperature ratio in the Arrhenius rate; default 0; stored in option `b`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/arrhenius.cpp#L95)
 <!-- end reader glossary notes -->

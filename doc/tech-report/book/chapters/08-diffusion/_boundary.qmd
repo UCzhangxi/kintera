@@ -1,0 +1,181 @@
+## Boundary fluxes and the molecular-diffusion coefficient of a column (`IndexedBoundaryFluxSource`, `kinetics_base_titan_cheng_diffusion`) {#sec-ch08-boundary}
+
+<!-- PROVENANCE
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+sources: python/atm2d/sources/indexed.py, python/kinetics_base/titan/transport_diffusion.py,
+  python/atm2d/transport.py
+status: draft
+author: XinyueWang05
+reviewer:
+-->
+
+### Summary
+
+The eddy operator of @sec-ch08-operator closes the column with zero flux through the bottom and the top. A real
+column exchanges species with the surface and with space. kintera adds that exchange as separate source terms on
+the end cells: a fixed flux, or a velocity times the end cell's own concentration. A column model that also
+diffuses molecularly needs a diffusion coefficient for each species. For Titan, kintera computes it from a closed
+formula for a trace gas in nitrogen. This section derives the signs and the column budget of the two boundary
+sources and the form of that coefficient.
+
+::: {.callout-note title="At a glance"}
+**Purpose.** Boundary sources @eq-ch08-boundary-flux and @eq-ch08-boundary-velocity, and the molecular-diffusion coefficient @eq-ch08-boundary-cheng.
+
+**Data.** A 2-D state (`AtmState2D`); species index, flux or velocity, and which boundary; molecular masses in amu.
+
+**Placement.** Source terms and the binary-diffusion input of the atm2d solver (@sec-ch09).
+
+**Activation.** By constructing the source or calling the helper; no YAML key.
+
+**Guarantee / limits.** The column total changes only by the boundary fluxes; `species_diffusion_scale` of the binary-diffusion matrix is ignored (K27).
+
+**Evidence.** `check_ch08_eddy.py` lines `h1`-`h3`, `i1`, `i2`, `j5`; see the Tests layer.
+:::
+
+Local symbols: $\Phi$, an upward flux through a boundary face [$\mathrm{cm^{-2}\,s^{-1}}$]; $u$, an upward velocity
+at a boundary face [$\mathrm{cm\,s^{-1}}$]; $\Delta x_{1,0}$ and $\Delta x_{1,N-1}$, the widths of the end cells from the
+face grid [cm]; $c$, a number density [$\mathrm{cm^{-3}}$]; $m_i$, a molecular mass [amu]; $\mathcal D_i$, the
+molecular-diffusion coefficient of species $i$ [$\mathrm{cm^2\,s^{-1}}$]. The sources take `value` as $\Phi$ or $u$
+and `boundary` as `"lower"` or `"upper"`.
+
+### Derivation
+
+*Step 1: a fixed flux.* Take $\Phi$ positive upward, like $F$ in @eq-ch08-operator-flux. Through the bottom face it
+enters the bottom cell, and through the top face it leaves the top cell. Integrating the balance of Step 3 of
+@sec-ch08-operator over an end cell, with the boundary face now carrying $\Phi$ instead of zero, gives
+
+$$
+\Delta x_{1,0}\, \frac{\mathrm d c_{0}}{\mathrm d t} \ni +\Phi_{\mathrm{bottom}} , \qquad
+\Delta x_{1,N-1}\, \frac{\mathrm d c_{N-1}}{\mathrm d t} \ni -\Phi_{\mathrm{top}} ,
+$$ {#eq-ch08-boundary-flux}
+
+with no dependence on $c$ and so no Jacobian entry. This is `IndexedBoundaryFluxSource`
+({{< code python/atm2d/sources/indexed.py IndexedBoundaryFluxSource >}}), which divides by the face-grid width
+(`_vertical_cell_widths`). Check line `h1`: "flux source: dz_0 * tendency = +Phi at the bottom cell, dz_top *
+tendency = -Phi at the top cell (Phi = upward flux, positive into the column at the bottom, out at the top); rtol
+1e-15", PASS. Deposition is a negative $\Phi$ at the bottom, and escape a positive $\Phi$ at the top.
+
+*Step 2: a velocity.* A species carried through a boundary face at the upward velocity $u$ has the flux $u\, c$,
+with $c$ taken in the end cell (an upwind value for outflow). Substituting $\Phi = u\, c$ in @eq-ch08-boundary-flux:
+
+$$
+\frac{\mathrm d c_{0}}{\mathrm d t} \ni +\frac{u}{\Delta x_{1,0}}\, c_0 , \quad
+\frac{\partial}{\partial c_0} = +\frac{u}{\Delta x_{1,0}} ; \qquad
+\frac{\mathrm d c_{N-1}}{\mathrm d t} \ni -\frac{u}{\Delta x_{1,N-1}}\, c_{N-1} , \quad
+\frac{\partial}{\partial c_{N-1}} = -\frac{u}{\Delta x_{1,N-1}} .
+$$ {#eq-ch08-boundary-velocity}
+
+A deposition velocity $v_{\mathrm{dep}} > 0$ therefore enters as $u = -v_{\mathrm{dep}}$ at the bottom, and an escape
+velocity as $u > 0$ at the top; both are losses. This is `IndexedBoundaryVelocitySource`
+({{< code python/atm2d/sources/indexed.py IndexedBoundaryVelocitySource >}}). Check line `h2`: "velocity source:
+upward velocity w gives flux w c; deposition needs w = -v_dep < 0 at the bottom, escape w > 0 at the top; tendency
+and Jacobian -v c/dz, -v/dz; rtol 1e-15", PASS. @eq-ch09-sources-boundary writes the same two sources from the
+side of the source assembly.
+
+*Step 3: the column budget.* Add @eq-ch08-boundary-flux to the mixing-ratio eddy matrix of @eq-ch08-operator-atm2d.
+Multiply each row by its width and sum. The inner faces telescope as in @eq-ch08-operator-conservation, and only the
+two boundary fluxes remain:
+
+$$
+\frac{\mathrm d}{\mathrm d t} \sum_j \Delta x_{1,j}\, c_{j,s} = \Phi_{\mathrm{bottom}} - \Phi_{\mathrm{top}} .
+$$ {#eq-ch08-boundary-budget}
+
+Check line `h3`, with the same $\Phi$ in at the bottom and out at the top: "eddy matrix + flux in at bottom + flux out
+at top: d/dt sum dz c = $3.2 \times 10^{-16}$ Phi (tol 1e-12)", PASS. The budget closes with the face-grid widths
+$\Delta x_{1,j}$ of the 2-D operator, not with the widths $w_j$ of @eq-ch08-operator-widths. A caller that mixes the
+1-D tendency of @sec-ch08-tendency with these sources budgets with two different cell sets on a non-uniform grid.
+
+*Step 4: the molecular-diffusion coefficient.* For a trace gas $i$ in a bath of N$_2$ (28 amu), the helper's
+docstring gives
+
+$$
+\mathcal D_i(T, n) = 7.3 \times 10^{16}\, \frac{T^{0.75}}{n}\,
+\sqrt{\frac{1 + 28/m_i}{1 + 28/16}}
+\quad [\mathrm{cm^2\,s^{-1}}] ,
+$$ {#eq-ch08-boundary-cheng}
+
+with $T$ in K and $n$ the total number density in $\mathrm{cm^{-3}}$. The square root is the ratio of reduced masses:
+with $\mu_i = 28\, m_i/(m_i + 28)$,
+
+$$
+\frac{\mu_{\mathrm{CH_4}}}{\mu_i} = \frac{16 \cdot 28/44}{28\, m_i/(m_i + 28)} = \frac{16 (m_i + 28)}{44\, m_i}
+= \frac{1 + 28/m_i}{1 + 28/16} .
+$$
+
+So @eq-ch08-boundary-cheng is $\mathcal D_i = \mathcal D_{\mathrm{CH_4}} \sqrt{\mu_{\mathrm{CH_4}}/\mu_i}$, the mass
+scaling of kinetic theory at fixed collision cross section, normalised to CH$_4$ in N$_2$. The factor $1/n$ is the
+inverse dependence on density of any binary diffusion coefficient. The helper
+(`kinetics_base_titan_cheng_diffusion`,
+{{< code python/kinetics_base/titan/transport_diffusion.py kinetics_base_titan_cheng_diffusion >}}) returns it as
+the diagonal of a per-cell $(n_s, n_s)$ matrix with zero off-diagonal coupling. Check line `i1`: "Cheng D_i =
+7.3e16 T^0.75/n sqrt(mu_CH4-N2/mu_i-N2) [cm^2/s, n in cm^-3]: max rel err 0.0e+00, off-diagonal 0.0 (tol 1e-14)",
+PASS. For scale, `i2` gives CH$_4$ at 150 K and $n = 10^{15}\ \mathrm{cm^{-3}}$ $\mathcal D = 3.126 \times 10^3$
+$\mathrm{cm^2\,s^{-1}}$, and an H$_2$/CH$_4$ ratio of 2.329 (INFO).
+
+*Step 5: a per-species scale.* `build_binary_diffusion_matrix` accepts `species_diffusion_scale`, a factor $s_i$ per
+species. A scale on $\mathcal D_i$ should multiply the flux of species $i$, so with a diagonal $\mathcal D$ and no
+gravity term the tendency of species $i$ scales by $s_i$. At the pin the argument is accepted and not used (row
+K27).[^ch08-k27] Check line `j5`: "binary diffusion with species_diffusion_scale (2, 1): species-0 tendency scales
+by 1.000 (expect 2)", EXPECTED-FAIL (K27). The eddy matrix does apply its `species_diffusion_scale`
+(@sec-ch09-transport).
+
+The derivations are checked by the script of @sec-ch08-operator.[^ch08-eddy-check]
+
+### Numerical method
+
+Both boundary sources act on one cell each and are exact: no discretisation beyond the end-cell balance. The
+velocity source is linear in $c$, so its Jacobian entry is exact as well. The coefficient is evaluated pointwise
+per cell. Masses below 1 amu are clamped to 1 amu, so the placeholder species of the KINETICS networks (mass 0 or
+negative) get a finite value. Cells with $n \le 0$ or $T \le 0$ get $\mathcal D = 0$.
+
+### Code
+
+| what | code link | symbol | switch |
+|---|---|---|---|
+| fixed boundary flux | {{< code python/atm2d/sources/indexed.py IndexedBoundaryFluxSource >}} | `IndexedBoundaryFluxSource` | API |
+| boundary velocity | {{< code python/atm2d/sources/indexed.py IndexedBoundaryVelocitySource >}} | `IndexedBoundaryVelocitySource` | API |
+| end-cell widths | {{< code python/atm2d/sources/indexed.py _vertical_cell_widths >}} | `_vertical_cell_widths` | always |
+| Titan molecular diffusion | {{< code python/kinetics_base/titan/transport_diffusion.py kinetics_base_titan_cheng_diffusion >}} | `kinetics_base_titan_cheng_diffusion` | API |
+| binary-diffusion matrix | {{< code python/atm2d/transport.py build_binary_diffusion_matrix >}} | `build_binary_diffusion_matrix` | `binary_diffusion` |
+
+: Code map of the boundary sources and the molecular-diffusion coefficient. {#tbl-ch08-boundary-code}
+
+1. Both sources build a zero tendency and Jacobian of the state's shape, then write one entry in the end cell
+   (`level` can move it to the topmost real layer of a padded grid).
+2. The helper reads $n$ from `density=`, else from the state's `density`, else from the species sum, and builds
+   the diagonal from @eq-ch08-boundary-cheng.
+3. `build_binary_diffusion_matrix` takes `species_diffusion_scale` in its signature and never reads it (K27).
+
+### Tests
+
+| test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
+|---|---|---|---|
+| `h1` | @eq-ch08-boundary-flux at both ends | relative $10^{-15}$ | rounding of one division |
+| `h2` | @eq-ch08-boundary-velocity, tendency and Jacobian | relative $10^{-15}$ | rounding of one division |
+| `h3` | @eq-ch08-boundary-budget | $10^{-12}\, \Phi$ | sum of four cells |
+| `i1` | @eq-ch08-boundary-cheng against the reduced-mass form | relative $10^{-14}$ | rounding |
+| `j5` | `species_diffusion_scale` scales the tendency | $10^{-12}$ | EXPECTED-FAIL (K27) |
+
+: Checks of the boundary sources and the molecular-diffusion coefficient. {#tbl-ch08-boundary-tests}
+
+<!-- equation-check: eq-ch08-boundary-flux check_ch08_eddy.py (h1) -->
+<!-- equation-check: eq-ch08-boundary-velocity check_ch08_eddy.py (h2) -->
+<!-- equation-check: eq-ch08-boundary-budget check_ch08_eddy.py (h3) -->
+<!-- equation-check: eq-ch08-boundary-cheng check_ch08_eddy.py (i1) -->
+
+The atm2d tests of the sources are listed in @sec-ch09-sources; the helper has no unit test of its own, only the
+diagnostic scripts under `tests/kinetics_base/diagnostics/` that call it.
+
+### Limits
+
+::: {.callout-warning title="Limits"}
+- The coefficient is Titan-specific: the N$_2$ bath, the CH$_4$ normalisation and the prefactor are constants of the code,
+  and it is in cgs units ($\mathrm{cm^2\,s^{-1}}$, $n$ in $\mathrm{cm^{-3}}$).
+- Off-diagonal (Stefan-Maxwell) coupling is set to zero.
+- `species_diffusion_scale` is ignored by `build_binary_diffusion_matrix` (K27, latent: no in-tree caller passes it).
+- The boundary sources use the face-grid widths; the 1-D tendency of @sec-ch08-tendency uses the widths of
+  @eq-ch08-operator-widths (Step 3).
+:::
+
+[^ch08-k27]: [source: UCzhangxi/kintera#54, row K27 (`species_diffusion_scale` ignored by the binary-diffusion
+    matrix), latent.]

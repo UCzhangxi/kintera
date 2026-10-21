@@ -52,6 +52,8 @@
 
 **boundary conditions, two-dimensional**: Eddy and molecular diffusion on the two-dimensional grid, @sec-ch09-transport.
 
+**boundary flux sources**: Boundary fluxes and the molecular-diffusion coefficient of a column, @sec-ch08-boundary.
+
 **bounded Newton step**: The bounded Newton step, @sec-ch10-newton.
 
 *branches*, see **photolysis cross section**.
@@ -76,6 +78,8 @@
 
 *chemistry source*, see **source terms, atm2d**.
 
+*Cheng formula*, see **molecular diffusion coefficient, Titan**.
+
 *Clausius-Clapeyron*, see **saturation vapor pressure**.
 
 **coagulation**: Coagulation of cloud into precipitation, @sec-ch06-coagulation.
@@ -83,6 +87,8 @@
 *code map*, see **chapter map**.
 
 *collision efficiency*, see **fall-off rate constant**.
+
+*column budget*, see **boundary flux sources**.
 
 *column grid*, see **two-dimensional atmosphere, state**.
 
@@ -147,6 +153,8 @@
 *data files*, see **resource lookup**.
 
 **dense linear solve**: Dense helpers and the pivoted Gaussian solve, @sec-ch10-dense.
+
+*deposition velocity*, see **boundary flux sources**.
 
 *detailed balance*, see **reverse rate constant**.
 
@@ -215,6 +223,8 @@
 *EquilibriumOptions*, see **chemical equilibrium, options**.
 
 *error control*, see **Rosenbrock step**.
+
+*escape flux*, see **boundary flux sources**.
 
 **evaporation, diffusion form**: Evaporation of condensates by diffusion, @sec-ch06-evaporation.
 
@@ -377,6 +387,8 @@
 **mole fractions**: Mole-fraction state and its mixture totals, @sec-ch03-thermo-x.
 
 *molecular diffusion*, see **binary diffusion**; **eddy diffusion, two-dimensional**.
+
+**molecular diffusion coefficient, Titan**: Boundary fluxes and the molecular-diffusion coefficient of a column, @sec-ch08-boundary.
 
 *molecular weight*, see **molar mass**.
 

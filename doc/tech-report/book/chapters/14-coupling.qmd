@@ -1,18 +1,20 @@
 # Coupling to snapy and paddle {#sec-ch14}
 
 This chapter describes what a dynamical core calls in kintera and which conventions both sides must share. The
-hydrodynamic code snapy uses kintera as its equation of state and for saturation adjustment inside each stage.
+hydrodynamic code snapy uses kintera as its equation of state and for saturation adjustment at the end of the
+last stage of each step, when the card has nucleation reactions.
 Its example drivers and the Python driver paddle call the kinetics of @sec-ch06 once per step, after the
 dynamics. kintera has no test of its own for these call sites. The derivations below rest on the calling code at the
 pins of `tools/package-pins.json`, and the check script `check_ch14_coupling.py` rebuilds each conversion, the
-saturation adjustment and the kinetics hand-back exactly as snapy calls them; no coupled snapy run was made.
+saturation adjustment and the kinetics hand-back with inputs built as snapy builds them; no coupled snapy run was
+made.
 
 The dependency map of the schemes is not provided: the figure module is not written yet.
 
 | scheme | YAML key or option | default | order | main test |
 |---|---|---|---|---|
 | @sec-ch14-thermo | the thermodynamics card | always | exact | check `check_ch14_coupling.py` (a)-(j) |
-| @sec-ch14-saturation | the thermodynamics card | always | n/a | check `check_ch14_coupling.py` (k)-(r) |
+| @sec-ch14-saturation | the thermodynamics card | when it has nucleation reactions | n/a | check `check_ch14_coupling.py` (k)-(r) |
 | @sec-ch14-kinetics | `reactions`[^rg-ef7fafdef84f] | driver | first | check `check_ch14_coupling.py` (s)-(w) |
 
 : Schemes of the coupling chapter. {#tbl-ch14-schemes}

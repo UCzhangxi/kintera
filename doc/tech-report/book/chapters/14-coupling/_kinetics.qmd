@@ -34,8 +34,9 @@ Local symbols: $\delta_i$, concentration change of species $i$ over the step [$\
 mass of species $i$ [$\mathrm{kg\,mol^{-1}}$]; $\rho_i$, partial density [$\mathrm{kg\,m^{-3}}$]; $q$, the
 conserved state of the host model; $\mathcal D$, $\mathcal K$, the dynamics and kinetics tendencies; $\mathsf A$,
 $\mathsf B$, linear operators standing for them in the splitting estimate; $S$, the kinetics stoichiometry; $\xi$,
-extents per volume; $u_k$, molar internal energy; $C_V$, $C_P$, volumetric heat capacities at constant volume and
-constant pressure [$\mathrm{J\,m^{-3}\,K^{-1}}$].
+extents per volume; $u_k$, molar internal energy [$\mathrm{J\,mol^{-1}}$]; $c_{v,i}$, isochoric heat capacity per
+mole in units of $\mathcal R$ [-], as in @sec-ch14-thermo; $C_V$, $C_P$, volumetric heat capacities at constant volume
+and constant pressure [$\mathrm{J\,m^{-3}\,K^{-1}}$].
 
 ### Derivation
 
@@ -66,9 +67,13 @@ whenever every reaction keeps the molar mass, the condition of @eq-ch14-saturati
 `evolve_implicit` ({{< code src/kinetics/evolve_implicit_dispatch.cpp evolve_implicit >}}). @eq-ch14-kinetics-density
 then conserves the total density. The dry row is not a kinetics species and stays as it is.
 
-**Energy held.** The driver does not touch $E$. That is the fixed-$U$ assumption of the Jacobian (@sec-ch06-jacobian):
-the latent heat of the converted mass stays in the offsets of @eq-ch14-thermo-energy and appears as a temperature
-change at the next `VU->T` of the equation of state.
+**Energy held.** The driver does not touch $E$, so the hand-back is at fixed $U$: the latent heat of the converted
+mass stays in the offsets of @eq-ch14-thermo-energy and appears as a temperature change at the next `VU->T` of the
+equation of state. The implicit step itself is isothermal at the pins: without `evolve_temperature` (default false)
+`forward_with_rate_constants` returns no temperature derivative
+({{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}), so the Jacobian has no
+temperature column and the rates are evaluated at the driver's $T$ over the whole step. The fixed-$U$ Jacobian of
+@sec-ch06-jacobian applies only with that option on (@eq-ch14-kinetics-cv below).
 
 The check feeds the driver's concentrations of the adjusted Jupiter state to these relations.[^ch14-check-kin]
 
@@ -76,7 +81,6 @@ The check feeds the driver's concentrations of the adjusted Jupiter state to the
 - "(t) cloud concentrations from TPX->V against rho_i/mu_i: max rel diff 4.44e-16 (filed as D16; the driver's tendencies start from these) INFO"
 - "(u) sum_i M_i delta_i = 0 for a stoichiometric change (mass hand-back): max rel err 2.13e-16 (tol 1e-14) PASS"
 
-<!-- equation-check: eq-ch14-kinetics-density check_ch14_coupling.py (u) -->
 <!-- equation-check: eq-ch14-kinetics-mass check_ch14_coupling.py (u) -->
 
 Line (t) is informational: the cloud concentrations agree at these states, and the row D16 it names does not show
@@ -117,14 +121,16 @@ operators:[^ch14-check-kin]
 
 **Which heat capacity the Jacobian needs.** The temperature term of the Jacobian divides by a volumetric heat
 capacity, `jac -= P_j dk/dT u_k / cvol` ({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}). It is
-derived at fixed internal energy (@sec-ch06-jacobian). In a closed cell at fixed volume, $U = \sum_k c_k u_k(T)$
-and $\mathrm dU = C_V\, \mathrm dT + \sum_k u_k\, \mathrm dc_k = 0$, so
+derived at fixed internal energy (@sec-ch06-jacobian). In a closed cell at fixed volume, $U = \sum_i c_i u_i(T)$ over
+all thermodynamic species, and the kinetics changes only its own species $k$, so
+$\mathrm dU = C_V\, \mathrm dT + \sum_k u_k\, \mathrm dc_k = 0$ and
 
 $$
-\left(\frac{\partial T}{\partial c_k}\right)_U = -\frac{u_k}{C_V}, \qquad C_V = \sum_k c_k\, c_{v,k} ,
+\left(\frac{\partial T}{\partial c_k}\right)_U = -\frac{u_k}{C_V}, \qquad C_V = \sum_i c_i\, \mathcal R\, c_{v,i} ,
 $$ {#eq-ch14-kinetics-cv}
 
-and `cvol` must be $C_V$, which `ThermoY` returns as `VT->cv`
+where the sum for $C_V$ runs over all thermodynamic species, the dry gas and the clouds included, while $u_k$ is
+needed only for the kinetics species. `cvol` must be this $C_V$, which `ThermoY` returns as `VT->cv`
 ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_cv_vol >}}). $C_P$ belongs to a change at fixed pressure, which a
 closed cell at fixed density does not undergo. Both snapy drivers pass `TV->cp` instead
 (`cp_vol` at [`snapy run_hydro.cpp:181`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L181), passed to `jacobian` at [`:187`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L187); `cp_vol` at [`snapy jupiter_evap_precip_1d.cpp:250`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/jupiter_evap_precip_1d.cpp#L250), passed to `jacobian` at [`:254`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/jupiter_evap_precip_1d.cpp#L254)),

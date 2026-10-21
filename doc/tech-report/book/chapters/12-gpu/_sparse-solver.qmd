@@ -164,7 +164,7 @@ zero returns finite garbage), **LATENT** at the pin: the row records that no in-
 reaches it. Measured here at
 kintera@0d9f67f97d841147e23283d2dcdab302238d2c45: 2000 paired trials, $n = 3$ to 6, $r = n-1$, each matrix a
 product of two standard-normal factors with no zero row or column, the identical rounded entries given to
-`scipy.sparse.linalg.factorized` (as `python/atm2d/matrix.py:280` calls it) and to the pinned
+`scipy.sparse.linalg.factorized` (as `python/atm2d/matrix.py:294` calls it) and to the pinned
 `cuda_csr_solve_cusolver` at `tol` = 0, `reorder` = 0; host 370 raise / 1630 finite, CUDA 154 / 1846, 0 non-finite,
 1519 both finite, 43 both raise, 438 classifications differing; median largest component $6.01\times10^{15}$ host
 and $3.77\times10^{15}$ CUDA. Every finite return has RHS-relative residual above $10^{-8}$ and normwise backward

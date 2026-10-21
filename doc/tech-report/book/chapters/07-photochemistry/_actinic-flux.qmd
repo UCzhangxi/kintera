@@ -39,7 +39,8 @@ $\Delta z$, layer thickness [cm]; $I$, intensity; $\bar J$, mean intensity.
 grid with the same rule as the temperature interpolation of @sec-ch07-cross-sections (steps 1 and 2 there): linear
 between the two bracketing source wavelengths, and, because `interpn` is called without extrapolation, held at the
 end value outside $[\lambda'_1, \lambda'_K]$. A table that starts at 200 nm therefore lends its 200 nm value to every
-grid node below 200 nm; it is not set to zero. The helpers never convert units: the values come back in the units
+grid node below 200 nm; it is not set to zero, and no warning is given (row K34, see Limits). The helpers never
+convert units: the values come back in the units
 they went in.
 
 **The test spectrum.** The solar-like test spectrum is a Gaussian centred at 500 nm with a width of 200 nm,
@@ -116,7 +117,8 @@ takes column 0 ({{< code python/atm2d/radiation.py _total_cross_section_by_speci
 reader breaks the convention: it stores $\sigma_0 - \sum_{b \ge 1} \sigma_b$ in column 0
 (@eq-ch07-cross-sections-absorption), so the optical depth of a KINETICS7 absorber leaves out its dissociating
 absorption (S7-4, row K18). From reading the code, not run: the pin also adds column 0 of every reaction of the same
-absorber, which counts its total once per reaction, and the in-tree deck `tests/chapman_cycle.yaml` stores the
+absorber, which counts its total once per reaction; both in-tree Chapman decks have one photolysis reaction per
+absorber (`O2 => 2 O`, `O3 => O2 + O`), so this is latent in the tree. The in-tree deck `tests/chapman_cycle.yaml` stores the
 remainder in column 0 (its O2 row at 100 nm is `[100, 4.43080e-20, 1.11090e-19]`, column 0 below column 1). The K18
 fix takes column 0 once per absorber and converts that deck to totals ($c_0 \leftarrow c_0 + c_1$).
 
@@ -219,9 +221,16 @@ total-absorption optical depth; the per-reaction sum and the deck columns of ste
 No radiative transfer, no optical depth and no solar zenith angle in the C++ core: all of that is the caller's, as
 listed in the caller contract of @sec-ch07-actinic-flux. The Python helper `compute_actinic_flux_disort` reverses the
 layer order (`[i2]`, S7-3, row K17), and for a KINETICS7 absorber its optical depth misses the dissociating
-absorption (`[i3]`, S7-4, row K18). A flux table
-is held at its end values outside its own range rather than set to zero, without a warning. All of this was run on
-CPU only; CUDA is unverified.
+absorption (`[i3]`, S7-4, row K18). All of this was run on CPU only; CUDA is unverified.
+
+- A flux table is held at its end values outside its own range rather than set to zero, without a warning: a table of
+  $10^{13}$ on 200–700 nm placed on a 100–320 nm grid makes $J(\mathrm{O_2})$ 41.5 times what it is with zero flux
+  below 200 nm (row K34).[^ch07-k34]
+
+[^ch07-k34]: [source: UCzhangxi/kintera#54, row K34 (LATENT; the in-tree callers regrid onto the same range); probe:
+    `interpolate_actinic_flux` from a 200–700 nm table of $10^{13}$ onto the 100–320 nm grid of `tests/chapman_cycle.yaml`,
+    $J(\mathrm{O_2}) = 5.0063 \times 10^{-3}$ against $1.2076 \times 10^{-4}\ \mathrm{s^{-1}}$ with zero flux below the table;
+    CPU, float64; kintera 2.6.5 built from the pin, torch 2.10.0. A probe of the round-2 read, not a committed check.]
 
 [^ch07-check-af]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; inputs: a table of $10^{13}$, $4 \times
     10^{13}$, $2 \times 10^{13}$, $3 \times 10^{13}$ at 90, 130, 170, 210 nm queried at 85, 100, 155, 205, 230 nm;

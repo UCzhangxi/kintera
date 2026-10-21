@@ -115,11 +115,22 @@ $$ {#eq-ch07-photochem-effective}
 
 computed in `get_effective_stoich` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::get_effective_stoich >}}).
 Its sum over $b'$ includes branch 0 with the stored column 0. Under the column convention of @sec-ch07-rate that column
-is the total absorption, so the denominator counts the dissociating absorption twice, once in column 0 and once in
-the channels; the share of step 3 needs the non-dissociating part $\sigma_0 - \sum_{b \ge 1} \sigma_b$ as the weight
-of branch 0 instead (row K18, whose fix weights branch 0 by that remainder). Verified by a run[^ch07-eff-src]: for `O2 => O + O` with the
-rows of @sec-ch07-rate, the result is $\bar s = (0.727, 0.545, 0)$ for $(\mathrm{O_2}, \mathrm{O}, \mathrm{O_3})$. Only a
-test calls this function; `PhotoChem` does not.
+is the total absorption, so at the pin the denominator counts the dissociating absorption twice, once in column 0
+and once in the channels (row K18). The K18 fix weights branch 0 by the non-dissociating part
+$\max(\sigma_0 - \sum_{b \ge 1} \sigma_b, 0)$, clamped at each wavelength before the integral. The weights then add up
+to the total absorption, so they are shares per absorbed photon, $J_b / J_{\mathrm{abs}}$ with
+$J_{\mathrm{abs}} = \int \sigma_0 F\, \mathrm d\lambda$, not the shares per dissociation $J_b / J$ of step 3. The two are
+related by
+
+$$
+\bar s - s_0 = \frac{J}{J_{\mathrm{abs}}} \sum_{b \ge 1} \frac{J_b}{J}\, (s_b - s_0) :
+$$
+
+the fixed result is the composition after one absorbed photon, and it gives the tendency of step 3 when it is
+multiplied by the absorption rate $J_{\mathrm{abs}} c_A$, not by $r_j = J c_A$. Verified by a run[^ch07-eff-src]: for
+`O2 => O + O` with the rows of @sec-ch07-rate, $\bar s = (0.727, 0.545, 0)$ for $(\mathrm{O_2}, \mathrm{O},
+\mathrm{O_3})$ at the pin, and $(0.625, 0.750, 0)$ with the K18 fix, where $\bar s - s_0 = 0.375\,(-1, 2, 0)$ and
+$0.375 = J / J_{\mathrm{abs}}$.[^ch07-b2-src] Only a test calls this function; `PhotoChem` does not.
 
 *Step 4, what the code books.* `PhotoChem` does not use the branches. Its `stoich` is products minus reactants of the
 equation ({{< code src/photochem/photochem.cpp PhotoChemImpl::reset >}}), so every event of every channel is booked as
@@ -198,9 +209,14 @@ The figure of the call order is not provided: the figure module is not written y
 - `jacobian_photolysis_species` equals $\partial (\mathrm d c_n/\mathrm dt)/\partial c_m$ only if its input is the
   reaction rate $J c$ and no species appears on both sides of an equation; with the rate constant, as its comment
   says, the result is too small by a factor $c_m$, and a species on both sides gets a zero column (Numerical method).
-  The only test checks signs. The atm2d route of step 4 does not use this helper.
+  The only test checks signs. The atm2d route of step 4 does not use this helper (row K36).[^ch07-k36]
 - `get_effective_stoich` weights branch 0 by the stored column 0, the total absorption, instead of the
-  non-dissociating part, so its shares are not the event shares of step 3 (row K18).
+  non-dissociating part, so at the pin its shares are neither per dissociation nor per absorbed photon (row K18).
+  With the K18 fix they are shares per absorbed photon, so the result pairs with the absorption rate
+  $J_{\mathrm{abs}} c_A$, not with $r_j$ (step 3).
+- `get_effective_stoich` with a batch of temperatures integrates along the temperature axis instead of the wavelength
+  axis: three temperatures on a three-point grid return a (2, 3) array with no error, and two temperatures raise a
+  trapezoid size error; a scalar temperature is correct (row K35).[^ch07-k35]
 
 [^ch07-check-pc]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the `H2O => OH + H` card inside the
     script, $c = (2 \times 10^{-2}, 10^{-4}, 3 \times 10^{-4}, 5 \times 10^{-5}, 10^{-6})\ \mathrm{mol\,m^{-3}}$ for
@@ -211,7 +227,8 @@ The figure of the call order is not provided: the figure module is not written y
 
 [^ch07-check-stoich]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: the `H2O => OH + H` card inside
     the script, and the first reaction and species of `data/ch4_photolysis.yaml` at the pin with inline cross
-    sections of $10^{-18}$ on three nodes; run:
+    sections on three nodes, a total of $5 \times 10^{-18}$ in column 0 and $10^{-18}$ in each of the five channel
+    columns, so the channels do not exceed the total; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
     `derivation-checks/check_ch07_photolysis.out` lines `[f1]`–`[g2]`; `[g]` is EXPECTED-FAIL by design (S7-1, #54
@@ -221,6 +238,18 @@ The figure of the call order is not provided: the figure module is not written y
     `jacobian_photolysis_species` for `A => B` with $k = 10^{-5}\ \mathrm{s^{-1}}$ and $c_A = 10^3$ (input $k$: $-10^{-8}$;
     input $k c_A$: $-10^{-5}$, the exact value) and for `CH4 => CH4 + CH3` with input $k c$; CPU, float64, torch 2.10.0.
     A probe of the round-2 read, not a committed check script.]
+
+[^ch07-b2-src]: [source: the same deck and call, run against a CPU build of UCzhangxi/kintera `fix/thermo-20261019`
+    with the K18 fix (#94) merged: $\int \sigma_0 F = 6.0 \times 10^{-2}$ and $\int \sigma_1 F = J = 2.25 \times 10^{-2}\
+    \mathrm{s^{-1}}$, ratio 0.375000; float64, torch 2.10.0. A probe, not a committed check script.]
+
+[^ch07-k35]: [source: UCzhangxi/kintera#54, row K35 (LATENT; the only caller, `test_ch4_photolysis`, passes a scalar
+    temperature); probe: `get_effective_stoich` on a two-branch deck with 3 and 2 temperatures; the scalar case gives
+    (0.727273, 0.545455, 0); CPU, float64; kintera 2.6.5 built from the pin. A probe of the round-2 read.]
+
+[^ch07-k36]: [source: UCzhangxi/kintera#54, row K36 (LATENT; the only caller, `test_ch4_photolysis`, checks signs);
+    the C++ driver probe of the Numerical method: input $k$ gives $\partial \dot c_A/\partial c_A = -10^{-8}$ against the exact
+    $-10^{-5}$.]
 
 [^ch07-eff-src]: [source: the run of @sec-ch07-rate, `Photolysis.get_effective_stoich(0, wavelength, F, T)`;
     kintera 2.6.5 built from the pin, torch 2.10.0, Python 3.12.10.]

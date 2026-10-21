@@ -62,9 +62,16 @@ $$
 $$
 
 which is non-negative only if the yields sum to at most 1. This is the convention of row K18 on the code-fix
-tracker.[^ch07-k18-convention] At the pin two parts of the code do not follow it: the KINETICS7 reader stores
-$\sigma_{\mathrm{nd}}$ in column 0 (@eq-ch07-cross-sections-absorption), and `get_effective_stoich` weights branch 0 by
-$\sigma_0$ instead of $\sigma_{\mathrm{nd}}$ (@sec-ch07-photochem).
+tracker.[^ch07-k18-convention] At the pin five places do not follow it, all under row K18:
+
+- the KINETICS7 reader stores $\sigma_{\mathrm{nd}}$ in column 0 (@eq-ch07-cross-sections-absorption);
+- the KINETICS-base reader writes the same value into every column of a reaction, column 0 included, and for a
+  quantum-yield dataset that value is absorption times yield, so column 0 is not the total either
+  ({{< code src/photochem/kinetics_base_reader.cpp >}}, from reading);
+- `get_effective_stoich` weights branch 0 by $\sigma_0$ instead of $\sigma_{\mathrm{nd}}$ (@sec-ch07-photochem);
+- the optical-depth helper adds column 0 once per reaction of an absorber, not once per absorber
+  (@sec-ch07-actinic-flux);
+- the in-tree deck `tests/chapman_cycle.yaml` stores the remainder in column 0 (@sec-ch07-actinic-flux).
 
 **Only dissociation counts.** The photolysis rate constant is the number of molecules destroyed per molecule per
 second, the sum of the channel rates,
@@ -79,7 +86,7 @@ count every dissociating photon twice and also count the absorptions that leave 
 out of $\sigma_d$. When a reaction has only one branch, the code uses
 that branch as $\sigma_d$. @eq-ch07-rate-dissociative is computed in `update_xs_diss_stacked`
 ({{< code src/photochem/photolysis.cpp PhotolysisImpl::update_xs_diss_stacked >}}). Nothing in the code checks
-$\sum_{b \ge 1} q_b \le 1$, that is $\sigma_d \le \sigma$; the deck is trusted.
+$\sum_{b \ge 1} q_b \le 1$, that is $\sigma_d \le \sigma$; the deck is trusted (row K33, see Limits).
 
 **The trapezoid on the cross-section grid.** The integral is evaluated on the grid $\lambda_1 < \dots < \lambda_N$ of
 the cross sections. On each interval the integrand is replaced by the straight line through its end values, which
@@ -188,6 +195,21 @@ test; the weighted sum is checked only by the run in the Numerical method layer.
 
 An absorption-only reaction (one branch) gets $J$ from its absorption branch; its products equal its reactants, so
 the net tendency is zero, but the rate is not (from reading `update_xs_diss_stacked`).
+
+- A wavelength grid listed in descending order is accepted, and the trapezoid then runs backwards: rows at 200, 150
+  and 100 nm give $J = -0.0225\ \mathrm{s^{-1}}$ where the same rows ascending give $+0.0225$ (row K32).[^ch07-k32]
+- Yields that sum above 1 load silently: two channels of $8 \times 10^{-19}$ under a total of $10^{-18}$ give a $J$
+  1.6 times the absorption rate, and the KINETICS-base test data has O3 yields summing to 1.080 at 322.5 nm (row
+  K33).[^ch07-k33]
+
+[^ch07-k32]: [source: UCzhangxi/kintera#54, row K32 (LATENT); probe: a one-reaction YAML deck `A => B` with rows
+    `[200, 4e-18]`, `[150, 2e-18]`, `[100, 1e-18]`, `forward` at 250 K with a uniform flux of $10^{14}$; CPU, float64;
+    kintera 2.6.5 built from the pin, torch 2.10.0. A probe of the round-2 read, not a committed check script.]
+
+[^ch07-k33]: [source: UCzhangxi/kintera#54, row K33 (LATENT); probes: a KINETICS7 file with total $10^{-18}$ and two
+    channels of $8 \times 10^{-19}$ (J = $4.8 \times 10^{-2}$ vs $3.0 \times 10^{-2}\ \mathrm{s^{-1}}$ for the total), and
+    the O3 yield files of `tests/kinetics_base/data` summed at 317.5, 322.5 and 327.5 nm (1.068, 1.080, 1.064); CPU,
+    float64; kintera 2.6.5 built from the pin, torch 2.10.0. Probes of the round-2 read, not committed check scripts.]
 
 [^ch07-k18-convention]: [source: UCzhangxi/kintera#94, merged into the staging branch `fix/thermo-20261019`, which
     fixes row K18 of UCzhangxi/kintera#54: the KINETICS7 reader keeps the file's total in column 0, `get_effective_stoich` weights

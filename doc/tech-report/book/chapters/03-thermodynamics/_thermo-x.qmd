@@ -183,13 +183,14 @@ is large because the first pass evaluates $S$ on the composition passed in, befo
 supersaturated input that first $S$ is off the equilibrium path.
 The fix does not remove consequence (3) for a saturated parcel. Along the equilibrium path $S$ is not monotone
 in $T$: with the step-3 cards, $x_{\mathrm{H_2O}} = 0.02$ and the default constants, $S$ has a local maximum where the
-cloud vanishes, at 237.11 K for $10^3$ Pa and 217.80 K for $10^2$ Pa. So $S(T^{\ast})$ has a second root above that
-maximum: 347.12 K for $T^{\ast} = 225$ K at $10^3$ Pa, and at $10^2$ Pa three roots, 199.18, 205 and 240.48 K for
-$T^{\ast} = 205$ K. Started from `Tref` = 300 K, which lies above both maxima, the fixed `PXS->T` returns 347.12 K and
-240.48 K and reports success, since both are true roots (entropy residuals $5.9 \times 10^{-16}$ and
-$1.7 \times 10^{-16}$). At the pin the same calls give 225.00 K and NaN (check line `(f12)`, EXPECTED-FAIL, K16).
-This is row K16.[^ch03-k16] The adiabat path is not affected: `extrapolate_ad` inverts the molar entropy starting
-from the previous level (@sec-ch03-adiabat), not from `Tref`.
+cloud vanishes, at 237.11 K for $10^3$ Pa and 217.80 K for $10^2$ Pa (the condensate fraction is about $10^{-4}$
+0.05 K below each maximum and zero 0.05 K above it). So $S(T^{\ast})$ has a second root above that maximum: 347.12 K
+for $T^{\ast} = 225$ K at $10^3$ Pa. At $10^2$ Pa, $S$ also has a local minimum at 202.26 K, between 199.18 and 205 K,
+so there are three roots, 199.18, 205 and 240.48 K, for $T^{\ast} = 205$ K. Started from `Tref` = 300 K, which lies
+above both maxima, the fixed `PXS->T` returns 347.12 K and 240.48 K and reports success, since both are true roots
+(entropy residuals $5.9 \times 10^{-16}$ and $1.7 \times 10^{-16}$). At the pin the same calls give 225.00 K and NaN
+(check line `(f12)`, EXPECTED-FAIL, K16). This is row K16.[^ch03-k16] The adiabat path is not affected:
+`extrapolate_ad` inverts the molar entropy starting from the previous level (@sec-ch03-adiabat), not from `Tref`.
 <!-- equation-source: eq-ch03-thermo-x-entropy-newton code at the pin, not the correct step (D8) -->
 
 After each step the code calls `forward`, the saturation adjustment at the new $(T, p)$, which changes the
@@ -275,7 +276,8 @@ and `(f5)`-`(f8)`, `(f10)`-`(f12)` on saturated ones:[^ch03-pxs-check]
   tolerance $10^{-2}$), and in every row the iteration converges iff the ratio lies in $(0, 2)$ and alternates iff
   it exceeds 1.
 - `(f12)`: at $10^3$ Pa ($T^{\ast} = 225$ K) and $10^2$ Pa ($T^{\ast} = 205$ K), $S(T) = S(T^{\ast})$ along `forward`
-  has 2 and 3 roots, one above the local maximum of $S$ (PASS), and kintera's `PXS->T` from `Tref` returns $T^{\ast}$:
+  has 2 and 3 roots, one above the local maximum of $S$ (PASS; INFO lines give the local minimum at $10^2$ Pa and the
+  condensate fraction on both sides of each maximum), and kintera's `PXS->T` from `Tref` returns $T^{\ast}$:
   EXPECTED-FAIL (K16). At the pin it returns 225.00 K and NaN; on a build of the fix branch, 347.12 K and 240.48 K.
 
 <!-- equation-check: eq-ch03-thermo-x-entropy-slope check_ch3_pxs.py (f1) -->
@@ -289,7 +291,6 @@ and `(f5)`-`(f8)`, `(f10)`-`(f12)` on saturated ones:[^ch03-pxs-check]
 <!-- equation-check: eq-ch03-thermo-x-entropy-factor check_ch3_pxs.py (f7) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f10) -->
 <!-- equation-check: eq-ch03-thermo-x-entropy-frozen-factor check_ch3_pxs.py (f11) -->
-<!-- equation-check: eq-ch03-thermo-x-entropy-slope-eq check_ch3_pxs.py (f12) -->
 <!-- equation-check: eq-ch03-thermo-x-totals check_ch3_species_functions.py -->
 
 [^ch03-pxs-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, dry

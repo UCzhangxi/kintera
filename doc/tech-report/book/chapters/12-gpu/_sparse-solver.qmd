@@ -46,11 +46,17 @@ less.
 cuSOLVER reports singularity only for an exactly zero diagonal entry of $\mathsf R$, so a matrix that is
 near-singular — one whose smallest diagonal is tiny but non-zero — is solved silently, and the error lands in
 $\mathbf x$ rather than in a status. The host LU behaves the same way, stopping only on an exactly zero pivot. The
-two back ends agree on this, which is convenient and also means that neither warns about conditioning.
+two back ends agree on this, which is convenient and also means that neither warns about conditioning. The gap is
+wider than "near-singular": a matrix that is *exactly* singular raises only when the singularity is **structural**,
+a zero row and column that forces an exact zero in every factorisation. An exactly singular matrix without that
+structure almost never produces an exact zero once rounded, so it too is solved silently and returns a vector of
+rounding-sized garbage. That is K42 on the fix list, latent at the pin: it is a real property of the solve
+contract, and no in-tree example or reference case checked so far reaches it.[^ch12-sparse-k42]
 
 *Step 5, what `reorder` does not change.* The call passes `reorder` $= 0$, which switches off fill-reducing
 ordering. That changes how much fill the factorisation produces, and so its time and memory; it does not change
-the answer.
+the answer in exact arithmetic. A different elimination order does change the rounding, so the two answers agree
+to the $\kappa_2(\mathsf A)\,\epsilon$ of step 3 rather than bitwise.
 
 ### Numerical method
 
@@ -80,13 +86,37 @@ $8.31\times10^{-16}$ and $7.14\times10^{-7}$, which is 0.423 and 0.677 of $\kapp
 the bound step 3 predicts. All 48 returned components are finite, both devices return normally in both precisions,
 and the largest absolute residuals are $5.55\times10^{-16}$ and $2.78\times10^{-15}$ in double.[^ch12-sparse-run]
 
-Step 4 is measured too, at the ends of its range rather than across it. A matrix with an exact zero on the diagonal
-raises on both back ends — the host says "Factor is exactly singular", cuSOLVER "cusolver sparse solve detected
-singularity at row 2" — while one with $10^{-14}$ there returns finite values on both, as step 4 says it must.
+Step 4 is measured at the ends of its range rather than across it, and the raising case is the **structurally**
+singular one. `diag(4, 4, 0)` has a zero row and a zero column, so every factorisation meets an exact zero: both
+back ends raise, the host with "Factor is exactly singular" and cuSOLVER with "cusolver sparse solve detected
+singularity at row 2". `diag(4, 4, 1e-14)`, which is not singular at all but merely ill-conditioned, returns finite values on both, as
+step 4 says it must. Both cases are in the `sparse` mode's committed output, in each precision, with a record
+confirming the two devices agree on whether they raise.[^ch12-sparse-run] Neither is an exactly singular matrix
+*without* a structural zero, which is what K42 describes; that case is measured separately below.
 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
+- **Reached from the supported API, in a targeted case, with a silent wrong answer.** The ordinary assembler
+  rescales the backward-Euler system at and above $\Delta t = 1$ s, solving
+  $(\mathsf I/\Delta t - \mathsf L)\,\mathbf c = \mathbf c_0/\Delta t + \ldots$ instead of the natural
+  $(\mathsf I - \Delta t\,\mathsf L)$ form, because the natural form loses digits at large $\Delta t$
+  ({{< code python/atm2d/assembly.py >}}, the `_RESCALE_THRESHOLD` branch). For a one-column, three-layer,
+  one-species closed operator the exact answer is the constant state for every positive $\Delta t$; but once
+  $1/\Delta t$ is small enough it vanishes when added to $-\mathsf L$, and the assembled matrix becomes bytewise
+  equal to $-\mathsf L$, which is exactly singular. At $\Delta t = 10^{18}$ in double and $10^{8}$ in single, the
+  host raises while `newton_implicit_step` on CUDA reports **converged in two iterations** and the default
+  acceptance returns true, having lost 98.44 % and 70.94 % of the conserved mass. Neither test can see the error:
+  convergence is a per-species *relative change* between successive iterates
+  ({{< code python/atm2d/newton/coupled.py newton_implicit_step >}}), which is satisfied once the iterate stops
+  moving, and `default_accept` ({{< code python/atm2d/timestep.py default_accept >}}) compares the
+  updated concentrations with the previous ones rather than testing a residual or a conserved quantity. Reduced in-tree example and test systems at
+  ordinary timesteps return finite answers with residuals at round-off. This behaviour is **K43**, and like K42 it
+  is latent at the pin: it is a targeted reproduction at an extreme stiffness ratio, and **no failure was
+  demonstrated in the reduced shipped examples and reference cases that were tested**. That is a statement about
+  those cases only, not a finding that shipped decks are safe: default-sized examples, production atmosphere decks
+  and full adaptive integrations were not run, so whether any of them reaches this regime is
+  unknown.[^ch12-sparse-reach]
 - **One system, and a well-conditioned one.** The comparison above rests on a single 12-unknown matrix with
   $\kappa_2 \approx 8.8$. It says nothing about large grids, about ill-conditioned systems, or about how the two
   back ends classify an arbitrary singular or rank-deficient matrix; the zero and near-zero diagonals above are two
@@ -94,6 +124,21 @@ singularity at row 2" — while one with $10^{-14}$ there returns finite values 
   check, not derived from a theorem.
 - **The matrix is assembled on the host.** It is built on the CPU and copied to the device, so GPU-side assembly is
   not exercised; only the solve is compared.
+- **A singular system usually returns finite garbage, not an error, and the two back ends disagree about which
+  ones (K42).** Raising needs a structural zero row and column. Both legs have now been measured on the same 2000
+  paired matrices. The host raised 370 times and returned finite values 1630 times; CUDA raised 154 times and
+  returned 1846. Neither produced a non-finite result. The two agree on only part of it: 1519 cases returned on
+  both and 43 raised on both, but **438 of 2000 classifications differ** — 327 where the host raises and CUDA
+  returns, 111 the other way. So the back ends do *not* share a singularity rule, and step 4's "the two back ends
+  agree on this" holds for the structural case only.
+- **Those 2000 matrices are numerically rank deficient, not proven exactly singular.** They are products of two
+  random factors, so rounding the product can leave a stored matrix with a non-zero determinant. Exact singularity
+  is shown instead by one integer control whose third row is the sum of the first two, with no zero row or column:
+  both back ends return finite values with no error, at RHS-relative residuals of 0.75 on the host and 1.125 on
+  CUDA. Conversely `diag(4, 4, 1e-14)` returns a correct solution of magnitude $10^{14}$, so size alone identifies
+  nothing. A finiteness check would miss every silent return here, and so would a normwise backward-error check:
+  each of them has backward error below $10^{-12}$ while its RHS-relative residual exceeds
+  $10^{-8}$.[^ch12-sparse-k42]
 - **A near-singular matrix still passes silently on both back ends.** With `tol` $= 0$ the CUDA solve reports
   singularity only for an exactly zero diagonal of $\mathsf R$, and the host LU only for an exactly zero pivot.
   Neither reports conditioning, so a badly conditioned atm2d system returns a number rather than a warning, and the
@@ -113,6 +158,36 @@ one CUDA build on one host, one system; committed output `derivation-checks/ch12
 - No CPU fallback: the entry point exists only in the CUDA build, so a sparse solve has no host twin inside this
   scheme to be compared against; the comparison has to be made against the atm2d host path. That is a structural
   limit of the scheme, not an untested hypothesis.
+
+[^ch12-sparse-k42]: [source: UCzhangxi/kintera#54, row K42 (`tol` = 0, a singular system without a structural
+zero returns finite garbage), **LATENT** at the pin: the row records that no in-tree example or reference case
+reaches it. Measured here at
+kintera@0d9f67f97d841147e23283d2dcdab302238d2c45: 2000 paired trials, $n = 3$ to 6, $r = n-1$, each matrix a
+product of two standard-normal factors with no zero row or column, the identical rounded entries given to
+`scipy.sparse.linalg.factorized` (as `python/atm2d/matrix.py:280` calls it) and to the pinned
+`cuda_csr_solve_cusolver` at `tol` = 0, `reorder` = 0; host 370 raise / 1630 finite, CUDA 154 / 1846, 0 non-finite,
+1519 both finite, 43 both raise, 438 classifications differing; median largest component $6.01\times10^{15}$ host
+and $3.77\times10^{15}$ CUDA. Every finite return has RHS-relative residual above $10^{-8}$ and normwise backward
+error at or below $10^{-12}$. A second run of the originally reported host-only probe gave 370/1630 where that
+report gave 343/1657; the cause of the difference is not established, and the matrix bytes behind the original
+counts were not published, so bitwise identity across machines could not be checked. Exact-singularity control:
+`[[1,2,3],[4,5,6],[5,7,9]]` with $\mathbf b = [1,1,1]$, finite on both, RHS-relative residual 0.75 host and 1.125
+CUDA. Run: `python check_ch12_k42.py` from `derivation-checks/ch12/`, output `check_ch12_k42.out`; one CUDA build
+on one host.]
+
+[^ch12-sparse-reach]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: reduced grids of
+`examples/plot_atm2d_steady_diffusion_dirichlet_2d.py` (6x5, 30 unknowns) and
+`examples/plot_atm2d_steady_advection_diffusion.py` (17 layers), the exact inputs of
+`tests/test_atm2d.py::test_build_implicit_step_system_matches_dense_reference` (24 unknowns at two timesteps) and
+the mixed-boundary operator of `test_boundary_conditions_apply_on_left_and_top_edges` (36 unknowns, numerical rank
+35), all full rank except the last and all finite on both devices with RHS-relative residuals at or below
+$3.6\times10^{-15}$; then the one-column three-layer closed operator with constant concentration, where the
+assembled matrix is asserted bytewise equal to $-\mathsf L$ once the shift is lost; run: `python
+check_ch12_atm2d_reach.py` and the same with `--newton-only` from `derivation-checks/ch12/`, outputs
+`check_ch12_atm2d_reach.out` and `check_ch12_atm2d_newton.out`, exit 0; mass error is $|\sum x - 3|/3$ on unit
+cell volumes, an exact invariant of that source-free state; one CUDA build on one host; targeted cases, not a
+production-deck result. K43 is the designation this chapter uses for the behaviour; it has no row on the fix list,
+so this paragraph rests on the measurement above rather than on a cited row.]
 
 <!-- reader glossary notes -->
 [^rg-0c875aff78a2]: tol — tolerance argument handed unchanged to the cuSOLVER QR solve; Python default 0, argument of `cuda_csr_solve_cusolver`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92)

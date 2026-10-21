@@ -77,10 +77,13 @@ swap: cpp 2, cu 2 (expected 2 and 2) PASS".[^ch12-kernels-check] Step 4 is not a
 it fixes the *size* of the residual difference, which is the subject of @sec-ch12-dispatch, Tests.
 
 **What a singular cell returns.** The per-cell step factorises $\mathsf A = \mathsf I/\Delta t - \mathsf S\mathsf J$
-by LU with partial pivoting and falls back to a pseudo-inverse solve when that fails
-({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}). The fallback is not an approximation of
-the same answer; it answers a different, well-posed question. When $\mathsf A$ is singular,
-@eq-ch12-dispatch-implicit has either no solution or infinitely many, so the solver returns the minimiser of
+by LU with partial pivoting and falls back to a pseudo-inverse solve when the factorisation reports failure
+({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}). That report is narrow: it comes only when
+a pivot column is **exactly** zero ({{< code src/math/core.h dsolve_lu >}}). A merely ill-conditioned or
+numerically singular $\mathsf A$ goes through LU and returns a large vector, not the pseudo-inverse answer. The
+fallback is not an approximation of the same answer; it answers a different, well-posed question. When the pivot
+column is exactly zero, @eq-ch12-dispatch-implicit has either no solution or infinitely many, so the solver
+returns the minimiser of
 $\lVert \mathsf A\,\delta\mathbf c - \mathsf S\mathbf r\rVert_2$ that is itself smallest in norm,
 
 $$
@@ -95,7 +98,7 @@ branch is reported as a success, so a caller cannot tell from the status that it
 
 How accurately that pseudo-inverse is formed is a separate question from whether the formula is right. The
 eigen-decomposition runs a fixed budget of Jacobi rotations and cuts off on an absolute threshold, which is open as
-K21 on the fix list; the check below exercises one diagonal cell, where the minimum-norm answer is exact, and so
+K21 on the fix list;[^ch12-k21] the check below exercises one diagonal cell, where the minimum-norm answer is exact, and so
 does not settle the general accuracy of the fallback.
 
 ### Numerical method
@@ -269,8 +272,8 @@ and 174 skipped on the CPU build with no GPU visible. All skips have causes othe
 cases without a GPU, external data files that are absent, and a missing build tool.[^ch12-dispatch-pytest]
 
 **How close should the two devices be?** Step 4 of the Derivation says the difference is round-off; this says how
-much round-off, which is what a tolerance has to be chosen against. Write $\epsilon$ for the unit round-off,
-$2.2\times10^{-16}$ in double and $1.2\times10^{-7}$ in single.
+much round-off, which is what a tolerance has to be chosen against. Write $\epsilon$ for the machine epsilon,
+$2.2\times10^{-16}$ in double and $1.2\times10^{-7}$ in single; the unit round-off is half of each.
 
 1. *A contracted product costs one rounding.* Replacing a multiply and an add by one fused multiply-add removes a
    rounding, so each such site moves the result by at most $\epsilon/2$ relative. The library `log` and `exp` are
@@ -288,40 +291,47 @@ $2.2\times10^{-16}$ in double and $1.2\times10^{-7}$ in single.
 
 **Evidence, and what kind it is.** Two sources, which should not be read as one:
 
+*Supplied with the check, CPU only.* `check_ch12_twins.py` is a static twin comparison plus CPU runs; the machine
+that produced the supplied `.out` had no GPU. Quoting
+`derivation-checks/ch12/check_ch12_twins.supplied.out`, its line i reads "evolve_implicit vs numpy solve, 64 cells
+ns=5 nr=4: max rel diff 1.78e-13 tol 1e-12 PASS", and line j gives the singular cell against numpy's
+pseudo-inverse with exact agreement; together they check @eq-ch12-dispatch-implicit and @eq-ch12-dispatch-pinv
+against an independent oracle. The committed `derivation-checks/check_ch12_twins.out`, an x86_64 run of the same
+script, gives 2.92e-13 and 6.14e-05 on those two lines; the verdicts are identical and the difference is the
+host's floating-point contraction. Line k is INFO, not a pass: "float32 evolve_implicit vs float64 numpy: max rel
+diff 5.35e-05". It is the distance of the single-precision step from the exact answer, which sets the scale any
+single-precision device comparison must be read against; it is not itself a CUDA result.[^ch12-kernels-check]
+
 The script reports 17 PASS, 1 INFO, 0 FAIL and 0 EXPECTED-FAIL. That count is not taken from its exit status,
 which is 0 whether or not a line printed FAIL; `validate_ch12_output.py`, committed beside it, parses the output and
 requires all 18 labels, the 17/1/0/0 split and no non-finite token before reporting success.
 
-*Supplied with the check, CPU only.* `check_ch12_twins.py` is a static twin comparison plus CPU runs; the machine
-that produced the supplied `.out` had no GPU. Its line i, "evolve_implicit vs numpy solve, 64 cells ns=5 nr=4:
-max rel diff 1.78e-13 tol 1e-12 PASS", and line j, the singular cell against numpy's pseudo-inverse with exact
-agreement, check @eq-ch12-dispatch-implicit and @eq-ch12-dispatch-pinv against an independent oracle. Line k is
-INFO, not a pass: "float32 evolve_implicit vs float64 numpy: max rel diff 5.35e-05". It is the distance of the
-single-precision step from the exact answer, which sets the scale any single-precision device comparison must be
-read against; it is not itself a CUDA result.[^ch12-kernels-check]
-
 *Measured here, on CUDA.* The same per-cell step was then run on both devices of a CUDA build, 64 cells,
 $n_{\mathrm s} = 5$, $n_{\mathrm r} = 4$, against the same float64 oracle. In double precision the two devices
-agree to $1.79\times10^{-13}$ relative over 320 values, with identical finite masks; the run's largest squared
-condition number is $2.56\times10^{4}$, so $\kappa(\mathsf A) \approx 1.6\times10^{2}$ and
-$\kappa(\mathsf A)\,\epsilon \approx 3.5\times10^{-14}$ — the measured difference is a small multiple of it, as
-step 2 allows. The singular cell returns bitwise the same vector on both devices. In single precision the two
+agree to $1.79\times10^{-13}$ relative over 320 values, with identical finite masks. The check records the
+largest $\kappa_2(\mathsf A)$ over the 64 cells as $2.56\times10^{4}$ — this is the condition number itself,
+`np.linalg.cond`, despite the field being named `max_cond2` — so
+$\kappa_2(\mathsf A)\,\epsilon \approx 5.7\times10^{-12}$ and the measured difference is 0.032 of it,
+comfortably inside what step 2 allows. The singular cell returns bitwise the same vector on both devices. In single precision the two
 devices agree to $7.90\times10^{-6}$ relative while each sits $5.3$ to $6.1\times10^{-5}$ from the exact answer:
 the devices agree with each other an order of magnitude better than either agrees with the truth, so a
 single-precision comparison tolerance should be set from the second number, not the first.[^ch12-dispatch-devices]
 
-The whole kinetics step was compared on both devices for two reaction sets, a Kessler-form evaporation set and a
-pressure-switched coagulation set, 64 cells in double. The measure is the largest CPU-CUDA difference over the
-largest CPU value: $8.6\times10^{-18}$, $6.9\times10^{-17}$ and $5.4\times10^{-16}$ for the rates, the Jacobian and
-the implicit step of the first set, and $1.5\times10^{-16}$, $2.2\times10^{-16}$ and $8.0\times10^{-16}$ for the
-second. The first two of each triple are direct formulas and sit at $\epsilon$, as step 2 predicts; the third is a
-linear solve.[^ch12-dispatch-agree]
+The whole kinetics step was compared on both devices for three reaction sets — a Kessler-form evaporation set, a
+pressure-switched coagulation set and `tests/jupiter.yaml` — 64 cells each, in double and in single. The measure is
+the largest CPU-CUDA difference over the largest CPU value. In double, for the rates, the Jacobian and the implicit
+step of @eq-ch12-dispatch-implicit: $1.62\times10^{-16}$, $1.70\times10^{-16}$ and $1.33\times10^{-16}$ for the
+Kessler set; $1.15\times10^{-16}$, $2.22\times10^{-16}$ and $6.33\times10^{-16}$ for the pressure-switched set;
+and $8.49\times10^{-16}$, $6.94\times10^{-16}$ and $9.29\times10^{-16}$ for Jupiter. All nine sit within a few
+$\epsilon$, as step 2 predicts for a direct formula and allows for a linear solve of this
+conditioning.[^ch12-dispatch-agree]
 
-How far the third number is from the step-2 bound was then reconstructed by computing $\kappa_2$ of
-$\mathsf I/\Delta t - \mathsf S\mathsf J$ for the same inputs. Reading the implicit-step difference against
-$\max\kappa_2\,\epsilon$ over each deck, over $\max\kappa_2\,\epsilon$ is 0.088 for the Kessler set
-($\max\kappa_2 = 6.87$), 0.142 for the pressure-switched set ($20.1$) and 3.66 for Jupiter ($1.14$) in double, and
-1.27, 0.142 and 2.93 for the same three in single.
+How far the implicit-step figures are from the step-2 bound was then reconstructed by computing $\kappa_2$ of
+$\mathsf I/\Delta t - \mathsf S\mathsf J$ for the same saved inputs, on the CPU. The step difference over
+$\max\kappa_2\,\epsilon$ is 0.088 for the Kessler set ($\max\kappa_2 = 6.87$), 0.142 for the pressure-switched
+set ($20.1$) and 3.66 for Jupiter ($1.14$) in double, and 1.27, 0.142 and 2.93 for the same three in single. Both
+the numerator and the ratio come from one campaign, the committed one the `conditioning` mode reads; no second
+measurement is mixed in.
 
 Three of the six sit above 1. That is the expected shape of step 2 rather than a contradiction of it: the step
 gives an order, not a bound with a constant of 1, and these ratios are computed from *global* maxima — the largest
@@ -352,13 +362,14 @@ build: 4 cases of `test_kinetics_base.py` need an external data file, and the 2 
 `setuptools_scm`. Serial `ctest` gives 48 of 49 passing on both builds; the failing entry is
 `test_version_floor.py`, whose module skips without `setuptools_scm`, which ctest counts as a failure.]
 
-[^ch12-dispatch-agree]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML inputs of
-`tests/test_evaporation_kessler.py` and `tests/test_coagulation_pressure_switch.py`, 64 cells, temperature 80 K to
-120 K, pressure from $10^{3.5}$ to $10^{4.5}$ Pa, random concentrations; run: `python -P gpu_probe.py`, a script that
-calls `Kinetics.forward_with_rate_constants`, `Kinetics.jacobian` and `evolve_implicit` with $\Delta t =
-10\,\mathrm{s}$ on
-each device, double precision, and prints the largest difference over the largest CPU value; CUDA 12.6.85, torch
-2.10.0+cu126, Python 3.11.13; missing evidence: the script is not yet committed as a check of this report.]
+[^ch12-dispatch-agree]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: the YAML inputs of
+`tests/test_evaporation_kessler.py` and `tests/test_coagulation_pressure_switch.py`, and `tests/jupiter.yaml`,
+seed 20261020, 64 cells per deck and precision, $\Delta t = 10$ s, temperature 80 to 120 K for the first two and
+180 to 220 K for Jupiter, pressure $10^{3.5}$ to $10^{4.5}$ Pa, random concentrations; run:
+`Kinetics.forward_with_rate_constants`, `Kinetics.jacobian` and `evolve_implicit` on each device, the largest
+difference over the largest CPU value; committed values in
+`derivation-checks/ch12/saved-preparation/kinetics64.jsonl` and `kinetics32.jsonl`, which the `conditioning` mode
+reads directly (`check_ch12_spec_complement.py:131-134`); one CUDA build on one host.]
 
 ### Limits
 
@@ -374,7 +385,7 @@ each device, double precision, and prints the largest difference over the larges
 - **A `ftol` below single-precision resolution makes the convergence *status* device-dependent.** The agreement
   this chapter reports is of returned values. The iteration *count*, and with it the success flag, is decided by a
   stopping test on quantities of order $\epsilon_{\mathrm{mach}}$ apart on the two devices, and in single precision
-  $\epsilon_{\mathrm{mach}} \approx 1.2\times10^{-7}$. A saturation-adjustment run of `tests/jupiter.yaml` in
+  $\epsilon_{\mathrm{mach}} \approx 1.2\times10^{-7}$. A saturation-adjustment run of the 200-cell synthetic eight-vapour deck in
   `float32` with `ftol` $= 10^{-12}$ — six orders of magnitude below that resolution — therefore puts the stopping
   test in the noise: one cell of the sweep, at $T = 250.7538$ K and $10^5$ Pa, returns diagnostic 11 on the CPU and
   $-2050$ on CUDA, that is, converged in 11 passes against not converged within 50. The composition still agrees:
@@ -433,15 +444,17 @@ maxima over all cells and components; committed output
 seed 12, 64 cells, $n_{\mathrm s} = 5$, $n_{\mathrm r} = 4$, $\Delta t = 0.3$, plus one rank-2 singular cell; run:
 `evolve_implicit` on CPU and on CUDA tensors of the same inputs, double and single, each compared with a float64
 numpy solve and with each other; double: CPU-CUDA global relative $1.79\times10^{-13}$, largest absolute
-$6.38\times10^{-11}$ over 320 values, 0 finite-mask mismatches, largest squared condition number
-$2.56\times10^{4}$; singular cell identical on both devices; single: CPU-CUDA global relative
+$6.38\times10^{-11}$ over 320 values, 0 finite-mask mismatches, largest $\kappa_2(\mathsf A)$
+$2.56\times10^{4}$ (the check's `max_cond2` field is `np.linalg.cond`, the condition number itself); singular cell identical on both devices; single: CPU-CUDA global relative
 $7.90\times10^{-6}$, each device $6.14\times10^{-5}$ (CPU) and $5.35\times10^{-5}$ (CUDA) from the float64 oracle,
 reported as INFO and not as a tolerance requirement; the same build re-ran `check_ch12_twins.py` and reproduced its
 committed output except for the build path, line i ($2.92\times10^{-13}$) and line k ($6.14\times10^{-5}$); one
-CUDA build on one host; a measurement outside the suite, not a committed check.]
+CUDA build on one host; committed as `derivation-checks/ch12/check_ch12_numeric_devices.py` with its `.out`.]
 
-[^ch12-dispatch-ftol32]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, the
-single cell at $T = 250.75376892089844$ K and $10^5$ Pa of a 45-cell sweep, `float32`, `max-iter` 50; run:
+[^ch12-dispatch-ftol32]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the synthetic
+eight-vapour card of `derivation-checks/ch12/saved-preparation/one-cell.yaml`, 17 species and 8 reactions (hence 17
+mole fractions and 64 gain entries per cell), 200 cells over 250 to 400 K; the
+isolated cell is cell 1, at $T = 250.75376892089844$ K and $10^5$ Pa, `float32`, `max-iter` 50; run:
 `ThermoX.forward` on CPU and on CUDA tensors of the same inputs, once with `ftol: 1.e-12` and once with
 `ftol: 1.e-5`, comparing diagnostics, the 17 mole fractions and the 64 gain entries at
 $\texttt{atol} = 10^{-6}$, $\texttt{rtol} = 10^{-4}$; at `1.e-12` the diagnostics are 11 (CPU) and $-2050$ (CUDA),
@@ -464,3 +477,6 @@ cuda float32`
 and `python -P ei_case.py cuda narrow`, each in its own process; the script calls `evolve_implicit` with rates and
 Jacobian on CUDA and `stoich` on the CPU, as single precision, or with one reaction column of two; CUDA 12.6.85, torch
 2.10.0+cu126, Python 3.11.13.]
+
+[^ch12-k21]: [source: UCzhangxi/kintera#54, row K21 (`psolve` accuracy: a fixed budget of Jacobi rotations and an
+absolute cut-off), open at the pin.]

@@ -1,6 +1,6 @@
 kintera 2.6.5 from $KINTERA_WT/../pyinst-cuda/kintera/__init__.py
-{"case": "shared_memory_device_attributes", "library": "/data02/tianhaol/fridica-snapy/worker1/snapy-kintera130/.venv-kintera130-py311/lib/python3.11/site-packages/nvidia/cuda_runtime/lib/libcudart.so.12", "ordinary": 49152, "optin": 101376}
-{"case": "shared_memory_device_attributes", "library": "/usr/local/cuda-13.2/targets/x86_64-linux/lib/libcudart.so.13.2.86", "ordinary": 49152, "optin": 101376}
+{"case": "shared_memory_device_attributes", "library": "libcudart.so.12", "ordinary": 49152, "optin": 101376}
+{"case": "shared_memory_device_attributes", "library": "libcudart.so.13.2.86", "ordinary": 49152, "optin": 101376}
 {"case": "implicit_launch", "ns": 39, "device": "cpu", "bytes": 50544, "M": 101376, "status": "returned", "finite": 39, "max_abs_oracle": 0.0, "predicted_threads": null}
 {"case": "implicit_launch", "ns": 39, "device": "cuda", "bytes": 50544, "M": 101376, "status": "returned", "finite": 39, "max_abs_oracle": 0.0, "predicted_threads": 2}
 {"case": "implicit_launch", "ns": 55, "device": "cpu", "bytes": 99440, "M": 101376, "status": "returned", "finite": 55, "max_abs_oracle": 0.0, "predicted_threads": null}

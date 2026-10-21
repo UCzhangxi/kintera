@@ -47,4 +47,3 @@ def fixed_deck(deck):
             line = line.split("u0_R:")[0] + f"u0_R: {FIXED[cur][1]}"
         out.append(line)
     return "\n".join(out) + "\n"
-

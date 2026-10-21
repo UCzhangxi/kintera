@@ -137,7 +137,7 @@ figure is not provided: the figure module is not written yet.
 | failure count | {{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}} | `take_saturation_adjustment_failures` | always |
 | snapy caller | [`snapy meshblock.cpp:816-837`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L816-L837) | `ThermoYImpl` | nucleation reactions |
 | snapy redo check | [`snapy meshblock.cpp:1363-1365`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1363-L1365) | `nfail_` | nucleation reactions |
-| snapy pre-step drain | [`snapy meshblock.cpp:1269-1276`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1269-L1276) | `take_saturation_adjustment_failures` | nucleation reactions |
+| snapy pre-step drain | [`snapy meshblock.cpp:1269-1276`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1269-L1276) | `take_saturation_adjustment_failures` | always |
 
 : Code map of saturation adjustment in a stage. {#tbl-ch14-saturation-code}
 
@@ -158,7 +158,7 @@ The kintera test covers the count, not snapy's use of it.
 [^ch14-check-sat]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch14_coupling.out`, lines (k0) and (k) to (r), from an x86-64 Linux build. Lines (k0)
+    `derivation-checks/check_ch14_coupling.out`, lines (k0) and (k) to (r), from an x86-64 Linux build, as its `build:` line records. Lines (k0)
     and (p) are build-dependent: a run of the same script on an arm64 build at the pin gives `-2010 10 9 7 6 4` for
     (k0), one failed cell, and 1.000000 in every cell for (p).]
 

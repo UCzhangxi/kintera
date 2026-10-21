@@ -21,6 +21,8 @@ torch.manual_seed(0)
 R = 8.31446  # J/(mol K), the value both codes use (kintera constants.h)
 
 print(version_line())
+import platform  # noqa: E402  the build this output was made on
+print(f"build: {platform.system()} {platform.machine()}, Python {platform.python_version()}, torch {torch.__version__}")
 
 with open(DECK) as f:
     card = yaml.safe_load(f)

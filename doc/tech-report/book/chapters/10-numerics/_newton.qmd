@@ -42,10 +42,11 @@ $$
 c_i\, p \le 0 ,
 $$ {#eq-ch10-newton-usable}
 
-that is, unless it points out of a bound with no slack left. The reason is one line. Along the direction the
-constraint value grows as $c_i(z + s\,p) = c_i z + s\,c_i p$, so a row with slack $d_i > 0$ and $c_i p > 0$ is still
-met for every scale $s \le d_i/(c_i p)$, which the caller's step reduction can reach. A row with no slack,
-$d_i \le 0$, and $c_i p > 0$ is crossed by every $s > 0$; only such rows send the step to the constrained solve. @eq-ch10-newton-usable is tested in
+that is, unless it points out of a bound with no slack left. The reason is one line. The constraint acts on the
+step: row $i$ holds for the scaled step $s\,p$ when $s\,c_i p \le d_i$. A row with slack $d_i > 0$ and $c_i p > 0$
+is therefore met for every scale $s \le d_i/(c_i p)$, which the caller's step reduction can reach. A row with no
+slack, $d_i \le 0$, and $c_i p > 0$ is crossed by every $s > 0$; only such rows send the step to the constrained
+solve. @eq-ch10-newton-usable is tested in
 `constrained_newton_step` ({{< code src/math/constrained_newton.h constrained_newton_step >}}). Otherwise the step
 solves $\min \lVert \mathsf J p - g \rVert$ with $\mathsf C p \le d$ by `leastsq_kkt` with no equality rows.
 

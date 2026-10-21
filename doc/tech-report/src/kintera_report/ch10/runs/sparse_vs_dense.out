@@ -1,0 +1,9 @@
+# python -P src/kintera_report/ch10/runs/sparse_vs_dense.py at kintera 0d9f67f: -DCUDA=ON Release build, GTX 1080 Ti,
+# CUDA 12.6.85, GCC 11.5.0, Python 3.11.13, torch 2.10.0+cu126
+kintera 2.6.6.dev0+g0d9f67f97.d20261018 NVIDIA GeForce GTX 1080 Ti
+n=   10 density 0.3: max rel |x - x_dense| over 5 systems = 7.89e-16
+n=  100 density 0.05: max rel |x - x_dense| over 5 systems = 1.09e-15
+n= 1000 density 0.005: max rel |x - x_dense| over 5 systems = 1.63e-15
+singular 3x3, tol=0: returned x = [2.9999999999999996, -1.0, 1.0]
+singular 3x3, tol=1e-12: raised: cusolver sparse solve detected singularity at row 2
+singular 3x3, inconsistent b, tol=0: returned x = [-9553577508788650.0, 4776788754394327.0, -1592262918131442.0], residual |Ax-b| = 3.742e+00, finite True

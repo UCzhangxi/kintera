@@ -1,0 +1,3 @@
+{
+  "eq-ch10-kkt-direct": "For square nonsingular $\\tilde{\\mathsf A}$, multiply the first block row of the KKT system by $\\tilde{\\mathsf A}^{-\\mathrm T}$: the same $(y, \\mu)$, with conditioning that follows $\\operatorname{cond}(\\tilde{\\mathsf A})$ instead of its square."
+}

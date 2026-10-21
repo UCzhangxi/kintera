@@ -98,7 +98,7 @@ record is attached in this draft (missing evidence).
 [^ch10-sparse-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, random CSR systems
 (torch seed 0) and a 3 by 3 rank-deficient matrix; run: `python -P src/kintera_report/ch10/runs/sparse_vs_dense.py`
 with the `-DCUDA=ON` build at the pin installed, which calls `kintera.cuda_csr_solve_cusolver` against
-`torch.linalg.solve`; GTX 1080 Ti, CUDA 12.6, torch 2.10.0+cu126; the in-tree
+`torch.linalg.solve`; output committed as `src/kintera_report/ch10/runs/sparse_vs_dense.out`, which records the build; GTX 1080 Ti, CUDA 12.6, torch 2.10.0+cu126; the in-tree
 CUDA cases of `tests/test_atm2d.py` (`-k "cusolver or cuda"`) pass on the same build (4 passed); a measurement
 outside the suite, not a committed check.]
 

@@ -63,7 +63,7 @@ def sparse():
             max_pointwise_relative=float((diff/np.maximum(np.maximum(np.abs(zs[0]),np.abs(zs[1])),np.finfo(float).tiny)).max()),
             volume_weighted_conservation_relative=float(imbalance/scale),verdict='PASS')
 
-        # K42: structural vs numerical singularity, 3x3, as saved-preparation/probe.py:98-115 built them.
+        # K42: structural vs numerical singularity, 3x3.
         # diag(4,4,0) has a zero row AND column, so every factorisation meets an exact zero and both
         # back ends raise. diag(4,4,1e-14) is exactly as singular to no tolerance but structurally full,
         # and returns finite values on both. Nothing here measures a singular matrix without that
@@ -132,7 +132,8 @@ def launch():
     emit(case='saved_ThermoX_workspace_prediction',ns=n,nreaction=nr,dtype='float64',bytes=b,M=M,predicted_threads=min(32,max(1,M//b)),note='Source-derived launch size, not profiler instrumentation; saved 200-cell CUDA execution supplies numerical evidence')
 
 def conditioning():
-    # CPU-only reconstruction. Mirrors saved probe.py input generation exactly.
+    # CPU-only reconstruction of the inputs behind saved-preparation/kinetics{64,32}.jsonl:
+    # same seed, deck order, cell count and dt, so the saved differences below are comparable.
     for dtype in (torch.float64,torch.float32):
         for name in ['test_evaporation_kessler','test_coagulation_pressure_switch','jupiter']:
             if name=='jupiter':path=ROOT/'tests/jupiter.yaml'

@@ -297,10 +297,11 @@ that produced the supplied `.out` had no GPU. Quoting
 ns=5 nr=4: max rel diff 1.78e-13 tol 1e-12 PASS", and line j gives the singular cell against numpy's
 pseudo-inverse with exact agreement; together they check @eq-ch12-dispatch-implicit and @eq-ch12-dispatch-pinv
 against an independent oracle. The committed `derivation-checks/check_ch12_twins.out`, an x86_64 run of the same
-script, gives 2.92e-13 and 6.14e-05 on those two lines; the verdicts are identical and the difference is the
-host's floating-point contraction. Line k is INFO, not a pass: "float32 evolve_implicit vs float64 numpy: max rel
-diff 5.35e-05". It is the distance of the single-precision step from the exact answer, which sets the scale any
-single-precision device comparison must be read against; it is not itself a CUDA result.[^ch12-kernels-check]
+script, gives 2.92e-13 on line i and 6.14e-05 on line k; line j agrees exactly on both. The verdicts are
+identical and the difference is the host's floating-point contraction. Line k is INFO, not a pass: "float32
+evolve_implicit vs float64 numpy: max rel diff 5.35e-05". It is the distance of the single-precision step from
+the exact answer, which sets the scale any single-precision device comparison must be read against; it is not
+itself a CUDA result.[^ch12-kernels-check]
 
 The script reports 17 PASS, 1 INFO, 0 FAIL and 0 EXPECTED-FAIL. That count is not taken from its exit status,
 which is 0 whether or not a line printed FAIL; `validate_ch12_output.py`, committed beside it, parses the output and

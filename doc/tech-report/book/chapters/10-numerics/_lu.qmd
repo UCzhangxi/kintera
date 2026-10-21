@@ -49,7 +49,52 @@ Before the division, the row with the largest scaled candidate $s_i \big| a_{ij}
 is swapped into the pivot position. The factorization is refused when that largest scaled value is not above
 $\tau$. @eq-ch10-lu-crout is computed in `ludcmp` ({{< code src/math/ludcmp.h ludcmp >}}). A solve then runs forward
 substitution with $\mathsf L$ and back substitution with $\mathsf U$ in `lubksb`
-({{< code src/math/lubksb.h lubksb >}}). Exact in exact arithmetic.
+({{< code src/math/lubksb.h lubksb >}}). Exact in exact arithmetic. Three further steps state what the scaling, the
+return value and `skip_row` mean.
+
+*Step 1: the pivot test is invariant under row scaling.* `ludcmp` stores $s_i = 1/\max_j |a_{ij}|$ for every row
+and chooses the pivot by the largest $s_i\,|a_{ij} - \sum_{k<j}\ell_{ik}u_{kj}|$. Multiply row $i$ by $t_i \ne 0$.
+Its row maximum becomes $|t_i|\max_j|a_{ij}|$, so $s_i$ becomes $s_i/|t_i|$. Every candidate of that row is a sum
+of entries of the same row times entries of $\mathsf U$ from rows already finished, so it is multiplied by $t_i$ as
+well. The product $s_i|\cdot|$ is unchanged. Both the pivot choice and the test against `pivot_tolerance` $\tau$ are
+therefore relative to the size of each row and do not depend on the units in which each equation is written.
+
+*Step 2: the determinant.* With the swaps collected in $\mathsf P$ and $\mathsf L$ unit lower triangular,
+
+$$
+\det \mathsf A = \det \mathsf P^{-1} \det \mathsf L \det \mathsf U = d \prod_j u_{jj} ,
+$$ {#eq-ch10-lu-det}
+
+where $d = \pm 1$ is the sign of the permutation, the return value of `ludcmp` (0 for a singular matrix).
+
+*Step 3: when `skip_row` is exact.* A row flagged in `skip_row` is left out as a pivot row and also as a column
+(the column loop skips $j$ with `skip_row[j]` set). The update of the entries above the diagonal and the forward sum
+of `lubksb` still run over the skipped index. Leaving a row and its column out of the factorization is exact only
+when that row and that column are zero, so that the remaining block factors on its own. That is the case
+`leastsq_kkt` uses: it flags rows of its symmetric KKT[^rg-8c02b98e6297] block that are entirely zero (@sec-ch10-kkt), and an all-zero
+row with a nonzero right-hand side is reported as status 3 before the factorization.
+
+`check_ch10_dense.py` measures steps 1 and 2:[^ch10-lu-check]
+
+- "(c) ludcmp+lubksb, 300 random systems: max backward error 1.70e-16 (tol 1.4e-14); d * prod(diag U) = det(A) to
+  1e-10 in all cases: True PASS"
+- "(d) ludcmp scaled pivot ~1e-13: accepted at tol 0 (True), refused at tol 1e-12 (True); after scaling rows by
+  1e150, 1e-150, 1e100 the same verdicts (True, True) PASS"
+
+**Least squares by the normal equations.** `leastsq` minimizes $\phi(x) = \tfrac12\lVert\mathsf A x - b\rVert^2$
+for an $n_1 \times n_2$ matrix with $n_1 \ge n_2$. Expanding, $\phi = \tfrac12 x^{\mathrm T}\mathsf A^{\mathrm T}
+\mathsf A x - x^{\mathrm T}\mathsf A^{\mathrm T} b + \tfrac12 b^{\mathrm T} b$, whose gradient is
+$\nabla\phi = \mathsf A^{\mathrm T}(\mathsf A x - b)$. Setting it to zero gives
+
+$$
+\mathsf A^{\mathrm T}\mathsf A\, x = \mathsf A^{\mathrm T} b ,
+$$ {#eq-ch10-lu-normal}
+
+a minimum because $\mathsf A^{\mathrm T}\mathsf A$ is positive semidefinite. Its singular values are the squares of
+those of $\mathsf A$, so $\operatorname{cond}(\mathsf A^{\mathrm T}\mathsf A) = \operatorname{cond}(\mathsf A)^2$.
+`leastsq` forms both sides and solves with `ludcmp` and `lubksb` ({{< code src/math/leastsq.h leastsq >}}).
+`check_ch10_dense.py`: "(e) luminv vs numpy.linalg.inv rel 7.3e-16; leastsq (normal equations) vs numpy.linalg.lstsq
+2.8e-16 (tol 1e-12) PASS".
 
 ### Numerical method
 
@@ -59,7 +104,7 @@ substitution with $\mathsf L$ and back substitution with $\mathsf U$ in `lubksb`
 3. The return value is the permutation sign, $\pm 1$, or 0 for a singular matrix. `indx[j]` holds the row swapped
    into position $j$.
 4. Rows and columns flagged in `skip_row` are left out of the factorization and of the solve; `leastsq_kkt` uses this
-   for all-zero rows of its KKT[^rg-8c02b98e6297] block.
+   for all-zero rows of its KKT block.
 5. `lubksb` skips the leading zeros of the right-hand side: it starts the forward sum at the first nonzero entry.
 6. `luminv` solves for the unit vectors one column at a time.
 
@@ -102,6 +147,17 @@ row; it is not a gtest case, and its call in `main` is commented out. No run rec
   incomplete factorization (read from the code; not tested). `leastsq` and `luminv` have no caller outside `src/math`
   at the pin.
 - The normal equations square the condition number of $\mathsf A$.
+
+[^ch10-lu-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the script builds its matrices and compiles
+the pinned headers of `src/math` into a scratch shared library called through ctypes; run: `python
+derivation-checks/check_ch10_dense.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
+committed output `derivation-checks/check_ch10_dense.out`: 15 PASS, 0 FAIL, 5 EXPECTED-FAIL; a rerun on a clean
+v2.6.5 build (x86_64, GCC 11.5.0, Python 3.11.13, numpy 2.4.6) gives the same verdicts, with round-off differences
+in the quoted numbers and a different INFO line (b2).]
+
+<!-- equation-check: eq-ch10-lu-crout check_ch10_dense.py (c) -->
+<!-- equation-check: eq-ch10-lu-det check_ch10_dense.py (c) -->
+<!-- equation-check: eq-ch10-lu-normal check_ch10_dense.py (e) -->
 
 <!-- reader glossary notes -->
 [^rg-8c02b98e6297]: KKT — Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134)

@@ -52,8 +52,45 @@ x_i = \frac{1}{a_{ii}} \Big( b_i - \sum_{j > i} a_{ij}\, x_j \Big) .
 $$ {#eq-ch10-dense-back}
 
 @eq-ch10-dense-elimination and @eq-ch10-dense-back are computed in `dsolve_lu`
-({{< code src/math/core.h dsolve_lu >}}). The method is exact in exact arithmetic; its rounding error is that of
-partial-pivoting elimination, not derived here.
+({{< code src/math/core.h dsolve_lu >}}). Four steps explain what the method guarantees.
+
+*Step 1: elimination is a factorization.* Step $k$ subtracts $f_{ik}$ times row $k$ from each row $i > k$. That is
+a left multiplication by the unit lower-triangular matrix $\mathsf L_k = \mathsf I - f_k e_k^{\mathrm T}$, with
+$f_k = (0, \dots, 0, f_{k+1,k}, \dots, f_{n-1,k})^{\mathrm T}$. The row swap is a permutation $\mathsf P_k$. After
+$n$ steps the matrix is upper triangular, $\mathsf U = \mathsf L_{n-1}\mathsf P_{n-1} \cdots \mathsf L_0 \mathsf P_0
+\mathsf A$, which rearranges to
+
+$$
+\mathsf P \mathsf A = \mathsf L \mathsf U ,
+$$ {#eq-ch10-dense-plu}
+
+with $\mathsf P$ the product of the swaps and $\mathsf L$ unit lower triangular with entries $f_{ik}$. The same
+operations applied to $b$ give $\mathsf L^{-1}\mathsf P b$, and @eq-ch10-dense-back solves $\mathsf U x =
+\mathsf L^{-1}\mathsf P b$.
+
+*Step 2: why partial pivoting.* The pivot is the largest $|a_{ik}|$ in its column, so every multiplier obeys
+$|f_{ik}| \le 1$. Each update in @eq-ch10-dense-elimination then grows an entry by at most the size of the pivot row,
+and the computed $x$ solves a nearby system $(\mathsf A + \delta\mathsf A)x = b$ with $\lVert\delta\mathsf AVert$
+a small multiple of $\epsilon\lVert\mathsf AVert$ times the growth factor, which is modest in practice (Higham
+2002, chapter 9).[^ch10-dense-refs] Without pivoting a small pivot gives multipliers of any size and no such bound.
+
+*Step 3: what the singularity test detects.* `dsolve_lu` returns `false` only when the largest remaining entry of a
+column is exactly zero. Scaling $\mathsf A$ by any nonzero factor scales every candidate pivot by the same factor, so
+the test does not depend on units. It is not a rank test. A matrix that is singular in exact arithmetic usually
+produces a round-off pivot, not an exact zero, and is then solved with a huge $x$. Whether the pivot of a given
+singular matrix comes out exactly zero depends on the rounding of the platform.
+
+*Step 4: when the fallback runs.* The implicit kinetics step calls `psolve` only when `dsolve_lu` returns `false`
+({{< code src/kinetics/evolve_implicit_impl.h >}}), that is only on an exactly zero pivot, the same rule as LAPACK
+`getrf`. `check_ch10_dense.py` measures all four statements:[^ch10-dense-check]
+
+- "(a) dsolve_lu, 300 random systems n=2..8: max normwise backward error 1.31e-16 (tol 64 eps = 1.4e-14); max forward
+  error / cond 2.13e-16 vs numpy.linalg.solve (tol 1e-13) PASS"
+- "(b1) dsolve_lu returns false on an exactly singular 2x2 (True) and true on a regular matrix scaled by 1e-300 (x err
+  2.8e-17) PASS"
+- "(b2) rank-1 3x3 (numerically singular, round-off pivots): dsolve_lu returns True, max|x| = 3.5e+17; no fallback to
+  psolve is triggered for this case INFO". On the x86_64 rerun the same matrix gives an exact zero pivot and
+  `false`: the outcome is decided by rounding, as step 3 says.
 
 ### Numerical method
 
@@ -96,12 +133,30 @@ run record is attached in this draft (missing evidence).
 ### Limits
 
 - `mmdot_t` does not compute $\mathsf a\,\mathsf b^{\mathrm T}$: its inner sum reads `a[i * n2 + j] * b[j * n2 + k]`,
-  with `j` where `k` belongs ({{< code src/math/core.h mmdot_t >}}). It has no caller outside `src/math` at the pin,
-  so no result depends on it (searched in `src`, `python` and `tests`).
+  with `j` where `k` belongs ({{< code src/math/core.h mmdot_t >}}). It has no caller in `src`, `python`, `tests` or
+  `examples` at the pin, so no result depends on it. `check_ch10_dense.py`: "(f) mmdot_t against a b^T: max error
+  9.70e-01 (tol 1e-14) EXPECTED-FAIL (S10-1, already in the report Limits)"; this is row K20 of the defect
+  list.[^ch10-dense-k20]
 - `swap_cols` carries the comment "no-op trick won't work; do normal swap" next to a comma expression. Read under
   C++17 sequencing rules, the expression does swap the two columns; this is a hypothesis, not tested. It has no
   caller; `psolve` uses `swap_cols_safe` ({{< code src/math/swap.h swap_cols >}}).
 - `swap_rows` takes a row count `m` that it does not use.
 - `set_identity`, `vvdot`, `norm2`, `normalize`, `mvdot_t`, `swap_cols`, `swap_rows` and `swap_vals` have no caller
   outside `src/math` at the pin (searched by name; `normalize` also matches unrelated words).
-- `dsolve_lu` gives no warning for a nearly singular matrix.
+- `dsolve_lu` gives no warning for a nearly singular matrix: its test detects only an exactly zero pivot (step 3).
+
+[^ch10-dense-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the script builds its matrices and compiles
+the pinned headers of `src/math` into a scratch shared library called through ctypes; run: `python
+derivation-checks/check_ch10_dense.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
+committed output `derivation-checks/check_ch10_dense.out`: 15 PASS, 0 FAIL, 5 EXPECTED-FAIL; a rerun on a clean
+v2.6.5 build (x86_64, GCC 11.5.0, Python 3.11.13, numpy 2.4.6) gives the same verdicts, with round-off differences
+in the quoted numbers and a different INFO line (b2).]
+
+[^ch10-dense-refs]: [source: N. J. Higham, Accuracy and Stability of Numerical Algorithms, 2nd ed., SIAM (2002),
+<https://doi.org/10.1137/1.9780898718027>, chapter 9 (LU factorization and linear equations).]
+
+[^ch10-dense-k20]: [source: UCzhangxi/kintera issue #54, row K20 (dead code, fix: delete); spec suspect S10-1.]
+
+<!-- equation-check: eq-ch10-dense-elimination check_ch10_dense.py (a) -->
+<!-- equation-check: eq-ch10-dense-plu check_ch10_dense.py (a) -->
+<!-- equation-check: eq-ch10-dense-back check_ch10_dense.py (b1) -->

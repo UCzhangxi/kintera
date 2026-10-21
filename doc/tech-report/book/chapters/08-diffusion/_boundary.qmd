@@ -32,11 +32,11 @@ sources and the form of that coefficient.
 **Evidence.** `check_ch08_eddy.py` lines `h1`-`h3`, `i1`, `i2`, `j5`; see the Tests layer.
 :::
 
-Local symbols: $\Phi$, an upward flux through a boundary face [$\mathrm{cm^{-2}\,s^{-1}}$]; $u$, an upward velocity
-at a boundary face [$\mathrm{cm\,s^{-1}}$]; $\Delta x_{1,0}$ and $\Delta x_{1,N-1}$, the widths of the end cells from the
+Local symbols: $\Phi$, an upward flux through a boundary face [$\mathrm{cm^{-2}\,s^{-1}}$]; $u$, an upward velocity at a
+boundary face [$\mathrm{cm\,s^{-1}}$]; $\Delta x_{1,0}$ and $\Delta x_{1,N-1}$, the widths of the end cells from the
 face grid [cm]; $c$, a number density [$\mathrm{cm^{-3}}$]; $m_i$, a molecular mass [amu]; $\mathcal D_i$, the
-molecular-diffusion coefficient of species $i$ [$\mathrm{cm^2\,s^{-1}}$]. The sources take `value` as $\Phi$ or $u$
-and `boundary` as `"lower"` or `"upper"`.
+molecular-diffusion coefficient of species $i$ [$\mathrm{cm^2\,s^{-1}}$]. The sources take `value` as $\Phi$ or $u$ and
+`boundary` as `"lower"` or `"upper"`.
 
 ### Derivation
 
@@ -80,10 +80,13 @@ $$
 \frac{\mathrm d}{\mathrm d t} \sum_j \Delta x_{1,j}\, c_{j,s} = \Phi_{\mathrm{bottom}} - \Phi_{\mathrm{top}} .
 $$ {#eq-ch08-boundary-budget}
 
-Check line `h3`, with the same $\Phi$ in at the bottom and out at the top: "eddy matrix + flux in at bottom + flux out
-at top: d/dt sum dz c = $3.2 \times 10^{-16}$ Phi (tol 1e-12)", PASS. The budget closes with the face-grid widths
-$\Delta x_{1,j}$ of the 2-D operator, not with the widths $w_j$ of @eq-ch08-operator-widths. A caller that mixes the
-1-D tendency of @sec-ch08-tendency with these sources budgets with two different cell sets on a non-uniform grid.
+The two terms are the flux source (`IndexedBoundaryFluxSource`,
+{{< code python/atm2d/sources/indexed.py IndexedBoundaryFluxSource >}}) and the eddy matrix
+(`build_eddy_diffusion_matrix`, {{< code python/atm2d/transport.py build_eddy_diffusion_matrix >}}). Check line `h3`,
+with the same $\Phi$ in at the bottom and out at the top: "eddy matrix + flux in at bottom + flux out at top: d/dt sum
+dz c" below $10^{-15}\, \Phi$ in magnitude (tol 1e-12), PASS. The budget closes with the face-grid widths
+$\Delta x_{1,j}$ of the 2-D operator, not with the widths $w_j$ of @eq-ch08-operator-widths. A caller that mixes the 1-D
+tendency of @sec-ch08-tendency with these sources budgets with two different cell sets on a non-uniform grid.
 
 *Step 4: the molecular-diffusion coefficient.* For a trace gas $i$ in a bath of N$_2$ (28 amu), the helper's
 docstring gives
@@ -94,7 +97,11 @@ $$
 \quad [\mathrm{cm^2\,s^{-1}}] ,
 $$ {#eq-ch08-boundary-cheng}
 
-with $T$ in K and $n$ the total number density in $\mathrm{cm^{-3}}$. The square root is the ratio of reduced masses:
+with $T$ in K and $n$ the total number density in $\mathrm{cm^{-3}}$. The form $b/n$ with $b = A\, T^{s}$, and the
+values $A = 7.3 \times 10^{16}$ and $s = 0.75$, are taken from the helper's docstring, which attributes them to the
+Titan code it reproduces; this report does not check their origin. The units are part of the formula: $n$ must be
+a number density in $\mathrm{cm^{-3}}$. A caller that passes a density in $\mathrm{mol\,m^{-3}}$ gets $\mathcal D_i$ too
+large by $N_A \times 10^{-6} \approx 6.0 \times 10^{17}$. The square root is the ratio of reduced masses:
 with $\mu_i = 28\, m_i/(m_i + 28)$,
 
 $$
@@ -108,9 +115,9 @@ inverse dependence on density of any binary diffusion coefficient. The helper
 (`kinetics_base_titan_cheng_diffusion`,
 {{< code python/kinetics_base/titan/transport_diffusion.py kinetics_base_titan_cheng_diffusion >}}) returns it as
 the diagonal of a per-cell $(n_s, n_s)$ matrix with zero off-diagonal coupling. Check line `i1`: "Cheng D_i =
-7.3e16 T^0.75/n sqrt(mu_CH4-N2/mu_i-N2) [cm^2/s, n in cm^-3]: max rel err 0.0e+00, off-diagonal 0.0 (tol 1e-14)",
-PASS. For scale, `i2` gives CH$_4$ at 150 K and $n = 10^{15}\ \mathrm{cm^{-3}}$ $\mathcal D = 3.126 \times 10^3$
-$\mathrm{cm^2\,s^{-1}}$, and an H$_2$/CH$_4$ ratio of 2.329 (INFO).
+7.3e16 T^0.75/n sqrt(mu_CH4-N2/mu_i-N2) [cm^2/s, n in cm^-3]": relative error below $10^{-15}$, off-diagonal exactly 0
+(tol 1e-14), PASS. For scale, `i2` gives CH$_4$ at 150 K and $n = 10^{15}\ \mathrm{cm^{-3}}$
+$\mathcal D = 3.126 \times 10^3$ $\mathrm{cm^2\,s^{-1}}$, and an H$_2$/CH$_4$ ratio of 2.329 (INFO).
 
 *Step 5: a per-species scale.* `build_binary_diffusion_matrix` accepts `species_diffusion_scale`, a factor $s_i$ per
 species. A scale on $\mathcal D_i$ should multiply the flux of species $i$, so with a diagonal $\mathcal D$ and no
@@ -169,9 +176,12 @@ diagnostic scripts under `tests/kinetics_base/diagnostics/` that call it.
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- The coefficient is Titan-specific: the N$_2$ bath, the CH$_4$ normalisation and the prefactor are constants of the code,
-  and it is in cgs units ($\mathrm{cm^2\,s^{-1}}$, $n$ in $\mathrm{cm^{-3}}$).
+- The coefficient is Titan-specific: the N$_2$ bath, the CH$_4$ normalisation and the prefactor are constants of the
+  code, and it is in cgs units ($\mathrm{cm^2\,s^{-1}}$, $n$ in $\mathrm{cm^{-3}}$).
 - Off-diagonal (Stefan-Maxwell) coupling is set to zero.
+- Without `density=` and without a state density, the helper falls back to the sum of the species. Its comment says
+  that this sum leaves out the third-body placeholder `M`, but the code does not (read from the code at the pin; latent,
+  because every in-tree caller passes `density=`).
 - `species_diffusion_scale` is ignored by `build_binary_diffusion_matrix` (K27, latent: no in-tree caller passes it).
 - The boundary sources use the face-grid widths; the 1-D tendency of @sec-ch08-tendency uses the widths of
   @eq-ch08-operator-widths (Step 3).

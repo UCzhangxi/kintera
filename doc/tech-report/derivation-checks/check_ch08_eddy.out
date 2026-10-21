@@ -29,4 +29,5 @@ j4 batched (2, nz, ns): raises RuntimeError INFO
 j4 zero total at the top level: 8 of 68 entries non-finite (no guard; atm2d skips such faces) INFO
 j4 a species at one level with 20% of the level total moves the other species' tendencies by x1.81, x-0.67, x0.90 on levels 4-6 and gets |dy/dt| = 2.7e+10 itself (n_j counts every species passed in) INFO
 j5 binary diffusion with species_diffusion_scale (2, 1): species-0 tendency scales by 1.000 (expect 2) EXPECTED-FAIL (K27)
-SUMMARY: 17 PASS, 0 FAIL, 1 EXPECTED-FAIL, 12 INFO
+j6 degree-one homogeneity: J y = f(y) for the true and the frozen-n Jacobian, grid of g: 5.7e-16 (tol 1e-12) PASS
+SUMMARY: 18 PASS, 0 FAIL, 1 EXPECTED-FAIL, 12 INFO

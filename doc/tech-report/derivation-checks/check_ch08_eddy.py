@@ -334,5 +334,9 @@ tb = [kt.build_binary_diffusion_matrix(stb, Db, mw, include_gravity=False, speci
 r0 = np.abs(tb[1][..., 0]).max() / np.abs(tb[0][..., 0]).max()
 report("j5", abs(r0 - 2.0) < 1e-12, f"binary diffusion with species_diffusion_scale (2, 1): species-0 tendency "
        f"scales by {r0:.3f} (expect 2)", expected_fail="K27")
+fj = cpp(yj, Kj, hj).ravel()
+e = max(np.abs(Jad @ yj.ravel() - fj).max(), np.abs(Jfrz @ yj.ravel() - fj).max()) / np.abs(fj).max()
+report("j6", e < 1e-12, f"degree-one homogeneity: J y = f(y) for the true and the frozen-n Jacobian, grid of g: {e:.1e} "
+       "(tol 1e-12)")
 print(f"SUMMARY: {TAGS.count('PASS')} PASS, {TAGS.count('FAIL')} FAIL, {TAGS.count('EXPECTED-FAIL')} EXPECTED-FAIL, "
       f"{TAGS.count('INFO')} INFO")

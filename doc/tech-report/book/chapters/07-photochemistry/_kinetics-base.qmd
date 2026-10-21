@@ -31,6 +31,8 @@ photolysis catalog and a directory of cross-section files. The same reader also 
 ### Derivation
 
 No derivation: this is an input reader. The mapping of catalog entries to branches and cross sections is not drafted.
+At the pin a photolysis reaction of the master file with no catalog entry gets zero cross sections, so its $J$ is 0
+with no warning; this holds for 5 of the 8 photolysis reactions of the in-tree test data (row K39).[^ch07-k39]
 
 ### Numerical method
 
@@ -56,3 +58,9 @@ Not drafted.
 ### Limits
 
 Not drafted.
+
+[^ch07-k39]: [source: UCzhangxi/kintera#54, row K39 (LATENT: only three in-tree tests reach the zero fill, all on the
+    test master and catalog of `tests/kinetics_base/data`, and none asserts $J$); reader
+    `src/photochem/kinetics_base_reader.cpp` at the pin; probe: `PhotoChemOptions.from_kinetics_base` on that pair,
+    $J = 0$ for `O2 => O + O(1D)`, `OH => H + O` and the three H2O channels; CPU, float64; kintera 2.6.5 built from
+    the pin. A probe of the round-2 read, not a committed check script.]

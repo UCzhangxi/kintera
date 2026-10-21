@@ -1,5 +1,5 @@
 {
-  "eq-ch07-rate-dissociative": "The photolysis rate constant counts dissociations only: it is the sum of the channel rates, with branch 0 (absorption without dissociation) left out.",
+  "eq-ch07-rate-dissociative": "The photolysis rate constant counts dissociations only: it is the sum of the channel rates; column 0 (the total absorption) is left out.",
   "eq-ch07-rate-integral": "The wavelength integral is the trapezoid on the cross-section grid; the end nodes carry half an interval and nothing is added outside the grid.",
   "eq-ch07-rate-weighted": "With quadrature weights set by the caller, the rate constant is the weighted sum over the grid nodes (the per-bin sum for unit weights).",
   "eq-ch07-cross-sections-interp": "Between neighbouring temperature slabs the cross section is linear in T, held at the end slab outside; this holds only for slabs listed in temperature order.",

@@ -1,6 +1,8 @@
 """Ch. 7 (photochemistry) numeric checks: photolysis rate quadrature, cross-section interpolation in T,
 actinic-flux helpers, PhotoChem rates and Jacobian, channel element balance, shared wavelength grid."""
+import atexit
 import os
+import shutil
 import sys
 import tempfile
 import numpy as np
@@ -8,10 +10,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import version_line, WT, kintera as kt, torch  # noqa: E402
 
 TMP = tempfile.mkdtemp(prefix="ch07_")
+atexit.register(shutil.rmtree, TMP, ignore_errors=True)
+ERRORS = []  # FAIL lines and blocks that raised; the exit status is their number
 
 
 def report(tag, what, x, tol, expected_fail=False, note=""):
     v = "PASS" if x <= tol else ("EXPECTED-FAIL" if expected_fail else "FAIL")
+    if v == "FAIL":
+        ERRORS.append(tag)
     print(f"[{tag}] {what}: {x:.3e} (tol {tol:.0e}) {v}{'  ' + note if note else ''}")
 
 
@@ -121,7 +127,8 @@ card4 = ("reference-state: {Tref: 300., Pref: 1.e5}\nspecies:\n" + "".join(
     f"  - {{name: '{n}', composition: {{{', '.join(f'{e}: {v}' for e, v in c.items())}}}, cv_R: 2.5}}\n"
     for n, c in comp4.items()) + f"reactions:\n  - equation: {rx4['equation']}\n    type: photolysis\n"
     f"    branches: {[str(b) for b in rx4['branches']]}\n    cross-section:\n      - format: YAML\n        data:\n"
-    + "".join(f"          - [{l}, 1.e-18, 1.e-18, 1.e-18, 1.e-18, 1.e-18, 1.e-18]\n" for l in (100., 120., 140.)))
+    # column 0 is the total absorption (5e-18), at least the sum of the five channels (K18 convention)
+    + "".join(f"          - [{l}, 5.e-18, 1.e-18, 1.e-18, 1.e-18, 1.e-18, 1.e-18]\n" for l in (100., 120., 140.)))
 op4, pc4 = load("ch4.yaml", card4)
 n4 = list(op4.species())
 A4 = np.array([[comp4[n].get(e, 0) for n in n4] for e in ("C", "H", "N")])
@@ -183,7 +190,8 @@ try:
     report("i2", "max rel |actinic flux - Beer-Lambert from the top| (absorber in top cell)",
            np.max(np.abs(af / ref - 1)), 1e-6, expected_fail=True, note="(S7-3)")
 except Exception as exc:  # pragma: no cover
-    print(f"[i] DISORT hand-off not run: {type(exc).__name__}: {exc} INFO")
+    ERRORS.append("i")
+    print(f"[i] DISORT hand-off not run: {type(exc).__name__}: {exc} ERROR")
 
 # ---- i3. optical depth from the total absorption (column 0 = total, columns 1.. = channels) --------------
 # a KINETICS7 absorber with total 1e-18 cm^2 and channels 3e-19 + 2e-19 (non-dissociating part 5e-19);
@@ -228,4 +236,7 @@ try:
            f"3e-19 + 2e-19 (code {tau7.max():.4f}, oracle {n7 * sig_tot * dz7:.4f})",
            np.max(np.abs(tau7 / (n7 * sig_tot * dz7) - 1)), 1e-6, expected_fail=True, note="(S7-4)")
 except Exception as exc:  # pragma: no cover
-    print(f"[i3] optical depth from the total absorption not run: {type(exc).__name__}: {exc} INFO")
+    ERRORS.append("i3")
+    print(f"[i3] optical depth from the total absorption not run: {type(exc).__name__}: {exc} ERROR")
+
+sys.exit(len(ERRORS))

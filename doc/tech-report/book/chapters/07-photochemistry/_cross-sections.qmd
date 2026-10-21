@@ -64,7 +64,7 @@ nor checks them. For a grid sorted ascending (or descending) the two steps above
 not: with slabs listed as 200, 300, 250 K the 250 K slab is never used, and the relative error of $\sigma$ against
 @eq-ch07-cross-sections-interp on the sorted slabs reaches $-0.571$ at 240 K, while the same slabs listed as 200,
 250, 300 K are exact to $1.8 \times 10^{-16}$.[^ch07-unsorted-src] So @eq-ch07-cross-sections-interp is what the code
-computes only when the deck lists the slabs in temperature order.
+computes only when the deck lists the slabs in temperature order (row K30, see Limits).
 
 **Step 3: one slab means no temperature dependence.** When no block gives a `temperature`, `reset` stores the grid
 $\{0, 1000\}$ K and copies the single table to both. Then $\sigma_b(T_1) = \sigma_b(T_2)$, so
@@ -107,8 +107,11 @@ $$ {#eq-ch07-cross-sections-absorption}
 
 and converts the wavelength from Angstrom to nm. @eq-ch07-cross-sections-absorption is computed in
 `load_xsection_kin7` ({{< code src/photochem/load_xsection_kin7.cpp load_xsection_kin7 >}}). The YAML reader does
-neither: its columns are used as given, so a YAML deck follows the convention when it is written with the total in
-column 0. After reading, column 0 of a KINETICS7 block therefore holds the non-dissociating part instead of the total
+neither. It uses the columns of a full row as given, so a YAML deck follows the convention when it is written with
+the total in column 0. A row with fewer columns than branches gets each missing column filled with its first cross
+section, column 0 ({{< code src/photochem/load_xsection_yaml.cpp load_xsection_yaml >}}). Under the convention that
+value is the total, so each missing channel gets a yield of 1; the K18 fix keeps the fill only for two-column rows
+(wavelength and one cross section) and sets missing columns to zero otherwise. After reading, column 0 of a KINETICS7 block therefore holds the non-dissociating part instead of the total
 (S7-4, row K18); the K18 fix removes this subtraction. @sec-ch07-actinic-flux measures what it does to an optical
 depth (check line `[i3]`).
 
@@ -167,7 +170,9 @@ Behaviour verified by a run against kintera 2.6.5 built from the pin[^ch07-probe
 
 - the key `temperature-range`, used by the decks under `data/`, is not read; only `temperature` is, so those
   reactions have no temperature dependence;
-- a YAML row with fewer columns than branches fills the missing branches with its first cross-section value;
+- a YAML row with fewer columns than branches fills the missing branches with its first cross-section value, which
+  under the column convention is the total, so each missing channel gets a yield of 1 (row K18; the fix keeps the
+  fill only for two-column rows);
 - the wavelength grid of the first reaction is used for all reactions; a later reaction's own wavelength column is
   discarded without a check, so its rows are read as if they were on the first grid (step 4 of the Derivation;
   check line `[h]`).
@@ -197,6 +202,15 @@ without an error (step 1); no in-tree deck has three or more slabs. A `branches`
 second absorption branch; in the KINETICS7 reader the data go to the first matching branch, so the repeat stays
 zero (from reading `load_xsection_kin7`, not run).
 
+- Temperature slabs are kept in deck order, without sorting or a check, so an unsorted list is interpolated between
+  the wrong slabs: $-0.571$ relative error at 240 K for slabs listed as 200, 300, 250 K (row K30).[^ch07-k30]
+- A reaction with more wavelength rows than the first reaction's grid spills the extra values into the next
+  reaction, with no error; only too few rows are refused (row K31).[^ch07-k31]
+- A KINETICS7 block whose last line holds fewer than seven pairs is refused, because the format check runs before
+  the end-of-block test (row K37).[^ch07-k37]
+- The Python binding `PhotolysisOptions.from_yaml` ignores its argument and returns empty options: a deck with one
+  photolysis reaction, or a path that does not exist, gives 0 reactions and no error (row K38).[^ch07-k38]
+
 [^ch07-check-xs]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: the `H2O => OH + H` card inside the
     script (slabs at 200 and 300 K) and `data/chapman_cycle.yaml` at the pin, $T = 250$ K, uniform flux
     $10^{13}$; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a
@@ -210,6 +224,22 @@ zero (from reading `load_xsection_kin7`, not run).
     $-0.333$, $-0.571$, $-0.522$, $-0.375$, $-0.176$; listed as 200, 250, 300 K at most $1.8 \times 10^{-16}$; two
     slabs listed descending (300, 200 K) at most $1.6 \times 10^{-16}$; CPU, float64; kintera 2.6.5 built from the
     pin, torch 2.10.0, Python 3.13.15. A probe of the round-2 read, not a committed check script.]
+
+[^ch07-k30]: [source: UCzhangxi/kintera#54, row K30 (LATENT; no in-tree deck has three or more slabs); the unsorted-slab
+    probe of step 1 (slabs listed as 200, 300, 250 K).]
+
+[^ch07-k31]: [source: UCzhangxi/kintera#54, row K31 (LATENT; the in-tree decks have equal row counts); probe: a deck
+    whose first reaction has rows at 100, 150 and 200 nm, a second reaction `C => D` with a fourth row at 250 nm, and a
+    third `E => F` with rows $8$, $9$, $10 \times 10^{-18}$; `E => F` gets $7$, $8$, $9 \times 10^{-18}$, with no error;
+    CPU, float64; kintera 2.6.5 built from the pin, torch 2.10.0. A probe of the round-2 read, not a committed check.]
+
+[^ch07-k37]: [source: UCzhangxi/kintera#54, row K37 (LATENT; no KINETICS7 file is in the tree); probe: a three-point
+    KINETICS7 block, refused with "Cross-section format error in file 'A.kin7'"; CPU; kintera 2.6.5 built from the pin.
+    Whether real KINETICS7 files pad their last line was not checked. A probe of the round-2 read.]
+
+[^ch07-k38]: [source: UCzhangxi/kintera#54, row K38 (LATENT; no in-tree caller), python/csrc/pyphotolysis.cpp at the
+    pin; probe: `PhotolysisOptions.from_yaml` on a dict with one photolysis reaction and on `/nonexistent/x.yaml`, 0
+    reactions each, no error; kintera 2.6.5 built from the pin. A probe of the round-2 read.]
 
 [^ch07-probe-src]: [source: a three-species deck with two `type: photolysis` reactions loaded with
     `PhotoChemOptions.from_yaml`, then `Photolysis.update_xs_diss_stacked` and `forward` on CPU in float64;

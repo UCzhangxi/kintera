@@ -121,8 +121,9 @@ No test at the pin calls `psolve` or reaches the singular branch knowingly (sear
 ### Limits
 
 - The loop variable is called `sweep`, but each pass applies one rotation, so `max_sweeps = 100` caps the rotations
-  at 100 ({{< code src/math/psolve.h jacobi_eigen_symmetric >}}). The result is wrong for $n \ge 10$ (relative error
-  $2.6\times10^{-2}$ at $n = 10$, 0.99 at $n = 12$, step 3; row K21).[^ch10-pinv-k21]
+  at 100 ({{< code src/math/psolve.h jacobi_eigen_symmetric >}}). The result can be wrong; for the check's random
+  matrices the relative error is $2.6\times10^{-2}$ at $n = 10$ and 0.99 at $n = 12$ (step 3; row K21), while a nearly
+  diagonal $\mathsf A^{\mathrm T}\mathsf A$ converges within 100 rotations at any $n$.[^ch10-pinv-k21]
 - The stopping test ($10^{-12}$) and the clean-up of negative eigenvalues ($10^{-14}$) are absolute, not relative to
   the size of the entries; for $\mathsf A$ scaled by $10^{-6}$ the relative error is 0.25 (step 4; row K21).
 - Convergence is not reported: the loop ends silently at the rotation limit.

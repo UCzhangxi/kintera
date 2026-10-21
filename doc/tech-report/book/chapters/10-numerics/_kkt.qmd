@@ -101,10 +101,15 @@ $\tilde{\mathsf A}^{\mathrm T}(\tilde{\mathsf A} y - \tilde b) + \tilde{\mathsf 
 together with the active rows held as equalities.
 
 *Step 3: what termination proves.* The loop stops when the working set is the same before and after a pass. Then no
-row had $\mu < 0$ (none was dropped) and no inactive row was violated (none was added; under the feasible-origin
-policy, none independent of the working set). With the block system this gives stationarity, primal feasibility,
-$\mu \ge 0$ and complementarity: a KKT point. The problem is convex, so a KKT point is a global minimum
-(@sec-ch04-active-set).
+row had $\mu < 0$ (none was dropped). Under the general policy no inactive row was violated either (none was added),
+so with the block system termination gives stationarity, primal feasibility, $\mu \ge 0$ and complementarity: a KKT
+point. The problem is convex, so a KKT point is a global minimum (@sec-ch04-active-set). The feasible-origin policy
+gives less. It never adds a violated row that depends on the working set
+({{< code src/math/leastsq_kkt.h leastsq_kkt_impl >}}), and after a regularized solve it re-checks only the active
+rows. Status 0 therefore guarantees only the rows that are independent of the working set. The returned $x$ can
+violate a dependent row and lie below the constrained optimum, so clipping it, the remedy its doc comment names, gives
+a feasible point that is not the optimum in general (Limits; candidate row K41 of the defect
+list).[^ch10-kkt-k41]
 
 *Step 4: why the loop can cycle.* The textbook primal active-set method (Nocedal and Wright 2006, Algorithm
 16.3)[^ch10-kkt-refs] keeps a feasible iterate, moves toward the working-set minimiser only as far as the first
@@ -225,8 +230,10 @@ record is attached in this draft (missing evidence).
 - The error message for a bad `neq` says "must be non-negative" also when `neq` exceeds $n_3$.
 - The active-set iteration can cycle on convex problems with a feasible origin (step 4), under both policies;
   `max_iter` is the only guard (status 2). The in-tree deck `tests/jupiter.yaml` reaches it (row K19).
-- The feasible-origin policy may return an $x$ that violates a dependent row it chose not to activate; the caller must
-  clip the step, as its doc comment states ({{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}}).
+- The feasible-origin policy may return, with status 0, an $x$ that violates a dependent row it chose not to activate
+  and lies below the constrained optimum (step 3); the caller must clip the step, as its doc comment states
+  ({{< code src/math/leastsq_kkt.h leastsq_kkt_feasible_origin >}}), and the clipped step is not the optimum in
+  general (candidate row K41).
 - `reg` is a `float` argument even when `T` is `double`.
 
 [^ch10-kkt-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the script builds its matrices and compiles
@@ -240,6 +247,16 @@ in the quoted numbers.]
 <https://doi.org/10.1007/978-0-387-40065-5>, section 16.5 and Algorithm 16.3 (active-set method for convex QP);
 R. J. Vanderbei, "Symmetric quasidefinite matrices", SIAM J. Optim. 5 (1995) 100-113,
 <https://doi.org/10.1137/0805005>, for the factorization of quasi-definite matrices.]
+
+[^ch10-kkt-k41]: [source: UCzhangxi/kintera issue #54, row K41 (candidate); at the pin the add step skips rows whose
+scaled form keeps less than $\sqrt{\varepsilon}$ of its norm after projection off the active rows, and the
+regularized re-check loops over the active rows only under this policy, both in `leastsq_kkt_impl`; the theory
+check's probe found 105 of 19995 status-0 returns on random problems with dependent rows that violate a row, all
+below the true optimum. A reach check with a probe build at the pin (scaled violation above $10^{-9}$, 5000 random
+states per deck) finds such returns in intermediate saturation steps of 134 fixed-$T,p$ and 88 fixed-$U,V$ states of
+`tests/jupiter.yaml`, nearly all on a dependent row, and none on `tests/earth.yaml` or
+`examples/jupiter_kcl_mgsio3.yaml`; the caller clips each such step. A measurement outside the suite, not a
+committed check.]
 
 [^ch10-kkt-k19]: [source: UCzhangxi/kintera issue #54, row K19 (spec suspects S10-4, S10-5); reach check on
 `tests/jupiter.yaml`, `tests/earth.yaml` and `examples/jupiter_kcl_mgsio3.yaml`, 5000 random states per deck,

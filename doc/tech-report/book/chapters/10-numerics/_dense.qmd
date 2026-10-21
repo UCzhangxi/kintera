@@ -70,8 +70,8 @@ operations applied to $b$ give $\mathsf L^{-1}\mathsf P b$, and @eq-ch10-dense-b
 
 *Step 2: why partial pivoting.* The pivot is the largest $|a_{ik}|$ in its column, so every multiplier obeys
 $|f_{ik}| \le 1$. Each update in @eq-ch10-dense-elimination then grows an entry by at most the size of the pivot row,
-and the computed $x$ solves a nearby system $(\mathsf A + \delta\mathsf A)x = b$ with $\lVert\delta\mathsf AVert$
-a small multiple of $\epsilon\lVert\mathsf AVert$ times the growth factor, which is modest in practice (Higham
+and the computed $x$ solves a nearby system $(\mathsf A + \delta\mathsf A)x = b$ with $\lVert\delta\mathsf A\rVert$
+a small multiple of $\epsilon\lVert\mathsf A\rVert$ times the growth factor, which is modest in practice (Higham
 2002, chapter 9).[^ch10-dense-refs] Without pivoting a small pivot gives multipliers of any size and no such bound.
 
 *Step 3: what the singularity test detects.* `dsolve_lu` returns `false` only when the largest remaining entry of a
@@ -89,8 +89,10 @@ singular matrix comes out exactly zero depends on the rounding of the platform.
 - "(b1) dsolve_lu returns false on an exactly singular 2x2 (True) and true on a regular matrix scaled by 1e-300 (x err
   2.8e-17) PASS"
 - "(b2) rank-1 3x3 (numerically singular, round-off pivots): dsolve_lu returns True, max|x| = 3.5e+17; no fallback to
-  psolve is triggered for this case INFO". On the x86_64 rerun the same matrix gives an exact zero pivot and
-  `false`: the outcome is decided by rounding, as step 3 says.
+  psolve is triggered for this case INFO". That is the committed run. On a clean x86_64 build of the pin (GCC 11.5.0)
+  the same matrix gives an exact zero pivot: "dsolve_lu returns False, max|x| = 2.7e+00"
+  (`src/kintera_report/ch10/runs/check_ch10_dense_x86_64.out`, which records the build; the rest of the line is fixed
+  text of the script). The outcome is decided by rounding, as step 3 says.
 
 ### Numerical method
 
@@ -144,6 +146,8 @@ run record is attached in this draft (missing evidence).
 - `set_identity`, `vvdot`, `norm2`, `normalize`, `mvdot_t`, `swap_cols`, `swap_rows` and `swap_vals` have no caller
   outside `src/math` at the pin (searched by name; `normalize` also matches unrelated words).
 - `dsolve_lu` gives no warning for a nearly singular matrix: its test detects only an exactly zero pivot (step 3).
+- `core.h` calls `fabs` and `sqrt` without including `<cmath>`; it compiles only where a header included before it
+  provides them (spec suspect S10-6; the check harness includes `<cmath>` first).
 
 [^ch10-dense-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the script builds its matrices and compiles
 the pinned headers of `src/math` into a scratch shared library called through ctypes; run: `python

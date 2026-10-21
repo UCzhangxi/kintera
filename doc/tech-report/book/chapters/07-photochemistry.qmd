@@ -19,6 +19,11 @@ the rate constants by the reactant concentrations and returns the reaction rates
 reaction-space form as the thermal kinetics of @sec-ch06. The actinic flux itself is an input: kintera supplies
 helpers to build or interpolate one, but no radiative transfer.
 
+Where the code was found to disagree with the derivation, the sections name the suspect (S7-1 to S7-4) and its row
+(K17, K18, K22, K23) on the code-fix tracker.[^ch07-tracker] Each such check line is an expected failure: it documents
+the defect at the pin and turns into a pass when the row is fixed. Every number in this chapter comes from CPU runs
+in double precision; none was run on CUDA.
+
 The dependency map of the schemes is not provided: the figure module is not written yet.
 
 | scheme | YAML key or option | default | main test |
@@ -40,6 +45,10 @@ The dependency map of the schemes is not provided: the figure module is not writ
 {{< include 07-photochemistry/_photochem.qmd >}}
 
 {{< include 07-photochemistry/_kinetics-base.qmd >}}
+
+[^ch07-tracker]: [source: the round-2 derivation spec (suspects S7-1 to S7-4) and the code-fix tracking issue
+    UCzhangxi/kintera#54, rows K17 (DISORT layer order), K18 (column 0 as the total absorption), K22 (branched photolysis
+    booked with the equation's products) and K23 (later reactions read on the first wavelength grid).]
 
 <!-- reader glossary notes -->
 [^rg-8146dd1c4e5b]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)

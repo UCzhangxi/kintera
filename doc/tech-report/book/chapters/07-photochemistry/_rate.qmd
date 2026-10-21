@@ -30,36 +30,111 @@ integral with the trapezoidal rule on the cross-section grid, or as a weighted s
 :::
 
 Local symbols: $J$, photolysis rate constant [$\mathrm{s^{-1}}$]; $\sigma_d$, dissociative cross section
-[$\mathrm{cm^2\,molecule^{-1}}$]; $w_i$, quadrature weight of grid point $i$ [-]; $\lambda_i$, grid wavelengths [nm].
+[$\mathrm{cm^2\,molecule^{-1}}$]; $\sigma$, absorption cross section [$\mathrm{cm^2\,molecule^{-1}}$]; $q_b$, quantum
+yield of channel $b$ [-]; $\sigma_b = \sigma q_b$, partial cross section of branch $b$; $\sigma_{\mathrm{nd}}$, the non-dissociating part of the absorption [$\mathrm{cm^2\,molecule^{-1}}$]; $J_b$, rate of channel $b$
+[$\mathrm{s^{-1}}$]; $w_i$, quadrature weight of grid point $i$ [nm, or 1 for pre-binned flux]; $\lambda_i$, grid
+wavelengths [nm].
 
 ### Derivation
 
-The dissociative cross section is the sum of the dissociation branches,
+**Counting photons.** Let $F(\lambda)\,\mathrm d\lambda$ be the number of photons with wavelength in
+$[\lambda, \lambda + \mathrm d\lambda]$ that cross a unit area per second, summed over all directions (the actinic
+flux of @sec-ch07-actinic-flux). A molecule with absorption cross section $\sigma(\lambda, T)$ intercepts the area
+$\sigma$ of that stream, so it absorbs $\sigma F\,\mathrm d\lambda$ photons per second in the interval. Each absorbed
+photon dissociates the molecule into channel $b$ with probability $q_b(\lambda, T)$, the quantum yield of the
+channel, and leaves it undissociated with probability $q_0 = 1 - \sum_{b \ge 1} q_b$. The rate of channel $b$ per
+molecule is therefore
 
 $$
-\sigma_d(\lambda, T) = \sum_{b \ge 1} \sigma_b(\lambda, T) ,
+J_b = \int \sigma\, q_b\, F\, \mathrm d\lambda = \int \sigma_b\, F\, \mathrm d\lambda ,
+\qquad \sigma_b \equiv \sigma\, q_b ,
+$$
+
+so a branch column of the deck (@sec-ch07-cross-sections) is a partial cross section, absorption times yield, and
+the reader never needs $\sigma$ and $q_b$ separately.
+
+**Column convention.** kintera's cross-section columns follow one convention for every format: column 0 holds the
+total absorption cross section $\sigma_0 = \sigma$, and columns $b \ge 1$ hold the dissociation channels $\sigma_b =
+\sigma q_b$. The part of the absorption that leaves the molecule intact is not stored; it is
+
+$$
+\sigma_{\mathrm{nd}} = \sigma_0 - \sum_{b \ge 1} \sigma_b = \sigma\, q_0 ,
+$$
+
+which is non-negative only if the yields sum to at most 1. This is the convention of row K18 on the code-fix
+tracker.[^ch07-k18-convention] At the pin two parts of the code do not follow it: the KINETICS7 reader stores
+$\sigma_{\mathrm{nd}}$ in column 0 (@eq-ch07-cross-sections-absorption), and `get_effective_stoich` weights branch 0 by
+$\sigma_0$ instead of $\sigma_{\mathrm{nd}}$ (@sec-ch07-photochem).
+
+**Only dissociation counts.** The photolysis rate constant is the number of molecules destroyed per molecule per
+second, the sum of the channel rates,
+
+$$
+J = \sum_{b \ge 1} J_b = \int \sigma_d(\lambda, T)\, F(\lambda)\, \mathrm d\lambda ,
+\qquad \sigma_d(\lambda, T) = \sum_{b \ge 1} \sigma_b(\lambda, T) .
 $$ {#eq-ch07-rate-dissociative}
 
-or the single branch when a reaction has only one. @eq-ch07-rate-dissociative is computed in
-`update_xs_diss_stacked` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::update_xs_diss_stacked >}}). The
-rate constant is
+Column 0 is the total absorption, and its composition is the reactant (@sec-ch07-cross-sections). Including it would
+count every dissociating photon twice and also count the absorptions that leave the molecule intact, so it is left
+out of $\sigma_d$. When a reaction has only one branch, the code uses
+that branch as $\sigma_d$. @eq-ch07-rate-dissociative is computed in `update_xs_diss_stacked`
+({{< code src/photochem/photolysis.cpp PhotolysisImpl::update_xs_diss_stacked >}}). Nothing in the code checks
+$\sum_{b \ge 1} q_b \le 1$, that is $\sigma_d \le \sigma$; the deck is trusted.
+
+**The trapezoid on the cross-section grid.** The integral is evaluated on the grid $\lambda_1 < \dots < \lambda_N$ of
+the cross sections. On each interval the integrand is replaced by the straight line through its end values, which
+gives
 
 $$
 J = \int \sigma_d(\lambda, T)\, F(\lambda)\, \mathrm d\lambda
-\approx \sum_{i} \frac{\lambda_{i+1} - \lambda_i}{2}
+\approx \sum_{i=1}^{N-1} \frac{\lambda_{i+1} - \lambda_i}{2}
 \left[\sigma_d(\lambda_i) F(\lambda_i) + \sigma_d(\lambda_{i+1}) F(\lambda_{i+1})\right] ,
 $$ {#eq-ch07-rate-integral}
 
-computed in `forward` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::forward >}}). With weights the sum is
+computed in `forward` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::forward >}}) by `torch::trapezoid`
+over the wavelength axis. Collecting the terms of each node writes the same sum as $\sum_i w_i \sigma_d(\lambda_i)
+F(\lambda_i)$ with the weights
+
+$$
+w_1 = \frac{\lambda_2 - \lambda_1}{2} ,\qquad
+w_i = \frac{\lambda_{i+1} - \lambda_{i-1}}{2}\ \ (1 < i < N) ,\qquad
+w_N = \frac{\lambda_N - \lambda_{N-1}}{2} :
+$$
+
+an interior node carries half of each neighbouring interval, the two end nodes only half of their one interval. The
+grid need not be uniform. Nothing is added outside $[\lambda_1, \lambda_N]$: flux beyond the table does not
+contribute, however large it is.
+
+**Pre-binned flux.** When the caller sets `quadrature_weights`, `forward` uses its own weights instead,
 
 $$
 J = \sum_i w_i\, \sigma_d(\lambda_i)\, F(\lambda_i) ,
 $$ {#eq-ch07-rate-weighted}
 
-also computed in `forward` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::forward >}}). The units close only
-if $\sigma$ is in $\mathrm{cm^2\,molecule^{-1}}$, $F$ in $\mathrm{photons\,cm^{-2}\,s^{-1}\,nm^{-1}}$ and $\lambda$ in
-nm; the code converts none of them. With unit weights, @eq-ch07-rate-weighted is the per-bin sum of a flux already
-integrated over each bin.
+also computed in `forward` ({{< code src/photochem/photolysis.cpp PhotolysisImpl::forward >}}). If $F_i$ is the flux
+already integrated over bin $i$, in photons $\mathrm{cm^{-2}\,s^{-1}}$ per bin, and $\sigma_d(\lambda_i)$ stands for
+the bin, unit weights give $J = \sum_i \sigma_d(\lambda_i) F_i$, the per-bin sum.
+
+**Units.** In @eq-ch07-rate-integral, $\mathrm{cm^2} \times \mathrm{photons\,cm^{-2}\,s^{-1}\,nm^{-1}} \times
+\mathrm{nm} = \mathrm{s^{-1}}$. The code converts none of the three, so $\sigma$ must be in
+$\mathrm{cm^2\,molecule^{-1}}$, $F$ in $\mathrm{photons\,cm^{-2}\,s^{-1}\,nm^{-1}}$ and $\lambda$ in nm; any other
+consistent set (for example SI throughout) gives the same $J$, a mixed set does not.
+
+**Check.** The script `derivation-checks/check_ch07_photolysis.py` builds one reaction with two product channels and
+branch 0 on the non-uniform grid (100, 115, 150, 160, 200) nm, with two temperature slabs, and evaluates `forward`
+at three temperatures, one inside and two outside the slabs.[^ch07-check-rate] Its lines are
+
+```text
+[a1] max rel |J - trapezoid(sum_{b>=1} sigma_b F)| at T = 250, 180, 340 K: 1.110e-16 (tol 1e-13) PASS
+[a2] J / J(branch 0 included) = 0.4348: branch 0 does not count towards J INFO
+[b] rel |J(cgs, nm) - J(SI: area m2, flux per m2 per s per m of wavelength, wavelength m)|: 1.110e-16 (tol 1e-13) PASS
+```
+
+`[a1]` is @eq-ch07-rate-integral with the end-node weights above, `[a2]` shows that branch 0 is left out (including
+it would raise $J$ by the factor 1/0.4348), and `[b]` re-evaluates the integral in SI units. The weighted sum
+@eq-ch07-rate-weighted is checked by the run in the Numerical method layer, not by the script.
+<!-- equation-check: eq-ch07-rate-dissociative check_ch07_photolysis.py [a2] -->
+<!-- equation-check: eq-ch07-rate-integral check_ch07_photolysis.py [a1] -->
 
 ### Numerical method
 
@@ -102,16 +177,28 @@ for another grid or reaction count; weights whose size differs from the grid.
 | `test_photolysis_options` | forward with simple and multi-dimensional flux | shape and sign | the test |
 | `test_ch4_photolysis` | rates are positive and change with the flux | sign | the test |
 | `test_chapman_cycle` | photolysis rates lie in a range | missing evidence | not yet read |
+| check (`check_ch07_photolysis.py`) | @eq-ch07-rate-integral on a non-uniform grid at three temperatures; branch 0 excluded; SI re-evaluation (`[a1]`, `[a2]`, `[b]`) | $10^{-13}$ rel. | round-off |
 
 : Tests of the photolysis rate constants. {#tbl-ch07-rate-tests}
 
-No registered test compares $J$ with a closed form or checks the weighted sum; the run above is the only
-quantitative check here.
+No registered test compares $J$ with a closed form or checks the weighted sum. The check script is not a registered
+test; the weighted sum is checked only by the run in the Numerical method layer.
 
 ### Limits
 
 An absorption-only reaction (one branch) gets $J$ from its absorption branch; its products equal its reactants, so
 the net tendency is zero, but the rate is not (from reading `update_xs_diss_stacked`).
+
+[^ch07-k18-convention]: [source: UCzhangxi/kintera#94, merged into the staging branch `fix/thermo-20261019`, which
+    fixes row K18 of UCzhangxi/kintera#54: the KINETICS7 reader keeps the file's total in column 0, `get_effective_stoich` weights
+    branch 0 by the remainder, the optical depth takes column 0 once per absorber, and `tests/chapman_cycle.yaml`
+    is converted from remainder/channel to total/channel ($c_0 \leftarrow c_0 + c_1$).]
+
+[^ch07-check-rate]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the `H2O => OH + H` card with
+    branches `OH:1 H:1` and `H2:1 O:1` inside the script, slabs at 200 and 300 K; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch07_photolysis.out` lines `[a1]`, `[a2]`, `[b]`.]
 
 [^ch07-rate-src]: [source: `PhotoChemOptions.from_yaml` on a deck with `O2 => O + O` (rows `[100, 5e-18, 1e-18]`,
     `[150, 6e-18, 2e-18]`, `[200, 7e-18, 4e-18]`), `create_uniform_flux(wavelength, 1e14)`, $T = 250$ K, CPU,

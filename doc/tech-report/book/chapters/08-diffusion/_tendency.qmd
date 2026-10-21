@@ -59,7 +59,7 @@ $-g [\tfrac12 (X_{j+1,s} - X_{j,s}) \mp \bar n\, X_{l,s}/n_l]$, does not depend 
 it sees only the level sums $\sum_r v_{l,r}$. Hence:
 
 - the tridiagonal matrix is the exact Jacobian for every perturbation that leaves each level total unchanged
-  ($\sum_r v_{l,r} = 0$). Check line `j2`: Jacobian = frozen-n (A, B, C) ⊗ I on perturbations with zero level sums,
+  ($\sum_r v_{l,r} = 0$). Check line `j2`: Jacobian = frozen-n $(A, B, C) \otimes I$ on perturbations with zero level sums,
   below $10^{-15}$, PASS;
 - for other perturbations it is not: it differs from the true Jacobian by 0.63 of its largest entry (`g2`, INFO);
 - in the extreme case, scale one level of a uniform mixing-ratio profile by $1 + 10^{-3}$. $X$ does not change

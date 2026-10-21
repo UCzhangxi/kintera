@@ -1,0 +1,32 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+a tendency vs numpy FV oracle, random grid: max rel err 4.6e-16 (tol 1e-13) PASS
+a2 coefficient shapes (17,), C_0 = 0.0, B_N-1 = 0.0 (exact) PASS
+b uniform mixing ratio: max |tendency| / scale 8.7e-16 (tol 1e-13) PASS
+c level total sum_s dy/dt: max / scale 1.2e-15 (tol 1e-13) PASS
+d1 weighted column sum_j w_j dy/dt (w = h_1/2, Delta_j, h_N-3/2): 4.5e-16 (tol 1e-13) PASS
+d2 unweighted column sum_j dy/dt on the same grid: 4.3e-01 of scale (non-zero by design) INFO
+d3 C++ weights equal the widths of cells with faces at centre midpoints and outer faces h/2 beyond the end centres PASS
+e1 interior error ratio per halving, smooth stretched grid: 3.76, 3.88, 3.94 (expect 4 +- 10%) PASS
+e2 boundary-row error ratio per halving: 1.66, 1.84, 1.92 (expect 2, first order, +- 15%) PASS
+e2b boundary-row ratio for a profile also flat in its third derivative at the wall: 3.92, 3.96 (second order only by symmetry) INFO
+e3 interior error ratio with 20% random jitter: 1.70, 1.81 (first order expected on a rough grid) INFO
+f1 uniform grid, varying n: C++ vs atm2d mr_diffusion (density = species sum) 2.1e-16 (tol 1e-13) PASS
+f2 uniform grid, varying n: C++ vs atm2d c_diffusion differ by 0.58 of scale (the in-tree test passes only because its n is constant) INFO
+f3 stretched grid: C++ vs atm2d mr_diffusion differ by 0.26 of scale (cell widths differ); atm2d keeps sum dx1f c to 4.5e-16 INFO
+g1 Jacobian: autograd vs FD 2.0e-10, derived analytic (with dn/dy terms) vs FD 2.0e-10 (tol 1e-8) PASS
+g2 frozen-n tridiagonal (A,B,C) x I differs from the true Jacobian by 0.63 of its max (exact only where n is held fixed) INFO
+g3 uniform X, one level scaled by 1e-3: true response 3.3e-16, frozen-n Jacobian predicts 3.4e-03 (the dn/dy terms cancel it) PASS
+h1 flux source: dz_0 * tendency = +Phi at the bottom cell, dz_top * tendency = -Phi at the top cell (Phi = upward flux, positive into the column at the bottom, out at the top); rtol 1e-15 PASS
+h2 velocity source: upward velocity w gives flux w c; deposition needs w = -v_dep < 0 at the bottom, escape w > 0 at the top; tendency and Jacobian -v c/dz, -v/dz; rtol 1e-15 PASS
+h3 eddy matrix + flux in at bottom + flux out at top: d/dt sum dz c = 3.2e-16 Phi (tol 1e-12) PASS
+i1 Cheng D_i = 7.3e16 T^0.75/n sqrt(mu_CH4-N2/mu_i-N2) [cm^2/s, n in cm^-3]: max rel err 0.0e+00, off-diagonal 0.0 (tol 1e-14) PASS
+i2 CH4 at 150 K, n = 1e15 cm^-3: D = 3.126e+03 cm^2/s; H2/CH4 ratio 2.329 INFO
+j1 stretched grid: dx1f * (atm2d mr_diffusion) = w * (C++), the same face fluxes: 4.4e-16 (tol 1e-13); w/dx1f = 1.150, 1.017, 1.017, 1.017, 1.017, 1.017, 1.017, 0.885 PASS
+j2 Jacobian = frozen-n (A,B,C) x I on perturbations with zero level sums: 5.3e-17 (tol 1e-12) PASS
+j3 no GPU visible: CUDA vs CPU not run INFO
+j4 one level: raises IndexError INFO
+j4 batched (2, nz, ns): raises RuntimeError INFO
+j4 zero total at the top level: 8 of 68 entries non-finite (no guard; atm2d skips such faces) INFO
+j4 a species at one level with 20% of the level total moves the other species' tendencies by x1.81, x-0.67, x0.90 on levels 4-6 and gets |dy/dt| = 2.7e+10 itself (n_j counts every species passed in) INFO
+j5 binary diffusion with species_diffusion_scale (2, 1): species-0 tendency scales by 1.000 (expect 2) EXPECTED-FAIL (K27)
+SUMMARY: 17 PASS, 0 FAIL, 1 EXPECTED-FAIL, 12 INFO

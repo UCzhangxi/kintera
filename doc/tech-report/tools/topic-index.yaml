@@ -120,6 +120,9 @@ sections:
     - eddy diffusion operator: [Kzz, zero-flux boundary, mixing-ratio diffusion]
   sec-ch08-tendency:
     - eddy diffusion tendency: [diffusion_tendency, vertical mixing]
+  sec-ch08-boundary:
+    - boundary flux sources: [deposition velocity, escape flux, column budget]
+    - molecular diffusion coefficient, Titan: [Cheng formula]
   # Chapter 3. Equation of state and thermodynamic functions
   sec-ch03-eos:
     - equation of state: [ideal gas law, Dalton's law, compressibility factor]

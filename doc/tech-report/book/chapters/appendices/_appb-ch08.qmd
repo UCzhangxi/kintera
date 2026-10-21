@@ -4,10 +4,17 @@
 
 | scheme | equation | derivation | code and check | source |
 |---------------|---------|-------------------------------|-------------------------------------|--------|
-| @sec-ch08-operator | @eq-ch08-operator-flux | The flux of species $s$ through the face $j+1/2$ is the eddy flux of mixing ratio, with the face density taken as the mean of the two levels: | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: none | re-derived |
-| @sec-ch08-operator | @eq-ch08-operator-tendency | So the tendency of every level has the form | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: none | re-derived |
-| @sec-ch08-operator | @eq-ch08-operator-inner | with, for the inner levels, | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: none | re-derived |
-| @sec-ch08-operator | @eq-ch08-operator-boundary | The top level is treated the same way with $h_{N-3/2}$: | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: none | re-derived |
-| @sec-ch08-tendency | none | No derivation beyond @sec-ch08-operator: the tendency is @eq-ch08-operator-tendency evaluated with the coefficients of @eq-ch08-operator-inner and @eq-ch08-operator-boundary. | code: ; check: none | n/a |
+| @sec-ch08-operator | @eq-ch08-operator-flux | The flux through the face $j+1/2$ is the eddy flux of mixing ratio, with the face density taken as the mean of the two levels: | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: `check_ch08_eddy.py` `(a)` | re-derived |
+| @sec-ch08-operator | @eq-ch08-operator-widths | The widths are then | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: `check_ch08_eddy.py` `(d3)` | re-derived |
+| @sec-ch08-operator | @eq-ch08-operator-tendency | So the tendency of every level has the form | code: not tagged; check: `check_ch08_eddy.py` `(a)` | re-derived |
+| @sec-ch08-operator | @eq-ch08-operator-inner | with, for the inner levels, | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: `check_ch08_eddy.py` `(a)` | re-derived |
+| @sec-ch08-operator | @eq-ch08-operator-boundary | The end rows keep only their one inner face: | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: `check_ch08_eddy.py` `(a2)` | re-derived |
+| @sec-ch08-operator | @eq-ch08-operator-conservation | The sum over $j$ telescopes to zero: | code: {{< code src/diffusion/diffusion.cpp diffusion_coefficients >}}; check: `check_ch08_eddy.py` `(d1)` | re-derived |
+| @sec-ch08-operator | @eq-ch08-operator-atm2d | It divides by the cell widths $\Delta x_{1,j}$ of its face grid instead of by $w_j$: | code: not tagged; check: `check_ch08_eddy.py` `(f1)`, `check_ch08_eddy.py` `(j1)` | re-derived |
+| @sec-ch08-tendency | @eq-ch08-tendency-jacobian | Differentiate @eq-ch08-operator-flux with $\partial \bar n_{j+1/2}/\partial y_{l,r} = \tfrac12$ and $\partial X_{l,s}/\partial y_{l,r} = (\delta_{sr} - X_{l,s})/n_l$ for $l \in \{j, j+1\}$: | code: {{< code python/atm2d/rosenbrock.py rosenbrock2_step >}}; check: `check_ch08_eddy.py` `(g1)`, `check_ch08_eddy.py` `(j2)`, `check_ch08_eddy.py` `(g3)` | re-derived |
+| @sec-ch08-boundary | @eq-ch08-boundary-flux | Integrating the balance of Step 3 of @sec-ch08-operator over an end cell, with the boundary face now carrying $\Phi$ instead of zero, gives | code: {{< code python/atm2d/sources/indexed.py IndexedBoundaryFluxSource >}}; check: `check_ch08_eddy.py` `(h1)` | re-derived |
+| @sec-ch08-boundary | @eq-ch08-boundary-velocity | Substituting $\Phi = u\, c$ in @eq-ch08-boundary-flux: | code: {{< code python/atm2d/sources/indexed.py IndexedBoundaryVelocitySource >}}; check: `check_ch08_eddy.py` `(h2)` | re-derived |
+| @sec-ch08-boundary | @eq-ch08-boundary-budget | The inner faces telescope as in @eq-ch08-operator-conservation, and only the two boundary fluxes remain: | code: {{< code python/atm2d/sources/indexed.py IndexedBoundaryVelocitySource >}}; check: `check_ch08_eddy.py` `(h3)` | re-derived |
+| @sec-ch08-boundary | @eq-ch08-boundary-cheng | *Step 4: the molecular-diffusion coefficient.* For a trace gas $i$ in a bath of N$_2$ (28 amu), the helper's docstring gives | code: {{< code python/kinetics_base/titan/transport_diffusion.py kinetics_base_titan_cheng_diffusion >}}; check: `check_ch08_eddy.py` `(i1)` | re-derived |
 
 : Derivations of @sec-ch08. {#tbl-appb-ch08}

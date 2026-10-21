@@ -1,0 +1,4 @@
+0d525973c0b3659adaae91c22c251b4640a32126
+f97ca7e4c0427cfb6046e8f0bc17d9b93c362404
+2d0d3294b6201bdac930d95bf02722668d583f98
+doc/tech-report: ch4/ch5 follow-up, theory-check completions

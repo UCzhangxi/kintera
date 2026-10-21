@@ -93,6 +93,11 @@ eigenvalue falls under its cut-off; those are exactly the directions in which th
 setting their coefficient to zero is what makes the returned vector the minimum-norm one. A cell that takes this
 branch is reported as a success, so a caller cannot tell from the status that it was singular.
 
+How accurately that pseudo-inverse is formed is a separate question from whether the formula is right. The
+eigen-decomposition runs a fixed budget of Jacobi rotations and cuts off on an absolute threshold, which is open as
+K21 on the fix list; the check below exercises one diagonal cell, where the minimum-norm answer is exact, and so
+does not settle the general accuracy of the fallback.
+
 ### Numerical method
 
 Each solver follows the same four steps:
@@ -123,6 +128,11 @@ pointers and offsets. Its callers evaluate one closed-form expression per cell �
 function — so they allocate nothing and need no shared memory. Everything @sec-ch12-kernels says about block sizes,
 scratch bytes and the launch error applies to `gpu_mem_kernel` alone; the four stubs in the second row are
 unaffected by the species count.
+
+`call_equilibrium` ({{< code src/equilibrium/equilibrium_dispatch.cu >}}) is in neither row. It takes its scratch
+from a chunk workspace rather than from a block's shared memory, so @eq-ch12-kernels-threads and the per-thread
+sizing of @sec-ch12-kernels do not describe it, and must not be applied to it unchanged. Its own sizing is not
+derived in this report.
 
 TODO: a figure of the call path (public function, tensor iterator, stub, CPU or CUDA driver, per-cell function).
 
@@ -278,8 +288,12 @@ $2.2\times10^{-16}$ in double and $1.2\times10^{-7}$ in single.
 
 **Evidence, and what kind it is.** Two sources, which should not be read as one:
 
+The script reports 17 PASS, 1 INFO, 0 FAIL and 0 EXPECTED-FAIL. That count is not taken from its exit status,
+which is 0 whether or not a line printed FAIL; `validate_ch12_output.py`, committed beside it, parses the output and
+requires all 18 labels, the 17/1/0/0 split and no non-finite token before reporting success.
+
 *Supplied with the check, CPU only.* `check_ch12_twins.py` is a static twin comparison plus CPU runs; the machine
-that produced the committed `.out` had no GPU. Its line i, "evolve_implicit vs numpy solve, 64 cells ns=5 nr=4:
+that produced the supplied `.out` had no GPU. Its line i, "evolve_implicit vs numpy solve, 64 cells ns=5 nr=4:
 max rel diff 1.78e-13 tol 1e-12 PASS", and line j, the singular cell against numpy's pseudo-inverse with exact
 agreement, check @eq-ch12-dispatch-implicit and @eq-ch12-dispatch-pinv against an independent oracle. Line k is
 INFO, not a pass: "float32 evolve_implicit vs float64 numpy: max rel diff 5.35e-05". It is the distance of the
@@ -301,13 +315,28 @@ pressure-switched coagulation set, 64 cells in double. The measure is the larges
 largest CPU value: $8.6\times10^{-18}$, $6.9\times10^{-17}$ and $5.4\times10^{-16}$ for the rates, the Jacobian and
 the implicit step of the first set, and $1.5\times10^{-16}$, $2.2\times10^{-16}$ and $8.0\times10^{-16}$ for the
 second. The first two of each triple are direct formulas and sit at $\epsilon$, as step 2 predicts; the third is a
-linear solve and is larger, by the modest conditioning of those cells.[^ch12-dispatch-agree]
+linear solve.[^ch12-dispatch-agree]
 
-These cases are not part of the test suite: both reaction sets are tested on the CPU only. Re-running
-`check_ch12_twins.py` on a CUDA build reproduces the committed output line for line except for the build path and
-two numbers that depend on the build: line i gives $2.92\times10^{-13}$ against the supplied
-$1.78\times10^{-13}$, still inside its $10^{-12}$ tolerance, and line k $6.14\times10^{-5}$ against
-$5.35\times10^{-5}$. Both are consistent with the committed values; neither changes a verdict.[^ch12-dispatch-devices]
+How far the third number is from the step-2 bound was then reconstructed by computing $\kappa_2$ of
+$\mathsf I/\Delta t - \mathsf S\mathsf J$ for the same inputs. Reading the implicit-step difference against
+$\max\kappa_2\,\epsilon$ over each deck, over $\max\kappa_2\,\epsilon$ is 0.088 for the Kessler set
+($\max\kappa_2 = 6.87$), 0.142 for the pressure-switched set ($20.1$) and 3.66 for Jupiter ($1.14$) in double, and
+1.27, 0.142 and 2.93 for the same three in single.
+
+Three of the six sit above 1. That is the expected shape of step 2 rather than a contradiction of it: the step
+gives an order, not a bound with a constant of 1, and these ratios are computed from *global* maxima — the largest
+difference anywhere in the deck over the largest $\kappa_2$ anywhere in it — so numerator and denominator need not
+come from the same cell. These ratios support the order-of-magnitude reading of step 2 and nothing
+stronger; it is not a per-cell bound and not a uniform one-$\epsilon$ claim.[^ch12-dispatch-kappa]
+
+These cases are not part of the test suite: both reaction sets are tested on the CPU only. The committed
+`derivation-checks/check_ch12_twins.out` is **our own run** on a verified pin build; the output supplied with the
+check bundle is kept beside it as `derivation-checks/ch12/check_ch12_twins.supplied.out`. The two agree line for
+line except for the build path and two build-dependent numbers: line i gives $2.92\times10^{-13}$ against the
+supplied $1.78\times10^{-13}$, still inside its $10^{-12}$ tolerance, and line k $6.14\times10^{-5}$ against
+$5.35\times10^{-5}$. Line j is exactly 0 in both. Neither difference changes a verdict, and the supplied output has
+no verified producing commit, so its arithmetic is not attributed to any particular compiler or
+device.[^ch12-dispatch-devices]
 
 [^ch12-dispatch-gtest]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the 16 gtest programs;
 run: `ctest -V -R '\.release'` in `build/tests` of a `-DCUDA=ON` Release build, which selects the 16 gtest programs;
@@ -353,8 +382,11 @@ each device, double precision, and prints the largest difference over the larges
   $\texttt{atol} = 10^{-6}$, $\texttt{rtol} = 10^{-4}$ of the comparison. The returned gain does not, and follows
   from the status rather than from the arithmetic: a converged solve returns the gain of the reactions within
   $\pm\epsilon$ of saturation and a failed one the gain of its last active set (@sec-ch04-equilibrate-tp), so 15 of
-  its 64 entries fall outside the same tolerance. Raising `ftol` to $10^{-5}$, above the single-precision floor,
-  makes both devices return diagnostic 11 and brings the fractions to $1.86\times10^{-9}$.[^ch12-dispatch-ftol32]
+  its 64 entries fall outside the same tolerance. The cell is not alone: over the 200-cell sweep the CPU reports 15
+  failed cells and CUDA 13, with 22 success-mask and 44 diagnostic differences, while the cloud masks agree and the
+  fractions agree globally to $1.42\times10^{-7}$. Raising `ftol` to $10^{-5}$, above the single-precision floor,
+  makes all 200 cells converge on both devices with exactly matching diagnostics, and brings that one cell to
+  diagnostic 11 on both and its fractions to $1.86\times10^{-9}$.[^ch12-dispatch-ftol32]
   This is a tolerance that cannot be met in the precision asked for, measured at one state on one pair of builds.
   It is **not** evidence of a defect in either driver, and it says nothing about which status is the intended one;
   what `ftol` should mean in single precision, and who owns that choice, are open.
@@ -387,6 +419,15 @@ torch 2.10.0+cu126, Python 3.11.13.]
 
 <!-- equation-check: eq-ch12-dispatch-implicit check_ch12_twins.py (i) -->
 <!-- equation-check: eq-ch12-dispatch-pinv check_ch12_twins.py (j) -->
+
+[^ch12-dispatch-kappa]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the Kessler-form,
+pressure-switched and `tests/jupiter.yaml` reaction sets, seed 20261020, 64 cells per deck and precision,
+$\Delta t = 10$ s; run: `python check_ch12_spec_complement.py conditioning` from `derivation-checks/ch12/`, CPU
+only, which recomputes $\kappa_2$ of $\mathsf I/\Delta t - \mathsf S\mathsf J$ from the rounded CPU
+$\mathsf S$ and $\mathsf J$ cast to double and reads the saved paired differences against it; no paired campaign
+was re-run, and $\kappa_2$ does not account for the CPU-CUDA perturbation of $\mathsf J$ itself; ratios use global
+maxima over all cells and components; committed output
+`derivation-checks/ch12/check_ch12_spec_complement.conditioning.out`.]
 
 [^ch12-dispatch-devices]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, random cells with
 seed 12, 64 cells, $n_{\mathrm s} = 5$, $n_{\mathrm r} = 4$, $\Delta t = 0.3$, plus one rank-2 singular cell; run:

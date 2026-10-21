@@ -1,0 +1,32 @@
+{
+  "python": "3.11.13 (main, Jun  1 2026, 00:00:00) [GCC 11.5.0 20240719 (Red Hat 11.5.0-14)]",
+  "executable": "/home/tianhaol/fridica-snapy/worker1/snapy-kintera130/.venv-kintera130-py311/bin/python",
+  "torch": "2.10.0+cu128",
+  "torch_cuda": "12.8",
+  "kintera": "/home/tianhaol/fridica-snapy/worker2/kintera-techreport-20261018/pyinst-cuda/kintera/__init__.py",
+  "gpu": "NVIDIA GeForce RTX 5090",
+  "capability": [
+    12,
+    0
+  ],
+  "threads": 1,
+  "loaded": [
+    "/data02/tianhaol/fridica-snapy/worker1/snapy-kintera130/.venv-kintera130-py311/lib/python3.11/site-packages/nvidia/cuda_runtime/lib/libcudart.so.12",
+    "/data02/tianhaol/fridica-snapy/worker1/snapy-kintera130/.venv-kintera130-py311/lib/python3.11/site-packages/pydisort.libs/libcudart-c3a75b33.so.12.8.90",
+    "/data02/tianhaol/fridica-snapy/worker1/snapy-kintera130/.venv-kintera130-py311/lib/python3.11/site-packages/torch/lib/libtorch_cuda.so",
+    "/home/tianhaol/fridica-snapy/worker2/kintera-techreport-20261018/pyinst-cuda/kintera/kintera.cpython-311-x86_64-linux-gnu.so",
+    "/home/tianhaol/fridica-snapy/worker2/kintera-techreport-20261018/pyinst-cuda/kintera/lib/libkintera_cuda_release.so",
+    "/home/tianhaol/fridica-snapy/worker2/kintera-techreport-20261018/pyinst-cuda/kintera/lib/libkintera_release.so",
+    "/usr/local/cuda-13.2/targets/x86_64-linux/lib/libcudart.so.13.2.86"
+  ],
+  "sha256": {
+    "/data02/tianhaol/fridica-snapy/worker1/snapy-kintera130/.venv-kintera130-py311/lib/python3.11/site-packages/nvidia/cuda_runtime/lib/libcudart.so.12": "c3a75b33af334a3486d197dbd1584a2985183ba4688d237a2be5f2f679329920",
+    "/data02/tianhaol/fridica-snapy/worker1/snapy-kintera130/.venv-kintera130-py311/lib/python3.11/site-packages/pydisort.libs/libcudart-c3a75b33.so.12.8.90": "d7f21dd1f06c4d1fd6d478e76061edf5f49ca7edbf5a13d996c5eef53e6bd53f",
+    "/data02/tianhaol/fridica-snapy/worker1/snapy-kintera130/.venv-kintera130-py311/lib/python3.11/site-packages/torch/lib/libtorch_cuda.so": "82ae4f56e5f4e766a862bfe8f5d38e5d678eef33f301cb9fab4c6abfd251070f",
+    "/home/tianhaol/fridica-snapy/worker2/kintera-techreport-20261018/pyinst-cuda/kintera/kintera.cpython-311-x86_64-linux-gnu.so": "eb1b81569889eb405463dd0565353157b13f439d5cde7c65953c2b10d7d73dd3",
+    "/home/tianhaol/fridica-snapy/worker2/kintera-techreport-20261018/pyinst-cuda/kintera/lib/libkintera_cuda_release.so": "44a91be2a89b13514d0710e5cc2623441626b06cb44edc60b2a3c4465300bc21",
+    "/home/tianhaol/fridica-snapy/worker2/kintera-techreport-20261018/pyinst-cuda/kintera/lib/libkintera_release.so": "950280d238fc79800d88c00919b281905121559b585a4c57590791129f08893c"
+  },
+  "source_head": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+  "source_status": "?? build\n"
+}

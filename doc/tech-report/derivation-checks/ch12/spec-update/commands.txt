@@ -1,0 +1,17 @@
+# From /home/tianhaol/fridica-snapy/worker2; all commands use the verified existing environment.
+# Writability: mkdir -p ch12-check-validation/spec-update; touch ch12-check-validation/spec-update/.writable
+# Source/identity/resource inspection:
+git -C kintera-techreport-20261018/kintera rev-parse HEAD
+git -C kintera-techreport-20261018/kintera status --short
+sha256sum /home/tianhaol/fridica-snapy/data_in/F0CAN7R2BLK/DERIVATION_SPEC_round2.md
+uptime
+nvidia-smi --query-gpu=index,name,driver_version,utilization.gpu,memory.used,memory.total --format=csv
+ch12-check-validation/run_local.sh /home/tianhaol/fridica-snapy/worker2/ch12-cpu-cuda/identity.py > ch12-check-validation/spec-update/identity.json
+# New numerical complements, serial execution, exits saved in matching .exit files:
+timeout 90s ch12-check-validation/run_local.sh integration/check_ch12_spec_complement.py sparse > ch12-check-validation/spec-update/sparse.out 2> ch12-check-validation/spec-update/sparse.err
+timeout 90s ch12-check-validation/run_local.sh integration/check_ch12_spec_complement.py launch > ch12-check-validation/spec-update/launch.out 2> ch12-check-validation/spec-update/launch.err
+CH12_SAVED=/home/tianhaol/fridica-snapy/worker2/ch12-cpu-cuda timeout 90s ch12-check-validation/run_local.sh integration/check_ch12_spec_complement.py conditioning > ch12-check-validation/spec-update/conditioning.out 2> ch12-check-validation/spec-update/conditioning.err
+# Saved-evidence summarizer only, no model execution:
+ch12-check-validation/run_local.sh spec-update/summarize_saved.py > ch12-check-validation/spec-update/saved-summary.out 2> ch12-check-validation/spec-update/saved-summary.err
+# Package verification, no model execution:
+ch12-check-validation/run_local.sh spec-update/package.py > ch12-check-validation/spec-update/package-validation.out

@@ -1,0 +1,19 @@
+kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+(a) func1: 22 names, 22 host, 23 device slots; host==names True, device==[nullptr]+names True  PASS
+(b) func2/func3: host []/[], device ['nullptr']/['nullptr']  PASS
+(c) 8 stubs, each with a CPU and a CUDA registration; missing []  PASS
+(d) 8 driver twins unpack the same pointers in the same data[] order; mismatches []  PASS
+(e) sentinel name swap: cpp 2, cu 2 (expected 2 and 2)  PASS
+(f-evolve_implicit) 4 pmalloc calls vs 4 size-function terms, same sizes in order: True  PASS
+(f-psolve) 6 pmalloc calls vs 6 size-function terms, same sizes in order: True  PASS
+(f-equilibrate_tp) 8 pmalloc calls vs 8 size-function terms, same sizes in order: True  PASS
+(f-equilibrate_uv) 10 pmalloc calls vs 10 size-function terms, same sizes in order: True  PASS
+(f-leastsq_kkt) 8 pmalloc calls vs 8 size-function terms, same sizes in order: True  PASS
+(f-kkt_feasible_origin) 3 pmalloc calls vs 3 size-function terms, same sizes in order: True  PASS
+(f-phase_equilibrate_tp) 8 pmalloc calls vs 8 size-function terms, same sizes in order: True  PASS
+(f-uv_partition) pmalloc sizes ['nspecies*sizeof(T)', 'nspecies*sizeof(T)', 'nreaction*sizeof(T)']; size function 2*ns + nr  PASS
+(g) implicit-step scratch from the size function equals 32 ns^2 + 48 ns for ns = 1..59  PASS
+(h) M=49152: threads ns=6 32, ns=7 25; launch error ns=38 False, ns=39 True (report: 32 up to 6, error from 39)  PASS
+(i) evolve_implicit vs numpy solve, 64 cells ns=5 nr=4: max rel diff 1.78e-13  tol 1e-12  PASS
+(j) singular cell, fallback vs numpy pinv: got [ 0.  -0.8  0. ], ref [ 0.  -0.8  0. ], max abs diff 0.0e+00  tol 1e-12  PASS
+(k) float32 evolve_implicit vs float64 numpy: max rel diff 5.35e-05 (INFO: sets the float32 CPU-vs-CUDA comparison scale, not a CUDA result)  INFO

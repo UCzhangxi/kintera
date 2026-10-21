@@ -1,0 +1,8 @@
+........                                                                 [100%]
+=============================== warnings summary ===============================
+../kintera-techreport-20261018/pyinst-cuda/kintera/atm2d/matrix.py:109
+  /home/tianhaol/fridica-snapy/worker2/kintera-techreport-20261018/pyinst-cuda/kintera/atm2d/matrix.py:109: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
+    global_csr=coo.to_sparse_csr(),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+8 passed, 1 warning in 5.37s

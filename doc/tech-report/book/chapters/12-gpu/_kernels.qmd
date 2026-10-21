@@ -92,7 +92,7 @@ Three details make the count less obvious than it looks:
 
 | source | matrices $n_{\mathrm{s}}\times n_{\mathrm{s}}$ | vectors of length $n_{\mathrm{s}}$ |
 |---|---|---|
-| `evolve_implicit_space` ({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}) | 2: `A`, `Alu` | 2: `sr`, `x` |
+| `evolve_implicit_space` ({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}) | 2: $\mathsf A$, `Alu` | 2: `sr`, `x` |
 | `psolve_space`, the pseudo-inverse fallback ({{< code src/utils/alloc.h psolve_space >}}) | 2: `ATA`, `V` | 4: `eval`, `vi`, `Avi`, `b0` |
 | total | 4 | 6 |
 
@@ -152,7 +152,7 @@ check.[^ch12-kernels-launch]
 
 A case between the two extremes has also been run: a `ThermoX` deck with 17 species and 8 reactions, 200 cells,
 converged on CUDA in double and agreed with the CPU. Summing its rounded outer allocations and its nested
-feasible-origin, KKT and LU workspace gives 10152 bytes per cell, hence 9 threads per block by
+feasible-origin, KKT[^rg-9365bdfcb421] and LU workspace gives 10152 bytes per cell, hence 9 threads per block by
 @eq-ch12-kernels-threads — a block well below 32, as the formula requires. That thread count is **computed from the
 source and the formula, not read from a profiler**: what the run demonstrates is that a deck needing a shrunken
 block executes and agrees with the CPU, not that the block was the predicted size.[^ch12-kernels-launch]
@@ -275,3 +275,7 @@ with the bundle's output kept beside it as `derivation-checks/ch12/check_ch12_tw
 
 <!-- equation-check: eq-ch12-kernels-threads check_ch12_twins.py (h) -->
 <!-- equation-check: eq-ch12-kernels-implicit-bytes-double check_ch12_twins.py (g) -->
+
+<!-- reader glossary notes -->
+[^rg-9365bdfcb421]: KKT — Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134)
+<!-- end reader glossary notes -->

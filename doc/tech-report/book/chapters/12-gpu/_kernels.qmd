@@ -153,7 +153,7 @@ check.[^ch12-kernels-launch]
 A case between the two extremes has also been run: a `ThermoX` deck with 17 species and 8 reactions, 200 cells,
 converged on CUDA in double and agreed with the CPU. Summing its rounded outer allocations and its nested
 feasible-origin, KKT[^rg-9365bdfcb421] and LU workspace gives 10152 bytes per cell, hence 9 threads per block by
-@eq-ch12-kernels-threads — a block well below 32, as the formula requires. That thread count is **computed from the
+@eq-ch12-kernels-threads at $M = 101376$ bytes (4 at $M = 49152$) — a block well below 32, as the formula requires. That thread count is **computed from the
 source and the formula, not read from a profiler**: what the run demonstrates is that a deck needing a shrunken
 block executes and agrees with the CPU, not that the block was the predicted size.[^ch12-kernels-launch]
 
@@ -246,7 +246,7 @@ same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python
   Reaching it needs roughly $6\times10^{7}$ cells for a three-reaction gain tensor in double, and no in-tree test or
   example comes near that, so the defect is latent. This is a reading of the source, not a measurement; settling it
   needs a CUDA run on a batch above the threshold, comparing its last cells with a CPU run. It is the same location
-  and mechanism as K25 on the fix list; that correspondence is a source-level match, and no check of this chapter
+  and mechanism as K25 on the fix list;[^ch12-k25] that correspondence is a source-level match, and no check of this chapter
   produces a failing line for it.
 :::
 
@@ -263,8 +263,9 @@ $r_i = (i+1)/n_{\mathrm s}$, whose exact answer is $\mathbf r$; run: `python che
 from `derivation-checks/ch12/`, exit 0, empty stderr, on an RTX 5090 whose `cudaDeviceGetAttribute` reports 49152
 ordinary and 101376 opt-in bytes; the 17-species case is a saved `ThermoX` run of eight vapour/condensate pairs plus
 a dry gas, 200 cells, 250 to 400 K at $10^5$ Pa, `max-iter` 50, double, CPU against CUDA; the 9-thread block is
-computed from the size functions, not profiled; committed outputs
-`derivation-checks/ch12/check_ch12_spec_complement.launch.out` and the saved preparation beside it.]
+computed from the size functions, not profiled; committed output
+`derivation-checks/ch12/check_ch12_spec_complement.launch.out` for the launch rows; the 17-species ThermoX
+comparison and its 10152-byte figure are a measurement outside the suite, not a committed check.]
 
 [^ch12-kernels-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the check parses the
 source tree and calls `evolve_implicit`; run: `python derivation-checks/check_ch12_twins.py` from a scratch
@@ -275,6 +276,9 @@ with the bundle's output kept beside it as `derivation-checks/ch12/check_ch12_tw
 
 <!-- equation-check: eq-ch12-kernels-threads check_ch12_twins.py (h) -->
 <!-- equation-check: eq-ch12-kernels-implicit-bytes-double check_ch12_twins.py (g) -->
+
+[^ch12-k25]: [source: UCzhangxi/kintera#54, row K25 (CUDA element loops index with 32-bit offsets and omit the
+`can_use_32bit_indexing` guard), open at the pin and unverified on a GPU.]
 
 <!-- reader glossary notes -->
 [^rg-9365bdfcb421]: KKT — Karush-Kuhn-Tucker; the optimality system of a constrained least-squares problem, assembled in `leastsq_kkt_impl`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/leastsq_kkt.h#L131-L134)

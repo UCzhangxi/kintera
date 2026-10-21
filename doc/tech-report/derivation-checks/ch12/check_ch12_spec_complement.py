@@ -63,6 +63,32 @@ def sparse():
             max_pointwise_relative=float((diff/np.maximum(np.maximum(np.abs(zs[0]),np.abs(zs[1])),np.finfo(float).tiny)).max()),
             volume_weighted_conservation_relative=float(imbalance/scale),verdict='PASS')
 
+        # K42: structural vs numerical singularity, 3x3, as saved-preparation/probe.py:98-115 built them.
+        # diag(4,4,0) has a zero row AND column, so every factorisation meets an exact zero and both
+        # back ends raise. diag(4,4,1e-14) is exactly as singular to no tolerance but structurally full,
+        # and returns finite values on both. Nothing here measures a singular matrix without that
+        # structure, which is what K42 (UCzhangxi/kintera#54) describes.
+        for label,corner in (('singular_3',0.),('near_singular_3',1e-14)):
+            A3=4*torch.eye(3,dtype=dtype);A3[-1,-1]=corner
+            b3=torch.randn(1,3,1,generator=torch.Generator().manual_seed(SEED),dtype=torch.float64).to(dtype)
+            out3=[]
+            for device in ('cpu','cuda'):
+                try:
+                    m3=kt.SparseSystemMatrix.from_dense(A3.to(device),ncol=1,nlyr=3,nspecies=1)
+                    z3=kt.solve_sparse_system(m3,b3.to(device)).cpu();out3.append(z3)
+                    emit(case='sparse_singularity',label=label,structural=(corner==0.),dtype=str(dtype),device=device,
+                        status='returned',finite=int(torch.isfinite(z3).sum()),
+                        max_residual=float((A3.double()@z3.double().flatten()-b3.double().flatten()).abs().max()))
+                except Exception as ex:
+                    out3.append(None)
+                    emit(case='sparse_singularity',label=label,structural=(corner==0.),dtype=str(dtype),device=device,
+                        status='exception',error=str(ex).splitlines()[0])
+            agree=(out3[0] is None)==(out3[1] is None)
+            emit(case='sparse_singularity_agreement',label=label,structural=(corner==0.),dtype=str(dtype),
+                same_return_status=agree,
+                max_abs_cpu_cuda=(float((out3[0]-out3[1]).abs().max()) if all(v is not None for v in out3) else None),
+                verdict='PASS' if agree else 'FAIL')
+
 def launch():
     # Use loaded cudart rather than guess M from architecture or 48 KiB example.
     cudarts=sorted({line.split()[-1] for line in pathlib.Path('/proc/self/maps').read_text().splitlines() if '/libcudart.so' in line})
@@ -75,7 +101,7 @@ def launch():
             value=ctypes.c_int();rc=lib.cudaDeviceGetAttribute(ctypes.byref(value),attr,0)
             assert rc==0,(path,attr,rc)
             vals.append(value.value)
-        limits.append(max(vals));emit(case='shared_memory_device_attributes',library=path,ordinary=vals[0],optin=vals[1])
+        limits.append(max(vals));emit(case='shared_memory_device_attributes',library=pathlib.Path(path).name,ordinary=vals[0],optin=vals[1])
     assert limits and len(set(limits))==1,limits
     M=limits[0];bsize=lambda ns:32*ns*ns+48*ns
     first=next(n for n in range(1,1000) if bsize(n)>M)

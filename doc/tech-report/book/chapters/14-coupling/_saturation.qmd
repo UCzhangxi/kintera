@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70
-sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp; snapy src/mesh/meshblock.cpp
+sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp; snapy src/mesh/meshblock.cpp, src/eos/moist_mixture.cpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,37 +10,117 @@ reviewer:
 
 ### Summary
 
-After each stage of its time integrator, snapy brings condensable species back to phase equilibrium by calling
-kintera's saturation adjustment at fixed density and internal energy. It then asks kintera how many cells failed
-to converge, and redoes the step with a smaller time step if any did. Content from source reading only.
+At the end of the last stage of its time integrator, snapy brings the condensable species back to phase
+equilibrium by calling kintera's saturation adjustment at fixed density and internal energy. This section derives
+what the call holds fixed and shows that total mass, every element and the internal energy are conserved across
+it, and that the latent heat appears as a warming when snapy next inverts the energy for the temperature. It also
+states what happens to a cell whose adjustment does not converge: the cell is counted, its partly adjusted state is
+still written, and snapy redoes the step with a smaller time step.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Phase equilibrium of @sec-ch04 at fixed density and internal energy, in place on the mass fractions.
+**Purpose.** Phase equilibrium of @sec-ch04 at fixed density and internal energy, in place on the mass fractions;
+budgets @eq-ch14-saturation-mass and @eq-ch14-saturation-elements.
 
 **Data.** Density [$\mathrm{kg\,m^{-3}}$], internal energy [$\mathrm{J\,m^{-3}}$], mass fractions [-] (updated).
 
-**Placement.** End of every snapy stage; failure count read by snapy's redo check.
+**Placement.** End of the last snapy stage; failure count read by snapy's redo check.
 
-**Activation.** Always, for a moist equation of state; warm start on.
+**Activation.** A moist equation of state whose card has nucleation reactions; warm start on.
 
-**Guarantee / limits.** Failed cells are counted, not raised.
+**Guarantee / limits.** Mass and elements exact for cards whose phase changes keep the molar mass; failed cells are
+counted, not raised.
 
-**Evidence.** No kintera test of the call site; see the Tests layer.
+**Evidence.** `check_ch14_coupling.py` lines (k) to (r); see the Tests layer.
 :::
+
+Local symbols: $\rho$, total density; $\rho_0$, dry density; $y_i$, $y_i'$, mass fractions before and after; $U$,
+internal energy per volume; $c$, $c'$, concentrations before and after; $S$, the stoichiometric matrix with entries
+$S_{ij}$; $\xi_j$, extent of reaction $j$ per volume; $a_{ei}$, atoms of element $e$ in species $i$; $\mu_i$, molar
+mass; $T$, $T'$, temperature before and after.
 
 ### Derivation
 
-No derivation: the adjustment is derived in @sec-ch04.
+**What snapy passes.** snapy forms $\rho = \rho_0 + \sum_i \rho_i$, the internal energy $U = E - e_k$ and
+$y_i = \rho_i/\rho$, and calls its `forward` on the interior cells with warm start
+([`snapy meshblock.cpp:816-835`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L816-L835)). Afterwards it writes $\rho_i = y_i' \rho$ (`yfrac` times `rho`) and leaves the dry row and $E$ as
+they were ([`snapy meshblock.cpp:837`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L837)). Inside, kintera solves one UV equilibrium in concentrations with
+the molar energies and heat capacities converted from the per-mass buffers, then returns
+$\rho_i = \mu_i c_i'$ and overwrites $y$ with `V->Y`, which divides by the new $\sum_i \rho_i$
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}, {{< code src/thermo/thermo_y.cpp ThermoYImpl::_ivol_to_yfrac >}}).
+
+**Step 1: what is held.** The cell has a fixed volume and no heat is added during the call, so the first law gives
+$\mathrm dU = 0$: the solver holds $U$ and the density, and moves the composition along the reactions,
+$c' = c + S\xi$ (@sec-ch04-equilibrate-uv).
+
+**Step 2: the dry gas.** The dry species is in no reaction, so $c_0' = c_0$ and $\rho_0$ is unchanged; the dry row
+snapy leaves untouched is therefore still right.
+
+**Step 3: total mass.** The mass per volume changes by $\sum_i \mu_i (c_i' - c_i) = \sum_j \xi_j \sum_i \mu_i S_{ij}$.
+When the molar masses come from the compositions, every phase change has the same molar mass on both sides, so
+
+$$
+\sum_i \mu_i S_{ij} = 0 \ \text{for every reaction } j \quad\Rightarrow\quad \sum_i \rho_i' = \sum_i \rho_i = \rho ,
+$$ {#eq-ch14-saturation-mass}
+
+and `V->Y` divides by the incoming $\rho$. Writing $\rho_i = y_i' \rho$ with the incoming $\rho$ is then exact.
+
+**Step 4: elements.** The element moles change by $\sum_i a_{ei} (c_i' - c_i) = \sum_j \xi_j \sum_i a_{ei} S_{ij}$, so
+
+$$
+\sum_i a_{ei} c_i' = \sum_i a_{ei} c_i \ \text{for every element } e \quad \text{when} \quad \sum_i a_{ei} S_{ij} = 0 ,
+$$ {#eq-ch14-saturation-elements}
+
+which holds for balanced reactions (@sec-ch01b-state). `forward` moves the composition only along the columns of
+$S$ ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}), so both budgets follow from the stoichiometry.
+
+**Step 5: where the latent heat goes.** snapy keeps $E$, and so $U$. The condensates carry lower offsets $u_i^0$ in
+@eq-ch14-thermo-energy, so moving mass from vapour to condensate at fixed $U$ leaves more thermal energy. That
+warming appears when snapy next inverts $U$ for $T$ (`VU->T`,
+[`snapy moist_mixture.cpp:150`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L150)); the adjustment itself writes no temperature.
+
+**Step 6: one energy on both sides.** The energy snapy holds and the energy kintera conserves are the same function
+for `moist-mixture`, and for `ideal-moist` with a linear card (@sec-ch14-thermo, @eq-ch14-thermo-ideal-moist).
+
+**Step 7: non-convergence.** A cell that does not converge has `diag < 0`. `forward` adds it to a failure count on
+the cells' device, warns on CPU, and still writes the partly adjusted concentrations back
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}). Each Newton update is a stoichiometric step, so the
+written state is still on the conservation manifold of Steps 3 and 4. `take_saturation_adjustment_failures` returns
+and resets the count ({{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}}); snapy
+reads it in its redo check ([`snapy meshblock.cpp:1269-1276`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1269-L1276), cause bit 16, `causes`, at
+[`:1288`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1288)) and redoes the step with a smaller time step, which discards the written state. On CUDA the
+count stays on the device until the redo check reads it, so `forward` does not synchronise. The temperature
+inversions `VU->T` and `PV->T` only warn when they reach their iteration limit and are not counted
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::_intEng_to_temp >}}, {{< code src/thermo/thermo_y.cpp ThermoYImpl::_pres_to_temp >}};
+Limits).
+
+The check runs the adjustment exactly as snapy does on the Jupiter deck, in six supersaturated cells from 140 K to
+300 K.[^ch14-check-sat]
+
+- "(k) adjustment moved mass fractions by up to 1.00e+00 of the largest (state was supersaturated) PASS"
+- "(l) total density rho_dry + sum y' rho equals rho (dry row untouched): max rel err 2.22e-16 (tol 1e-14) PASS"
+- "(m) element moles H, He, N, O, S per cell conserved: max rel err 3.69e-16 (tol 1e-13) PASS"
+- "(n) snapy's next VU->T at fixed ie (meshblock.cpp:825) = linear-model T: max rel err 4.44e-16 (tol 1e-12) PASS"
+- "(o) latent warming T' - T per cell [K]: 22.352 21.810 20.554 13.713 9.087 3.756 INFO"
+- "(p) max relative humidity per cell at (T', p') after the adjustment: 1.000000 1.000001 1.000000 1.000000 1.000000 1.000000 INFO"
+- "(k0) diag per cell at the default max_iter 10 (negative = failed, D4 filed): -2010 -2010 8 7 6 4 INFO"
+- "(q) max_iter = 1: 6 failed cell(s) counted, count reset to 0 on the second read PASS"
+- "(r) failed cells: written state still conserves total density: max rel err 2.22e-16 (tol 1e-14) PASS"
+
+<!-- equation-check: eq-ch14-saturation-mass check_ch14_coupling.py (l) -->
+<!-- equation-check: eq-ch14-saturation-mass check_ch14_coupling.py (r) -->
+<!-- equation-check: eq-ch14-saturation-elements check_ch14_coupling.py (m) -->
+
+Line (k0) shows two cells failing at the default limit of 10 iterations in this run; the output of the same script
+in the round-2 spec, run on another machine at the same pin, shows one. That difference is measured, not explained.
+The script tags the failures with the known row D4, and line (q) checks the count with the limit set to 1.
+
+No published derivation is quoted. The steps are the first law at fixed volume and the stoichiometry of
+@sec-ch04, matched to the code at the two pins.
 
 ### Numerical method
 
-snapy computes the total density and the internal energy from its conserved state, forms the mass fractions, and
-calls `ThermoY.forward` with `warm_start` true on the interior cells ([`snapy meshblock.cpp:829-837`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L829-L837)). The call updates the mass fractions
-in place ({{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}}). snapy's redo check reads
-`take_saturation_adjustment_failures` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}},
-[`snapy meshblock.cpp:1272-1275`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1272-L1275)), which returns and resets the number of failed cells.
-
-The figure is not provided: the figure module is not written yet.
+The adjustment is the UV solver of @sec-ch04-equilibrate-uv, called once per step on the interior cells. The
+figure is not provided: the figure module is not written yet.
 
 ### Code
 
@@ -48,8 +128,8 @@ The figure is not provided: the figure module is not written yet.
 |---|---|---|---|
 | adjustment | {{< code src/thermo/thermo_y.cpp ThermoYImpl::forward >}} | `ThermoYImpl::forward` | always |
 | failure count | {{< code src/thermo/thermo_y.cpp ThermoYImpl::take_saturation_adjustment_failures >}} | `take_saturation_adjustment_failures` | always |
-| snapy caller | [`snapy meshblock.cpp:829-837`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L829-L837) | `ThermoYImpl` | always |
-| snapy redo check | [`snapy meshblock.cpp:1272-1275`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1272-L1275) | `take_saturation_adjustment_failures` | always |
+| snapy caller | [`snapy meshblock.cpp:816-837`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L816-L837) | `ThermoYImpl` | nucleation reactions |
+| snapy redo check | [`snapy meshblock.cpp:1269-1276`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/mesh/meshblock.cpp#L1269-L1276) | `take_saturation_adjustment_failures` | always |
 
 : Code map of saturation adjustment in a stage. {#tbl-ch14-saturation-code}
 
@@ -58,11 +138,28 @@ The figure is not provided: the figure module is not written yet.
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
 | `test_saturation_failure_reported.py` | an unadjusted cell is counted | exact | count |
+| check `check_ch14_coupling.py` (l), (r) | @eq-ch14-saturation-mass, converged and failed cells | $10^{-14}$ rel. | round-off |
+| check `check_ch14_coupling.py` (m) | @eq-ch14-saturation-elements | $10^{-13}$ rel. | round-off |
+| check `check_ch14_coupling.py` (n) | snapy's next `VU->T` gives the linear-model temperature | $10^{-12}$ rel. | round-off |
+| check `check_ch14_coupling.py` (q) | failures counted, count reset on read | exact | count |
 
 : Tests of saturation adjustment in a stage. {#tbl-ch14-saturation-tests}
 
 The kintera test covers the count, not snapy's use of it.
 
+[^ch14-check-sat]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch14_coupling.out`, lines (k0) and (k) to (r).]
+
 ### Limits
 
-Not drafted.
+- @eq-ch14-saturation-mass needs every phase change to keep the molar mass. A card whose vapour and condensate get
+  their molar masses from different compositions loses or gains mass at every adjustment; kintera's readers do not
+  reject such a card (@sec-ch14-thermo, Limits).
+- `VU->T` and `PV->T` report non-convergence only as a warning, so snapy's redo check cannot see it. For the linear
+  model both converge in one step (@sec-ch14-thermo); the gap matters only with NASA-9, H$_2$ or compressibility
+  terms. This is suspect S14-4, latent, recorded as row K26 of the issue below.[^ch14-k26]
+
+[^ch14-k26]: [source: UCzhangxi/kintera#54, row K26 (temperature inversions only warn, latent). This text is to be
+    updated when that row is resolved.]

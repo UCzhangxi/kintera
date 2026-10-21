@@ -35,8 +35,10 @@ molar masses.
 Local symbols: $\rho$, total density [$\mathrm{kg\,m^{-3}}$]; $\rho_0$, dry density; $\rho_i$, partial density of
 species $i \ge 1$; $y_i = \rho_i/\rho$, mass fraction; $\mu_i$, molar mass [$\mathrm{kg\,mol^{-1}}$]; $c_i$,
 concentration [$\mathrm{mol\,m^{-3}}$]; $E$, total energy per volume; $e_k$, kinetic energy per volume; $U$, internal
-energy per volume [$\mathrm{J\,m^{-3}}$]; $c_{v,i}$, molar heat capacity at constant volume; $u_i^0$, energy offset of
-species $i$ at $T = 0$; $R_d = \mathcal R/\mu_0$, the dry gas constant; $\gamma_d$, the dry ratio of heat capacities.
+energy per volume [$\mathrm{J\,m^{-3}}$]; $c_{v,i}$, isochoric heat capacity per mole in units of $\mathcal R$ [-] (the card's `cv_R`[^rg-5d1f6c2e39d3]); $u_i^0$,
+energy offset of species $i$ at $T = 0$ per mole in units of $\mathcal R$ [K]; $\hat c_{v,i} = \mathcal R c_{v,i}/\mu_i$
+[$\mathrm{J\,kg^{-1}\,K^{-1}}$] and $\hat u_i^0 = \mathcal R u_i^0/\mu_i$ [$\mathrm{J\,kg^{-1}}$], the same per unit mass;
+$R_d = \mathcal R/\mu_0$, the dry gas constant; $\gamma_d$, the dry ratio of heat capacities.
 
 ### Derivation
 
@@ -96,21 +98,22 @@ $$ {#eq-ch14-thermo-mole}
 which is the closed form of `Y->X` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_yfrac_to_xfrac >}}) after
 division by $1/\mu_0$.
 
-**Step 6: the `ideal-moist` closed form.** `IdealMoist` does not call `VT->U`. It reads
-$u_i^0 = \mathcal R u_i/\mu_i$ from the options object after `ThermoYImpl::create`
+**Step 6: the `ideal-moist` closed form.** `IdealMoist` does not call `VT->U`. It works per unit mass and reads
+$\hat u_i^0 = \mathcal R u_i^0/\mu_i$ from the options object after `ThermoYImpl::create`
 ([`snapy ideal_moist.cpp:20`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L20), `u0` at [`:48-51`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L48-L51)). `create` runs `reset`, which shifts the
 offsets in place and sets `offset_zero`, and the options object is shared, so snapy reads the shifted values. It
 uses
-$f_\sigma = 1 + \sum_i y_i (c_{v,i}/c_{v,d} - 1)$ and
+$f_\sigma = 1 + \sum_i y_i (\hat c_{v,i}/\hat c_{v,d} - 1)$ and
 $f_\epsilon = 1 + \sum_{\mathrm{vap}} y_i (\mu_d/\mu_i - 1) - \sum_{\mathrm{cloud}} y_i$
-(`f_eps`, `f_sig`, [`snapy ideal_moist.cpp:330-357`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L330-L357)), with $c_{v,i}$ here per unit mass. By @eq-ch14-thermo-pressure,
-$p = \rho R_d T f_\epsilon$. Since $c_{v,d} = R_d/(\gamma_d - 1)$, $p/(\gamma_d - 1) = \rho\, c_{v,d} T f_\epsilon$, and
+(`f_eps`, `f_sig`, [`snapy ideal_moist.cpp:330-357`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L330-L357)). By @eq-ch14-thermo-pressure, $p = \rho R_d T f_\epsilon$. Since
+$\hat c_{v,d} = R_d/(\gamma_d - 1)$, $p/(\gamma_d - 1) = \rho\, \hat c_{v,d} T f_\epsilon$, and
 
 $$
-U = \frac{p\, f_\sigma}{f_\epsilon (\gamma_d - 1)} + \rho \sum_i y_i u_i^0 = T \sum_i \rho_i c_{v,i} + \sum_i \rho_i u_i^0 ,
+U = \frac{p\, f_\sigma}{f_\epsilon (\gamma_d - 1)} + \rho \sum_i y_i \hat u_i^0 = T \sum_i \rho_i \hat c_{v,i} + \sum_i \rho_i \hat u_i^0 ,
 $$ {#eq-ch14-thermo-ideal-moist}
 
-clouds included, which is @eq-ch14-thermo-energy. That is the internal energy of
+clouds included, which is @eq-ch14-thermo-energy because $\rho_i \hat c_{v,i} = c_i \mathcal R c_{v,i}$ and
+$\rho_i \hat u_i^0 = c_i \mathcal R u_i^0$. That is the internal energy of
 `f_sig` in [`snapy ideal_moist.cpp:225-231`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L225-L231), and $T = p/(\rho R_d f_\epsilon)$ is its temperature
 (`f_eps`, [`snapy ideal_moist.cpp:241`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L241)). The identity needs $z = 1$ and no NASA-9, H$_2$ or extra energy terms
 (Limits).
@@ -184,7 +187,8 @@ equations of state are not listed here.
 [^ch14-check-thermo]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch14_coupling.out`, lines (a) to (j).]
+    `derivation-checks/check_ch14_coupling.out`, lines (a) to (j), from an x86-64 Linux build. Line (d) is
+    build-dependent in its last digit: a run of the same script on an arm64 build at the pin gives 1.11e-16.]
 
 ### Limits
 
@@ -205,5 +209,7 @@ equations of state are not listed here.
     the snapy decks or the readers change.]
 
 <!-- reader glossary notes -->
+[^rg-5d1f6c2e39d3]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)
+
 [^rg-7efe2bd33a7d]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
 <!-- end reader glossary notes -->

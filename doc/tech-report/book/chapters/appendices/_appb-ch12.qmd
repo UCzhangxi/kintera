@@ -6,9 +6,10 @@
 |---------------|---------|-------------------------------|-------------------------------------|--------|
 | @sec-ch12-build | none | No derivation: this scheme is a build configuration. | code: ; check: none | n/a |
 | @sec-ch12-dispatch | @eq-ch12-dispatch-implicit | For the implicit kinetics step that function solves | code: {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}; check: none | re-derived |
-| @sec-ch12-kernels | @eq-ch12-kernels-threads | The launcher `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) picks the block size from the scratch size of one cell: | code: {{< code src/loops.cuh gpu_mem_kernel >}}; check: none | re-derived |
-| @sec-ch12-kernels | @eq-ch12-kernels-implicit-bytes | Every allocation is rounded up to a multiple of 8 bytes, so in double precision (8 bytes per entry) | code: {{< code src/loops.cuh gpu_mem_kernel >}}; check: none | re-derived |
-| @sec-ch12-device-functions | @eq-ch12-device-functions-index | For a requested name $n$, | code: {{< code src/utils/user_funcs.hpp get_host_func >}}; check: none | re-derived |
+| @sec-ch12-kernels | @eq-ch12-kernels-threads | The launcher `gpu_mem_kernel` ({{< code src/loops.cuh gpu_mem_kernel >}}) picks the block size from the scratch size of one cell: | code: {{< code src/loops.cuh gpu_mem_kernel >}}; check: `check_ch12_twins.py` `(h)` | re-derived |
+| @sec-ch12-kernels | @eq-ch12-kernels-implicit-bytes | Writing $\lceil x \rceil_8$ for that rounding and $s$ for the bytes of one entry, the scratch of one cell is | code: {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}; check: none | re-derived |
+| @sec-ch12-kernels | @eq-ch12-kernels-implicit-bytes-double | In double precision $s = 8$, every term is already a multiple of 8, the rounding does nothing, and | code: {{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_space >}}; check: `check_ch12_twins.py` `(g)` | re-derived |
+| @sec-ch12-device-functions | @eq-ch12-device-functions-index | For a requested name $n$, | code: {{< code src/utils/user_funcs.hpp get_host_func >}}; check: `check_ch12_twins.py` `(a)` | re-derived |
 | @sec-ch12-sparse-solver | none | TODO: not yet written. | code: ; check: none | n/a |
 
 : Derivations of @sec-ch12. {#tbl-appb-ch12}

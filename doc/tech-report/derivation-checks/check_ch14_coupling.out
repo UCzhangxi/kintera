@@ -7,6 +7,7 @@
 [Warning] equilibrate_uv did not converge after 1 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
 kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+build: Linux x86_64, Python 3.11.13, torch 2.10.0+cu128
 (a) DY->V (snapy moist_mixture.cpp:149) against rho*(1-sum y), rho*y: max rel err 1.97e-16 (tol 1e-14) PASS
 (b) V->Y after DY->V returns the mass fractions: max rel err 3.62e-16 (tol 1e-14) PASS
 (c) VT->U [J/m^3] against sum c_i R (u0_i - cv_i Tref + cv_i T), c = rho_i/mu_i: max rel err 2.33e-16 (tol 1e-12) PASS

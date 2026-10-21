@@ -187,7 +187,7 @@ equations of state are not listed here.
 [^ch14-check-thermo]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch14_coupling.out`, lines (a) to (j), from an x86-64 Linux build. Line (d) is
+    `derivation-checks/check_ch14_coupling.out`, lines (a) to (j), from an x86-64 Linux build, as its `build:` line records. Line (d) is
     build-dependent in its last digit: a run of the same script on an arm64 build at the pin gives 1.11e-16.]
 
 ### Limits

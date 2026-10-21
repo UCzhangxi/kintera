@@ -16,7 +16,8 @@ stages, as an operator-split source: it converts the state to concentrations, ta
 paddle's `evolve_kinetics` follow the same pattern. Content from source reading only.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** $\rho_i \leftarrow \rho_i + M_i\, \delta_i$ per species after the dynamics, @eq-ch14-kinetics-density.
+**Purpose.** $\rho_i \leftarrow \rho_i + M_i\, \delta_i$ per species after the dynamics, @eq-ch14-kinetics-density;
+mass @eq-ch14-kinetics-mass; the heat capacity of the Jacobian, @eq-ch14-kinetics-cv.
 
 **Data.** Primitive state in; density change [$\mathrm{kg\,m^{-3}}$] per species out.
 
@@ -26,13 +27,15 @@ paddle's `evolve_kinetics` follow the same pattern. Content from source reading 
 
 **Guarantee / limits.** Sequential splitting, first order, @eq-ch14-kinetics-splitting; needs the input's rate forms.
 
-**Evidence.** No kintera test of the call site; see the Tests layer.
+**Evidence.** `check_ch14_coupling.py` lines (s) to (w); see the Tests layer.
 :::
 
 Local symbols: $\delta_i$, concentration change of species $i$ over the step [$\mathrm{mol\,m^{-3}}$]; $M_i$, molar
 mass of species $i$ [$\mathrm{kg\,mol^{-1}}$]; $\rho_i$, partial density [$\mathrm{kg\,m^{-3}}$]; $q$, the
 conserved state of the host model; $\mathcal D$, $\mathcal K$, the dynamics and kinetics tendencies; $\mathsf A$,
-$\mathsf B$, linear operators standing for them in the splitting estimate.
+$\mathsf B$, linear operators standing for them in the splitting estimate; $S$, the kinetics stoichiometry; $\xi$,
+extents per volume; $u_k$, molar internal energy; $C_V$, $C_P$, volumetric heat capacities at constant volume and
+constant pressure [$\mathrm{J\,m^{-3}\,K^{-1}}$].
 
 ### Derivation
 
@@ -46,6 +49,40 @@ $$ {#eq-ch14-kinetics-density}
 where $M_i$ enters as the division by `inv_mu`, the inverse molar masses held by `ThermoY`.
 @eq-ch14-kinetics-density is computed in the snapy driver, where `inv_mu` divides the change ([`snapy run_hydro.cpp:175-193`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L175-L193)), and in
 paddle's `evolve_kinetics` ([`paddle evolve_kinetics.py:6-44`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/evolve_kinetics.py#L6-L44)).
+
+**Concentrations in.** The driver takes $T$ from its equation of state, the mole fractions from `Y->X`
+(@eq-ch14-thermo-mole) and the concentrations from `TPX->V`, then slices off the dry column
+([`snapy run_hydro.cpp:176-184`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L176-L184)). For a gas, `TPX->V` returns $x_i\, p/(\mathcal R T)$ divided by the gas
+fraction, and with $p$ from @eq-ch14-thermo-pressure this is $\rho_i/\mu_i$: the ideal-gas law closes the loop, so
+the kinetics sees the concentrations of @sec-ch14-thermo.
+
+**Mass out.** The implicit step returns a stoichiometric change, $\delta = S\xi$ (@sec-ch06-implicit), so
+
+$$
+\sum_i M_i\, \delta_i = \sum_j \xi_j \sum_i M_i S_{ij} = 0 \quad [\mathrm{kg\,m^{-3}}]
+$$ {#eq-ch14-kinetics-mass}
+
+whenever every reaction keeps the molar mass, the condition of @eq-ch14-saturation-mass. The change comes from
+`evolve_implicit` ({{< code src/kinetics/evolve_implicit_dispatch.cpp evolve_implicit >}}). @eq-ch14-kinetics-density
+then conserves the total density. The dry row is not a kinetics species and stays as it is.
+
+**Energy held.** The driver does not touch $E$. That is the fixed-$U$ assumption of the Jacobian (@sec-ch06-jacobian):
+the latent heat of the converted mass stays in the offsets of @eq-ch14-thermo-energy and appears as a temperature
+change at the next `VU->T` of the equation of state.
+
+The check feeds the driver's concentrations of the adjusted Jupiter state to these relations.[^ch14-check-kin]
+
+- "(s) gas concentrations from Y->X then TPX->V equal rho_i/mu_i [mol/m^3]: max rel err 4.44e-16 (tol 1e-12) PASS"
+- "(t) cloud concentrations from TPX->V against rho_i/mu_i: max rel diff 4.44e-16 (filed as D16; the driver's tendencies start from these) INFO"
+- "(u) sum_i M_i delta_i = 0 for a stoichiometric change (mass hand-back): max rel err 2.13e-16 (tol 1e-14) PASS"
+
+<!-- equation-check: eq-ch14-kinetics-density check_ch14_coupling.py (u) -->
+<!-- equation-check: eq-ch14-kinetics-mass check_ch14_coupling.py (u) -->
+
+Line (t) is informational: the cloud concentrations agree at these states, and the row D16 it names does not show
+there.
+
+
 **Operator splitting.** The driver solves $\mathrm d q/\mathrm d t = \mathcal D(q) + \mathcal K(q)$, with $\mathcal D$
 the dynamics and $\mathcal K$ the kinetics, by applying them one after the other over each step (sequential, or Lie,
 splitting): first the dynamics from $q^{n}$ to $q^{\ast}$ over $\Delta t$, then the kinetics from $q^{\ast}$ to
@@ -65,12 +102,41 @@ e^{\Delta t \mathsf B} e^{\Delta t \mathsf A} - e^{\Delta t(\mathsf A + \mathsf 
 \end{aligned}
 $$ {#eq-ch14-kinetics-splitting}
 
-The local error is second order and proportional to the commutator $[\mathsf B, \mathsf A]$; summed over
+The drivers apply the sequence literally: all dynamics stages, each a `forward` of the mesh block
+([`snapy run_hydro.cpp:167-168`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L167-L168)), then one kinetics step. The local error is second order and proportional to the commutator $[\mathsf B, \mathsf A]$; summed over
 $t/\Delta t$ steps it gives a global error of first order in $\Delta t$, which vanishes only when the two operators
 commute (for example kinetics that do not depend on the state the dynamics changes). The kinetics step itself is
 the linearly implicit (backward-Euler) step of @sec-ch06, also first order, so the coupled step is first order
 overall. This is a property of the sequence above, derived for linear operators; the size of the splitting error in a
-snapy or paddle run is not measured. The same transport-then-chemistry sequence is offered inside kintera by the
+snapy or paddle run is not measured. The check compares the split step with the exact one for random $3 \times 3$
+operators:[^ch14-check-kin]
+
+- "(w) split-step local error / dt^2 against [B,A]/2: rel diff 6.32e-03 at dt=1e-2, 6.30e-04 at dt=1e-3 (first order in dt; tol 2e-2 at 1e-2) PASS"
+
+<!-- equation-check: eq-ch14-kinetics-splitting check_ch14_coupling.py (w) -->
+
+**Which heat capacity the Jacobian needs.** The temperature term of the Jacobian divides by a volumetric heat
+capacity, `jac -= P_j dk/dT u_k / cvol` ({{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}}). It is
+derived at fixed internal energy (@sec-ch06-jacobian). In a closed cell at fixed volume, $U = \sum_k c_k u_k(T)$
+and $\mathrm dU = C_V\, \mathrm dT + \sum_k u_k\, \mathrm dc_k = 0$, so
+
+$$
+\left(\frac{\partial T}{\partial c_k}\right)_U = -\frac{u_k}{C_V}, \qquad C_V = \sum_k c_k\, c_{v,k} ,
+$$ {#eq-ch14-kinetics-cv}
+
+and `cvol` must be $C_V$, which `ThermoY` returns as `VT->cv`
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::_cv_vol >}}). $C_P$ belongs to a change at fixed pressure, which a
+closed cell at fixed density does not undergo. Both snapy drivers pass `TV->cp` instead
+(`cp_vol` at [`snapy run_hydro.cpp:181`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L181), passed to `jacobian` at [`:187`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L187); `cp_vol` at [`snapy jupiter_evap_precip_1d.cpp:250`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/jupiter_evap_precip_1d.cpp#L250), passed to `jacobian` at [`:254`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/jupiter_evap_precip_1d.cpp#L254)),
+which makes the feedback term too small by $C_P/C_V$. The check measures that ratio on the adjusted Jupiter state:
+
+- "(v) ratio of the volumetric heat capacity the drivers pass (TV->cp) to the C_V of the fixed-U Jacobian: 1.3845 1.3845 1.3846 1.3869 1.3908 1.3961 EXPECTED-FAIL (S14-1)"
+
+<!-- equation-check: eq-ch14-kinetics-cv check_ch14_coupling.py (v) -->
+
+The term is used only when `rc_ddT` exists, that is with `evolve_temperature` on (default false; it is not a YAML
+key, and snapy at its pin never sets it), so the substitution is not reached at the pins. This is suspect S14-1:
+real and latent. No row of the kintera defect list covers it, because the call is on the snapy side.[^ch14-s14-1] The same transport-then-chemistry sequence is offered inside kintera by the
 operator-split solver of @sec-ch09-newton.
 
 ### Numerical method
@@ -116,9 +182,21 @@ snapy's `Scalar` module can hold a `Kinetics` module, built with `KineticsImpl::
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| none in kintera | missing evidence | n/a | n/a |
+| check `check_ch14_coupling.py` (s) | the driver's gas concentrations are $\rho_i/\mu_i$ | $10^{-12}$ rel. | round-off |
+| check `check_ch14_coupling.py` (u) | @eq-ch14-kinetics-mass | $10^{-14}$ rel. | round-off |
+| check `check_ch14_coupling.py` (v) | $C_P/C_V$ the drivers' substitution costs, @eq-ch14-kinetics-cv | EXPECTED-FAIL (S14-1) | derivation |
+| check `check_ch14_coupling.py` (w) | @eq-ch14-kinetics-splitting, first order | $2 \times 10^{-2}$ rel. at $\Delta t = 10^{-2}$ | Taylor remainder |
 
 : Tests of the kinetics coupling. {#tbl-ch14-kinetics-tests}
+
+[^ch14-s14-1]: [source: the round-2 derivation spec, suspect S14-1 (snapy side, latent at
+    snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70); UCzhangxi/kintera#54 rows K17 to K29 contain no entry for it.]
+
+[^ch14-check-kin]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and random
+    $3 \times 3$ operators inside the script; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch14_coupling.out`, lines (s) to (w).]
 
 kintera tests the pieces (@sec-ch06). snapy builds both example drivers, but no snapy test registered at its pin
 was found that runs them; this was checked by searching snapy's test list, not by running it.
@@ -136,11 +214,11 @@ paddle at its pin declares `kintera>=1.0.1` and a torch range that excludes the 
 against at its pin (`dependencies` in [`paddle pyproject.toml:33-36`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/pyproject.toml#L33-L36); {{< code pyproject.toml >}}). Whether the two pins can be installed
 together was not tested.
 
+- The drivers pass $C_P$ where @eq-ch14-kinetics-cv needs $C_V$ (suspect S14-1, latent, line (v)); the derivation
+  above settles which one is right.
+
 Open questions, not tested:
 
-- Both drivers pass the volumetric heat capacity at constant pressure (`TV->cp`) as the `cvol` argument of
-  `jacobian`; the temperature term of the Jacobian in @sec-ch06 is written for constant volume. It matters only when
-  `evolve_temperature` is on.
 - The snapy drivers drop the dry species by slicing off the first column. That agrees with the kinetics species
   list only if every other thermodynamic species is a kinetics species, in the same order.
 - paddle's `crm` script calls `evolve_kinetics(block, kinet, thermo_x)` ([`paddle crm.py:73`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/crm.py#L73)), which does not match the

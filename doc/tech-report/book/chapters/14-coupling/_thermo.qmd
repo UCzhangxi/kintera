@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70
-sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp, src/thermo/thermo_x.cpp, src/thermo/eval_uhs.cpp, src/species.cpp; snapy src/eos/
+sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp, src/thermo/thermo_x.cpp, src/thermo/eval_uhs.cpp, src/species.cpp, src/constants.h; snapy src/eos/
 status: draft
 author: XinyueWang05
 reviewer:
@@ -10,12 +10,16 @@ reviewer:
 
 ### Summary
 
-snapy's moist equations of state do not carry their own thermodynamics: they hold a kintera `ThermoY` module and
-call it to convert between density, internal energy, pressure and temperature, and to evaluate heat capacities.
-This section lists those calls and the state each one receives. Its content rests on source reading only.
+snapy's moist equations of state do not carry their own thermodynamic data. They hold a kintera `ThermoY` module
+built from the same card and take every molar mass and the gas constant from it. The `moist-mixture` type converts
+between density, internal energy, pressure and temperature by calling kintera. The `ideal-moist` type, which five of
+the six moist example decks of snapy use, writes the same conversions in closed form. This section derives both
+from the state snapy holds and shows that each conversion inverts the other with one gas constant and one set of
+molar masses.
 
 ::: {.callout-note title="At a glance"}
-**Purpose.** Conversions of @sec-ch03 called by snapy's equation of state.
+**Purpose.** The units and variables at the equation-of-state interface, @eq-ch14-thermo-split to
+@eq-ch14-thermo-mole, and the `ideal-moist` closed form, @eq-ch14-thermo-ideal-moist.
 
 **Data.** Density [$\mathrm{kg\,m^{-3}}$], mass fractions [-], internal energy [$\mathrm{J\,m^{-3}}$], $T$ [K], $p$ [Pa].
 
@@ -23,23 +27,128 @@ This section lists those calls and the state each one receives. Its content rest
 
 **Activation.** The thermodynamics card of the snapy input; always on for a moist equation of state.
 
-**Guarantee / limits.** Species order of `ThermoY` options: vapors, then clouds; dry species first in the state.
+**Guarantee / limits.** Exact inverses for a linear card; `ideal-moist` agrees with kintera only for a linear card.
 
-**Evidence.** No kintera test; see the Tests layer.
+**Evidence.** `check_ch14_coupling.py` lines (a) to (j); see the Tests layer.
 :::
+
+Local symbols: $\rho$, total density [$\mathrm{kg\,m^{-3}}$]; $\rho_0$, dry density; $\rho_i$, partial density of
+species $i \ge 1$; $y_i = \rho_i/\rho$, mass fraction; $\mu_i$, molar mass [$\mathrm{kg\,mol^{-1}}$]; $c_i$,
+concentration [$\mathrm{mol\,m^{-3}}$]; $E$, total energy per volume; $e_k$, kinetic energy per volume; $U$, internal
+energy per volume [$\mathrm{J\,m^{-3}}$]; $c_{v,i}$, molar heat capacity at constant volume; $u_i^0$, energy offset of
+species $i$ at $T = 0$; $R_d = \mathcal R/\mu_0$, the dry gas constant; $\gamma_d$, the dry ratio of heat capacities.
 
 ### Derivation
 
-No derivation: this section maps call sites. The thermodynamic functions themselves are derived in @sec-ch03.
+**What snapy holds.** snapy's conserved state keeps the dry density $\rho_0$ in row `IDN`, the partial densities
+$\rho_i$ of the vapours and clouds in the rows from `ICY` on, and the total energy $E$ in row `IPR`
+([`snapy moist_mixture.cpp:93-121`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L93-L121)). Its primitive state keeps the total density and the mass fractions (`div_out`,
+[`snapy moist_mixture.cpp:131-138`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L131-L138)), and the internal energy is $U = E - e_k$
+(`ke`, [`snapy moist_mixture.cpp:146-147`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L146-L147)).
+
+**Step 1: partial densities.** kintera's state "V" is the vector of partial densities with the dry gas first. From
+$\rho$ and the mass fractions of the non-dry species,
+
+$$
+\rho_0 = \rho \Big(1 - \sum_{i \ge 1} y_i\Big), \qquad \rho_i = \rho\, y_i \quad [\mathrm{kg\,m^{-3}}] ,
+$$ {#eq-ch14-thermo-split}
+
+which is `DY->V` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_yfrac_to_ivol >}}); `V->Y` divides by
+$\sum_i \rho_i$ again.
+
+**Step 2: concentrations.** Every function of `ThermoY` turns V into concentrations by
+$c_i = \rho_i/\mu_i$ [$\mathrm{mol\,m^{-3}}$], with $1/\mu_i$ the buffer `inv_mu` made from the card's molar masses
+in `reset` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}). snapy takes every molar mass from the same
+`inv_mu` ([`snapy moist_mixture.cpp:24`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L24), `inv_mu` at [`:34`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L34)) and the gas constant from kintera's
+`constants::Rgas` ({{< code src/constants.h >}}; [`snapy moist_mixture.cpp:38`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L38)). There is one $\mathcal R$ and
+one set of molar masses on both sides by construction.
+
+**Step 3: internal energy.** `reset` moves each energy offset of the card to $T = 0$,
+$u_i^0 = u_{i,\mathrm{card}} - c_{v,i} T_{\mathrm{ref}}$, once, on the options object
+({{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}}). The energy per volume is the sum of the molar energies
+times the concentrations,
+
+$$
+U = \sum_i c_i\, \mathcal R \big(u_i^0 + c_{v,i} T\big) \quad [\mathrm{J\,m^{-3}}] ,
+$$ {#eq-ch14-thermo-energy}
+
+the linear model of `eval_intEng_R` ({{< code src/thermo/eval_uhs.cpp eval_intEng_R >}}), returned by `VT->U`
+([`snapy moist_mixture.cpp:166`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L166)). It is linear in $T$, so `VU->T`, a Newton iteration on
+@eq-ch14-thermo-energy ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_intEng_to_temp >}}), is exact after one step.
+
+**Step 4: pressure.** Only the gases carry pressure. With compressibility $z = 1$,
+
+$$
+p = \mathcal R T \sum_{\mathrm{gas}} c_i = \mathcal R T \sum_{\mathrm{gas}} \frac{\rho_i}{\mu_i} \quad [\mathrm{Pa}] ,
+$$ {#eq-ch14-thermo-pressure}
+
+which is `VT->P` ([`snapy moist_mixture.cpp:151`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L151)). It inverts to $T = p/(\mathcal R \sum_{\mathrm{gas}} c_i)$, which
+is the starting value of `PV->T` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_pres_to_temp >}};
+[`snapy moist_mixture.cpp:290`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L290)).
+
+**Step 5: mole fractions.** The drivers of @sec-ch14-kinetics call `Y->X`. Dividing each mass fraction by its molar
+mass and normalising, with the dry gas and the clouds included,
+
+$$
+x_i = \frac{y_i/\mu_i}{\sum_j y_j/\mu_j} ,
+$$ {#eq-ch14-thermo-mole}
+
+which is the closed form of `Y->X` ({{< code src/thermo/thermo_y.cpp ThermoYImpl::_yfrac_to_xfrac >}}) after
+division by $1/\mu_0$.
+
+**Step 6: the `ideal-moist` closed form.** `IdealMoist` does not call `VT->U`. It reads
+$u_i^0 = \mathcal R u_i/\mu_i$ from the options object after `ThermoYImpl::create`
+([`snapy ideal_moist.cpp:20`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L20), `u0` at [`:48-51`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L48-L51)). `create` runs `reset`, which shifts the
+offsets in place and sets `offset_zero`, and the options object is shared, so snapy reads the shifted values. It
+uses
+$f_\sigma = 1 + \sum_i y_i (c_{v,i}/c_{v,d} - 1)$ and
+$f_\epsilon = 1 + \sum_{\mathrm{vap}} y_i (\mu_d/\mu_i - 1) - \sum_{\mathrm{cloud}} y_i$
+(`f_eps`, `f_sig`, [`snapy ideal_moist.cpp:330-357`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L330-L357)), with $c_{v,i}$ here per unit mass. By @eq-ch14-thermo-pressure,
+$p = \rho R_d T f_\epsilon$. Since $c_{v,d} = R_d/(\gamma_d - 1)$, $p/(\gamma_d - 1) = \rho\, c_{v,d} T f_\epsilon$, and
+
+$$
+U = \frac{p\, f_\sigma}{f_\epsilon (\gamma_d - 1)} + \rho \sum_i y_i u_i^0 = T \sum_i \rho_i c_{v,i} + \sum_i \rho_i u_i^0 ,
+$$ {#eq-ch14-thermo-ideal-moist}
+
+clouds included, which is @eq-ch14-thermo-energy. That is the internal energy of
+`f_sig` in [`snapy ideal_moist.cpp:225-231`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L225-L231), and $T = p/(\rho R_d f_\epsilon)$ is its temperature
+(`f_eps`, [`snapy ideal_moist.cpp:241`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L241)). The identity needs $z = 1$ and no NASA-9, H$_2$ or extra energy terms
+(Limits).
+
+The check builds the state as snapy builds it, on the Jupiter deck, in six cells from 140 K to 300 K and 0.5 to
+6 bar, supersaturated.[^ch14-check-thermo]
+
+- "(a) DY->V (snapy moist_mixture.cpp:149) against rho*(1-sum y), rho*y: max rel err 1.97e-16 (tol 1e-14) PASS"
+- "(b) V->Y after DY->V returns the mass fractions: max rel err 3.62e-16 (tol 1e-14) PASS"
+- "(c) VT->U [J/m^3] against sum c_i R (u0_i - cv_i Tref + cv_i T), c = rho_i/mu_i: max rel err 2.33e-16 (tol 1e-12) PASS"
+- "(d) VU->T(VT->U(T)) round trip (moist_mixture.cpp:150): max rel err 2.22e-16 (tol 1e-10) PASS"
+- "(e) VT->P against R T sum_gas rho_i/mu_i (moist_mixture.cpp:151): max rel err 4.44e-16 (tol 1e-14) PASS"
+- "(f) PV->T (moist_mixture.cpp:290) inverts VT->P: max rel err 4.44e-16 (tol 1e-14) PASS"
+- "(g) Y->X (run_hydro.cpp:179) against x_i = (y_i/mu_i)/sum_j(y_j/mu_j), dry included: max rel err 3.47e-18 (tol 1e-15) PASS"
+- "(h) IdealMoist W->I formula against kintera VT->U at the same state: max rel err 4.95e-16 (tol 1e-12) PASS"
+- "(i) IdealMoist W->T = p/(rho Rd f_eps) against the state temperature: max rel err 3.33e-16 (tol 1e-13) PASS"
+- "(j) the options object snapy reads after ThermoYImpl::create holds the T=0 offsets (uref - cref Tref): True PASS"
+
+<!-- equation-check: eq-ch14-thermo-split check_ch14_coupling.py (a) -->
+<!-- equation-check: eq-ch14-thermo-energy check_ch14_coupling.py (c) -->
+<!-- equation-check: eq-ch14-thermo-pressure check_ch14_coupling.py (e) -->
+<!-- equation-check: eq-ch14-thermo-mole check_ch14_coupling.py (g) -->
+<!-- equation-check: eq-ch14-thermo-ideal-moist check_ch14_coupling.py (h) -->
+
+No published derivation is quoted. The steps are the ideal-gas law and the linear energy model of @sec-ch03, matched
+to the code at the two pins.
 
 ### Numerical method
 
-snapy's moist equation of state creates its module with `ThermoYImpl::create` ([`snapy moist_mixture.cpp:20`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L20)), and converts with `compute` and string keys such as `DY->V`, `VU->T`, `VT->P`, and
-calls the free functions `eval_cv_R`, `eval_cp_R`, `eval_czh` and `eval_czh_ddC` for heat capacities and
-compressibility terms ([`snapy moist_mixture.cpp:245-262`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L245-L262)). Before it reads species names and molar masses, the equation of state calls
-`populate_thermo` ({{< code src/species.cpp populate_thermo >}}, [`snapy equation_of_state.cpp:128`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/equation_of_state.cpp#L128)), so that it uses the copy of the species
-table held by its own options rather than kintera's process-wide table. Output diagnostics call
-`relative_humidity` ({{< code src/thermo/relative_humidity.cpp relative_humidity >}}, [`snapy load_diag_output_data.cpp:113`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/output/load_diag_output_data.cpp#L113)).
+No numerical method of its own. The `moist-mixture` type converts with `compute` and the string keys above
+([`snapy moist_mixture.cpp:149-151`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L149-L151)) and calls the free functions `eval_cv_R`, `eval_cp_R`, `eval_czh` and
+`eval_czh_ddC` for heat capacities and compressibility terms ([`snapy moist_mixture.cpp:245-262`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L245-L262)). Before it
+reads species names and molar masses, the equation of state calls `populate_thermo`
+({{< code src/species.cpp populate_thermo >}}, [`snapy equation_of_state.cpp:128`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/equation_of_state.cpp#L128)), so that it uses the copy of the species
+table held by its own options rather than kintera's process-wide table. A card without a `reference-state`[^rg-7efe2bd33a7d] block
+gives no thermodynamics options ({{< code src/thermo/thermo_options.cpp ThermoOptionsImpl::from_yaml overload=1 >}}), and snapy
+then runs a dry equation of state. Output diagnostics call `relative_humidity`
+({{< code src/thermo/relative_humidity.cpp relative_humidity >}}, [`snapy load_diag_output_data.cpp:113`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/output/load_diag_output_data.cpp#L113)).
 
 The figure of the call graph is not provided: the figure module is not written yet.
 
@@ -48,9 +157,11 @@ The figure of the call graph is not provided: the figure module is not written y
 | what | code link | symbol | switch |
 |---|---|---|---|
 | conversions | {{< code src/thermo/thermo_y.cpp ThermoYImpl::compute >}} | `ThermoYImpl::compute` | always |
+| offsets and `inv_mu` | {{< code src/thermo/thermo_y.cpp ThermoYImpl::reset >}} | `ThermoYImpl::reset` | always |
 | heat capacity | {{< code src/thermo/eval_uhs.cpp eval_cv_R >}} | `eval_cv_R` | always |
 | species table | {{< code src/species.cpp populate_thermo >}} | `populate_thermo` | always |
 | snapy caller | [`snapy moist_mixture.cpp:245-262`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L245-L262) | `eval_cv_R` | moist equation of state |
+| snapy closed form | [`snapy ideal_moist.cpp:225-241`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/ideal_moist.cpp#L225-L241) | `IdealMoistImpl` | `type: ideal-moist` |
 | snapy caller | [`snapy equation_of_state.cpp:128`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/equation_of_state.cpp#L128) | `populate_thermo` | moist equation of state |
 
 : Code map of the thermodynamic coupling. {#tbl-ch14-thermo-code}
@@ -59,13 +170,40 @@ The figure of the call graph is not provided: the figure module is not written y
 
 | test (ctest name) | what it asserts | tolerance | where the tolerance comes from |
 |---|---|---|---|
-| none in kintera | missing evidence | n/a | n/a |
+| check `check_ch14_coupling.py` (a), (b) | @eq-ch14-thermo-split and its inverse | $10^{-14}$ rel. | round-off |
+| check `check_ch14_coupling.py` (c), (d) | @eq-ch14-thermo-energy and its one-step inversion | $10^{-12}$, $10^{-10}$ rel. | round-off; Newton tolerance |
+| check `check_ch14_coupling.py` (e), (f) | @eq-ch14-thermo-pressure and its inversion | $10^{-14}$ rel. | round-off |
+| check `check_ch14_coupling.py` (g) | @eq-ch14-thermo-mole | $10^{-15}$ rel. | round-off |
+| check `check_ch14_coupling.py` (h), (i), (j) | @eq-ch14-thermo-ideal-moist and the shifted offsets | $10^{-12}$, $10^{-13}$ rel.; exact | round-off |
 
 : Tests of the thermodynamic coupling. {#tbl-ch14-thermo-tests}
 
-The kintera side of each call is tested in @sec-ch03; snapy's own tests of its equations of state are not
-listed here yet.
+All ten lines pass at the pin. The kintera side of each call is tested in @sec-ch03; snapy's own tests of its
+equations of state are not listed here.
+
+[^ch14-check-thermo]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
+    `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    `derivation-checks/check_ch14_coupling.out`, lines (a) to (j).]
 
 ### Limits
 
-Not drafted beyond the species-order convention in the box.
+- `_prim2speciesEng` passes the partial densities, in $\mathrm{kg\,m^{-3}}$, where `eval_intEng_R` expects
+  concentrations ([`snapy moist_mixture.cpp:185`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/src/eos/moist_mixture.cpp#L185)); the sibling `species_enthalpy` passes
+  `ivol * inv_mu`. `eval_intEng_R` uses that argument only through the user extra-energy functions, and none is
+  registered at the pin, so no result changes. This is suspect S14-2, latent.[^ch14-s14-2]
+- @eq-ch14-thermo-ideal-moist holds for a linear card only. With NASA-9 data or the H$_2$ heat capacity on, kintera's
+  energy and `IdealMoist`'s closed form differ. This is suspect S14-3, latent; the in-tree Jupiter deck is linear.
+- Three snapy example decks give the NH$_3$ vapour the composition of water, so its molar mass differs from that of
+  its condensates. That is an input defect of those decks, handled on the snapy side; kintera's readers accept it
+  because they do not check element balance (latent K29 row of the issue below).[^ch14-k29]
+
+[^ch14-s14-2]: [source: the round-2 derivation spec, suspects S14-2 and S14-3 (snapy side, latent at
+    snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70).]
+
+[^ch14-k29]: [source: UCzhangxi/kintera#54, row K29 (reader element balance, latent). This text is to be updated when
+    the snapy decks or the readers change.]
+
+<!-- reader glossary notes -->
+[^rg-7efe2bd33a7d]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+<!-- end reader glossary notes -->

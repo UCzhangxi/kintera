@@ -23,8 +23,31 @@ batch. There is therefore no CPU twin to agree with, and none of the device and 
 
 ### Derivation
 
-TODO: not yet written. This section is held for the C12 specification, which has not been issued at the time of
-this revision; no derivation is asserted here in its absence.
+The two-dimensional solver has two sparse back ends: cuSOLVER's sparse QR on CUDA
+({{< code src/math/sparse_solver.cu cuda_csr_solve_cusolver >}}) and a cached SciPy LU factorisation on the host.
+They must return the same solution, and they are not the same algorithm.
+
+*Step 1, QR.* The CUDA path factorises $\mathsf A = \mathsf Q\mathsf R$ with $\mathsf Q$ orthogonal and
+$\mathsf R$ upper triangular, then returns $\mathbf x = \mathsf R^{-1}\mathsf Q^{\mathsf T}\mathbf b$. For a
+non-singular $\mathsf A$ this is $\mathsf A^{-1}\mathbf b$ exactly.
+
+*Step 2, LU.* The host path factorises $\mathsf P\mathsf A = \mathsf L\mathsf U$ with row pivoting and returns
+$\mathbf x = \mathsf U^{-1}\mathsf L^{-1}\mathsf P\mathbf b$, again $\mathsf A^{-1}\mathbf b$ in exact arithmetic.
+
+*Step 3, how far apart they may be.* Both are backward stable: each returns the exact solution of a nearby system.
+Their answers therefore differ in the forward direction by order $\kappa(\mathsf A)\,\epsilon$, the same bound as
+@sec-ch12-dispatch, Tests, step 2. There is no reason to expect agreement closer than that, and no reason to accept
+less.
+
+*Step 4, when each calls a matrix singular.* The CUDA solve is called with `tol` $= 0$. With a zero tolerance
+cuSOLVER reports singularity only for an exactly zero diagonal entry of $\mathsf R$, so a matrix that is
+near-singular — one whose smallest diagonal is tiny but non-zero — is solved silently, and the error lands in
+$\mathbf x$ rather than in a status. The host LU behaves the same way, stopping only on an exactly zero pivot. The
+two back ends agree on this, which is convenient and also means that neither warns about conditioning.
+
+*Step 5, what `reorder` does not change.* The call passes `reorder` $= 0$, which switches off fill-reducing
+ordering. That changes how much fill the factorisation produces, and so its time and memory; it does not change
+the answer.
 
 ### Numerical method
 
@@ -40,11 +63,26 @@ TODO: the code table and the walk-through.
 TODO: the test table. `check_ch12_twins.py` does not reach this scheme: its static twin comparison covers the eight
 dispatch stubs, and the sparse solve is not one of them. The chapter's scheme table names `test_atm2d.py` as the
 main test, through the two-dimensional solver that calls it; no test exercises `cuda_csr_solve_cusolver` directly,
-and no committed check covers it. Missing evidence.
+and **no committed check covers this scheme at all** — alone among the five schemes of this chapter. Missing
+evidence.
+
+A check is not possible without a GPU, which is why none exists: the QR path has no host build. What would settle
+the Derivation is one CUDA run of the atm2d sparse solve against the host LU on the same assembled matrix, on a
+grid small enough that $\kappa(\mathsf A)$ can be estimated from a dense condition number, reporting the largest
+relative difference against $\kappa(\mathsf A)\,\epsilon$. That run has not been made.
 
 ### Limits
 
-TODO: not yet written; not measured.
+::: {.callout-warning title="Limits"}
+- **Nothing in this section is measured.** Steps 1 to 5 of the Derivation are read from the source and from the
+  standard properties of QR and LU; no CPU-CUDA comparison of the two sparse back ends has been run, here or in
+  the check bundle.
+- **A near-singular matrix passes silently on both back ends.** With `tol` $= 0$ the CUDA solve reports singularity
+  only for an exactly zero diagonal of $\mathsf R$, and the host LU only for an exactly zero pivot. Neither
+  reports conditioning, so a badly conditioned atm2d system returns a number rather than a warning, and the
+  $\kappa(\mathsf A)\,\epsilon$ of step 3 is then large without anything saying so.
+:::
 
-- No CPU fallback: the entry point exists only in the CUDA build, so a sparse solve has no host twin to be compared
-  against. That is a structural limit of the scheme, not an untested hypothesis.
+- No CPU fallback: the entry point exists only in the CUDA build, so a sparse solve has no host twin inside this
+  scheme to be compared against; the comparison has to be made against the atm2d host path. That is a structural
+  limit of the scheme, not an untested hypothesis.

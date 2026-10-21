@@ -65,6 +65,29 @@ device property `sharedMemPerBlockOptin` only when that query fails, and never l
 limit. The code's comment gives the reason: some runtimes report the property as 1, and taking it at face value would
 cap every block at a single byte.
 
+**Why a size function has to be exact.** The per-cell allocator is a bump pointer with no bound: `pmalloc`
+({{< code src/utils/alloc.h pmalloc >}}) hands out the next bytes of the slice and advances, and on CUDA the slice
+is `work_size` bytes at `threadIdx.x` times that size. Nothing checks the end. A size function that under-counts
+by one array does not fail; the per-cell solver silently writes into the *next thread's* slice, and the corruption
+shows up as a wrong answer in a neighbouring cell. So each size function must list exactly the `pmalloc` calls its
+solver makes, in order, and that correspondence is what `check_ch12_twins.py` compares for all seven of them —
+for example "(f-evolve_implicit) 4 pmalloc calls vs 4 size-function terms, same sizes in order: True
+PASS".[^ch12-kernels-check]
+
+Three details make the count less obvious than it looks:
+
+1. *Nested solvers rewind.* `psolve`, `leastsq_kkt` and `ludcmp` take their arrays from the same pool and reset the
+   pointer on exit with `pool_rewind` ({{< code src/utils/alloc.h pool_rewind >}}). The peak is therefore the outer
+   arrays plus the *largest* nested need, not the sum over calls, and each size function adds the nested need once.
+2. *The partition UV solver is sized separately.* With `uv-solver: partition` the cell uses only its own three
+   arrays, $2n_{\mathrm s} + n_{\mathrm r}$ entries. With `auto` it may fall through to the general solver, so the
+   driver sizes it with the full formula. The check records both: "(f-uv_partition) pmalloc sizes
+   ['nspecies*sizeof(T)', 'nspecies*sizeof(T)', 'nreaction*sizeof(T)']; size function 2*ns + nr PASS".
+3. *The reaction count is an upper bound.* Inside `equilibrate_tp` and `equilibrate_uv` the constrained
+   least-squares solve is given the active-set size, which is at most the number of reactions, so sizing with
+   $n_{\mathrm r}$ over-allocates in a cell with fewer active reactions. Over-allocating is safe; under-allocating
+   is the failure mode above.
+
 **Scratch bytes of the implicit step.** Two size functions contribute, and it matters which gives what:
 
 | source | matrices $n_{\mathrm{s}}\times n_{\mathrm{s}}$ | vectors of length $n_{\mathrm{s}}$ |
@@ -189,6 +212,14 @@ same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python
   rounding for any entry size, but `check_ch12_twins.py` evaluates its helper only at $s = 8$ (line g, "ns = 1..59"),
   so the 4-byte padding at odd $n_{\mathrm{s}}$, and the block-size bounds that follow from it in single precision,
   are not covered by any committed check.
+- **The element loops index with 32-bit offsets and do not guard against overflow (read only, not run).** Both
+  launchers build their offset calculator in `uint32_t` and launch on the whole iterator, without the
+  `can_use_32bit_indexing` test or the iterator split that torch's own loops perform before doing the same
+  ({{< code src/loops.cuh gpu_mem_kernel >}}, `gpu_kernel`). A batch whose byte offsets pass $2^{32}-1$ would
+  therefore wrap on CUDA while the CPU loop, which uses 64-bit strides, stays correct: wrong numbers with no error.
+  Reaching it needs roughly $6\times10^{7}$ cells for a three-reaction gain tensor in double, and no in-tree test or
+  example comes near that, so the defect is latent. This is a reading of the source, not a measurement; settling it
+  needs a CUDA run on a batch above the threshold, comparing its last cells with a CPU run.
 :::
 
 - The comment in `gpu_mem_kernel` names a 64 KiB limit for one GPU generation. The limit is read from the device

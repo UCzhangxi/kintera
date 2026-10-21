@@ -1,0 +1,13 @@
+{
+  "eq-ch07-rate-dissociative": "The photolysis rate constant counts dissociations only: it is the sum of the channel rates, with branch 0 (absorption without dissociation) left out.",
+  "eq-ch07-rate-integral": "The wavelength integral is the trapezoid on the cross-section grid; the end nodes carry half an interval and nothing is added outside the grid.",
+  "eq-ch07-rate-weighted": "With quadrature weights set by the caller, the rate constant is the weighted sum over the grid nodes (the per-bin sum for unit weights).",
+  "eq-ch07-cross-sections-interp": "Between neighbouring temperature slabs the cross section is linear in T, held at the end slab outside; this holds only for slabs listed in temperature order.",
+  "eq-ch07-cross-sections-absorption": "At the pin the KINETICS7 reader replaces the total absorption in column 0 by the remainder that dissociates nothing, against the column convention (K18).",
+  "eq-ch07-actinic-flux-solar": "The solar-like test spectrum is an unnormalised Gaussian centred at 500 nm with a width of 200 nm.",
+  "eq-ch07-actinic-flux-beam": "The direct beam is attenuated as exp(-tau/mu0), tau counted from the top; its actinic flux 4 pi J_mean carries no mu0 factor.",
+  "eq-ch07-photochem-rate": "The photolysis reaction rate is the rate constant times the reactant product, and its derivative follows from the power rule.",
+  "eq-ch07-photochem-balance": "A photolysis channel conserves every element if and only if the atom matrix annihilates its composition change.",
+  "eq-ch07-photochem-effective": "`get_effective_stoich` weights the branch compositions by their share of the integrated rate, branch 0 included.",
+  "eq-ch07-actinic-flux-tau": "The optical depth of a layer is the number density times the total absorption cross section (column 0) times the layer thickness, in cm units."
+}

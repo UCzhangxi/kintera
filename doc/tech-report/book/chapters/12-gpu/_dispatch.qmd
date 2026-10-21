@@ -39,8 +39,8 @@ time step [s] and $\delta\mathbf c$ the concentration change [$\mathrm{mol\,m^{-
 
 ### Derivation
 
-No derivation: dispatch does not change the equations. Each driver evaluates the same per-cell function. For the
-implicit kinetics step that function solves
+Dispatch does not change the equations, but "the same arithmetic on both devices" is a claim that needs an
+argument, not a restatement. For the implicit kinetics step the per-cell function solves
 
 $$
 \left(\frac{1}{\Delta t}\,\mathsf I - \mathsf S\,\mathsf J\right)\delta\mathbf c = \mathsf S\,\mathbf r
@@ -49,6 +49,49 @@ $$ {#eq-ch12-dispatch-implicit}
 in every cell. @eq-ch12-dispatch-implicit is computed in `evolve_implicit_cell`
 ({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}); the step itself is derived in the
 kinetics chapter.
+
+**Why the two drivers give the same numbers.** Five steps, each a property of the source at the code pin:
+
+1. *Only the device decides.* Dispatch selects a driver from the device type of the inputs and from nothing else
+   ({{< code src/kinetics/evolve_implicit_dispatch.cpp evolve_implicit >}}); there is no option, no precision rule
+   and no size rule in the choice.
+2. *The drivers unpack the same pointers in the same order.* Each twin reads the iterator's `data[i]` in one order,
+   so the per-cell function receives the same arguments in the same positions on both devices.
+3. *The per-cell function is one source.* Both drivers instantiate the same `DISPATCH_MACRO` template, so the two
+   devices execute the same operations in the same order within a cell. No kintera kernel uses an atomic or a
+   cross-cell reduction, so no result depends on the order in which cells are visited, and a CUDA block's thread
+   count (@sec-ch12-kernels) cannot change an answer.
+4. *What is left can only be round-off.* Two differences survive. The CUDA compiler contracts `a*b + c` into a
+   single fused multiply-add by default, where a host build may emit a separate multiply and add; and the two
+   platforms use different `log` and `exp` implementations. Both are bounded by a rounding of the last place.
+   kintera's CUDA flags carry no fast-math option, so no reassociation beyond contraction is permitted.
+5. *A different pool is not different arithmetic.* On the CPU the saturation-adjustment and equilibrium drivers pass
+   no workspace and the per-cell solver takes its scratch from the heap ({{< code src/utils/alloc.h pmalloc >}});
+   on CUDA the same solver takes it from the block's shared memory (@sec-ch12-kernels). That changes where the
+   arrays live, not what is computed into them.
+
+Steps 1 to 3 are the ones a reader cannot check by eye across two files, and they are what `check_ch12_twins.py`
+compares in the source at the pin: "(c) 8 stubs, each with a CPU and a CUDA registration; missing [] PASS",
+"(d) 8 driver twins unpack the same pointers in the same data[] order; mismatches [] PASS" and "(e) sentinel name
+swap: cpp 2, cu 2 (expected 2 and 2) PASS".[^ch12-kernels-check] Step 4 is not a statement the source can settle;
+it fixes the *size* of the residual difference, which is the subject of @sec-ch12-dispatch, Tests.
+
+**What a singular cell returns.** The per-cell step factorises $\mathsf A = \mathsf I/\Delta t - \mathsf S\mathsf J$
+by LU with partial pivoting and falls back to a pseudo-inverse solve when that fails
+({{< code src/kinetics/evolve_implicit_impl.h evolve_implicit_cell >}}). The fallback is not an approximation of
+the same answer; it answers a different, well-posed question. When $\mathsf A$ is singular,
+@eq-ch12-dispatch-implicit has either no solution or infinitely many, so the solver returns the minimiser of
+$\lVert \mathsf A\,\delta\mathbf c - \mathsf S\mathbf r\rVert_2$ that is itself smallest in norm,
+
+$$
+\delta\mathbf c = \mathsf A^{+}\,\mathsf S\,\mathbf r ,
+$$ {#eq-ch12-dispatch-pinv}
+
+with $\mathsf A^{+}$ the Moore-Penrose pseudo-inverse. `psolve` ({{< code src/utils/alloc.h psolve_space >}} sizes
+it) builds $\mathsf A^{+}$ from the eigenpairs of $\mathsf A^{\mathsf T}\mathsf A$, dropping the directions whose
+eigenvalue falls under its cut-off; those are exactly the directions in which the problem fixes nothing, and
+setting their coefficient to zero is what makes the returned vector the minimum-norm one. A cell that takes this
+branch is reported as a success, so a caller cannot tell from the status that it was singular.
 
 ### Numerical method
 
@@ -215,15 +258,56 @@ none failing.[^ch12-dispatch-gtest] The Python suite gives 584 passed and 6 skip
 and 174 skipped on the CPU build with no GPU visible. All skips have causes other than the code under test: CUDA
 cases without a GPU, external data files that are absent, and a missing build tool.[^ch12-dispatch-pytest]
 
-The cases that test one code path on both devices compare a single function. A separate run compared the whole
-kinetics step on both devices for two reaction sets: a Kessler-form evaporation set and a pressure-switched
-coagulation set. Each ran in 64 cells in double precision. For each quantity the measure is the largest CPU-CUDA
-difference divided by the largest CPU value. For the Kessler-form set it is $8.6\times10^{-18}$ for the rates,
-$6.9\times10^{-17}$ for the Jacobian and $5.4\times10^{-16}$ for the implicit step @eq-ch12-dispatch-implicit. For
-the pressure-switched set it is $1.5\times10^{-16}$, $2.2\times10^{-16}$ and $8.0\times10^{-16}$. All six are below
-$10^{-15}$, that is, at round-off in double precision.[^ch12-dispatch-agree]
+**How close should the two devices be?** Step 4 of the Derivation says the difference is round-off; this says how
+much round-off, which is what a tolerance has to be chosen against. Write $\epsilon$ for the unit round-off,
+$2.2\times10^{-16}$ in double and $1.2\times10^{-7}$ in single.
 
-These cases are not part of the test suite: both reaction sets are tested on the CPU only.
+1. *A contracted product costs one rounding.* Replacing a multiply and an add by one fused multiply-add removes a
+   rounding, so each such site moves the result by at most $\epsilon/2$ relative. The library `log` and `exp` are
+   likewise correct to within a rounding or two.
+2. *A linear solve multiplies that by the conditioning.* LU with partial pivoting is backward stable: each device
+   returns the exact solution of a system perturbed by a small multiple of $\epsilon$. Two such solutions differ in
+   the forward direction by order $\kappa(\mathsf A)\,\epsilon$, with $\kappa$ the condition number. So the implicit
+   step of @eq-ch12-dispatch-implicit should agree to $\kappa(\mathsf A)\,\epsilon$, while a direct formula — a
+   reaction rate, a saturation curve — should agree to $\epsilon$ itself.
+3. *An iterative solver is bounded by its own tolerance, not by $\epsilon$.* The saturation-adjustment solvers stop
+   on a residual test. Two devices whose iterates differ at round-off can land on opposite sides of that test and
+   stop one iteration apart; the returned states then differ by about the stopping tolerance `ftol`, not by
+   $\epsilon$. A CPU-CUDA tolerance for `ThermoX` or `ThermoY` must therefore be read against `ftol`, and `ftol`
+   itself must be reachable in the precision asked for (Limits).
+
+**Evidence, and what kind it is.** Two sources, which should not be read as one:
+
+*Supplied with the check, CPU only.* `check_ch12_twins.py` is a static twin comparison plus CPU runs; the machine
+that produced the committed `.out` had no GPU. Its line i, "evolve_implicit vs numpy solve, 64 cells ns=5 nr=4:
+max rel diff 1.78e-13 tol 1e-12 PASS", and line j, the singular cell against numpy's pseudo-inverse with exact
+agreement, check @eq-ch12-dispatch-implicit and @eq-ch12-dispatch-pinv against an independent oracle. Line k is
+INFO, not a pass: "float32 evolve_implicit vs float64 numpy: max rel diff 5.35e-05". It is the distance of the
+single-precision step from the exact answer, which sets the scale any single-precision device comparison must be
+read against; it is not itself a CUDA result.[^ch12-kernels-check]
+
+*Measured here, on CUDA.* The same per-cell step was then run on both devices of a CUDA build, 64 cells,
+$n_{\mathrm s} = 5$, $n_{\mathrm r} = 4$, against the same float64 oracle. In double precision the two devices
+agree to $1.79\times10^{-13}$ relative over 320 values, with identical finite masks; the run's largest squared
+condition number is $2.56\times10^{4}$, so $\kappa(\mathsf A) \approx 1.6\times10^{2}$ and
+$\kappa(\mathsf A)\,\epsilon \approx 3.5\times10^{-14}$ — the measured difference is a small multiple of it, as
+step 2 allows. The singular cell returns bitwise the same vector on both devices. In single precision the two
+devices agree to $7.90\times10^{-6}$ relative while each sits $5.3$ to $6.1\times10^{-5}$ from the exact answer:
+the devices agree with each other an order of magnitude better than either agrees with the truth, so a
+single-precision comparison tolerance should be set from the second number, not the first.[^ch12-dispatch-devices]
+
+The whole kinetics step was compared on both devices for two reaction sets, a Kessler-form evaporation set and a
+pressure-switched coagulation set, 64 cells in double. The measure is the largest CPU-CUDA difference over the
+largest CPU value: $8.6\times10^{-18}$, $6.9\times10^{-17}$ and $5.4\times10^{-16}$ for the rates, the Jacobian and
+the implicit step of the first set, and $1.5\times10^{-16}$, $2.2\times10^{-16}$ and $8.0\times10^{-16}$ for the
+second. The first two of each triple are direct formulas and sit at $\epsilon$, as step 2 predicts; the third is a
+linear solve and is larger, by the modest conditioning of those cells.[^ch12-dispatch-agree]
+
+These cases are not part of the test suite: both reaction sets are tested on the CPU only. Re-running
+`check_ch12_twins.py` on a CUDA build reproduces the committed output line for line except for the build path and
+two numbers that depend on the build: line i gives $2.92\times10^{-13}$ against the supplied
+$1.78\times10^{-13}$, still inside its $10^{-12}$ tolerance, and line k $6.14\times10^{-5}$ against
+$5.35\times10^{-5}$. Both are consistent with the committed values; neither changes a verdict.[^ch12-dispatch-devices]
 
 [^ch12-dispatch-gtest]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the 16 gtest programs;
 run: `ctest -V -R '\.release'` in `build/tests` of a `-DCUDA=ON` Release build, which selects the 16 gtest programs;
@@ -300,6 +384,20 @@ kintera checkout at the pin, CPU, double; torch 2.10.0+cu126, Python 3.11.13.]
 `tests/test_coagulation_pressure_switch.py`; run: `python -P ei_case.py cuda ok` against a `-DCUDA=OFF` build, which
 calls `evolve_implicit` on CUDA tensors;
 torch 2.10.0+cu126, Python 3.11.13.]
+
+<!-- equation-check: eq-ch12-dispatch-implicit check_ch12_twins.py (i) -->
+<!-- equation-check: eq-ch12-dispatch-pinv check_ch12_twins.py (j) -->
+
+[^ch12-dispatch-devices]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, random cells with
+seed 12, 64 cells, $n_{\mathrm s} = 5$, $n_{\mathrm r} = 4$, $\Delta t = 0.3$, plus one rank-2 singular cell; run:
+`evolve_implicit` on CPU and on CUDA tensors of the same inputs, double and single, each compared with a float64
+numpy solve and with each other; double: CPU-CUDA global relative $1.79\times10^{-13}$, largest absolute
+$6.38\times10^{-11}$ over 320 values, 0 finite-mask mismatches, largest squared condition number
+$2.56\times10^{4}$; singular cell identical on both devices; single: CPU-CUDA global relative
+$7.90\times10^{-6}$, each device $6.14\times10^{-5}$ (CPU) and $5.35\times10^{-5}$ (CUDA) from the float64 oracle,
+reported as INFO and not as a tolerance requirement; the same build re-ran `check_ch12_twins.py` and reproduced its
+committed output except for the build path, line i ($2.92\times10^{-13}$) and line k ($6.14\times10^{-5}$); one
+CUDA build on one host; a measurement outside the suite, not a committed check.]
 
 [^ch12-dispatch-ftol32]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, the
 single cell at $T = 250.75376892089844$ K and $10^5$ Pa of a 45-cell sweep, `float32`, `max-iter` 50; run:

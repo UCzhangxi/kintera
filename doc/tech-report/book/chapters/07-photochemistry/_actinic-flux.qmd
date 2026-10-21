@@ -251,7 +251,7 @@ absorption (`[i3]`, S7-4, row K18). All of this was run on CPU only; CUDA is unv
     EXPECTED-FAIL by design (S7-3, #54 row K17; S7-4, #54 row K18).]
 
 [^ch07-check-fixes]: [source: the same script, unchanged, run on CPU in double precision against two further CPU
-    builds of UCzhangxi/kintera: the K17 fix (#95, merged as 9c89752b on `fix/thermo-20261019`) and the tip of
+    builds of kintera: the K17-only fix (#95 head `dbbe7144`) and the tip of
     `fix/thermo-20261019` with the K18 fix #94 merged. K17 build: 14 PASS, 0 FAIL, 3 EXPECTED-FAIL (`[g]`, `[h]`, `[i3]`),
     4 INFO. K18 build: 14 PASS, 0 FAIL, 3 EXPECTED-FAIL (`[g]`, `[h]`, `[i2]`), 4 INFO. Python 3.13.15, torch 2.10.0.]
 

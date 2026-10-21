@@ -29,7 +29,9 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
 (f11) default constants, 1e6-1e2 Pa: phi' vs iteration (rel): measured 2.369e-03  tol 1e-02  PASS
 (f11) converges iff 0 < ratio < 2, alternates iff ratio > 1: rows against it (count): measured 0.000e+00  tol 0e+00  PASS
    1e+03 Pa, T* = 225 K: roots of S_vol(T) = S_vol(T*): 225.00, 347.12 K; local maximum of S_vol at 237.11 K; PXS->T from Tref = 225.00 K (relative entropy residual -1.2e-16)
+   INFO 1e+03 Pa: condensate fraction 1.1e-04 at 237.06 K and 0.0e+00 at 237.16 K
    1e+02 Pa, T* = 205 K: roots of S_vol(T) = S_vol(T*): 199.18, 205.00, 240.48 K; local maximum of S_vol at 217.80 K; PXS->T from Tref = nan K (relative entropy residual nan)
+   INFO 1e+02 Pa: condensate fraction 1.3e-04 at 217.75 K and 0.0e+00 at 217.85 K; local minimum of S_vol at 202.26 K
 (f12) S_vol(T) = S_vol(T*) has 2 roots at 1e3 Pa and 3 at 1e2 Pa, one above the local maximum (count): measured 0.000e+00  tol 0e+00  PASS
 (f12) kintera PXS->T from Tref returns T*, max |T - T*| over both states (K): measured nan  tol 1e-06  EXPECTED-FAIL (K16)
 SUMMARY: 13 PASS, 0 FAIL, 3 EXPECTED-FAIL

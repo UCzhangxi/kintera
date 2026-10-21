@@ -26,7 +26,9 @@ S taken along the equilibrium path (forward at every temperature):
      205 K, iteration started at T* + 1e-4 K: phi' against the error ratios, and the general condition (converges
      iff 0 < ratio < 2, alternates iff ratio > 1) against the iteration in every row.
 (f12) several roots: along the saturated equilibrium path at 1e3 Pa (T* = 225 K) and 1e2 Pa (T* = 205 K), S_vol(T)
-     has a local maximum above T*, so S(T*) has a second root above it (and a third below T* at 1e2 Pa). kintera's
+     has a local maximum above T*, where the cloud vanishes, so S(T*) has a second root above it; at 1e2 Pa S_vol
+     also has a local minimum below T*, which gives a third root below it (INFO: the minimum, and the condensate
+     fraction 0.05 K either side of each maximum). kintera's
      PXS->T from Tref returns T*: EXPECTED-FAIL, row K16 (the pin gives NaN at 1e2 Pa; the D8 fix returns the
      upper root and reports success).
 """
@@ -204,8 +206,17 @@ for pp, Ts in ((1e3, 225.0), (1e2, 205.0)):
     hi = [k for k in range(len(grid)) if Ts < grid[k] < roots[-1]]
     k = max(hi, key=lambda i: v[i])
     peak = bis(grid[k - 1], grid[k + 1], lambda T: S(T + 1e-5) - S(T - 1e-5))
+    lo = [k for k in range(len(grid)) if roots[0] < grid[k] < Ts]
+    vmin = None
+    if len(roots) > 2 and lo:
+        k = min(lo, key=lambda i: v[i])
+        vmin = bis(grid[k - 1], grid[k + 1], lambda T: S(T + 1e-5) - S(T - 1e-5))
+    def cloud(T0):
+        T = torch.tensor([T0]); x = x0.clone(); th.forward(T, p, x)
+        return x[0, len(op.vapor_ids()):].sum().item()
     T = th.compute("PXS->T", [p, x0.clone(), torch.tensor([St])]).item()
-    out[str(pp)] = {"Ts": Ts, "roots": roots, "peak": peak, "pxs": T, "res": (S(T) - St) / abs(St) if T == T else T}
+    out[str(pp)] = {"Ts": Ts, "roots": roots, "peak": peak, "pxs": T, "res": (S(T) - St) / abs(St) if T == T else T,
+                    "vmin": vmin, "cloud": [cloud(peak - 0.05), cloud(peak + 0.05)]}
 print(json.dumps(out))
 """
 
@@ -221,6 +232,9 @@ def check_k16():
               + ", ".join(f"{r:.2f}" for r in v["roots"]) + f" K; local maximum of S_vol at {v['peak']:.2f} K; "
               f"PXS->T from Tref = {v['pxs']:.2f} K (relative entropy residual {v['res']:.1e})")
         ok = ok and len(v["roots"]) == want and v["roots"][-1] > v["peak"] > v["Ts"]
+        print(f"   INFO {float(key):.0e} Pa: condensate fraction {v['cloud'][0]:.1e} at {v['peak'] - 0.05:.2f} K and "
+              f"{v['cloud'][1]:.1e} at {v['peak'] + 0.05:.2f} K"
+              + (f"; local minimum of S_vol at {v['vmin']:.2f} K" if v["vmin"] is not None else ""))
         err = max(err, abs(v["pxs"] - v["Ts"])) if v["pxs"] == v["pxs"] else float("nan")
     report("(f12) S_vol(T) = S_vol(T*) has 2 roots at 1e3 Pa and 3 at 1e2 Pa, one above the local maximum (count)",
            0.0 if ok else 1.0, 0, ok)

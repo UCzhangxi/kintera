@@ -6,7 +6,7 @@ From a fresh checkout, on a Linux x86-64 machine with Git and Docker Engine:
 bash doc/tech-report/environment/reproduce.sh
 ```
 
-Allow at least 32 GiB RAM and 40 GiB free disk space. The build uses two compiler
+Allow at least 32 GiB RAM and 80 GiB free disk space. The build uses two compiler
 jobs and runs CPU checks. No GPU result is inferred from a CPU build. Docker must
 be accessible to the invoking account. The command does not install packages on
 the host. Network access to public GitHub, PyPI and Debian snapshots is required.
@@ -19,7 +19,7 @@ The snapshot selects NetCDF C 4.9.0 (`1:4.9.0-3+b1`), TeX Live base
 `2022.20230122-3`, and TeX binaries `2022.20220321.62855-5.1+deb12u2`.
 NetCDF includes both the C headers/link library and the Python package; installing
 only the Python package is insufficient. TeX comes from the same Debian snapshot;
-automatic TeX package installation is disabled for the explicit full render.
+automatic TeX package installation is disabled in the book configuration.
 Writable TeX, Matplotlib and citation caches live under `.reproduce/`.
 
 The source builder reads `../code_pin.yml` and `../tools/package-pins.json` rather

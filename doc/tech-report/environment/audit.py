@@ -4,6 +4,7 @@ CPU only. Appendix A/B/C/F/G/H content is excluded; shared generators still run.
 No historical outputs or external scratch scripts are used as inputs.
 """
 import json
+import hashlib
 import os
 from pathlib import Path
 import re
@@ -82,7 +83,7 @@ for i, item in enumerate(rows):
     for token in re.findall(r'(?:doc/tech-report/)?(?:src/kintera_report/|derivation-checks/)[^\s]+\.(?:py|sh)', c):
         rel = token.removeprefix('doc/tech-report/')
         c = c.replace(token, shlex.quote(str(D/rel)))
-        cwd = E/('scratch-'+name)
+        cwd = E/('scratch-'+hashlib.sha256(c.encode()).hexdigest()[:16])
     if c.startswith('python check_ch12_'):
         c = c.replace('python ', 'python '+str(D/'derivation-checks/ch12')+'/')
     if c.startswith('ctest'):

@@ -64,7 +64,7 @@ PREFIX_REPOS = {
     "kintera": "chengcli/kintera",
     "snapy": "chengcli/snapy",
     "pyharp": "chengcli/pyharp",
-    "paddle": "chengcli/paddle",
+    "paddle": "elijah-mullens/paddle",
 }
 
 # STYLE 3.2: a note reference is a file in this directory of the home repository.
@@ -72,7 +72,7 @@ NOTE_DIR = "docs/"
 
 # STYLE 3.1: the repositories the report may cite, each from the only owner it may be cited from.
 ALLOWED_REPOS = ("chengcli/kintera", "UCzhangxi/kintera", "chengcli/snapy", "UCzhangxi/snapy",
-                 "chengcli/pyharp", "chengcli/paddle")
+                 "chengcli/pyharp", "chengcli/paddle", "elijah-mullens/paddle")
 
 HEX = re.compile(r"[0-9a-f]+")
 

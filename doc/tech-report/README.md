@@ -4,6 +4,13 @@ This branch (`tech-report` on UCzhangxi/kintera) holds a technical description o
 WRF, MPAS and CESM technical notes. It is never merged into kintera main and never opened as a pull request to
 it. The report is a Quarto book of 14 chapters and appendices A to F (OUTLINE.md).
 
+## Reproduction setup
+
+On Linux x86-64 with Docker, run `bash doc/tech-report/environment/reproduce.sh`
+from the repository root. The [environment guide](environment/README.md) describes
+the pinned build/render dependencies, CPU scope, retained logs and the unresolved
+Paddle dependency conflict. Use a fresh disposable checkout for the audit.
+
 ## Files
 
 - `STYLE.md`: the binding style guide, covering the six-layer template, citations, evidence, figures and checks.

@@ -237,7 +237,7 @@ in this guide, which holds itself to the same list. A sha written anywhere else 
   package has no recorded pin, say so rather than inventing one.
 - The repositories the report may cite: kintera (`chengcli/kintera`, and the fork `UCzhangxi/kintera` that
   carries this report), snapy (`chengcli/snapy`, `UCzhangxi/snapy`), pyharp (`chengcli/pyharp`) and paddle
-  (`chengcli/paddle`). Any other repository, or a fork off that list, is a review failure. A sha from a fork
+  (`chengcli/paddle`, and `elijah-mullens/paddle` for the authorized Torch 2.10 migration). Any other repository, or a fork off that list, is a review failure. A sha from a fork
   resolves through the parent on GitHub; cite the repository the commit lives on.
 
 #### When a cited symbol changes at the pin

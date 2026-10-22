@@ -20,7 +20,8 @@ def run(args, cwd=None):
 for name, sha in pins.items():
     source = sources / name
     if not source.exists():
-        run(['git', 'clone', 'https://github.com/chengcli/' + name, str(source)])
+        owner = 'elijah-mullens' if name == 'paddle' else 'chengcli'
+        run(['git', 'clone', f'https://github.com/{owner}/{name}', str(source)])
     run(['git', 'checkout', '--detach', sha], source)
     actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=source, text=True).strip()
     if actual != sha:
@@ -37,9 +38,13 @@ for name in ['pyharp', 'kintera', 'snapy']:
 run([sys.executable, '-m', 'pip', 'install', '--no-build-isolation', '--no-deps', '-e', str(report / 'src')])
 run([sys.executable, '-m', 'pip', 'check'])
 
-# Retain the source-built Paddle wheel without installing an incompatible runtime.
-run([sys.executable, '-m', 'pip', 'wheel', '--no-build-isolation', '--no-deps',
-     '--wheel-dir', str(state / 'wheels'), str(sources / 'paddle')])
+# Install the authorized public Paddle migration; pip check validates its runtime floors.
+run([sys.executable, '-m', 'pip', 'install', '--no-build-isolation', '--no-deps', str(sources / 'paddle')])
+run([sys.executable, '-m', 'pip', 'check'])
+legacy = sources / 'paddle-legacy'
+if not legacy.exists():
+    run(['git', 'clone', 'https://github.com/chengcli/paddle', str(legacy)])
+run(['git', 'checkout', '--detach', '3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf'], legacy)
 import tomllib
 from packaging.requirements import Requirement
 from importlib.metadata import version

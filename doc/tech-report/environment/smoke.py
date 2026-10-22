@@ -5,7 +5,7 @@ import tempfile
 import importlib.metadata
 
 subprocess.run(['python', '-m', 'pip', 'check'], check=True)
-for name in ('torch', 'kintera', 'pyharp', 'snapy', 'numpy', 'matplotlib'):
+for name in ('torch', 'kintera', 'pyharp', 'snapy', 'paddle', 'numpy', 'matplotlib'):
     __import__(name)
     print(name, importlib.metadata.version(name), flush=True)
 from packaging.version import Version

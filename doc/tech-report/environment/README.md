@@ -19,7 +19,7 @@ The snapshot selects NetCDF C 4.9.0 (`1:4.9.0-3+b1`), TeX Live base
 `2022.20230122-3`, and TeX binaries `2022.20220321.62855-5.1+deb12u2`.
 NetCDF includes both the C headers/link library and the Python package; installing
 only the Python package is insufficient. TeX comes from the same Debian snapshot;
-automatic TeX package installation is disabled in the book configuration.
+the audit’s explicit full-render command disables automatic TeX package installation.
 Writable TeX, Matplotlib and citation caches live under `.reproduce/`.
 
 The source builder reads `../code_pin.yml` and `../tools/package-pins.json` rather

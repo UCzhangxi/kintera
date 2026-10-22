@@ -10,6 +10,11 @@ Allow at least 32 GiB RAM and 80 GiB free disk space. The build uses two compile
 jobs and runs CPU checks. No GPU result is inferred from a CPU build. Docker must
 be accessible to the invoking account. The command does not install packages on
 the host. Network access to public GitHub, PyPI and Debian snapshots is required.
+Use a full-history checkout. The provenance gate compares against the immutable
+audited report baseline `68fea828ca5c6a0cffd22ca7a103c2bbcc960b34`, so a
+single-branch clone works without an `origin/tech-report` ref or a fetch.
+To increase bounded compilation on a sufficiently provisioned machine, use
+`MAX_JOBS=4 bash doc/tech-report/environment/reproduce.sh`; values 1–8 are accepted.
 
 The image fixes Python 3.11.13 by image digest, Debian packages by the immutable
 20250929 snapshot, Universal Ctags 6.2.1 by source commit, Quarto 1.10.19 by archive

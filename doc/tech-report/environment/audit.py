@@ -14,6 +14,7 @@ import shutil
 import signal
 import subprocess
 import time
+from inventory_policy import gpu_only
 
 D = Path(__file__).resolve().parents[1]
 E = D / '.reproduce/logs'
@@ -56,9 +57,7 @@ for i, item in enumerate(rows):
     name = f'item-{i:03d}'
     reason = None
     # Retain classifications; do not silently execute GPU claims on a CPU build.
-    if ('cuda' in c.lower() or 'cuobjdump' in c or '--compare' in c
-        or 'check_ch12_' in c and 'conditioning' not in c
-        or 'gpu_probe' in c or 'sparse_vs_dense' in c):
+    if gpu_only(c):
         reason = 'GPU-only/paired-device claim: not validated by CPU setup'
     elif c.startswith(('ThermoX', '[NO')):
         reason = 'Missing public experiment driver/complete executable command'
@@ -86,7 +85,9 @@ for i, item in enumerate(rows):
         cwd = E/('scratch-'+hashlib.sha256(c.encode()).hexdigest()[:16])
     if c.startswith('python check_ch12_'):
         c = c.replace('python ', 'python '+str(D/'derivation-checks/ch12')+'/')
-    if c.startswith('ctest'):
+    if 'ch01/runs/snippet.py' in c:
+        cwd = P  # the documented snippet opens examples/jupiter.yaml
+    elif c.startswith('ctest'):
         cwd = P/'build/tests'
     elif c.startswith(('git ', 'grep ', 'pytest', 'python -m pytest')):
         cwd = P/'tests' if c.startswith('grep') else P

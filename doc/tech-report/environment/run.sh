@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# Trust only the user-supplied bind-mounted checkout inside this disposable container.
+git config --global --add safe.directory /work
 cd /work/doc/tech-report
 mkdir -p .reproduce/{cache,texmf-var,texmf-config,tmp,logs}
 trap 'chown -R "${OUTPUT_UID:-0}:${OUTPUT_GID:-0}" .reproduce build book/_book book/_freeze 2>/dev/null || true' EXIT

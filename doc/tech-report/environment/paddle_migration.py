@@ -65,6 +65,8 @@ def run(candidate, legacy, out):
                     assert torch.isfinite(value).all()
                     if dt == 0. or solid == 0.:
                         assert torch.equal(value, torch.zeros_like(value))
+                    else:
+                        assert (value[0] > 0).all() and (value[1] < 0).all()
                     # Same molecular species in gas/solid: mass increments cancel.
                     residual = value.sum(dim=0).abs().max().item()
                     tolerance = 32*torch.finfo(torch.float64).eps*value.abs().sum(dim=0).max().item()

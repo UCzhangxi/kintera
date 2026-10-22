@@ -41,6 +41,7 @@ checked out for citations, but its runtime is not installed in the main
 environment. A passing main-environment `pip check` does not establish Paddle
 compatibility. A compatible public Paddle pin or an explicitly separate legacy
 runtime is still required to close this part of the reproduction gap.
+See [Paddle compatibility evidence and the remaining owner decision](paddle-compatibility.md).
 
 Use `bash doc/tech-report/environment/reproduce.sh build` to stop after builds
 and the environment smoke test. The default continues through derivation scripts,

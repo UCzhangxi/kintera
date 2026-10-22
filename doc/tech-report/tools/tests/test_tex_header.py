@@ -28,3 +28,30 @@ def test_inline_code_header_compiles(tmp_path):
     )
     assert result.returncode == 0, result.stdout
     assert (tmp_path / 'header.pdf').is_file()
+
+
+def test_theme_chapters_without_obsolete_koma_alias(tmp_path):
+    """The CI TeX Live 2026 environment removes the deprecated lowercase ifstr."""
+    latex = shutil.which('lualatex')
+    if latex is None:
+        pytest.skip('LuaLaTeX is supplied by the reproduction environment')
+    theme = REPORT / 'book/_tex/theme.tex'
+    document = '\n'.join([
+        r'\documentclass{scrreprt}',
+        r'\usepackage{booktabs,hyperref}',
+        r'\input{' + theme.as_posix() + '}',
+        # Model the removed alias even on the pinned older TeX distribution.
+        r'\let\ifstr\undefined',
+        r'\begin{document}',
+        r'\chapter{Numbered chapter} Numbered body.',
+        r'\chapter*{Unnumbered chapter} Unnumbered body.',
+        r'\end{document}',
+    ])
+    (tmp_path / 'theme.tex').write_text(document)
+    result = subprocess.run(
+        [latex, '-interaction=nonstopmode', '-halt-on-error', 'theme.tex'],
+        cwd=tmp_path, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        timeout=180,
+    )
+    assert result.returncode == 0, result.stdout
+    assert (tmp_path / 'theme.pdf').is_file()

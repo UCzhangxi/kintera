@@ -95,3 +95,6 @@ examples/output/
 *.csv
 *.json
 *.svg
+
+# Report reproduction environments, public source builds, logs and caches
+doc/tech-report/.reproduce/

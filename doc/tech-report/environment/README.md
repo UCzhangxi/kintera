@@ -35,13 +35,25 @@ Snapy uses its documented Gloo-only option (`UCX=OFF`); PNETCDF is also disabled
 The kintera source pin is v2.6.5, satisfying snapy's >=2.6.3 floor. Source version
 metadata and native imports are checked after installation.
 
-**Unresolved dependency:** Paddle's current public pin requires Torch <=2.7.1,
-whereas these kintera/snapy source builds require Torch 2.10.0. Its source is
-checked out for citations, but its runtime is not installed in the main
-environment. A passing main-environment `pip check` does not establish Paddle
-compatibility. A compatible public Paddle pin or an explicitly separate legacy
-runtime is still required to close this part of the reproduction gap.
-See [Paddle compatibility evidence and the remaining owner decision](paddle-compatibility.md).
+**Paddle migration:** the runtime now installs public Paddle
+`a4cac94451ab5fc800735edb00180e98859a20c2` from `elijah-mullens/paddle`,
+which permits Torch 2.10.0. The installed requirements are checked. The old pin
+is cloned only for labeled old/new regression evidence, never installed into
+the runtime. `environment/paddle_migration.py` exercises four cases with real
+native thermodynamics/kinetics; its JSON distinguishes original-driver failures,
+an explicitly labeled API-only compatibility adapter, and migrated values.
+See [compatibility history and review boundary](paddle-compatibility.md).
+
+**Figure values:** `python tools/check_figure_values.py` regenerates model inputs
+and compares every figure's underlying data and plotted arrays/schematic geometry
+against `environment/figure-values.json`. Missing inputs or figures fail. Eight
+binary64 ULPs allow floating arithmetic/serialization roundoff only; status,
+iteration counts, structure and strings are exact. Every changed leaf is reported
+for chapter-owner review even if within this numerical threshold. This is not a
+scientific acceptance tolerance. No SVG hash is used to establish equivalence.
+The explicit `--write-baseline` maintenance option requires review; the audit
+never invokes it or updates its reference. Nine figures are schematics and five
+read model datasets; checking a schematic does not reproduce a GPU campaign.
 
 Use `bash doc/tech-report/environment/reproduce.sh build` to stop after builds
 and the environment smoke test. The default continues through derivation scripts,

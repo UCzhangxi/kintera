@@ -1,0 +1,14 @@
+
+reference-state: {Tref: 0., Pref: 1.e5}
+species:
+  - {name: dry, composition: {H: 1.696, He: 0.152}, cv_R: 1.82}
+  - {name: CH4, composition: {C: 1, H: 4}, cv_R: 3.0}
+  - {name: "CH4(s)", composition: {C: 1, H: 4}, cv_R: 4.0, u0_R: -1166.9229}
+reactions:
+  - equation: CH4 <=> CH4(s)
+    type: nucleation
+    rate-constant: {formula: ideal, T3: 90.67, P3: 11690., beta: 12.87, gamma: 0.}
+  - equation: CH4(s) => CH4
+    type: evaporation
+    rate-constant: {formula: ideal, T3: 90.67, P3: 11690., beta: 12.87, gamma: 0.,
+                    diff_c: 0.2e-4, diff_T: 1.75, diff_P: -1., vm: 18.e-6, diameter: 1.0e-2}

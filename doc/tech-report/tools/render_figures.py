@@ -36,6 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import check_fig_output as cfo  # noqa: E402
+from figure_values import snapshot
 
 REPORT = cfo.REPORT
 MANIFEST = "FIGURES.md"
@@ -148,7 +149,8 @@ def render(out: Path, chapters=None, report: Path = REPORT, formats=("svg", "pdf
                 fig.savefig(dest / f"{cell.label}.pdf", format="pdf", metadata={"CreationDate": None})
             if "png" in formats:
                 fig.savefig(dest / f"{cell.label}.png", dpi=100, metadata={"Software": None})
-            index[cell.label] = {"chapter": cell.chapter, "svg_sha256": hashlib.sha256(svg).hexdigest()}
+            index[cell.label] = {"chapter": cell.chapter, "svg_sha256": hashlib.sha256(svg).hexdigest(),
+                                 "values": snapshot(fig)}
         except Exception as e:  # noqa: BLE001 - listed, and the exit status says so
             index[cell.label] = {"chapter": cell.chapter, "error": f"{type(e).__name__}: {e}"[:200]}
         finally:

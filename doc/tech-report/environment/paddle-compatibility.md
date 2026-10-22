@@ -1,4 +1,21 @@
-# Paddle compatibility boundary
+# Paddle migration and compatibility history
+
+Xi authorized migration. The installed runtime is now public
+[`a4cac94451ab5fc800735edb00180e98859a20c2`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/pyproject.toml#L33),
+which permits Torch 2.10.0. The following investigation concerns the OLD pin,
+retained for evidence rather than a current installation blocker.
+
+The regression emits old/new values for four cases using the public zero-condensate
+card and real native objects. Unmodified old execution fails at `snapy.index`.
+The separately labeled API-only adapter maps that removed index namespace; it
+then fails at zero condensate but agrees exactly with the migrated driver for
+positive condensate. Those adapted results are not an original-runtime audit.
+The new driver uses six arguments, slices off dry species, and passes rate constants
+to the Jacobian. Chapter 14 source claims and every newly measured number require
+its authors to review; no approval is claimed. The public `crm.py` still calls
+the driver with three arguments, so this regression is not a successful CRM run.
+
+## Historical investigation
 
 The main environment deliberately reports this unresolved dependency and exits
 nonzero. Building Paddle's wheel does not establish a working Paddle runtime.
@@ -63,18 +80,13 @@ would change the report's public source targets; it would not validate its
 current pins, its newer kinetics options, or that call. No such substitution or
 scientific-content change is included here.
 
-## Required owner decision
+## Remaining chapter-owner review
 
-Choose either:
-
-1. Obtain a public Paddle revision that supports and validates Torch 2.10.0 with
-   the report's existing kintera/snapy pins, then authorize the corresponding
-   Paddle pin and chapter source-citation update; or
-2. Commission a separately specified historical reproduction target, naming its
-   kintera/snapy pins, input and expected behavior, with chapter-owner review of
-   the differences. An isolated legacy runtime can then implement that target.
-
-Until one is available, retain the explicit conflict, missing driver findings,
-and nonzero overall audit result. A widened requirement without actual driver
-validation, a no-dependencies install, or an older native pin is not evidence
-that the report's coupling behavior works.
+The owner has chosen migration, not historical isolation. Chapter 14 authors
+must review the six-argument interface, slicing and rate-constant changes and the
+old/new values emitted by `paddle_migration.py`. The provenance names
+XinyueWang05; subsequent derivation commits name jihenghu. The formal ownership
+table remains unassigned, so the editor must confirm reviewer responsibility.
+Chapter 5's two changed water-data leaves also require review despite satisfying
+the eight-ULP numerical check. Chapter 4's disputed UV result and chapter 12/13
+missing resources stay with their authors. None is suppressed to obtain exit 0.

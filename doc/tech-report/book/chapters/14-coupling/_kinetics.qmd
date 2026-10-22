@@ -1,8 +1,8 @@
 ## Kinetics after the dynamics step (`reactions`) {#sec-ch14-kinetics}
 
 <!-- PROVENANCE
-pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70; paddle@3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf
-sources: src/kinetics/kinetics.cpp, src/kinetics/evolve_implicit_dispatch.cpp, src/species.cpp; snapy examples/run_hydro.cpp, examples/jupiter_evap_precip_1d.cpp; paddle src/paddle/evolve_kinetics.py
+pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70; paddle@a4cac94451ab5fc800735edb00180e98859a20c2
+sources: src/kinetics/kinetics.cpp, src/kinetics/evolve_implicit_dispatch.cpp, src/species.cpp; snapy examples/run_hydro.cpp, examples/jupiter_evap_precip_1d.cpp; paddle paddle/evolve_kinetics.py
 status: draft
 author: XinyueWang05
 reviewer:
@@ -49,7 +49,7 @@ $$ {#eq-ch14-kinetics-density}
 
 where $M_i$ enters as the division by `inv_mu`, the inverse molar masses held by `ThermoY`.
 @eq-ch14-kinetics-density is computed in the snapy driver, where `inv_mu` divides the change ([`snapy run_hydro.cpp:175-193`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L175-L193)), and in
-paddle's `evolve_kinetics` ([`paddle evolve_kinetics.py:6-44`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/evolve_kinetics.py#L6-L44)).
+paddle's `evolve_kinetics` ([`paddle evolve_kinetics.py:7-65`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/paddle/evolve_kinetics.py#L7-L65)).
 
 **Concentrations in.** The driver takes $T$ from its equation of state, the mole fractions from `Y->X`
 (@eq-ch14-thermo-mole) and the concentrations from `TPX->V`, then slices off the dry column
@@ -161,10 +161,13 @@ evaporation-precipitation example (`forward_with_rate_constants`, [`snapy jupite
    buffer and the step $\Delta t$;
 6. convert by @eq-ch14-kinetics-density and add to the conserved state; then run the redo check.
 
-paddle's `evolve_kinetics` ([`paddle evolve_kinetics.py:6-44`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/evolve_kinetics.py#L6-L44)) differs in two places at its pin. It narrows the concentrations with
-`narrow_copy` ({{< code src/species.cpp SpeciesThermoImpl::narrow_copy >}}, [`paddle evolve_kinetics.py:35-40`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/evolve_kinetics.py#L35-L40)) instead of slicing, and it calls
-`forward_nogil` and `jacobian` without rate constants, so a cell whose evaporating condensate is exactly zero is
-refused by `jacobian` (@sec-ch06).
+paddle's `evolve_kinetics` ([`paddle evolve_kinetics.py:7-65`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/paddle/evolve_kinetics.py#L7-L65))
+takes six arguments: primitive state, equation of state, `ThermoX`, `ThermoY`, `Kinetics`, and the time step.
+It also drops the dry species by slicing, calls `forward_with_rate_constants`, and passes the returned rate
+constants to `jacobian` ([`paddle evolve_kinetics.py:42-54`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/paddle/evolve_kinetics.py#L42-L54)).
+This supplies the explicit rate constants required by `jacobian` when an evaporating condensate is zero
+(@sec-ch06). It still computes the volumetric heat capacity with `TV->cp`; the $C_P$ versus $C_V$ issue below
+is unchanged.
 
 The figure of the step is not provided: the figure module is not written yet.
 
@@ -177,7 +180,7 @@ The figure of the step is not provided: the figure module is not written yet.
 | implicit step | {{< code src/kinetics/evolve_implicit_dispatch.cpp evolve_implicit >}} | `evolve_implicit` | always |
 | snapy driver | [`snapy run_hydro.cpp:175-193`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L175-L193) | `forward_with_rate_constants` | example |
 | snapy driver | [`snapy jupiter_evap_precip_1d.cpp:244-261`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/jupiter_evap_precip_1d.cpp#L244-L261) | `forward_with_rate_constants` | example |
-| paddle driver | [`paddle evolve_kinetics.py:6-44`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/evolve_kinetics.py#L6-L44) | `evolve_kinetics` | Python driver |
+| paddle driver | [`paddle evolve_kinetics.py:7-65`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/paddle/evolve_kinetics.py#L7-L65) | `evolve_kinetics` | Python driver |
 
 : Code map of the kinetics coupling. {#tbl-ch14-kinetics-code}
 
@@ -216,9 +219,11 @@ form and the pressure switch of @sec-ch06 exist at the kintera pin, release
 floor does not enforce. What an older kintera does with these keys is not tested.
 :::
 
-paddle at its pin declares `kintera>=1.0.1` and a torch range that excludes the torch version kintera builds
-against at its pin (`dependencies` in [`paddle pyproject.toml:33-36`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/pyproject.toml#L33-L36); {{< code pyproject.toml >}}). Whether the two pins can be installed
-together was not tested.
+paddle at its pin declares `torch>=2.6.0`, `kintera>=2.6.4` and `snapy`
+([`paddle pyproject.toml:33-40`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/pyproject.toml#L33-L40)).
+These bounds permit the report environment's Torch 2.10.0 and native package pins. The committed setup
+checks the installed requirements and exercises the six-argument driver on a small CPU card; this does not
+validate a complete coupled CRM simulation.
 
 - The drivers pass $C_P$ where @eq-ch14-kinetics-cv needs $C_V$ (suspect S14-1, latent, line (v)); the derivation
   above settles which one is right.
@@ -227,8 +232,8 @@ Open questions, not tested:
 
 - The snapy drivers drop the dry species by slicing off the first column. That agrees with the kinetics species
   list only if every other thermodynamic species is a kinetics species, in the same order.
-- paddle's `crm` script calls `evolve_kinetics(block, kinet, thermo_x)` ([`paddle crm.py:73`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/crm.py#L73)), which does not match the
-  five-argument signature of `evolve_kinetics` ([`paddle evolve_kinetics.py:6-44`](https://github.com/chengcli/paddle/blob/3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf/src/paddle/evolve_kinetics.py#L6-L44)).
+- paddle's `crm` script calls `evolve_kinetics(block, kinet, thermo_x)` ([`paddle crm.py:73`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/paddle/crm.py#L73)), which does not match the
+  six-argument signature of `evolve_kinetics` ([`paddle evolve_kinetics.py:7-65`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/paddle/evolve_kinetics.py#L7-L65)).
 
 [^ch14-floor-src]: [source: the kintera release tags v2.6.3 and v2.6.4 have no `form` or `k3` in `evaporation.hpp` and no
     `p_threshold` in `arrhenius.hpp`; the pin has both. Read with `git show <tag>:<file>` in a kintera clone.]

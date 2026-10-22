@@ -152,3 +152,8 @@ websocket-client==1.9.2
 wheel==0.48.0
 widgetsnbextension==4.0.16
 xarray==2026.9.0
+
+# Public Paddle runtime dependency closure.
+rich==14.3.3
+markdown-it-py==4.0.0
+mdurl==0.1.2

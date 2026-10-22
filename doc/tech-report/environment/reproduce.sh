@@ -9,4 +9,5 @@ docker build --platform linux/amd64 -t kintera-report-reproduce "$here"
 # Container root can install source packages; chown only this run's outputs on exit.
 docker run --rm --platform linux/amd64 -v "$root:/work" \
     -e OUTPUT_UID="$(id -u)" -e OUTPUT_GID="$(id -g)" \
+    -e MAX_JOBS="${MAX_JOBS:-2}" \
     kintera-report-reproduce bash /work/doc/tech-report/environment/run.sh "${1:-audit}"

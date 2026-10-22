@@ -11,7 +11,10 @@ export TMPDIR="$PWD/.reproduce/tmp" MPLCONFIGDIR="$PWD/.reproduce/cache/matplotl
 export KINTERA_REPO="$PWD/.reproduce/sources/kintera" KINTERA_WT="$PWD/.reproduce/sources/kintera"
 export CH12_SAVED="$PWD/derivation-checks/ch12/saved-preparation"
 export KINTERA_REPORT_CACHE="$PWD/.reproduce/cache/anchors" CHECK_CITATIONS_CACHE="$PWD/.reproduce/cache/citations"
-export CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MAX_JOBS=2 MPLBACKEND=Agg
+export CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MAX_JOBS="${MAX_JOBS:-2}" MPLBACKEND=Agg
+case "$MAX_JOBS" in [1-8]) ;; *) echo 'MAX_JOBS must be an integer from 1 to 8' >&2; exit 2;; esac
+# Immutable audited report baseline; works in full-history single-branch PR clones.
+export PROVENANCE_BASE_REF=68fea828ca5c6a0cffd22ca7a103c2bbcc960b34
 cp /opt/system-packages.lock .reproduce/logs/system-packages.lock
 python -m pip list --format=freeze > .reproduce/logs/python-packages-before.lock
 python environment/build_sources.py 2>&1 | tee .reproduce/logs/build.log

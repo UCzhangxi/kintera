@@ -58,7 +58,7 @@
       if n.id == MATH then
         inmath = (n.subtype == 0)
         n = n.next
-      elseif inmath or n.id ~= GLYPH or not hex(n.char) then
+      elseif inmath or not (n.id == GLYPH) or not hex(n.char) then
         n = n.next
       else
         local run, k, digit, letter, m = {}, 0, false, false, n

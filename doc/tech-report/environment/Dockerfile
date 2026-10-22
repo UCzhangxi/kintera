@@ -21,3 +21,6 @@ RUN curl -fLsS https://github.com/quarto-dev/quarto-cli/releases/download/v1.10.
 ENV PATH="/opt/quarto-1.10.19/bin:${PATH}" \
     QUARTO_TEXLIVE_BINPATH=/usr/bin \
     QUARTO_PYTHON=/usr/local/bin/python
+# Quarto callouts require fontawesome5.sty, shipped in Debian's fonts-extra set.
+RUN apt-get update && apt-get install -y --no-install-recommends texlive-fonts-extra && \
+    dpkg-query -W > /opt/system-packages.lock && rm -rf /var/lib/apt/lists/*

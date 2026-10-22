@@ -4,7 +4,7 @@ set -euo pipefail
 git config --global --add safe.directory /work
 cd /work/doc/tech-report
 mkdir -p .reproduce/{cache,texmf-var,texmf-config,tmp,logs}
-trap 'chown -R "${OUTPUT_UID:-0}:${OUTPUT_GID:-0}" .reproduce build book/_book book/_freeze 2>/dev/null || true' EXIT
+trap 'chown -R "${OUTPUT_UID:-0}:${OUTPUT_GID:-0}" .reproduce build book 2>/dev/null || true' EXIT
 export XDG_CACHE_HOME="$PWD/.reproduce/cache"
 export TEXMFVAR="$PWD/.reproduce/texmf-var" TEXMFCONFIG="$PWD/.reproduce/texmf-config"
 export TMPDIR="$PWD/.reproduce/tmp" MPLCONFIGDIR="$PWD/.reproduce/cache/matplotlib"

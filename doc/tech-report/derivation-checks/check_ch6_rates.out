@@ -1,4 +1,4 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
 [a1] max rel |rate - k prod c^order|: 0.000e+00 (tol 1e-13) PASS
      forward_orders == react_stoich: True; order of H in '2 H => H2' = 2
 [a2] max |atom matrix @ stoich| (exact): 0.000e+00 (tol 0e+00) PASS
@@ -10,16 +10,16 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
 [c1] max rel |k - k0 M/(1 + k0 M/kinf)|, Pr = 1e-6..1e6: 4.441e-16 (tol 1e-12) PASS
 [c2] low-P limit |k/(k0 M) - 1| at Pr=1e-6: 1.000e-06 (tol 2e-06) PASS
 [c3] high-P limit |k/kinf - 1| at Pr=1e6: 1.000e-06 (tol 2e-06) PASS
-[d1] T=300 max |r_f - r_r|/r_f per reaction: 1.138e-16 (tol 1e-10) PASS
+[d1] T=300 max |r_f - r_r|/r_f per reaction: 2.802e-14 (tol 1e-10) PASS
 [d1] T=300 max |stoich @ rate| / max r_f: 1.138e-16 (tol 1e-10) PASS
 [d1] T=300 R1 K_c code (k_f/k_r) = 2.805844e+10 vs ours 2.805844e+10; rel: 1.110e-16 (tol 1e-10) PASS
-[d1] T=300 R2 K_c code (k_f/k_r) = 4.048789e+68 vs ours 4.048789e+68; rel: 0.000e+00 (tol 1e-10) PASS
+[d1] T=300 R2 K_c code (k_f/k_r) = 4.048789e+68 vs ours 4.048789e+68; rel: 2.842e-14 (tol 1e-10) PASS
 [d1] T=1500 max |r_f - r_r|/r_f per reaction: 1.053e-14 (tol 1e-10) PASS
 [d1] T=1500 max |stoich @ rate| / max r_f: 3.504e-15 (tol 1e-10) PASS
 [d1] T=1500 R1 K_c code (k_f/k_r) = 9.740225e-05 vs ours 9.740225e-05; rel: 3.553e-15 (tol 1e-10) PASS
 [d1] T=1500 R2 K_c code (k_f/k_r) = 7.788137e+13 vs ours 7.788137e+13; rel: 1.066e-14 (tol 1e-10) PASS
 [d2] forward column rc_ddT vs FD dk_f/dT, rel: 2.416e-10 (tol 1e-06) PASS
-     reverse R1: code rc_ddT = -8.190111e+01, FD dk_r/dT = 4.823080e-08, analytic d(k_f/K_c)/dT = 4.823080e-08
-     predicted code - true = dk_f/dT - d(k_f/K_c)/dT = -8.190111e+01; observed -8.190111e+01
-[d2] reverse column rc_ddT vs FD dk_r/dT, rel: 1.698e+09 (tol 1e-06) EXPECTED-FAIL  (reverse column is a copy of dk_f/dT: no 1/K_c, no van 't Hoff term)
-[d2] observed defect vs predicted (dk_f/dT - dk_r/dT), rel: 2.416e-10 (tol 1e-05) PASS
+     reverse R1: code rc_ddT = 4.823080e-08, FD dk_r/dT = 4.823080e-08, analytic d(k_f/K_c)/dT = 4.823080e-08
+     predicted code - true = dk_f/dT - d(k_f/K_c)/dT = -8.190111e+01; observed -1.072998e-15
+[d2] reverse column rc_ddT vs FD dk_r/dT, rel: 2.225e-08 (tol 1e-06) PASS  (reverse column is a copy of dk_f/dT: no 1/K_c, no van 't Hoff term)
+[d2] observed defect vs predicted (dk_f/dT - dk_r/dT), rel: 1.000e+00 (tol 1e-05) FAIL

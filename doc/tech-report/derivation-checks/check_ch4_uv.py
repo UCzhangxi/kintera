@@ -2,7 +2,7 @@
 
 a. uv-solver kkt: final T vs independent bisection of U(T), U and water conserved;
 b. uv-solver partition: same oracle, and KKT vs partition agreement;
-c. partition near Tref (known defect D6);
+c. partition near Tref (D6 regression);
 d. oracle U(T) monotone on 150..400 K; analytic dU/dT (cf. src/thermo/equilibrate_uv.h) vs FD.
 """
 import math
@@ -110,7 +110,7 @@ def check_ab():
 
 
 def check_c():
-    print("== c. partition near Tref, yv=0.05 (known defect D6): converged (diag>=0) and |dT|<=1e-9 K")
+    print("== c. partition near Tref, yv=0.05 (D6 regression): converged (diag>=0) and |dT|<=1e-9 K")
     fails = []
     for T0 in [296.0, 298.0, 299.0, 300.0, 301.0, 302.0, 304.0]:
         r = run("partition", T0, 0.05)
@@ -118,7 +118,8 @@ def check_c():
         ok = r["diag"] >= 0 and dT <= 1e-9
         fails += [] if ok else [T0]
         print(f"  T0={T0:.0f}: diag={r['diag']:.0f} U={r['U']:.4e} T={r['T']:.8f} oracle={r['To']:.8f} dT={dT:.1e}")
-    print(f"  failing T0: {fails} ({len(fails)}/7)  {pf(not fails, expected_fail=True)}")
+    assert not fails, f"D6 regression: nonconverged or inaccurate starts {fails}"
+    print(f"  failing T0: {fails} ({len(fails)}/7)  {pf(not fails)}")
 
 
 def check_d():

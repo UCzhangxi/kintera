@@ -1,8 +1,8 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
-   tests/jupiter.yaml, 280 K, 1e6 Pa, per mole of dry gas: dH/dT = 31.4370245170, T dS/dT = 31.3673271336 J/(mol K); per mole of mixture dh/dT = 31.3464858864
-(h1) closed parcel at fixed p, tests/jupiter.yaml: T dS/dT vs dH/dT (rel): measured 2.217e-03  tol 1e-05  EXPECTED-FAIL (K8)
-   effective_cp = 31.3464857806 J/(mol K)
-(h2) per mole: dh/dT along the equilibrium path vs effective_cp (rel): measured 3.375e-09  tol 1e-05  PASS
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
+   tests/jupiter.yaml, 280 K, 1e6 Pa, per mole of dry gas: dH/dT = 32.3120996315, T dS/dT = 32.3120996239 J/(mol K); per mole of mixture dh/dT = 32.2190407845
+(h1) closed parcel at fixed p, tests/jupiter.yaml: T dS/dT vs dH/dT (rel): measured 2.342e-10  tol 1e-05  PASS
+   effective_cp = 32.2190406313 J/(mol K)
+(h2) per mole: dh/dT along the equilibrium path vs effective_cp (rel): measured 4.756e-09  tol 1e-05  PASS
    corrected cards, 280 K, 1e6 Pa, per mole of dry gas: dH/dT = 32.3120996315, T dS/dT = 32.3120996239 J/(mol K); per mole of mixture dh/dT = 32.2190407845
 (h1) closed parcel at fixed p, corrected cards: T dS/dT vs dH/dT (rel): measured 2.342e-10  tol 1e-05  PASS
    T=170 K: x_NH4SH = 5.025e-03, effective_cp = 29.36303921, (1/n) dH/dT = 29.36303922, d(H/n)/dT = 29.36316862 J/(mol K)
@@ -12,6 +12,6 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
    T=240 K: x_NH4SH = 9.002e-04, effective_cp = 70.42215881, (1/n) dH/dT = 70.42216359, d(H/n)/dT = 70.16783442 J/(mol K)
    |effective_cp / d(H/n)/dT - 1| up to 3.625e-03 (n changes)
 (h4) effective_cp vs (1/n) dH/dT where NH4SH forms, worst rel: measured 6.787e-08  tol 1e-06  PASS
-   rain-out, d ln p = -0.2 from 300 K, 1e6 Pa: |T_N - T_512| = 7.5237e-02, 3.7305e-02, 1.8352e-02, 8.8786e-03 K for N = 4, 8, 16, 32; observed orders 1.012, 1.023, 1.048
-(h3) rain-out step is first order in d ln p: max |observed order - 1|: measured 4.751e-02  tol 0.15  PASS
-SUMMARY: 4 PASS, 0 FAIL, 1 EXPECTED-FAIL
+   rain-out, d ln p = -0.2 from 300 K, 1e6 Pa: |T_N - T_512| = 1.4982e-01, 7.4017e-02, 3.6346e-02, 1.7568e-02 K for N = 4, 8, 16, 32; observed orders 1.017, 1.026, 1.049
+(h3) rain-out step is first order in d ln p: max |observed order - 1|: measured 4.880e-02  tol 0.15  PASS
+SUMMARY: 5 PASS, 0 FAIL, 0 EXPECTED-FAIL

@@ -1,4 +1,4 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
   dr/dc_A: jacobian -2.8232709637e+06  FD(fixed U) -2.8232709635e+06  rel err 7.11e-11  | FD(fixed T) 2.8232709635e+06  (feedback share 2.00e+00)
   dr/dc_B: jacobian -7.2934499896e+06  FD(fixed U) -7.2934499898e+06  rel err 3.53e-11  | FD(fixed T) 1.8821806425e+06  (feedback share 1.26e+00)
   dr/dc_C: jacobian 1.4116354819e+07  FD(fixed U) 1.4116354817e+07  rel err 1.04e-10  | FD(fixed T) 0.0000000000e+00  (feedback share 1.00e+00)
@@ -7,7 +7,7 @@ T-feedback Jacobian vs fixed-U FD, worst rel err: measured 1.041e-10  tol 1e-08 
   forward dr/dc_O2: jacobian 2.4648392548e+01  FD(fixed U) 2.4648392548e+01  rel err 2.56e-11
   forward dr/dc_O3: jacobian 9.6071688371e-01  FD(fixed U) 9.6071688405e-01  rel err 3.54e-10
 reversible O + O2 <=> O3, forward column T-feedback Jacobian vs fixed-U FD, worst rel err: measured 3.536e-10  tol 1e-08  PASS
-  reverse dr/dc_O: jacobian 7.2053766278e+03  FD(fixed U) -4.2431786765e-06  rel err 1.70e+09
-  reverse dr/dc_O2: jacobian 7.2053766278e+03  FD(fixed U) -4.2431787219e-06  rel err 1.70e+09
-  reverse dr/dc_O3: jacobian 4.8035844222e+02  FD(fixed U) 8.1989914491e-08  rel err 5.86e+09
-reversible O + O2 <=> O3, reverse column T-feedback Jacobian vs fixed-U FD, worst rel err: measured 5.859e+09  tol 1e-08  EXPECTED-FAIL  (D65: reverse rc_ddT is a copy of dk_f/dT)
+  reverse dr/dc_O: jacobian -4.2431786841e-06  FD(fixed U) -4.2431786765e-06  rel err 1.80e-09
+  reverse dr/dc_O2: jacobian -4.2431786841e-06  FD(fixed U) -4.2431787219e-06  rel err 8.91e-09
+  reverse dr/dc_O3: jacobian 8.1989914601e-08  FD(fixed U) 8.1989914491e-08  rel err 1.35e-09
+reversible O + O2 <=> O3, reverse column T-feedback Jacobian vs fixed-U FD, worst rel err: measured 8.915e-09  tol 1e-08  PASS  (D65 regression)

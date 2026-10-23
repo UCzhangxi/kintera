@@ -3,8 +3,8 @@
  "ctest_version": "4.4.3",
  "external": {},
  "format": "kintera-report ctest index 1",
- "pin": "0d9f67f97d841147e23283d2dcdab302238d2c45",
- "registered": 49,
+ "pin": "e357792d50639d68e9090b542edf038d2b029aa2",
+ "registered": 52,
  "repository": "chengcli/kintera",
  "tests": [
   {
@@ -134,6 +134,12 @@
    "via": "add_test"
   },
   {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_k18_contract.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
    "defined_at": "tests/CMakeLists.txt:15",
    "name": "test_kinetics.release",
    "properties": {},
@@ -154,6 +160,18 @@
   {
    "defined_at": "tests/CMakeLists.txt:74",
    "name": "test_kinetics_base_units.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_kkt_cycling_uv.py",
+   "properties": {},
+   "via": "add_test"
+  },
+  {
+   "defined_at": "tests/CMakeLists.txt:74",
+   "name": "test_mass_action_zero_concentration.py",
    "properties": {},
    "via": "add_test"
   },

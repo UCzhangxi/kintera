@@ -3,7 +3,7 @@
 a. complementarity of the converged state against an independent copy of the
    saturation laws (src/vapors/vapor_functions.h) + element conservation;
 b. TP gain matrix vs a finite difference of Lambda = ln(x_v / x_g) along H2O -> H2O(l);
-c. default max-iter (known defect D4) on cold-start cells, then max-iter 100.
+c. default max-iter (D4 regression) on cold-start cells, then max-iter 100.
 """
 import math
 import warnings
@@ -95,16 +95,18 @@ def check_a_b():
 
 
 def check_c():
-    print("== c. default max-iter on cold-start cells 130..250 K (known defect D4)")
+    print("== c. default max-iter on cold-start cells 130..250 K (D4 regression)")
     Ts = torch.linspace(130, 250, 13)
     op, th = thermo_x()
     _, _, _, diag = solve(th, species(op), Ts)
     bad = int((diag < 0).sum())
+    assert bad == 0, f"D4 regression: {bad} nonconverged cold starts"
     print(f"  max-iter={op.max_iter()} (default): non-converged {bad}/{len(Ts)}; diag={[int(d) for d in diag]}"
-          f"  tol 0  {verdict(bad == 0, expected_fail=True)}")
+          f"  tol 0  {verdict(bad == 0)}")
     op, th = thermo_x(max_iter=100)
     _, _, _, diag = solve(th, species(op), Ts)
     bad = int((diag < 0).sum())
+    assert bad == 0, f"D4 regression: {bad} nonconverged cold starts"
     print(f"  max-iter=100: non-converged {bad}/{len(Ts)}; iterations={[int(d) for d in diag]}"
           f"  tol 0  {verdict(bad == 0)}")
 

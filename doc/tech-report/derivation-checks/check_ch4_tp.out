@@ -1,4 +1,4 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
 == a. complementarity (|res|<=1e-6 if condensate present, res<0 if absent); elements 1e-14
 == b. TP gain[H2O,H2O] vs central FD of ln(x_H2O/x_g) along H2O->H2O(l), tol 1e-7 rel
 T=300 K  diag=1
@@ -15,7 +15,7 @@ T=250 K  diag=9
   a element O/dry rel change=0.0e+00  tol 1e-14 PASS
   a element N/dry rel change=2.2e-16  tol 1e-14 PASS
   a element S/dry rel change=2.2e-16  tol 1e-14 PASS
-  b gain=-1.3369663184e+03 FD=-1.3369663186e+03 rel=1.1e-10 tol 1e-7 PASS; without -sum(nu)/x_g: -1.337986e+03 (rel 7.6e-04)
+  b gain=-1.3369663184e+03 FD=-1.3369663180e+03 rel=3.3e-10 tol 1e-7 PASS; without -sum(nu)/x_g: -1.337986e+03 (rel 7.6e-04)
 T=200 K  diag=18
   a H2O->H2O(l)        cloud=2.010e-02 res=-1.119e-09  tol |res|<=1e-6  PASS
   a NH3->NH3(s)        cloud=0.000e+00 res=-7.536e+00  tol res<0        PASS
@@ -24,26 +24,14 @@ T=200 K  diag=18
   a element N/dry rel change=3.3e-16  tol 1e-14 PASS
   a element S/dry rel change=3.3e-16  tol 1e-14 PASS
   b gain=-6.3797848693e+05 FD=-6.3797848656e+05 rel=5.8e-10 tol 1e-7 PASS; without -sum(nu)/x_g: -6.379795e+05 (rel 1.6e-06)
-T=160 K  diag=29
-  a H2O->H2O(l)        cloud=2.010e-02 res=-6.953e-08  tol |res|<=1e-6  PASS
+T=160 K  diag=32
+  a H2O->H2O(l)        cloud=2.010e-02 res=-4.108e-11  tol |res|<=1e-6  PASS
   a NH3->NH3(s)        cloud=0.000e+00 res=-9.696e+00  tol res<0        PASS
-  a NH3+H2S->NH4SH(s)  cloud=5.025e-03 res=-3.914e-11  tol |res|<=1e-6  PASS
-  a element O/dry rel change=2.2e-16  tol 1e-14 PASS
-  a element N/dry rel change=3.3e-16  tol 1e-14 PASS
+  a NH3+H2S->NH4SH(s)  cloud=5.025e-03 res=-1.331e-07  tol |res|<=1e-6  PASS
+  a element O/dry rel change=3.3e-16  tol 1e-14 PASS
+  a element N/dry rel change=0.0e+00  tol 1e-14 PASS
   a element S/dry rel change=3.3e-16  tol 1e-14 PASS
-  b gain=-1.4525632007e+09 FD=-1.4525632006e+09 rel=4.2e-11 tol 1e-7 PASS; without -sum(nu)/x_g: -1.452563e+09 (rel 7.5e-10)
-== c. default max-iter on cold-start cells 130..250 K (known defect D4)
-  max-iter=10 (default): non-converged 12/13; diag=[-2010, -2010, -2010, -2010, -2010, -2010, -2010, -2010, -2010, -2010, -2010, -2010, 9]  tol 0  EXPECTED-FAIL
-  max-iter=100: non-converged 0/13; iterations=[46, 41, 37, 29, 29, 23, 21, 18, 16, 14, 12, 11, 9]  tol 0  PASS
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
-equilibrate_tp did not converge after 10 iterations.
+  b gain=-1.4525630998e+09 FD=-1.4525630997e+09 rel=4.2e-11 tol 1e-7 PASS; without -sum(nu)/x_g: -1.452563e+09 (rel 7.5e-10)
+== c. default max-iter on cold-start cells 130..250 K (D4 regression)
+  max-iter=100 (default): non-converged 0/13; diag=[46, 41, 33, 32, 26, 23, 21, 18, 16, 14, 12, 11, 9]  tol 0  PASS
+  max-iter=100: non-converged 0/13; iterations=[46, 41, 33, 32, 26, 23, 21, 18, 16, 14, 12, 11, 9]  tol 0  PASS

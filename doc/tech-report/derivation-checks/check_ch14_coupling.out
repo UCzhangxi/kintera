@@ -1,12 +1,11 @@
-[Warning] equilibrate_uv did not converge after 10 iterations.
-[Warning] equilibrate_uv did not converge after 10 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+[W1023 20:39:41.403769455 thermo_y.cpp:387] Warning: ThermoYImpl::forward: saturation adjustment failed in 6 cell(s); diag = -(100 * status + iterations) (function forward)
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
 build: Linux x86_64, Python 3.11.13, torch 2.10.0+cu128
 (a) DY->V (snapy moist_mixture.cpp:149) against rho*(1-sum y), rho*y: max rel err 1.97e-16 (tol 1e-14) PASS
 (b) V->Y after DY->V returns the mass fractions: max rel err 3.62e-16 (tol 1e-14) PASS
@@ -18,17 +17,17 @@ build: Linux x86_64, Python 3.11.13, torch 2.10.0+cu128
 (h) IdealMoist W->I formula against kintera VT->U at the same state: max rel err 4.95e-16 (tol 1e-12) PASS
 (i) IdealMoist W->T = p/(rho Rd f_eps) against the state temperature: max rel err 3.33e-16 (tol 1e-13) PASS
 (j) the options object snapy reads after ThermoYImpl::create holds the T=0 offsets (uref - cref Tref): True PASS
-(k0) diag per cell at the default max_iter 10 (negative = failed, D4 filed): -2010 -2010 8 7 6 4 INFO
+(k0) diag per cell at the default max_iter 100 (negative = failed, D4 filed): 11 9 9 7 5 4 INFO
 (k) adjustment moved mass fractions by up to 1.00e+00 of the largest (state was supersaturated) PASS
 (l) total density rho_dry + sum y' rho equals rho (dry row untouched): max rel err 2.22e-16 (tol 1e-14) PASS
 (m) element moles H, He, N, O, S per cell conserved: max rel err 3.69e-16 (tol 1e-13) PASS
-(n) snapy's next VU->T at fixed ie (meshblock.cpp:825) = linear-model T: max rel err 4.44e-16 (tol 1e-12) PASS
-(o) latent warming T' - T per cell [K]: 22.352 21.810 20.554 13.713 9.087 3.756 INFO
-(p) max relative humidity per cell at (T', p') after the adjustment: 1.000000 1.000001 1.000000 1.000000 1.000000 1.000000 INFO
+(n) snapy's next VU->T at fixed ie (meshblock.cpp:825) = linear-model T: max rel err 2.22e-16 (tol 1e-12) PASS
+(o) latent warming T' - T per cell [K]: 28.163 27.660 26.127 18.686 11.822 4.714 INFO
+(p) max relative humidity per cell at (T', p') after the adjustment: 1.000000 1.000000 1.000000 1.000000 1.000000 1.000000 INFO
 (q) max_iter = 1: 6 failed cell(s) counted, count reset to 0 on the second read PASS
 (r) failed cells: written state still conserves total density: max rel err 2.22e-16 (tol 1e-14) PASS
 (s) gas concentrations from Y->X then TPX->V equal rho_i/mu_i [mol/m^3]: max rel err 4.44e-16 (tol 1e-12) PASS
-(t) cloud concentrations from TPX->V against rho_i/mu_i: max rel diff 4.44e-16 (filed as D16; the driver's tendencies start from these) INFO
+(t) cloud concentrations from TPX->V against rho_i/mu_i: max rel diff 6.66e-16 (filed as D16; the driver's tendencies start from these) INFO
 (u) sum_i M_i delta_i = 0 for a stoichiometric change (mass hand-back): max rel err 2.13e-16 (tol 1e-14) PASS
-(v) ratio of the volumetric heat capacity the drivers pass (TV->cp) to the C_V of the fixed-U Jacobian: 1.3845 1.3845 1.3846 1.3869 1.3908 1.3961 EXPECTED-FAIL (S14-1)
+(v) ratio of the volumetric heat capacity the drivers pass (TV->cp) to the C_V of the fixed-U Jacobian: 1.3853 1.3853 1.3854 1.3880 1.3921 1.3968 EXPECTED-FAIL (S14-1)
 (w) split-step local error / dt^2 against [B,A]/2: rel diff 6.32e-03 at dt=1e-2, 6.30e-04 at dt=1e-3 (first order in dt; tol 2e-2 at 1e-2) PASS

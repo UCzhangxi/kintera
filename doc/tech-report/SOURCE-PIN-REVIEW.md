@@ -92,3 +92,55 @@ changed	{{< code tests/test_kinetics_base.cpp >}}	file
 changed	{{< code tests/test_thermo.cpp >}}	file
 code_pin.yml: 0d9f67f97d84 -> e357792d5063; run `check` to refresh _code_anchors.json
 ```
+
+## Measured CPU changes and strict regressions
+
+These are development source-build measurements, pending the committed fresh-clone audit.
+The old leg uses source `0d9f67f97d841147e23283d2dcdab302238d2c45`; the new leg uses
+`e357792d50639d68e9090b542edf038d2b029aa2` (installed Kintera 2.6.7, Torch 2.10.0).
+The exact tests are `python derivation-checks/check_ch4_uv.py`,
+`python derivation-checks/check_ch4_tp.py`, and `python derivation-checks/check_ch6_jacobian.py`.
+Each tightened check exits 1 at the old source and 0 at the new source. No tolerance was relaxed.
+
+| Check | Old | New | Unchanged acceptance |
+|---|---|---|---|
+| UV near-reference starts | 3/7 fail, including 302 K returning 302 K | 0/7 fail; 302 K returns 304.80206565 K; worst error 3.4e-13 K | converged and temperature error ≤1e-9 K |
+| TP cold starts 130–250 K | default cap 10; 12/13 fail | upstream default cap 100; 0/13 fail | zero nonconverged cells |
+| Reverse-rate Jacobian | worst relative error 5.859e9 | 8.915e-9 | ≤1e-8 |
+| EOS cloud at zero dry fraction | infinity | 4.4545330709435165 mol/m³; relative error zero | ≤1e-13 |
+| Current native test inventory | 49 entries | 52 entries | generated from configured source, not an assertion of test success |
+
+The 17 recorded derivation outputs contain 30 old EXPECTED-FAIL measurement lines and
+8 new ones (summary lines excluded): 21 now pass, and one removed `mmdot_t` API is
+explicitly REMOVED rather than counted as passing. Remaining findings are K16 (PXS),
+S7-1/S7-2 (photolysis), S10-2/S10-3/S10-4 (dense), S10-7 (interpolation), and S14-1
+(coupling). Their assertions and tolerances remain unchanged.
+
+| Script | Old EXPECTED-FAIL lines | New EXPECTED-FAIL lines |
+|---|---:|---:|
+| `check_ch3_eos.py` | 1 | 0 |
+| `check_ch3_condensate_entropy.py` | 2 | 0 |
+| `check_ch3_reference.py` | 2 | 0 |
+| `check_ch3_adiabat.py` | 1 | 0 |
+| `check_ch3_adiabat_slope.py` | 1 | 0 |
+| `check_ch3_pxs.py` | 3 | 1 |
+| `check_ch3_thermo_y.py` | 2 | 0 |
+| `check_ch4_tp.py` | 1 | 0 |
+| `check_ch4_uv.py` | 1 | 0 |
+| `check_ch6_rates.py` | 1 | 0 |
+| `check_ch6_jacobian.py` | 1 | 0 |
+| `check_ch6_evaporation.py` | 0 | 0 |
+| `check_ch07_photolysis.py` | 4 | 2 |
+| `check_ch9_budget_below1.py` | 3 | 0 |
+| `check_ch10_dense.py` | 5 | 3 |
+| `check_ch10_interp.py` | 1 | 1 |
+| `check_ch14_coupling.py` | 1 | 1 |
+
+The full old/new value diff is in [SOURCE-PIN-VALUES.md](SOURCE-PIN-VALUES.md).
+These numbers require chapter-owner review; Linfeng owns chapter 4, Jiheng and Xinyue
+chapter 14. Ownership for changed values in chapters 3, 6, 7, 9 and 10 needs routing;
+no author approval is claimed. Chapter 12 remains Tianhao's continuation, and Linfeng's
+chapter 5 acceptance and chapter 13 GPU continuation remain separate owner evidence.
+Historical provenance is intentionally retained at the source actually measured until
+the corresponding claim is independently rerun or its owner migrates it. Consequently,
+this draft does not yet represent a fully reconciled current-source narrative.

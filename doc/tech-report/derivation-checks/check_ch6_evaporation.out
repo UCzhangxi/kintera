@@ -1,4 +1,4 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
 (a) T = 80.0 K, K = 3.157972e+00 mol/m^3, kappa = 7.392000e+01 1/s, c_p = 0.7
 (a1) c_v = 0.5K: |rate - kappa c_p (K - c_v)|/ref: measured 1.739e-16  tol 1e-10  PASS
 (a2) c_v = K: |rate| / (kappa c_p K): measured 1.406e-16  tol 1e-12  PASS

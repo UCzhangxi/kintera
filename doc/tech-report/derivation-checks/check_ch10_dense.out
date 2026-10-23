@@ -1,25 +1,25 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
-(a) dsolve_lu, 300 random systems n=2..8: max normwise backward error 1.31e-16 (tol 64 eps = 1.4e-14); max forward error / cond 2.13e-16 vs numpy.linalg.solve (tol 1e-13) PASS
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
+(a) dsolve_lu, 300 random systems n=2..8: max normwise backward error 1.69e-16 (tol 64 eps = 1.4e-14); max forward error / cond 1.81e-16 vs numpy.linalg.solve (tol 1e-13) PASS
 (b1) dsolve_lu returns false on an exactly singular 2x2 (True) and true on a regular matrix scaled by 1e-300 (x err 2.8e-17) PASS
-(b2) rank-1 3x3 (numerically singular, round-off pivots): dsolve_lu returns True, max|x| = 3.5e+17; no fallback to psolve is triggered for this case INFO
-(c) ludcmp+lubksb, 300 random systems: max backward error 1.70e-16 (tol 1.4e-14); d * prod(diag U) = det(A) to 1e-10 in all cases: True PASS
+(b2) rank-1 3x3 (numerically singular, round-off pivots): dsolve_lu returns False, max|x| = 2.7e+00; no fallback to psolve is triggered for this case INFO
+(c) ludcmp+lubksb, 300 random systems: max backward error 1.55e-16 (tol 1.4e-14); d * prod(diag U) = det(A) to 1e-10 in all cases: True PASS
 (d) ludcmp scaled pivot ~1e-13: accepted at tol 0 (True), refused at tol 1e-12 (True); after scaling rows by 1e150, 1e-150, 1e100 the same verdicts (True, True) PASS
-(e) luminv vs numpy.linalg.inv rel 7.3e-16; leastsq (normal equations) vs numpy.linalg.lstsq 2.8e-16 (tol 1e-12) PASS
-(f) mmdot_t against a b^T: max error 9.70e-01 (tol 1e-14) EXPECTED-FAIL (S10-1, already in the report Limits)
-(g1) psolve n=4 full rank rel err 3.9e-13; rank-3 4x4 vs pinv (cut sigma/sigma_max 1e-6) 1.7e-14 (tol 1e-8) PASS
-(g2) psolve vs pinv, worst of 5 well-conditioned matrices per n: n=6 1.1e-13, n=8 3.1e-12, n=10 2.6e-02, n=12 9.9e-01, n=16 1.0e+00 (tol 1e-8) EXPECTED-FAIL (S10-2: 100 Jacobi rotations in total)
+(e) luminv vs numpy.linalg.inv rel 1.1e-15; leastsq (normal equations) vs numpy.linalg.lstsq 6.1e-16 (tol 1e-12) PASS
+(f) mmdot_t: REMOVED (absence verified in pinned core.h; no numerical PASS claimed)
+(g1) psolve n=4 full rank rel err 3.9e-13; rank-3 4x4 vs pinv (cut sigma/sigma_max 1e-6) 1.6e-14 (tol 1e-8) PASS
+(g2) psolve vs pinv, worst of 5 well-conditioned matrices per n: n=6 1.0e-13, n=8 3.1e-12, n=10 2.6e-02, n=12 9.9e-01, n=16 1.0e+00 (tol 1e-8) EXPECTED-FAIL (S10-2: 100 Jacobi rotations in total)
 (g3) psolve on A scaled by s (exact answer unchanged): s=1e-03 8.5e-08, s=1e-06 2.5e-01, s=1e-07 8.7e-01, s=1e-09 8.7e-01 (tol 1e-8) EXPECTED-FAIL (S10-3: absolute 1e-12 off-diagonal stop)
-(h1) leastsq_kkt (general), 60 random 6x4 problems with 5 inequalities (x = 0 feasible): status counts {0: 57, 2: 3}; converged cases: max rel diff to brute-force optimum 2.4e-15 (tol 1e-9) PASS
+(h1) leastsq_kkt (general), 60 random 6x4 problems with 5 inequalities (x = 0 feasible): status counts {0: 57, 2: 3}; converged cases: max rel diff to brute-force optimum 1.4e-15 (tol 1e-9) PASS
 (h1c) the 3 non-converged problems rerun with max_iter=1000: statuses [2, 2, 2], distance of the returned x to the optimum 0.22, 2.29, 0.02 (every convex problem with x = 0 feasible should converge) EXPECTED-FAIL (S10-4: active-set cycling)
-(h2) KKT residuals of those results: stationarity 2.0e-15, dual infeasibility 0.0e+00, complementarity 8.2e-15, primal infeasibility 8.9e-16 (tol 1e-9) PASS
+(h2) KKT residuals of those results: stationarity 2.0e-15, dual infeasibility -0.0e+00, complementarity 2.2e-14, primal infeasibility 2.4e-15 (tol 1e-9) PASS
 (h3) one equality + two inequalities: status 0, diff to brute force 2.2e-16 (tol 1e-10) PASS
-(h4) column scaling 1e-6..1e8 and row scaling 1e-7..1e5: status 0,0, rel diff 1.6e-16 (tol 1e-9) PASS
+(h4) column scaling 1e-6..1e8 and row scaling 1e-7..1e5: status 0,0, rel diff 1.9e-16 (tol 1e-9) PASS
 (h5) iteration cap: full run status 0 in 3 iterations; with max_iter=1 status 2 (2 expected when more than 1 iteration is needed) PASS
-(i1) leastsq_kkt_feasible_origin, 60 random square problems, 5 generic inequalities, d >= 0: status counts {0: 59, 2: 1}; converged cases: max rel diff to brute force 5.2e-14 (tol 1e-9) PASS
-(i1c) the 1 non-converged problems rerun with max_iter=1000: statuses [2] EXPECTED-FAIL (S10-5: active-set cycling, policy used by equilibrate_tp/uv)
+(i1) leastsq_kkt_feasible_origin, 60 random square problems, 5 generic inequalities, d >= 0: status counts {0: 60}; converged cases: max rel diff to brute force 5.3e-14 (tol 1e-9) PASS
+(i1c) the 0 non-converged problems rerun with max_iter=1000: statuses [] PASS
 (i2) x = 0 infeasible (d_0 = -1e-3): status 1 (1 expected) PASS
 (i3) single-coefficient active row: x_0 = 0.3 (bound 0.3 exactly) PASS
-(j) constrained_newton_step: bounds with slack keep the direct solve (status 0, iters 1, diff 1.1e-16); zero-slack bounds crossed -> KKT (status 0, diff to brute force 1.4e-17) (tol 1e-10) PASS
+(j) constrained_newton_step: bounds with slack keep the direct solve (status 0, iters 1, diff 1.1e-16); zero-slack bounds crossed -> KKT (status 0, diff to brute force 5.6e-17) (tol 1e-10) PASS
 Warning: leastsq_kkt maximum number of iterations reached (50).
 Warning: leastsq_kkt maximum number of iterations reached (50).
 Warning: leastsq_kkt maximum number of iterations reached (50).
@@ -27,6 +27,4 @@ Warning: leastsq_kkt maximum number of iterations reached (1000).
 Warning: leastsq_kkt maximum number of iterations reached (1000).
 Warning: leastsq_kkt maximum number of iterations reached (1000).
 Warning: leastsq_kkt maximum number of iterations reached (1).
-Warning: leastsq_kkt maximum number of iterations reached (50).
-Warning: leastsq_kkt maximum number of iterations reached (1000).
 Error: x = 0 violates constraint 0 (d = -0.001, max |d| = 1).

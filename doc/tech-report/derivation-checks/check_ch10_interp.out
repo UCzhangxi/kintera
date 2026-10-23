@@ -1,4 +1,4 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
 (a) bilinear table, increasing x and decreasing y grids, 200 interior queries: max error 1.8e-15, 3.6e-15 (tol 1e-12) PASS
 (b) all 20 grid nodes, including the last node of each axis: max error 0.0e+00 (tol 1e-13) PASS
 (c) outside the grid: extrapolate=False gives the clamped-coordinate value (err 0.0e+00); extrapolate=True continues the end cells linearly, exact for a bilinear table (err 8.9e-15) (tol 1e-12) PASS

@@ -26,7 +26,6 @@ int k_lu(double* A, double* b, int n, double tol) {
 int k_luminv(double* Y, double* A, int n) {
   int indx[64]; int d = ludcmp(A, indx, n); if (d != 0) luminv(Y, A, indx, n); return d; }
 void k_leastsq(double* b, const double* a, int n1, int n2) { leastsq(b, a, n1, n2); }
-void k_mmdot_t(double* r, const double* a, const double* b, int n1, int n2, int n3) { mmdot_t(r, a, b, n1, n2, n3); }
 void k_psolve(double* b, const double* A, int n) { psolve(b, A, n); }
 int k_kkt(double* b, const double* a, const double* c, const double* d, int n1, int n2, int n3, int neq,
           int* it, int policy) {
@@ -165,9 +164,11 @@ print(f"(e) luminv vs numpy.linalg.inv rel {e1:.1e}; leastsq (normal equations) 
 
 # (f) mmdot_t
 a = rng.normal(size=(3, 4)); bm = rng.normal(size=(2, 4)); r = np.zeros((3, 2))
-L.k_mmdot_t(ptr(r), ptr(a), ptr(bm), 3, 4, 2)
-e = np.max(np.abs(r - a @ bm.T))
-print(f"(f) mmdot_t against a b^T: max error {e:.2e} (tol 1e-14) {'PASS' if e < 1e-14 else 'EXPECTED-FAIL (S10-1, already in the report Limits)'}")
+# The selected public pin removes this unused API. Do not rename removal to a
+# numerical PASS or substitute a different implementation into the old test.
+with open(os.path.join(WT, "src/math/core.h")) as header:
+    assert "void mmdot_t(" not in header.read(), "mmdot_t reappeared; restore its numerical test"
+print("(f) mmdot_t: REMOVED (absence verified in pinned core.h; no numerical PASS claimed)")
 
 
 # (g) psolve against numpy pinv

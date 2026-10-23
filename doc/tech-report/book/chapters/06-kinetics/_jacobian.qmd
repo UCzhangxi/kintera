@@ -2,7 +2,7 @@
 
 <!-- PROVENANCE
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
-sources: src/kinetics/kinetics.hpp, src/kinetics/kinetics.cpp, src/kinetics/jacobian_kinetics.hpp, src/kinetics/jacobian_mass_action.cpp
+sources: src/kinetics/kinetics.hpp, src/kinetics/kinetics.cpp, src/kinetics/jacobian_kinetics.hpp
 status: draft
 author: XinyueWang05
 reviewer:
@@ -122,11 +122,12 @@ The figure of the Jacobian's sparsity is not provided: the figure module is not 
 | declaration | {{< code src/kinetics/kinetics.hpp KineticsImpl >}} | `KineticsImpl::jacobian` | always |
 | Jacobian | {{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}} | `jacobian` | `evolve_temperature` |
 | rate constants | {{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}} | `forward_with_rate_constants` | always |
-| unused helper | {{< code src/kinetics/jacobian_mass_action.cpp KineticsImpl::_jacobian_mass_action >}} | `_jacobian_mass_action` | never called |
+| mass-action derivative | {{< code src/kinetics/kinetics.cpp KineticsImpl::jacobian >}} | `jacobian` | explicit rate constants at absent reactants |
 
 : Code map of the Jacobian. {#tbl-ch06-jacobian-code}
 
-Hypothesis from reading the sources, not proven: `_jacobian_mass_action` has no caller, and the free functions
+The mass-action derivative is implemented in `KineticsImpl::jacobian`; there is no separate
+`_jacobian_mass_action` helper at this pin. The free functions
 declared in {{< code src/kinetics/jacobian_kinetics.hpp >}} (`jacobian_mass_action`, `jacobian_evaporation`) have no
 definition at the pin.
 

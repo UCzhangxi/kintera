@@ -134,7 +134,7 @@ run record is attached in this draft (missing evidence).
 
 ### Limits
 
-- `mmdot_t` is not an API at this pin ({{< code src/math/core.h >}}). Its removal does not
+- `mmdot_t` is not an API at this pin ({{< code src/math/core.h >}}).[^ch10-dense-k20] Its removal does not
   establish numerical correctness of a transpose-product implementation; check (f) records absence.
 - `swap_cols` carries the comment "no-op trick won't work; do normal swap" next to a comma expression. Read under
   C++17 sequencing rules, the expression does swap the two columns; this is a hypothesis, not tested. It has no

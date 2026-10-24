@@ -318,7 +318,7 @@
       "source_context": "                               : std::numeric_limits<double>::max();\n  TORCH_CHECK(\n      (torch::isfinite(conc).all() & torch::isfinite(logkc).all()).item<bool>(),\n      \"General evaporation requires finite concentrations \"\n      \"and a finite log saturation quotient\");\n",
       "classification": "physical_guard",
       "policy": "finite_state",
-      "reason": "General evaporation rejects nonfinite state; tested finite branch here, nonfinite cases are checked separately.",
+      "reason": "General evaporation rejects nonfinite concentrations or log saturation quotients. This row has no qualifying executable evidence yet.",
       "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
     },
     {

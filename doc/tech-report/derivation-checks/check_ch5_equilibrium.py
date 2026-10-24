@@ -18,7 +18,7 @@ f. phase rule: the three-phase system of line d has N = 6 species, C = 2 element
    and J is singular (P > C). Asserts sigma_min(J) < 1e-12 at the start state and over 200 random states (seed 0);
    kintera's status on it is decided by rounding (3 or 4), so it is printed, not tested;
 g. reference pressure of the kinetics: K_c = k_f/k_r of O + O2 <=> O3 at 1500 K from Kinetics with the default
-   Pref (101325 Pa) and with Pref = 1e5 Pa, against the 1-bar NASA-9 value; the default is low by (1e5/101325)^(-dn).
+   Pref (1e5 Pa at the pin) and with Pref = 1e5 Pa, against the 1-bar NASA-9 value; a Pref p changes it by (1e5/p)^(-dn).
 """
 import math
 import os

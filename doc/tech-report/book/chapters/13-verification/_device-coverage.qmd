@@ -25,7 +25,7 @@ features that the suite checks on the CPU alone: the Kessler-form evaporation an
 
 **Activation.** A Python test runs on CUDA only if it moves its tensors there.
 
-**Guarantee / limits.** 14 of 40 Python test files use CUDA; Kessler evaporation and the pressure switch are CPU-only.
+**Guarantee / limits.** 20 of 43 Python test files name CUDA; Kessler evaporation and the pressure switch are CPU-only.
 
 **Evidence.** See the Tests layer below.
 :::
@@ -40,12 +40,15 @@ No numerical method. The inventory is built in two steps:
 
 1. Every C++ test built on `DeviceTest` ({{< code tests/device_testing.hpp DeviceTest >}}) runs on CPU and CUDA
    (@sec-ch13-suite).
-2. A Python test file counts as covering CUDA when it names the CUDA device. Of the 40 Python test files, 14 do:
-   `test_atm2d.py`, `test_cuda_workspace.py`, `test_evaporation_general.py`, `test_kinetics_base_units.py`,
-   `test_kinetics_null_options.py`, `test_reaction_equilibrium.py`, `test_saturation_failure_reported.py`,
-   `test_species_registry.py`, `test_thermo_default_nucleation.py`, `test_thermo_none_nucleation.py`,
-   `test_thermo_none_nucleation_after_reset.py`, `test_thermo_x_warm_start_shape.py`,
-   `test_thermo_y_none_nucleation.py` and `test_warm_start_shape.py`.[^ch13-coverage-grep]
+2. A Python test file counts in this inventory when it contains the case-sensitive string `cuda`, even in a
+   comment or a skipped test. Of the 43 Python test files, 20 do:
+   `test_atm2d.py`, `test_cuda_workspace.py`, `test_evaporation_general.py`,
+   `test_inline_svp.py`, `test_k18_contract.py`, `test_kinetics_base_units.py`,
+   `test_kinetics_null_options.py`, `test_kkt_cycling_uv.py`, `test_mass_action_zero_concentration.py`,
+   `test_rate_constant_ddC.py`, `test_reaction_equilibrium.py`, `test_refactor_phase1.py`,
+   `test_saturation_failure_reported.py`, `test_species_registry.py`, `test_thermo_default_nucleation.py`,
+   `test_thermo_none_nucleation.py`, `test_thermo_none_nucleation_after_reset.py`, `test_thermo_x_warm_start_shape.py`,
+   `test_thermo_y_none_nucleation.py`, `test_warm_start_shape.py`.[^ch13-coverage-grep]
 
 TODO: a figure of the coverage matrix (feature by device).
 
@@ -76,9 +79,10 @@ the kinetics step on both devices and found agreement at round-off. It is an **u
 is case-specific and is not part of kintera or of this report, so a reader cannot re-run it from what is committed.
 It is recorded only as a pointer to the gap, not as evidence of CUDA correctness.[^ch13-coverage-probe]
 
-[^ch13-coverage-grep]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `grep -l "cuda" test*.py` in
-`tests/`,
-which lists the 14 files; GNU grep.]
+[^ch13-coverage-grep]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; run:
+`python -P src/kintera_report/ch13/runs/device_inventory.py "$KINTERA_REPO" --check src/kintera_report/ch13/runs/device_inventory.json`;
+43 files, 20 containing `cuda`, 23 without; committed file list in `src/kintera_report/ch13/runs/device_inventory.json`.
+Equivalent to `grep -l "cuda" test*.py` in `tests/`; a static inventory, not a CUDA execution result.]
 
 [^ch13-coverage-probe]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML inputs of
 `tests/test_evaporation_kessler.py` and `tests/test_coagulation_pressure_switch.py`, 64 cells; run: `python -P
@@ -93,7 +97,7 @@ below $10^{-15}$.]
   pass the suite. The reproducible fix is a CUDA case in each of the two test files, which does not exist at the pin.
 :::
 
-- The inventory counts a file as CUDA-covering if it names the device anywhere. Which assertions inside it run on
+- The inventory counts a file if it contains `cuda` anywhere, including comments. Which assertions inside it run on
   CUDA is not tabulated yet. TODO.
-- 26 of 40 Python test files name no CUDA device. Which of their features also run on CUDA through another test is
+- 23 of 43 Python test files name no CUDA device. Which of their features also run on CUDA through another test is
   not tabulated. TODO.

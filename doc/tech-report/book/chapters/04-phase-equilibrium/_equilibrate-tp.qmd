@@ -24,7 +24,7 @@ iterations. The default `max-iter` is 100; explicitly reducing it to 10 can fail
 
 **Placement.** `ThermoX` forward, per cell, on CPU or CUDA.
 
-**Activation.** Whenever the options list nucleation reactions; YAML `max-iter` (10) and `ftol` ($10^{-6}$).
+**Activation.** Whenever the options list nucleation reactions; YAML `max-iter` (100) and `ftol` ($10^{-6}$).
 
 **Guarantee / limits.** Mole fractions stay non-negative; failures are reported in the diagnostic, not raised.
 

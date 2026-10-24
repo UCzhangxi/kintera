@@ -1,0 +1,14 @@
+diff --git a/src/thermo/eval_uhs.cpp b/src/thermo/eval_uhs.cpp
+index 61f9cd7..3f9b883 100644
+--- a/src/thermo/eval_uhs.cpp
++++ b/src/thermo/eval_uhs.cpp
+@@ -264,7 +264,7 @@ torch::Tensor eval_intEng_R(torch::Tensor temp, torch::Tensor conc,
+   auto cref_R = torch::tensor(op->cref_R(), temp.options());
+   auto uref_R = torch::tensor(op->uref_R(), temp.options());
+ 
+-  auto result = uref_R + temp.unsqueeze(-1) * cref_R + intEng_R_extra;
++  auto result = uref_R * torch::arange(conc.size(-1), temp.options()).lt(2) + temp.unsqueeze(-1) * cref_R + intEng_R_extra;
+   if (nasa9_on(op)) {
+     auto n9 = eval_nasa9(temp, op, conc.size(-1));
+     // NASA-9 internal energy referenced to T0: uref + T0*cref + (h(T)-h(T0)) -
+

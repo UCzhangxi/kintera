@@ -117,7 +117,8 @@ run('paddle-migration', 'python environment/paddle_migration.py', D)
 commands = {
  'guard-effects': ('python invariants/check_guard_effects.py', D),
  'invariants': ('python invariants/check_invariants.py --output '+str(E/'invariants.json'), D),
- 'guard-coverage': ('python invariants/inventory_guards.py '+str(P)+' --check --require-effects', D),
+ 'guard-operation-effects': ('python invariants/probe_guard_operations.py '+str(P)+' --output '+str(E/'guard-operations.json')+' --build '+str(E/'guard-operation-build'), D),
+ 'guard-coverage': ('python invariants/inventory_guards.py '+str(P)+' --check --require-effects --effects '+str(E/'guard-operations.json'), D),
  'guard-inventory': ('python invariants/inventory_guards.py '+str(P)+' --check', D),
  'figure-values': ('python tools/check_figure_values.py --out '+str(E/'figure-values'), D),
  'cpp-tests': ("ctest -V -R '\\.release'", P/'build/tests'),

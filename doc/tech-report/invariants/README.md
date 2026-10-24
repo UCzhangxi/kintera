@@ -82,3 +82,43 @@ limited non-dispatch result must not be generalized to the other report cases.
 The separate `--require-effects` gate exits 1 while per-occurrence evidence is
 incomplete. The one-command audit includes this gate so inventory completeness
 cannot be mistaken for verified physical coverage.
+
+### Reviewed classification and extracted native operations
+
+`guard-classification.json` / `.md` classify all 250 original candidates and
+17 additional unique hits (267 total). The extra search used
+`(1\.?0?e-|1\.e-|1e-)|\b(?:epsilon|tiny|floor)\b|[?:].*0\.` and manual review
+of constrained Newton, phase-equilibrium and KKT conditions. Literal search
+also finds units, comments and tolerances; those are not automatically species
+floors. The original hashed inventory remains unchanged.
+
+There are 138 applicable physical/numerical operations and 129 excluded
+comments, diagnostics, dimensions, model selections, stoichiometric definitions
+or uses of an already inventoried bound. These are **not 138 concentration
+floors**. The row descriptions distinguish amounts from derivative denominators,
+rate coefficients, tolerances and state masks.
+
+```sh
+python invariants/probe_guard_operations.py .reproduce/sources/kintera \
+  --output .reproduce/logs/guard-operations.json \
+  --build .reproduce/logs/guard-operation-build
+python invariants/test_guard_coverage.py
+python invariants/inventory_guards.py .reproduce/sources/kintera --check \
+  --require-effects --effects .reproduce/logs/guard-operations.json
+```
+
+The first command extracts 43 clamp calls from the pinned native source,
+compiles their C++/LibTorch operations, binds the intermediate physical quantity,
+and compares active/boundary/inactive binary64 inputs **exactly**, including
+adjacent representable boundary values. It verifies all 137 source-file hashes
+before compiling. The gas-floor option is explicitly bound to its documented
+1e-20 default; interpolation uses four coordinates; dtype-dependent `tiny`
+uses the binary64 branch. It does not claim execution of the containing solver,
+full-report branch reachability, float32 or CUDA coverage. Other predicates and
+state transitions need additional source-bound or whole-function checks.
+
+The coverage command still **exits 1: 43 measured, 95 unresolved**. Classification
+alone produces 0 measured / 138 unresolved. Hand-transcribed operation fixtures
+are not credited as native-source evidence. Negative controls reject an omitted
+original candidate and a changed observed value. The unchanged 1000-step
+invariants and actual-source mutations remain the full-solver checks.

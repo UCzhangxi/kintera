@@ -47,7 +47,7 @@ def run(name, command, cwd=D, timeout=600):
             code = 124
     result = dict(name=name, command=command, cwd=str(cwd), exit=code,
                   seconds=round(time.monotonic()-start, 2), log=str(log))
-    (E / (name+'.json')).write_text(json.dumps(result, indent=2))
+    (E / (name+'.execution.json')).write_text(json.dumps(result, indent=2))
     print(json.dumps(result), flush=True)
     seen[key] = result
     return result

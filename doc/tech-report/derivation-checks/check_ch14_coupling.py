@@ -10,6 +10,11 @@ Mirrored snapy lines (snapy f93b1cf1):
 Oracles are numpy re-implementations of the textbook relations, never the call under test.
 """
 import warnings
+import argparse
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--max-iter", type=int, help="explicit control of the saturation iteration cap")
+args = parser.parse_args()
 
 import numpy as np
 import yaml
@@ -29,6 +34,8 @@ with open(DECK) as f:
 comp = {s["name"]: s["composition"] for s in card["species"]}
 
 op = kintera.ThermoOptions.from_yaml(DECK)
+if args.max_iter is not None:
+    op.max_iter(args.max_iter)
 # read the card values before ThermoY.reset() shifts uref in place
 cref = np.array(op.cref_R(), dtype=float)
 uref = np.array(op.uref_R(), dtype=float)
@@ -102,7 +109,7 @@ rho_t, ie_t, y_t = tr(rho), tr(U), tr(yfrac.copy())
 dry_before = rho * (1 - yfrac.sum(0))           # hydro_u[IDN] is not touched by step (6)
 diag = torch.zeros(T.size, 1, dtype=torch.float64)
 th.forward(rho_t, ie_t, y_t, True, diag)
-print("(k0) diag per cell at the default max_iter " + str(op.max_iter()) + " (negative = failed, D4 filed): "
+print("(k0) diag per cell at the " + ("default" if args.max_iter is None else "explicit") + " max_iter " + str(op.max_iter()) + " (negative = failed): "
       + " ".join(f"{v:.0f}" for v in diag.numpy().ravel()) + " INFO")
 y1 = y_t.numpy()
 rho_i1 = np.vstack([dry_before, y1 * rho])      # snapy: hydro_u[ICY:] = yfrac * rho (meshblock.cpp:837)

@@ -355,8 +355,8 @@ committed check.]
   methods use the ideal-gas form $\ln(\mathcal R T)$. The compressibility terms of a non-ideal equation of state are
   not used in these tests, so saturation is checked as if the gas were ideal.
 - **Only nucleation reactions are adjusted**, as above.
-- **The tolerance holds only after convergence.** With the default `max-iter` of 10, cold starts far from
-  equilibrium fail and leave residuals far above `ftol` (@sec-ch04-equilibrate-tp, Limits).
+- **The tolerance holds only after convergence.** With an explicitly reduced `max-iter` of 10, cold starts far from
+  equilibrium fail and leave residuals far above `ftol`; the default is now 100 (@sec-ch04-equilibrate-tp, Limits).
 :::
 
 - Condensates are pure phases with unit activity. Solutions of condensates are not modelled.

@@ -1,7 +1,7 @@
 ## Kinetics after the dynamics step (`reactions`) {#sec-ch14-kinetics}
 
 <!-- PROVENANCE
-pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70; paddle@a4cac94451ab5fc800735edb00180e98859a20c2
+pin: kintera@e357792d50639d68e9090b542edf038d2b029aa2 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70; paddle@a4cac94451ab5fc800735edb00180e98859a20c2
 sources: src/kinetics/kinetics.cpp, src/kinetics/evolve_implicit_dispatch.cpp, src/species.cpp; snapy examples/run_hydro.cpp, examples/jupiter_evap_precip_1d.cpp; paddle paddle/evolve_kinetics.py
 status: draft
 author: XinyueWang05
@@ -78,7 +78,7 @@ temperature column and the rates are evaluated at the driver's $T$ over the whol
 The check feeds the driver's concentrations of the adjusted Jupiter state to these relations.[^ch14-check-kin]
 
 - "(s) gas concentrations from Y->X then TPX->V equal rho_i/mu_i [mol/m^3]: max rel err 4.44e-16 (tol 1e-12) PASS"
-- "(t) cloud concentrations from TPX->V against rho_i/mu_i: max rel diff 4.44e-16 (filed as D16; the driver's tendencies start from these) INFO"
+- "(t) cloud concentrations from TPX->V against rho_i/mu_i: max rel diff 6.66e-16 (filed as D16; the driver's tendencies start from these) INFO"
 - "(u) sum_i M_i delta_i = 0 for a stoichiometric change (mass hand-back): max rel err 2.13e-16 (tol 1e-14) PASS"
 
 <!-- equation-check: eq-ch14-kinetics-mass check_ch14_coupling.py (u) -->
@@ -136,7 +136,7 @@ closed cell at fixed density does not undergo. Both snapy drivers pass `TV->cp` 
 (`cp_vol` at [`snapy run_hydro.cpp:181`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L181), passed to `jacobian` at [`:187`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/run_hydro.cpp#L187); `cp_vol` at [`snapy jupiter_evap_precip_1d.cpp:250`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/jupiter_evap_precip_1d.cpp#L250), passed to `jacobian` at [`:254`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/examples/jupiter_evap_precip_1d.cpp#L254)),
 which makes the feedback term too small by $C_P/C_V$. The check measures that ratio on the adjusted Jupiter state:
 
-- "(v) ratio of the volumetric heat capacity the drivers pass (TV->cp) to the C_V of the fixed-U Jacobian: 1.3845 1.3845 1.3846 1.3869 1.3908 1.3961 EXPECTED-FAIL (S14-1)"
+- "(v) ratio of the volumetric heat capacity the drivers pass (TV->cp) to the C_V of the fixed-U Jacobian: 1.3853 1.3853 1.3854 1.3880 1.3921 1.3968 EXPECTED-FAIL (S14-1)"
 
 <!-- equation-check: eq-ch14-kinetics-cv check_ch14_coupling.py (v) -->
 
@@ -201,10 +201,10 @@ snapy's `Scalar` module can hold a `Kinetics` module, built with `KineticsImpl::
 [^ch14-s14-1]: [source: the round-2 derivation spec, suspect S14-1 (snapy side, latent at
     snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70); UCzhangxi/kintera#54 rows K17 to K29 contain no entry for it.]
 
-[^ch14-check-kin]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and random
+[^ch14-check-kin]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; deck: `tests/jupiter.yaml` and random
     $3 \times 3$ operators inside the script; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
-    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.7; output:
     `derivation-checks/check_ch14_coupling.out`, lines (s) to (w).]
 
 kintera tests the pieces (@sec-ch06). snapy builds both example drivers, but no snapy test registered at its pin
@@ -215,7 +215,7 @@ was found that runs them; this was checked by searching snapy's test list, not b
 ::: {.callout-warning title="Limits"}
 Version floors. snapy requires kintera 2.6.3 or later (`find_package` in [`snapy CMakeLists.txt:97-104`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/CMakeLists.txt#L97-L104); `requires` in [`snapy pyproject.toml:2-7`](https://github.com/chengcli/snapy/blob/f93b1cf12819be2d310f8aa84fb74cc627e9ac70/pyproject.toml#L2-L7)). The Kessler
 form and the pressure switch of @sec-ch06 exist at the kintera pin, release
-2.6.5, and not in releases 2.6.3 or 2.6.4[^ch14-floor-src]. An input that uses them needs kintera 2.6.5, which the
+2.6.7, and require at least 2.6.5 rather than releases 2.6.3 or 2.6.4[^ch14-floor-src]. An input that uses them needs kintera 2.6.5, which the
 floor does not enforce. What an older kintera does with these keys is not tested.
 :::
 
@@ -228,10 +228,11 @@ validate a complete coupled CRM simulation.
 - The drivers pass $C_P$ where @eq-ch14-kinetics-cv needs $C_V$ (suspect S14-1, latent, line (v)); the derivation
   above settles which one is right.
 
-Open questions, not tested:
+Remaining integration limits:
 
 - The snapy drivers drop the dry species by slicing off the first column. That agrees with the kinetics species
-  list only if every other thermodynamic species is a kinetics species, in the same order.
+  list only if every other thermodynamic species is a kinetics species, in the same order. The committed Paddle
+  migration cases test this arrangement on their card; arbitrary species permutations are not validated.
 - paddle's `crm` script calls `evolve_kinetics(block, kinet, thermo_x)` ([`paddle crm.py:73`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/paddle/crm.py#L73)), which does not match the
   six-argument signature of `evolve_kinetics` ([`paddle evolve_kinetics.py:7-65`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/paddle/evolve_kinetics.py#L7-L65)).
 

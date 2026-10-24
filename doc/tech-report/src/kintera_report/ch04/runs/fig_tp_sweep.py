@@ -13,7 +13,7 @@ import kintera as kt
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # common.py sits next to this script
 from common import VERSIONS, card_with, jupiter, jupiter_cold_cells, log_rh_x
 
-out = {"provenance": {"sha": "0d9f67f97d841147e23283d2dcdab302238d2c45", "deck": "tests/jupiter.yaml",
+out = {"provenance": {"sha": "e357792d50639d68e9090b542edf038d2b029aa2", "deck": "tests/jupiter.yaml",
                       "cells": "T = 130..250 K step 10, p = 1e5 Pa, x(H2O, NH3, H2S) = 3e-3, 3e-4, 1e-4, rest dry, "
                                "no condensate",
                       "command": "KINTERA_REPO=<kintera checkout> python -P src/kintera_report/ch04/runs/fig_tp_sweep.py "

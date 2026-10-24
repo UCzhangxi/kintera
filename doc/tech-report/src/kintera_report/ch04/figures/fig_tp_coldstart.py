@@ -1,8 +1,8 @@
 """Cold-start saturation adjustment at fixed temperature and pressure (@sec-ch04-equilibrate-tp).
 
-(a) outer iterations `equilibrate_tp` needs to converge with max-iter 60, against the default max-iter of 10;
+(a) outer iterations `equilibrate_tp` needs to converge with max-iter 60, against the explicit reduced max-iter of 10;
 (b) the largest remaining ln RH when max-iter is 10. Data: src/kintera_report/ch04/data/tp_coldstart.json, written by
-a run of kintera at kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (its `provenance` field gives the
+a run of kintera at kintera@e357792d50639d68e9090b542edf038d2b029aa2 (its `provenance` field gives the
 deck, cells, command and versions).
 """
 import json
@@ -18,7 +18,7 @@ def make_fig():
     a, b = d["max_iter_60"], d["max_iter_10"]
     fig, (ax1, ax2) = fs.new_figure("double", 2.4, 1, 2)
     ax1.plot(a["T"], a["diag"], "o-", color=fs.GREEN, label="iterations needed (max-iter 60)")
-    ax1.axhline(10, color=fs.VERMILLION, ls="--", label="default max-iter 10")
+    ax1.axhline(10, color=fs.VERMILLION, ls="--", label="reduced max-iter 10")
     ax1.set_xlabel("temperature $T$ [K]")
     ax1.set_ylabel("outer iterations [-]")
     ax1.legend(loc="upper right")

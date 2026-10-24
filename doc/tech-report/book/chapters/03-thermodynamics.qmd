@@ -33,9 +33,9 @@ evaluated pointwise is exact. {#tbl-ch03-schemes}
 {{< include 03-thermodynamics/_adiabat.qmd >}}
 
 <!-- reader glossary notes -->
-[^rg-4630a13a9883]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)
+[^rg-4630a13a9883]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L172-L176)
 
 [^rg-5d6bd36f1041]: u0_R — reference internal energy divided by the gas constant, in K; default 0; stored in `species_uref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L178-L182)
 
-[^rg-5d34b8be2a13]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+[^rg-5d34b8be2a13]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L231-L246)
 <!-- end reader glossary notes -->

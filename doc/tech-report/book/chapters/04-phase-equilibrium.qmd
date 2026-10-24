@@ -1,7 +1,7 @@
 # Phase equilibrium of multiple condensables {#sec-ch04}
 
 <!-- PROVENANCE
-pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+pin: kintera@e357792d50639d68e9090b542edf038d2b029aa2 (main)
 sources: src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h, src/thermo/thermo_x.cpp, src/thermo/thermo_y.cpp,
   src/thermo/thermo_options.cpp, src/thermo/nucleation.cpp, src/math/leastsq_kkt.h
 status: draft
@@ -33,7 +33,7 @@ make_fig()
 | scheme | option | default | main test |
 |---|---|---|---|
 | @sec-ch04-conditions | none | always | `test_saturation_adjustment_nh4sh.py` |
-| @sec-ch04-equilibrate-tp | `max-iter`, `ftol` | 10, $10^{-6}$ | `test_equilibrate_tp_max_iter` |
+| @sec-ch04-equilibrate-tp | `max-iter`, `ftol` | 100, $10^{-6}$ | `test_equilibrate_tp_max_iter` |
 | @sec-ch04-equilibrate-uv | `uv-solver` | `auto` | `test_equilibrate_uv_gain.py` |
 | @sec-ch04-active-set | none | always | no direct test |
 | @sec-ch04-warm-start-failures | `warm_start` argument | `False` | `test_saturation_failure_reported.py` |

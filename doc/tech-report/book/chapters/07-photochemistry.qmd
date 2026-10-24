@@ -51,5 +51,5 @@ The dependency map of the schemes is not provided: the figure module is not writ
     booked with the equation's products) and K23 (later reactions read on the first wavelength grid).]
 
 <!-- reader glossary notes -->
-[^rg-8146dd1c4e5b]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+[^rg-8146dd1c4e5b]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics_options.cpp#L66-L69)
 <!-- end reader glossary notes -->

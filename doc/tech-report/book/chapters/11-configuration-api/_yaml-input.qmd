@@ -146,13 +146,13 @@ here: this draft has not run the tests (missing evidence). The same file also ch
 - The NASA-9 mid temperature is fixed at $1000\,\mathrm{K}$ and cannot be set from input.
 
 <!-- reader glossary notes -->
-[^rg-82d1ff5a6255]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)
+[^rg-82d1ff5a6255]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L172-L176)
 
 [^rg-111953f81818]: u0_R — reference internal energy divided by the gas constant, in K; default 0; stored in `species_uref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L178-L182)
 
 [^rg-798daee4aacf]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
 
-[^rg-fde49814f26d]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics.hpp#L62)
+[^rg-fde49814f26d]: Pref — reference pressure in Pa; kinetics and thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.hpp#L62)
 
 [^rg-8435ed329db5]: name — species name, the key every other block uses; required; stored in `species_names`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L156)
 

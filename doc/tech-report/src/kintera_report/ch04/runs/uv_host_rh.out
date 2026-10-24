@@ -1,0 +1,10 @@
+[Warning] equilibrate_uv did not converge after 2 iterations.
+[Warning] equilibrate_uv did not converge after 2 iterations.
+[Warning] equilibrate_uv did not converge after 2 iterations.
+[Warning] equilibrate_uv did not converge after 2 iterations.
+[Warning] equilibrate_uv did not converge after 2 iterations.
+(a) one vapour, kkt: cells 25, diag [3.0, 4.0], max ln RH +9.2e-07, max |ln RH| with condensate 9.2e-07, check passes
+(a) one vapour, auto: cells 25, diag [5.0], max ln RH +2.5e-14, max |ln RH| with condensate 2.5e-14, check passes
+(b) jupiter.yaml cold start, kkt, max-iter 30: cells 5, diag [6.0, 8.0, 9.0, 12.0, 14.0], max ln RH +4.3e-08, max |ln RH| with condensate 7.2e-08, check passes
+(c) jupiter.yaml cold start, kkt, max-iter 2: cells 5, diag [-2002.0], max ln RH +1.4e+01, max |ln RH| with condensate 1.4e+01, check FAILS
+(d) one vapour, use-h2-cp, Tref 0: cells 1, diag [3.0], max ln RH -1.8e-07, max |ln RH| with condensate 1.8e-07, check passes

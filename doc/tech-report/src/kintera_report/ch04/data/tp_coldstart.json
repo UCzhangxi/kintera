@@ -1,11 +1,11 @@
 {
  "provenance": {
-  "sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+  "sha": "e357792d50639d68e9090b542edf038d2b029aa2",
   "deck": "tests/jupiter.yaml",
   "cells": "T = 130..250 K step 10, p = 1e5 Pa, x(H2O, NH3, H2S) = 3e-3, 3e-4, 1e-4, rest dry, no condensate",
   "command": "KINTERA_REPO=<kintera checkout> python -P src/kintera_report/ch04/runs/fig_tp_sweep.py <out.json>",
   "device": "CPU, double",
-  "versions": "kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126"
+  "versions": "kintera 2.6.7 source build, torch 2.10.0+cu128"
  },
  "max_iter_10": {
   "T": [
@@ -92,7 +92,7 @@
    -2.4282924188761187e-07,
    -9.361534885007217e-10,
    -1.0148296252028652e-07,
-   -1.6883253010885364e-07,
+   -1.6883252977578668e-07,
    -1.3427214542398978e-07,
    -2.788500545471839e-09,
    -1.3164481516547562e-07,

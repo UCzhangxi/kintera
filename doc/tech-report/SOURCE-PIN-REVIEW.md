@@ -9,13 +9,14 @@ This is a scientific-source migration, separate from #100's environment setup.
 No chapter-owner or reviewer approval is implied by a changed pin or a passing check.
 The six owner-authored appendix content exclusions remain in force.
 
-## Missing requested specification
+## Supplied invariant specification
 
-The phrase “invariant checks of 2603” has no recovered specification in the available
-repository, issue #54, PR #150/#151, supplied handoffs, or retained workspace Markdown.
-Search hits for the digits in SVG paths are unrelated. The exact referenced message or
-issue, the invariant statements, inputs and acceptance tolerances are needed. They have
-been requested; existing upstream regressions are not being relabeled as “2603”.
+Xi supplied the full 2603 definition in the continuation: exact zero rates,
+1000-step nonnegativity, source-floor inventory, many-step atom/energy budgets
+at 1e-12 relative per step and actual-source break tests. See
+[invariant inputs and definitions](invariants/README.md). Per-occurrence source
+guard effect coverage remains explicitly incomplete; no missing specification
+is now claimed.
 
 ## Chapter continuations
 

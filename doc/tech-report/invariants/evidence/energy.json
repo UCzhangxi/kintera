@@ -1,0 +1,77 @@
+{
+  "kintera": "2.6.8.dev0+ge357792d5.d20261024",
+  "torch": "2.10.0+cu128",
+  "dtype": "float64",
+  "per_step_relative_tolerance": 1e-12,
+  "cases": {
+    "reaction": {
+      "steps": 1000,
+      "dt_s": 0.001,
+      "absent_rate_max": 0.0,
+      "minimum_amount": 0.0,
+      "final": [
+        [
+          0.0,
+          1.0
+        ],
+        [
+          0.36806330428877754,
+          0.6319366957112238
+        ]
+      ],
+      "exact_zero": true,
+      "nonnegative": true,
+      "atoms": {
+        "max_relative_step": 2.220446049250313e-16,
+        "max_relative_total": 1.5543122344752192e-15,
+        "mean_signed_step": [
+          0.0,
+          1.3322676295501879e-18
+        ],
+        "pass_step": true
+      },
+      "energy": {
+        "max_relative_step": 2.430824536137252e-16,
+        "max_relative_total": 1.5800359484892139e-15,
+        "mean_signed_step": [
+          0.0,
+          1.3369534948754887e-18
+        ],
+        "pass_step": true
+      },
+      "pass": true
+    },
+    "condensation": {
+      "steps": 1000,
+      "kind": "closed-volume equilibrium projections, not kinetic timesteps",
+      "final_T_K": 278.6170311677284,
+      "final": [
+        463.9294168317285,
+        0.4823720272785479,
+        0.6278139288691076
+      ],
+      "minimum_amount": 0.0,
+      "nonnegative": true,
+      "diag_min": 4.0,
+      "converged": true,
+      "atoms": {
+        "max_relative_step": 2.0000667788622194e-16,
+        "max_relative_total": 6.000200336586658e-16,
+        "mean_signed_step": [
+          0.0,
+          0.0,
+          6.000200336586658e-19
+        ],
+        "pass_step": true
+      },
+      "energy": {
+        "max_relative_step": 0.1655127589519766,
+        "max_relative_total": 0.1655127589519766,
+        "mean_signed_step": -0.00016551275895197658,
+        "pass_step": false
+      },
+      "pass": false
+    }
+  },
+  "pass": false
+}

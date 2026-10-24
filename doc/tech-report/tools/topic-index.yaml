@@ -113,6 +113,8 @@ sections:
     - KINETICS-base comparison
   sec-ch13-vulcan:
     - VULCAN comparison, scoped out
+  sec-ch13-invariants:
+    - invariant checks: [absent reactant, nonnegative amounts, source floors, atom budgets, energy budgets]
   sec-ch13-examples:
     - example scripts
   # Chapter 8. Diffusion

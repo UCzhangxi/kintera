@@ -115,6 +115,10 @@ for p in sorted(ex.glob('*.py')):
     run('example-'+p.stem, 'python '+shlex.quote(p.name), ex, 180)
 run('paddle-migration', 'python environment/paddle_migration.py', D)
 commands = {
+ 'guard-effects': ('python invariants/check_guard_effects.py', D),
+ 'invariants': ('python invariants/check_invariants.py --output '+str(E/'invariants.json'), D),
+ 'guard-coverage': ('python invariants/inventory_guards.py '+str(P)+' --check --require-effects', D),
+ 'guard-inventory': ('python invariants/inventory_guards.py '+str(P)+' --check', D),
  'figure-values': ('python tools/check_figure_values.py --out '+str(E/'figure-values'), D),
  'cpp-tests': ("ctest -V -R '\\.release'", P/'build/tests'),
  'ctest': ('ctest --output-on-failure --timeout 1800', P/'build/tests'),

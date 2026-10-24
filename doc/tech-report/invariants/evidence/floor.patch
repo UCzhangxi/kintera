@@ -1,0 +1,23 @@
+diff --git a/src/kinetics/kinetics.cpp b/src/kinetics/kinetics.cpp
+index 0fba932..a4ae9ad 100644
+--- a/src/kinetics/kinetics.cpp
++++ b/src/kinetics/kinetics.cpp
+@@ -324,7 +324,7 @@ torch::Tensor KineticsImpl::jacobian(
+   // its derivative is formed from the rate constant and the product over the
+   // other reactants, k nu_j C_j^(nu_j - 1) prod_{i != j} C_i^nu_i, which is
+   // exact at zero concentration, instead of nu_j rate / C_j.
+-  auto conc_pos = conc.clamp_min(0.);
++  auto conc_pos = conc.clamp_min(1e-300);
+   auto nspecies = conc.size(-1);
+   // A power of the concentration with a finite value and backward at zero.
+   // pow(0, e) and its backward are finite for e = 0 and e >= 1, so those keep
+@@ -575,7 +575,7 @@ KineticsImpl::forward_with_rate_constants(
+   // reactant gives an exact zero rate (#147). jacobian() forms the
+   // derivative from the rate constants, so no floor is needed to carry k
+   // through the rate at zero concentration.
+-  auto conc_pos = conc.clamp_min(0.);
++  auto conc_pos = conc.clamp_min(1e-300);
+ 
+   // mass-action forward: k_f * product(C_reactant^stoich)
+   auto rate_f = result * conc_pos.unsqueeze(-1).pow(forward_orders).prod(-2);
+

@@ -4,6 +4,8 @@
 
 **`A`**: The reaction list and its rate-parameter keys, @sec-ch11-yaml-reactions.
 
+*absent reactant*, see **invariant checks**.
+
 **actinic flux**: Actinic flux on the photolysis grid, @sec-ch07-actinic-flux.
 
 *active set*, see **constrained least squares**.
@@ -25,6 +27,8 @@
 *atm2d*, see **two-dimensional atmosphere, state**.
 
 *AtmState2D*, see **two-dimensional atmosphere, state**.
+
+*atom budgets*, see **invariant checks**.
 
 **atom conservation**: Conservation of atoms and charge, and pinned species, @sec-ch09-conservation.
 
@@ -204,6 +208,8 @@
 
 *element conservation*, see **parcel state variables**.
 
+*energy budgets*, see **invariant checks**.
+
 *energy offset*, see **reference temperature and pressure, thermodynamic**.
 
 **enthalpy, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
@@ -299,6 +305,8 @@
 **internal energy, per species**: Heat capacity, internal energy, enthalpy and entropy of each species, @sec-ch03-species-functions.
 
 *interpn*, see **table interpolation**.
+
+**invariant checks**: Invariants over repeated updates, @sec-ch13-invariants.
 
 *isentrope*, see **moist adiabat**.
 
@@ -415,6 +423,8 @@
 *new rate-constant form*, see **Arrhenius rate constant**.
 
 *new vapor pressure law*, see **saturation vapor pressure**.
+
+*nonnegative amounts*, see **invariant checks**.
 
 *Not Run*, see **running the tests**.
 
@@ -575,6 +585,8 @@
 *source build*, see **installation**.
 
 *source directories*, see **chapter map**.
+
+*source floors*, see **invariant checks**.
 
 **source terms, atm2d**: Chemical and photochemical source terms, @sec-ch09-sources.
 

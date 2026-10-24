@@ -1,0 +1,21 @@
+{
+  "kintera": "2.6.7",
+  "negative_zero_positive_rates": [
+    0.0,
+    0.0,
+    1.0
+  ],
+  "derivative_at_zero": 1.0,
+  "gas_floor_output": [
+    [
+      42.95442604124106,
+      1e-20,
+      0.0
+    ]
+  ],
+  "covered": [
+    "kinetics.cpp:327/578 concentration clamp family",
+    "thermo_x.cpp:332 gas_floor"
+  ],
+  "gaps": "Other source guard effects are not inferred from these checks."
+}

@@ -14,6 +14,7 @@ p.add_argument('--out', type=Path, default=Path(__file__).with_name('guard-inven
 p.add_argument('--check', action='store_true')
 p.add_argument('--require-effects', action='store_true', help='Fail until per-occurrence physical effect/non-reachability evidence is complete')
 p.add_argument('--effects', type=Path, help='Fresh numerical effect evidence; omitted evidence is not coverage')
+p.add_argument('--source-effects',type=Path,help='Source-fragment/function effect evidence')
 a = p.parse_args()
 sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=a.source, text=True).strip()
 assert sha == PIN, (sha, PIN)
@@ -72,6 +73,6 @@ print(json.dumps(dict(files=len(files),candidates=len(rows),source=sha)))
 
 if a.require_effects:
     from check_guard_coverage import coverage
-    result=coverage(Path(__file__).parent,a.effects)
+    result=coverage(Path(__file__).parent,a.effects,a.source_effects)
     print(json.dumps(result))
     raise SystemExit(not result['passed'])

@@ -1,6 +1,6 @@
 # Native guard-operation measurements
 
-These are new CPU binary64 **isolated native-operation** measurements, not whole-solver or whole-report branch coverage. Source: `e357792d50639d68e9090b542edf038d2b029aa2`; Torch `2.10.0+cu128`. Forty-three source-extracted clamp operations, 257 scalar comparisons, all exact. No numerical tolerance is introduced. The other 95 applicable rows remain unresolved.
+These are new CPU binary64 **isolated native-operation** measurements, not whole-solver or whole-report branch coverage. Source: `e357792d50639d68e9090b542edf038d2b029aa2`; Torch `2.10.0+cu128`. Forty-three source-extracted clamp operations, 257 scalar comparisons, all exact. No numerical tolerance is introduced. The other 95 applicable rows are measured separately in SOURCE-GUARD-EFFECTS.md; both runtime artifacts are required for coverage.
 
 The generated C++ compiles the extracted operator with explicit intermediate inputs. Configurable gas floor is bound to 1e-20; interpolation has four coordinates. Dtype-dependent constants use the binary64 branch. Float32/CUDA are not established.
 

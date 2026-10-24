@@ -120,8 +120,6 @@ limiter and sets the kinetic energy to zero), in six supersaturated cells from 1
 Line (k0) shows all six cells converging at the default limit of 100 iterations. Line (q) deliberately reduces
 that limit to 1 and verifies the failure count. With an explicit limit of 10, the first cell reports failure,
 but all six warming values in line (o) are unchanged at the printed 0.001 K precision.[^ch14-iteration-control]
-The larger warming is therefore not explained by the iteration-cap increase at that precision. Attribution to
-the latent-energy implementation remains a hypothesis: this control does not isolate that source change.
 
 No published derivation is quoted. The steps are the first law at fixed volume and the stoichiometry of
 @sec-ch04, matched to the code at the two pins.

@@ -60,7 +60,7 @@ def generate(source, fixtures):
     for i,f in enumerate(fixtures):
         vals=','.join(literal(v) for v in f['inputs']);cpp.append('{')
         if f['kind'] in ('tensor','reject'):
-            cpp.append('auto input=torch::tensor(std::vector<double>{'+vals+'},torch::kFloat64);')
+            cpp.append('auto input=torch::tensor(std::vector<double>{'+vals+'},torch::'+('kFloat32' if f['input_dtype']=='float32' else 'kFloat64')+');')
             if f['kind']=='reject':
                 cpp.append('bool rejected=false;try{fixture_'+str(i)+'::execute(input);}catch(c10::Error const& e){if(std::string(e.what()).find("General evaporation requires finite concentrations")==std::string::npos) throw;rejected=true;}')
                 cpp.append('std::cout<<"RESULT '+str(i)+' "<<(rejected?0.:1.)<<"\\n";')
@@ -90,7 +90,7 @@ def main():
     for i,f in enumerate(spec['fixtures']):
         got=observed[i];want=f['expected'];rtol=f['relative_tolerance'];atol=f['absolute_tolerance']
         good=len(got)==len(want) and all(math.isfinite(x) and abs(x-y)<=atol+rtol*abs(y) for x,y in zip(got,want))
-        results.append(dict(**metadata[i],inputs=f['inputs'],expected=want,observed=got,relative_tolerance=rtol,absolute_tolerance=atol,passed=good))
+        results.append(dict(**metadata[i],inputs=f['inputs'],input_dtype=f['input_dtype'],expected=want,observed=got,relative_tolerance=rtol,absolute_tolerance=atol,passed=good))
     output=dict(source=pin,torch=torch.__version__,probe_sha256=sha(Path(__file__)),manifest_sha256=sha(manifest),registry_sha256=sha(HERE/'guard-classification.json'),generated_source_sha256=sha(source),compiler_command=cmd,results=results,passed=all(r['passed'] for r in results))
     a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(output,indent=2)+'\n')
     print(json.dumps(dict(fixtures=len(results),operations=sum(len(r['rows']) for r in results),failed=[r['name'] for r in results if not r['passed']])))

@@ -1,19 +1,19 @@
 {
   "source": "e357792d50639d68e9090b542edf038d2b029aa2",
   "torch": "2.10.0+cu128",
-  "probe_sha256": "43c2e54fc44718756f9b728aa241787ecf40927b56b9658f372cb28af109ae55",
-  "manifest_sha256": "03a5b8361d9a2255410f225fabf687b2209320f1e14d1c09c5c2be82d5f99425",
+  "probe_sha256": "cdc032ebd6effddc5db9649a172c4bec317aff3aa551d25e98d35993f8b95062",
+  "manifest_sha256": "b4317f335c5d8b7dcc0ad9e66b9a4201eedec8d3d6641b57cb25ac709847dbcf",
   "registry_sha256": "2ecbef064f1721b41580e16a659f48bc0f2f10f97441dd86eaeb1089699764e1",
-  "generated_source_sha256": "1256f9fc6ce1672ff0323292dfbb811c7751fd73f9307db3ae6a605312813d7f",
+  "generated_source_sha256": "f7c585c66e1e293b1fe02654ab4df0fa1179788c3a8c4a2f2dbcdbbff276294f",
   "compiler_command": [
     "c++",
     "-std=c++17",
     "-O0",
     "-g0",
     "-D_GLIBCXX_USE_CXX11_ABI=1",
-    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-192-evidence/complete-source-build/source-effects.cpp",
+    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-192-evidence/native-dtypes/source-effects.cpp",
     "-o",
-    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-192-evidence/complete-source-build/source-effects",
+    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-192-evidence/native-dtypes/source-effects",
     "-I/usr/local/lib/python3.11/site-packages/torch/include",
     "-I/usr/local/lib/python3.11/site-packages/torch/include/torch/csrc/api/include",
     "-L/usr/local/lib/python3.11/site-packages/torch/lib",
@@ -43,6 +43,7 @@
         0,
         1e-06
       ],
+      "input_dtype": "float64",
       "expected": [
         8.881784197001252e-16,
         9.999995000003334e-07
@@ -76,6 +77,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         0,
@@ -111,6 +113,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -146,6 +149,7 @@
         0,
         1000
       ],
+      "input_dtype": "float64",
       "expected": [
         -354.891356446692,
         0,
@@ -181,6 +185,7 @@
         0.5,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         2,
@@ -217,6 +222,7 @@
         1,
         4
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -255,6 +261,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0.25,
@@ -292,6 +299,7 @@
         0,
         0.01
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -327,6 +335,7 @@
         2.2250738585072014e-308,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         4,
         0,
@@ -362,6 +371,7 @@
         2.2250738585072014e-308,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         -708.3964185322641,
         -708.3964185322641,
@@ -397,6 +407,7 @@
         0.5,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         -2,
@@ -432,6 +443,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         3.720075976020836e-44,
         1,
@@ -467,6 +479,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0.5,
         1,
@@ -502,6 +515,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         0,
@@ -537,6 +551,7 @@
         1,
         10
       ],
+      "input_dtype": "float64",
       "expected": [
         1.4210854715202004e-14,
         1.4210854715202004e-14,
@@ -572,6 +587,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -607,6 +623,7 @@
         0,
         1000
       ],
+      "input_dtype": "float64",
       "expected": [
         -354.891356446692,
         0,
@@ -642,6 +659,7 @@
         0.5,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         2,
@@ -679,6 +697,7 @@
         1,
         4
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -717,6 +736,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0.25,
@@ -757,6 +777,7 @@
         100,
         101
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         1,
@@ -796,6 +817,7 @@
         2.2250738585072014e-308,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         4,
         0,
@@ -832,6 +854,7 @@
         300,
         1000000000000.0
       ],
+      "input_dtype": "float64",
       "expected": [
         0.0001,
         0.0001,
@@ -867,6 +890,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         2,
         0,
@@ -902,6 +926,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         2,
         0,
@@ -938,6 +963,7 @@
         1,
         300
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -976,6 +1002,7 @@
         1,
         300
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -1014,6 +1041,7 @@
         1,
         300
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -1052,6 +1080,7 @@
         1,
         300
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -1090,6 +1119,7 @@
         1,
         300
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -1128,6 +1158,7 @@
         1,
         300
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -1166,6 +1197,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         -1e-12,
         0,
@@ -1203,6 +1235,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1e-12,
         1e-12,
@@ -1238,6 +1271,7 @@
         1e-12,
         2e-12
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -1273,6 +1307,7 @@
         1,
         10
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         1.4210854715202004e-14,
@@ -1309,6 +1344,7 @@
         0.5,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -1347,6 +1383,7 @@
         0.5,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -1385,6 +1422,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0.5,
@@ -1420,6 +1458,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -1455,6 +1494,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         1,
@@ -1490,6 +1530,7 @@
         1e-30,
         2e-30
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -1528,6 +1569,7 @@
         100,
         101
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         1,
@@ -1578,6 +1620,7 @@
         1e-30,
         2e-30
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -1615,6 +1658,7 @@
         1e-30,
         2e-30
       ],
+      "input_dtype": "float64",
       "expected": [
         -1e-30,
         0,
@@ -1669,6 +1713,7 @@
         1e-30,
         2e-30
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -1704,6 +1749,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -1739,6 +1785,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -1785,6 +1832,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         2.2250738585072014e-308,
         2.2250738585072014e-308,
@@ -1820,6 +1868,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -1866,6 +1915,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         5e-324,
         5e-324,
@@ -1900,6 +1950,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1
       ],
@@ -1927,6 +1978,7 @@
       "inputs": [
         "nan"
       ],
+      "input_dtype": "float64",
       "expected": [
         0
       ],
@@ -1954,6 +2006,7 @@
       "inputs": [
         "inf"
       ],
+      "input_dtype": "float64",
       "expected": [
         0
       ],
@@ -1981,6 +2034,7 @@
       "inputs": [
         "-inf"
       ],
+      "input_dtype": "float64",
       "expected": [
         0
       ],
@@ -2013,6 +2067,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -2049,6 +2104,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -2085,6 +2141,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -2122,6 +2179,7 @@
         2,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1.7976931348623157e+308,
         1.7976931348623157e+308,
@@ -2161,6 +2219,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0.25,
         1,
@@ -2196,6 +2255,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1.7976931348623157e+308,
@@ -2231,6 +2291,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0.25,
         1,
@@ -2266,6 +2327,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -2301,6 +2363,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -2336,6 +2399,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -2370,6 +2434,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         2
@@ -2402,6 +2467,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         2
@@ -2434,6 +2500,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1.7976931348623157e+308,
         2
@@ -2467,6 +2534,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         2,
         1,
@@ -2502,6 +2570,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         0,
@@ -2541,6 +2610,7 @@
         0.95,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0.5,
         0.5,
@@ -2584,6 +2654,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         1,
@@ -2619,6 +2690,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -2654,6 +2726,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0.25
       ],
@@ -2685,6 +2758,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         1,
@@ -2720,6 +2794,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -2755,6 +2830,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -2802,6 +2878,7 @@
         1,
         4
       ],
+      "input_dtype": "float64",
       "expected": [
         1e+150,
         1,
@@ -2838,6 +2915,7 @@
         0.5,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         2,
@@ -2874,6 +2952,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         -0.5,
@@ -2911,6 +2990,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -2947,6 +3027,7 @@
         1e-250,
         2e-250
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -2982,6 +3063,7 @@
         0.5,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         0.5,
@@ -3017,6 +3099,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         1,
@@ -3062,6 +3145,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         1e-20,
         1e-20,
@@ -3099,6 +3183,7 @@
         "nan",
         "inf"
       ],
+      "input_dtype": "float64",
       "expected": [
         1,
         0.5,
@@ -3137,6 +3222,7 @@
         0,
         1
       ],
+      "input_dtype": "float64",
       "expected": [
         300,
         600
@@ -3169,6 +3255,7 @@
         0,
         0
       ],
+      "input_dtype": "float64",
       "expected": [
         1e-30
       ],
@@ -3196,6 +3283,7 @@
       "inputs": [
         "nan"
       ],
+      "input_dtype": "float64",
       "expected": [
         0
       ],
@@ -3223,6 +3311,7 @@
       "inputs": [
         "inf"
       ],
+      "input_dtype": "float64",
       "expected": [
         0
       ],
@@ -3250,6 +3339,7 @@
       "inputs": [
         "-inf"
       ],
+      "input_dtype": "float64",
       "expected": [
         0
       ],
@@ -3279,6 +3369,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         9,
         9,
@@ -3312,6 +3403,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         9,
         9,
@@ -3345,6 +3437,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         9,
         9,
@@ -3378,6 +3471,7 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         9,
         9,
@@ -3411,6 +3505,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -3444,6 +3539,7 @@
         0,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         0,
         0,
@@ -3476,11 +3572,143 @@
         1,
         2
       ],
+      "input_dtype": "float64",
       "expected": [
         3
       ],
       "observed": [
         3.0
+      ],
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0,
+      "passed": true
+    },
+    {
+      "name": "float32-normal-floor",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 299,
+          "end": 301,
+          "kind": "lines",
+          "source_text": "    double tiny = c.dtype() == torch::kFloat32\n                      ? std::numeric_limits<float>::min()\n                      : std::numeric_limits<double>::min();",
+          "extracted": "    double tiny = c.dtype() == torch::kFloat32\n                      ? std::numeric_limits<float>::min()\n                      : std::numeric_limits<double>::min();",
+          "sha256": "cce18efa8bc37e81370737cb07b460f03709204b401de4bab049757b6a7d294e"
+        },
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 303,
+          "end": 303,
+          "kind": "call",
+          "token": ".clamp_min",
+          "source_text": "    auto root = (diff * diff + 4. * k2).clamp_min(tiny).sqrt();",
+          "extracted": ".clamp_min(tiny)",
+          "sha256": "8eeac7641270b4ce4863ce8532d8da9e727dc8866a7c4b708ec00c0d8b57def8"
+        }
+      ],
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "input_dtype": "float32",
+      "expected": [
+        1.1754943508222875e-38,
+        1.1754943508222875e-38,
+        1
+      ],
+      "observed": [
+        1.1754943508222875e-38,
+        1.1754943508222875e-38,
+        1.0
+      ],
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0,
+      "passed": true
+    },
+    {
+      "name": "float32-subnormal-floor",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 11,
+          "end": 13,
+          "kind": "lines",
+          "source_text": "  const bool single = conc.scalar_type() == torch::kFloat32;\n  const double tiny = single ? std::numeric_limits<float>::denorm_min()\n                             : std::numeric_limits<double>::denorm_min();",
+          "extracted": "  const bool single = conc.scalar_type() == torch::kFloat32;\n  const double tiny = single ? std::numeric_limits<float>::denorm_min()\n                             : std::numeric_limits<double>::denorm_min();",
+          "sha256": "f53aeb09d6882cabce00707fc833a7849d0ae9cc3b97b718c7c98ed91fecbb3d"
+        },
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 29,
+          "end": 29,
+          "kind": "call",
+          "token": ".clamp_min",
+          "source_text": "      torch::where(participating, conc, torch::ones_like(conc)).clamp_min(tiny);",
+          "extracted": ".clamp_min(tiny)",
+          "sha256": "8eeac7641270b4ce4863ce8532d8da9e727dc8866a7c4b708ec00c0d8b57def8"
+        }
+      ],
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "input_dtype": "float32",
+      "expected": [
+        1.401298464324817e-45,
+        1.401298464324817e-45,
+        1
+      ],
+      "observed": [
+        1.401298464324817e-45,
+        1.401298464324817e-45,
+        1.0
+      ],
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0,
+      "passed": true
+    },
+    {
+      "name": "float32-negative-power",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 337,
+          "end": 349,
+          "kind": "lines",
+          "source_text": "  double tiny = conc.scalar_type() == torch::kFloat32 ? 1e-30 : 1e-300;\n  auto conc_row = conc_pos.unsqueeze(-2);  // (..., 1, nspecies)\n  auto present = conc_row.gt(0);\n  auto safe_pow = [&](torch::Tensor const& expo, torch::Tensor const& at_zero,\n                      bool floor_negative) {\n    auto plain = present | expo.ge(1) | expo.eq(0);\n    auto base =\n        floor_negative\n            ? torch::where(expo.lt(0), conc_row.clamp_min(tiny), conc_row)\n            : conc_row;\n    base = torch::where(plain, base, torch::ones_like(base));\n    return torch::where(plain, base.pow(expo), at_zero);\n  };",
+          "extracted": "  double tiny = conc.scalar_type() == torch::kFloat32 ? 1e-30 : 1e-300;\n  auto conc_row = conc_pos.unsqueeze(-2);  // (..., 1, nspecies)\n  auto present = conc_row.gt(0);\n  auto safe_pow = [&](torch::Tensor const& expo, torch::Tensor const& at_zero,\n                      bool floor_negative) {\n    auto plain = present | expo.ge(1) | expo.eq(0);\n    auto base =\n        floor_negative\n            ? torch::where(expo.lt(0), conc_row.clamp_min(tiny), conc_row)\n            : conc_row;\n    base = torch::where(plain, base, torch::ones_like(base));\n    return torch::where(plain, base.pow(expo), at_zero);\n  };",
+          "sha256": "2e44a722db9f631d4a5d8d64c074357bb607bcbcee4d206d977d6a24dfe39e26"
+        },
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 420,
+          "end": 425,
+          "kind": "lines",
+          "source_text": "  auto expo = torch::where(ordinary_order.ne(0), ordinary_order - 1,\n                           torch::zeros_like(ordinary_order));\n  // at zero for a fractional order: tiny^(nu_j - 1) below 1, 0 above\n  auto at_zero =\n      torch::where(expo.lt(0), torch::full_like(expo, tiny).pow(expo),\n                   torch::zeros_like(expo));",
+          "extracted": "  auto expo = torch::where(ordinary_order.ne(0), ordinary_order - 1,\n                           torch::zeros_like(ordinary_order));\n  // at zero for a fractional order: tiny^(nu_j - 1) below 1, 0 above\n  auto at_zero =\n      torch::where(expo.lt(0), torch::full_like(expo, tiny).pow(expo),\n                   torch::zeros_like(expo));",
+          "sha256": "00140e47820d77d60573af8772f22b290ab05f15f47024d2ba54db06b4eed4ef"
+        }
+      ],
+      "inputs": [
+        0,
+        1,
+        4
+      ],
+      "input_dtype": "float32",
+      "expected": [
+        999999986991104.0,
+        1,
+        0.5
+      ],
+      "observed": [
+        999999986991104.0,
+        1.0,
+        0.5
       ],
       "relative_tolerance": 0,
       "absolute_tolerance": 0,

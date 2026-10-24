@@ -40,6 +40,11 @@ class CoverageTests(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError,'Original candidate omitted'):
                 gate.coverage(dest)
 
+    def test_dtype_specific_constants_are_exercised(self):
+        manifest=json.loads((HERE/'guard-source-fixtures.json').read_text())
+        native_float={f['name'] for f in manifest['fixtures'] if f.get('input_dtype')=='float32'}
+        self.assertTrue({'float32-normal-floor','float32-subnormal-floor','float32-negative-power'}<=native_float)
+
     def test_all_source_operations_have_measured_effects(self):
         result=gate.coverage(HERE,HERE/'evidence/guard-operations.json',HERE/'evidence/guard-source-effects.json')
         self.assertEqual(result['proven'],138)

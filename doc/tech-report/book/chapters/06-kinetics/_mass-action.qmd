@@ -268,9 +268,9 @@ predicted $\mathrm{d}k_j/\mathrm{d}T - \mathrm{d}k_{\bar j}/\mathrm{d}T$ to $2.4
     van 't Hoff term). This text is to be updated when that fix merges.]
 
 <!-- reader glossary notes -->
-[^rg-f6026102f8bb]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics.hpp#L62)
+[^rg-f6026102f8bb]: Pref — reference pressure in Pa; kinetics and thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.hpp#L62)
 
-[^rg-1ffc2d860575]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+[^rg-1ffc2d860575]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L231-L246)
 
 [^rg-782fd094d3ef]: Tref — reference temperature in K; kinetics default 298.15 K, thermodynamics default 300 K; kinetics option `Tref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L40-L41)
 <!-- end reader glossary notes -->

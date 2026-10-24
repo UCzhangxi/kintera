@@ -1,7 +1,7 @@
 # Multiphase chemical equilibrium {#sec-ch05}
 
 <!-- PROVENANCE
-pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+pin: kintera@e357792d50639d68e9090b542edf038d2b029aa2 (main)
 sources: src/equilibrium/equilibrium.hpp, src/equilibrium/equilibrium.cpp, src/equilibrium/equilibrium_options.cpp,
   src/equilibrium/equilibrium_dispatch.cpp, src/equilibrium/equilibrium_dispatch.cu, src/equilibrium/phase_equilibrate_tp.h,
   python/equilibrium/nasa9.py, src/species.cpp, src/thermo/nasa9.hpp, src/kinetics/kinetics.cpp
@@ -60,8 +60,8 @@ rate constant divided by an equilibrium constant built from NASA-9 Gibbs energie
 {{< code src/kinetics/kinetics.cpp KineticsImpl::forward_with_rate_constants >}}). A reversible gas-phase network
 that reaches a steady state meets the gas-phase form of @eq-ch05-conditions-residual with the same constants only
 when the two read the same NASA-9 coefficients and the kinetics reference pressure `Pref`[^rg-e445947e1f9f] is $10^5$ Pa, the standard
-pressure of the tables and of this solver. At the kinetics default of 101325 Pa, $K_c$ is about 1.31 % low per unit of
-$-\Delta n$ (@sec-ch05-log-k, Limits). No code in kintera checks that the two agree.
+pressure of the tables and of this solver. The kinetics default is also $10^5$ Pa; the default and explicit 1-bar results agree in
+`check_ch5_equilibrium.py` line g (@sec-ch05-log-k, Limits). No code in kintera checks that the two agree.
 
 {{< include 05-chemical-equilibrium/_conditions.qmd >}}
 
@@ -74,7 +74,7 @@ $-\Delta n$ (@sec-ch05-log-k, Limits). No code in kintera checks that the two ag
 {{< include 05-chemical-equilibrium/_log-k.qmd >}}
 
 <!-- reader glossary notes -->
-[^rg-68e2b4731605]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+[^rg-68e2b4731605]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics_options.cpp#L66-L69)
 
-[^rg-e445947e1f9f]: Pref — reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics.hpp#L62)
+[^rg-e445947e1f9f]: Pref — reference pressure in Pa; kinetics and thermodynamics default 1e5 Pa; kinetics option `Pref`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.hpp#L62)
 <!-- end reader glossary notes -->

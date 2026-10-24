@@ -4,7 +4,6 @@
 [Warning] equilibrate_uv did not converge after 1 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
 [Warning] equilibrate_uv did not converge after 1 iterations.
-[W1023 20:39:41.403769455 thermo_y.cpp:387] Warning: ThermoYImpl::forward: saturation adjustment failed in 6 cell(s); diag = -(100 * status + iterations) (function forward)
 kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
 build: Linux x86_64, Python 3.11.13, torch 2.10.0+cu128
 (a) DY->V (snapy moist_mixture.cpp:149) against rho*(1-sum y), rho*y: max rel err 1.97e-16 (tol 1e-14) PASS
@@ -17,7 +16,7 @@ build: Linux x86_64, Python 3.11.13, torch 2.10.0+cu128
 (h) IdealMoist W->I formula against kintera VT->U at the same state: max rel err 4.95e-16 (tol 1e-12) PASS
 (i) IdealMoist W->T = p/(rho Rd f_eps) against the state temperature: max rel err 3.33e-16 (tol 1e-13) PASS
 (j) the options object snapy reads after ThermoYImpl::create holds the T=0 offsets (uref - cref Tref): True PASS
-(k0) diag per cell at the default max_iter 100 (negative = failed, D4 filed): 11 9 9 7 5 4 INFO
+(k0) diag per cell at the default max_iter 100 (negative = failed): 11 9 9 7 5 4 INFO
 (k) adjustment moved mass fractions by up to 1.00e+00 of the largest (state was supersaturated) PASS
 (l) total density rho_dry + sum y' rho equals rho (dry row untouched): max rel err 2.22e-16 (tol 1e-14) PASS
 (m) element moles H, He, N, O, S per cell conserved: max rel err 3.69e-16 (tol 1e-13) PASS

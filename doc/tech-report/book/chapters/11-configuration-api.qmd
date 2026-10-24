@@ -35,7 +35,7 @@ The dependency map of the schemes (a figure) is not drawn yet.
 <!-- reader glossary notes -->
 [^rg-cf75c2c1a4cc]: species — list of species maps; required; its order fixes the species index; read by `init_species_from_yaml`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L148-L155)
 
-[^rg-c14ba67fe94d]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+[^rg-c14ba67fe94d]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L231-L246)
 
-[^rg-6e6f9ece1710]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69)
+[^rg-6e6f9ece1710]: reactions — top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics_options.cpp#L66-L69)
 <!-- end reader glossary notes -->

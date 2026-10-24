@@ -12,7 +12,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # common.py sits next to this script
 from common import ONE_VAPOUR, VERSIONS, adjust, cell_from_tpx, write_card
 
-out = {"provenance": {"sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+out = {"provenance": {"sha": "e357792d50639d68e9090b542edf038d2b029aa2",
                       "deck": "ONE_VAPOUR card of src/kintera_report/ch04/runs/common.py: dry, H2O, H2O(l); h2o_ideal; "
                               "Tref 300 K; max-iter 50",
                       "cells": "start T = 297..303 K step 0.25, p = 1e5 Pa, x_v = 5e-2",

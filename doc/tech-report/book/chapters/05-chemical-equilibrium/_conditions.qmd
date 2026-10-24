@@ -91,8 +91,8 @@ Jacobian, by build:
 
 | build | $\sigma_{\min}$ at the start state | condition number | rank | largest $\sigma_{\min}$ over 200 random states |
 |---|---|---|---|---|
-| x86_64 (run record) | $1.6\times10^{-17}$ | $1.4\times10^{18}$ | 3 | $5.5\times10^{-15}$ |
-| arm64 build of the pin | $2.5\times10^{-16}$ | $8.8\times10^{16}$ | 3 | $5.7\times10^{-15}$ |
+| x86_64 (current run record) | $1.2\times10^{-16}$ | $1.8\times10^{17}$ | 3 | $4.9\times10^{-15}$ |
+| arm64 historical build | $2.5\times10^{-16}$ | $8.8\times10^{16}$ | 3 | $5.7\times10^{-15}$ |
 
 : Smallest singular value of the three-phase Jacobian (line f). {#tbl-ch05-conditions-phase-rule}
 
@@ -183,12 +183,13 @@ both. `IdealGasReaction` passes for CPU float and double on both builds and for 
 build.[^ch05-tests-run] No test compares a multiphase result with an independent solution; the flash above does, and
 it is a measurement outside the suite.
 
-[^ch05-conditions-phase]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-phase system of
+[^ch05-conditions-phase]: [source: current x86_64 row from `derivation-checks/check_ch5_equilibrium.out` line f,
+source-built kintera 2.6.7 at e357792d50639d68e9090b542edf038d2b029aa2; historical arm64 provenance follows. sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the three-phase system of
 `src/kintera_report/ch05/checks/newton_check.py` (gas A, B, C; liquid A_l, B_l; solid S; four reactions), start
 amounts 0.6, 0.5, 0.1, 0.2, 0.3, 0.05 mol and 200 random states with amounts 0.01 to 1 mol (numpy seed 0); run:
 `python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
 the pin: line f PASS; CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC
-11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.; the arm64 row is a re-run of the same line on a clean arm64 build of the pin, reported in the chapter's theory check]
+11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.; the arm64 row is a re-run of the same line on a clean arm64 historical build, reported in the chapter's theory check]
 
 [^ch05-conditions-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase, $\ln K^\circ = \ln(p^\circ/p_{\mathrm{sat}})$, 300 K, $10^5$ Pa, start amounts 1, 0.05, 0.05 mol (line a); 2 H$_2$ + O$_2$ $\rightleftharpoons$ 2 H$_2$O with `Nasa9LogK` at 3500 K (line c); run:
 `python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at

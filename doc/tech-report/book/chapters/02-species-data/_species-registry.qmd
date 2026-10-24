@@ -150,7 +150,7 @@ them is a hypothesis, not run. A species left out of `ThermoOptions` by the sele
 the thermodynamics; no warning is printed.
 
 <!-- reader glossary notes -->
-[^rg-69a0a493850f]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)
+[^rg-69a0a493850f]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L172-L176)
 
 [^rg-fa067cae2716]: u0_R — reference internal energy divided by the gas constant, in K; default 0; stored in `species_uref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L178-L182)
 

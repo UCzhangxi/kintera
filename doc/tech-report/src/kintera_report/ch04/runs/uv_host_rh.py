@@ -4,7 +4,7 @@ be supersaturated, and a reaction whose condensate is present must be saturated,
 
 Cases: (a) the one-vapour card (x_v 5e-2, 1e5 Pa, Tref 300 K), 25 cells started at 297..303 K, uv-solver kkt and
 auto; (b) the five cold-start cells of tests/jupiter.yaml, uv-solver kkt, max-iter 30; (c) the same with max-iter 2
-and (d) the one-vapour card with use-h2-cp and Tref 0 at 300 K, where the check must fail.
+and (d) the one-vapour card with use-h2-cp and Tref 0 at 300 K, which tests the host/solver energy consistency.
 
     KINTERA_REPO=<kintera checkout> python -P uv_host_rh.py
 """

@@ -1,0 +1,190 @@
+{
+  "legacy_sha": "3f5a07cca25b2c75e39c1d5a4afb7a7ff63d40bf",
+  "candidate_sha": "a4cac94451ab5fc800735edb00180e98859a20c2",
+  "review_required": "ch14 authors: new validation values and source-contract migration; approval not assumed",
+  "legacy_adapter_is_not_original_reproduction": true,
+  "cases": [
+    {
+      "solid_mass_fraction": 0.0,
+      "dt_s": 1.0,
+      "original": {
+        "error": "AttributeError: module 'snapy' has no attribute 'index'"
+      },
+      "api_adapter": {
+        "error": "RuntimeError: Evaporation at zero solid abundance requires explicit rate_constants from forward_with_rate_constants()"
+      },
+      "migrated": {
+        "values_kg_m3": [
+          [
+            [
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        ]
+      },
+      "mass_residual_kg_m3": 0.0,
+      "mass_tolerance_kg_m3": 0.0
+    },
+    {
+      "solid_mass_fraction": 1e-05,
+      "dt_s": 0.0,
+      "original": {
+        "error": "AttributeError: module 'snapy' has no attribute 'index'"
+      },
+      "api_adapter": {
+        "values_kg_m3": [
+          [
+            [
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                -0.0,
+                -0.0
+              ]
+            ]
+          ]
+        ]
+      },
+      "migrated": {
+        "values_kg_m3": [
+          [
+            [
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                -0.0,
+                -0.0
+              ]
+            ]
+          ]
+        ]
+      },
+      "mass_residual_kg_m3": 0.0,
+      "mass_tolerance_kg_m3": 0.0,
+      "max_absolute_change_kg_m3": 0.0
+    },
+    {
+      "solid_mass_fraction": 1e-05,
+      "dt_s": 1.0,
+      "original": {
+        "error": "AttributeError: module 'snapy' has no attribute 'index'"
+      },
+      "api_adapter": {
+        "values_kg_m3": [
+          [
+            [
+              [
+                5.374428536925832e-09,
+                5.374428536925832e-09
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                -5.3744285369258305e-09,
+                -5.3744285369258305e-09
+              ]
+            ]
+          ]
+        ]
+      },
+      "migrated": {
+        "values_kg_m3": [
+          [
+            [
+              [
+                5.374428536925832e-09,
+                5.374428536925832e-09
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                -5.3744285369258305e-09,
+                -5.3744285369258305e-09
+              ]
+            ]
+          ]
+        ]
+      },
+      "mass_residual_kg_m3": 1.6543612251060553e-24,
+      "mass_tolerance_kg_m3": 7.637522311548866e-23,
+      "max_absolute_change_kg_m3": 0.0
+    },
+    {
+      "solid_mass_fraction": 1e-05,
+      "dt_s": 10.0,
+      "original": {
+        "error": "AttributeError: module 'snapy' has no attribute 'index'"
+      },
+      "api_adapter": {
+        "values_kg_m3": [
+          [
+            [
+              [
+                4.448952385312048e-08,
+                4.448952385312048e-08
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                -4.448952385312048e-08,
+                -4.448952385312048e-08
+              ]
+            ]
+          ]
+        ]
+      },
+      "migrated": {
+        "values_kg_m3": [
+          [
+            [
+              [
+                4.448952385312048e-08,
+                4.448952385312048e-08
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                -4.448952385312048e-08,
+                -4.448952385312048e-08
+              ]
+            ]
+          ]
+        ]
+      },
+      "mass_residual_kg_m3": 0.0,
+      "mass_tolerance_kg_m3": 6.322341598252092e-22,
+      "max_absolute_change_kg_m3": 0.0
+    }
+  ]
+}

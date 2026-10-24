@@ -1,7 +1,7 @@
 ## Thermodynamics as the equation of state of snapy (thermodynamics card) {#sec-ch14-thermo}
 
 <!-- PROVENANCE
-pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70
+pin: kintera@e357792d50639d68e9090b542edf038d2b029aa2 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70
 sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp, src/thermo/thermo_x.cpp, src/thermo/eval_uhs.cpp, src/species.cpp, src/constants.h; snapy src/eos/
 status: draft
 author: XinyueWang05
@@ -184,9 +184,9 @@ The figure of the call graph is not provided: the figure module is not written y
 All ten lines pass at the pin. The kintera side of each call is tested in @sec-ch03; snapy's own tests of its
 equations of state are not listed here.
 
-[^ch14-check-thermo]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
+[^ch14-check-thermo]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
-    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.7; output:
     `derivation-checks/check_ch14_coupling.out`, lines (a) to (j), from an x86-64 Linux build, as its `build:` line records. Line (d) is
     build-dependent in its last digit: a run of the same script on an arm64 build at the pin gives 1.11e-16.]
 
@@ -209,7 +209,7 @@ equations of state are not listed here.
     the snapy decks or the readers change.]
 
 <!-- reader glossary notes -->
-[^rg-5d1f6c2e39d3]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176)
+[^rg-5d1f6c2e39d3]: cv_R — reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L172-L176)
 
-[^rg-7efe2bd33a7d]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246)
+[^rg-7efe2bd33a7d]: reference-state — map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`; [source](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L231-L246)
 <!-- end reader glossary notes -->

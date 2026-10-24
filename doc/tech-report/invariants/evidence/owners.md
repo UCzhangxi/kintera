@@ -29,3 +29,28 @@ These commands are re-executed in this audit. Chapter ownership follows Xi’s a
 | `python test_type_hints.py` | 1 | Uncaught `pytest.skip(..., allow_module_level=True)` raises `Skipped`: “type-hint demonstration only; not a runtime pytest module”. | 13 explicitly excludes this demo; [non-runtime exclusion:39](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/13-verification/_examples.qmd#L39); [module skip:13](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/examples/test_type_hints.py#L13); [runner executes every example:112](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/environment/audit.py#L112) | **Linfeng** owns ch13 reporting; **demo/package owner unresolved**. Cheng retains #99 setup/runner coordination, not an invented package authorship assignment. | Resolve the runner/report contract explicitly: validate the demo through its intended static/skip mechanism and regression-test the inventory policy, with maintainer acceptance. Preserve the raw exit; do not silently drop required runtime coverage to force success. |
 
 
+
+## Named response gaps (inventory continuation)
+
+No one was contacted. GitHub PR #102 reviews/comments were read again and both
+lists were empty. Supplied thread acknowledgments are attributed context, not
+current-head verdicts:
+
+* **Linfeng:** historical ch4/ch5/ch13 response is available. Current-new-pin
+  review of the two ch4 figure changes is **unverified**. His previous water-value
+  acceptance is not a blanket approval of later values or this PR head.
+* **Jiheng:** ch14 review acceptance is available in the supplied thread;
+  a completed current-head API/value verdict is **unverified**.
+* **Xinyue:** likewise accepted ch14 review in the supplied thread;
+  a completed current-head API/value verdict is **unverified**.
+* **Tianhao:** ch12 continuation/handoff is a response, not an absent
+  acknowledgment. Integration and successful full reproduction at the current
+  scientific pin are **unverified**.
+* **Cheng:** ownership of inventory and provenance/ratchet integration is
+  explicitly acknowledged on issue #101. Those obligations remain unfinished;
+  this is not an unanswered-owner case.
+
+Separately, implementation ownership of `example_chapman_cycle.py`,
+`example_earth_dry.py`, and `test_type_hints.py` is **unassigned in the available
+evidence**. Linfeng's ch13 reporting assignment does not assign those package
+fixes to him. Historical provenance entries also need per-claim author routing.

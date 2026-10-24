@@ -73,22 +73,31 @@ TODO: a figure of the coverage matrix (feature by device).
 : Device coverage of selected tests. {#tbl-ch13-device-coverage-tests}
 
 Neither `test_evaporation_kessler.py` nor `test_coagulation_pressure_switch.py` names a device, so both run on CPU
-only, on every build. Both pass on the CPU and the CUDA builds of @sec-ch13-results. No committed test or check
-compares these two features between CPU and CUDA. One run outside the suite did feed their two reaction sets through
-the kinetics step on both devices and found agreement at round-off. It is an **unreproduced measurement**: its script
-is case-specific and is not part of kintera or of this report, so a reader cannot re-run it from what is committed.
-It is recorded only as a pointer to the gap, not as evidence of CUDA correctness.[^ch13-coverage-probe]
+only, on every build. Both pass on the CPU and the CUDA builds of @sec-ch13-results. No native-suite test compares
+these two features between CPU and CUDA. The report's committed `gpu_probe.py` feeds their reaction decks, 64 cells
+each, through rates, rate constants, the Jacobian and an implicit step on both devices. On a Quadro RTX 4000 the
+largest relative CPU-CUDA difference is $5.08\times10^{-16}$, below the probe's unchanged $10^{-13}$ tolerance.
+This is a measurement on one device outside the native suite, not coverage of every CUDA assertion. Nonfinite
+outputs or incompatible shapes fail the comparison; without a CUDA device the probe exits 3 and compares nothing.
+[^ch13-coverage-probe]
 
 [^ch13-coverage-grep]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; run:
 `python -P src/kintera_report/ch13/runs/device_inventory.py "$KINTERA_REPO" --check src/kintera_report/ch13/runs/device_inventory.json`;
 43 files, 20 containing `cuda`, 23 without; committed file list in `src/kintera_report/ch13/runs/device_inventory.json`.
 Equivalent to `grep -l "cuda" test*.py` in `tests/`; a static inventory, not a CUDA execution result.]
 
-[^ch13-coverage-probe]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML inputs of
-`tests/test_evaporation_kessler.py` and `tests/test_coagulation_pressure_switch.py`, 64 cells; run: `python -P
-gpu_probe.py`, a case-specific script that is not committed, CPU and CUDA, double; CUDA 12.6.85, torch 2.10.0+cu126,
-Python 3.11.13; unreproduced measurement: largest relative CPU-CUDA difference of rates, Jacobian and implicit step
-below $10^{-15}$.]
+[^ch13-coverage-probe]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; deck: `CARD` from
+`tests/test_evaporation_kessler.py` (Kessler form, `k3` = 0.03) and `tests/test_coagulation_pressure_switch.py` (both
+switches), 64 cells each: methane at 70 to 100 K and 1 to 2 bar, one in eight without precipitation; pressures
+$10^3$ to $10^5$ Pa including the threshold and its neighbouring doubles at 80 K; run: `python -P
+src/kintera_report/ch13/runs/gpu_probe.py` with `KINTERA_REPO` at the pin and a matching CUDA source build installed;
+`Kinetics.forward_with_rate_constants`, `Kinetics.jacobian` and `evolve_implicit`, double, step 10 s; Quadro RTX 4000,
+driver 610.57.04, compiler CUDA 12.9.86, torch 2.10.0+cu128 (runtime CUDA 12.8), Python 3.11.13, kintera 2.6.7.
+Recorded in `src/kintera_report/ch13/runs/gpu_probe-rtx4000.out`: largest difference $5.08\times10^{-16}$ (pressure-switch
+implicit step), at most $1.15\times10^{-16}$ for rates, rate constants and Jacobian; switched rate constants and
+Jacobian are bitwise equal. Each difference is $\max|a_{\mathrm{CUDA}}-a_{\mathrm{CPU}}|/\max|a_{\mathrm{CPU}}|$,
+using absolute error if the CPU reference is all zero. Nonfinite values and shape mismatches fail; tolerance
+$10^{-13}$; exit 0 on this run, exit 3 without CUDA. This report probe is outside the native suite.]
 
 ### Limits
 

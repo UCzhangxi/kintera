@@ -7,7 +7,6 @@ Run from the report environment:
 python invariants/check_invariants.py --output invariants-result.json
 python invariants/check_guard_effects.py
 python invariants/inventory_guards.py .reproduce/sources/kintera --check
-python invariants/inventory_guards.py .reproduce/sources/kintera --check --require-effects
 ```
 
 The first command exits 1 for any failed invariant or exception. CPU, binary64,
@@ -68,57 +67,48 @@ commands, source identities and RED/GREEN results are recorded with this PR.
 The inventory check also rejects a changed source tree; that is an inventory
 integrity test, not a substitute for physical effect coverage.
 
-## Floor inventory limitations
+## Guard inventory and source-bound effects
 
-`guard-inventory.json` records every hit of the committed broad lexical search
-across 137 C/C++/CUDA source files, with file hashes, full-SHA links, surrounding
-statements and explicit evidence status. It includes false positives, dimensional
-bounds and comments so exclusions are auditable. `guard-inventory.md` is its
-readable table. Per-occurrence native effect coverage and whole-report
-non-reachability are **not yet established** for all rows. The selected two decks
-do not dispatch photochemistry, evaporation/falloff or TP equilibrium; this
-limited non-dispatch result must not be generalized to the other report cases.
-
-The separate `--require-effects` gate exits 1 while per-occurrence evidence is
-incomplete. The one-command audit includes this gate so inventory completeness
-cannot be mistaken for verified physical coverage.
-
-### Reviewed classification and extracted native operations
-
-`guard-classification.json` / `.md` classify all 250 original candidates and
-17 additional unique hits (267 total). The extra search used
-`(1\.?0?e-|1\.e-|1e-)|\b(?:epsilon|tiny|floor)\b|[?:].*0\.` and manual review
-of constrained Newton, phase-equilibrium and KKT conditions. Literal search
-also finds units, comments and tolerances; those are not automatically species
-floors. The original hashed inventory remains unchanged.
-
-There are 138 applicable physical/numerical operations and 129 excluded
+`guard-inventory.json` preserves the initial 137-file, 250-row lexical inventory.
+`guard-classification.json` / `.md` classify those rows plus 17 supplemental hits:
+267 total, comprising 138 applicable physical/numerical operations and 129 excluded
 comments, diagnostics, dimensions, model selections, stoichiometric definitions
-or uses of an already inventoried bound. These are **not 138 concentration
-floors**. The row descriptions distinguish amounts from derivative denominators,
-rate coefficients, tolerances and state masks.
+and already-bounded uses. These are not 138 concentration floors. The supplemental
+search used `(1\.?0?e-|1\.e-|1e-)|\b(?:epsilon|tiny|floor)\b|[?:].*0\.` plus
+manual review of phase, Newton and KKT conditions. This is lexical/manual coverage,
+not an AST or macro-expansion proof. The supplementary mole-slack locator was
+corrected from line 116 (the following loop) to the assignment at line 115.
 
 ```sh
 python invariants/probe_guard_operations.py .reproduce/sources/kintera \
   --output .reproduce/logs/guard-operations.json \
   --build .reproduce/logs/guard-operation-build
-python invariants/test_guard_coverage.py
+python invariants/probe_source_effects.py .reproduce/sources/kintera \
+  --output .reproduce/logs/guard-source-effects.json \
+  --build .reproduce/logs/guard-source-build
 python invariants/inventory_guards.py .reproduce/sources/kintera --check \
-  --require-effects --effects .reproduce/logs/guard-operations.json
+  --require-effects --effects .reproduce/logs/guard-operations.json \
+  --source-effects .reproduce/logs/guard-source-effects.json
+python invariants/test_guard_coverage.py
 ```
 
-The first command extracts 43 clamp calls from the pinned native source,
-compiles their C++/LibTorch operations, binds the intermediate physical quantity,
-and compares active/boundary/inactive binary64 inputs **exactly**, including
-adjacent representable boundary values. It verifies all 137 source-file hashes
-before compiling. The gas-floor option is explicitly bound to its documented
-1e-20 default; interpolation uses four coordinates; dtype-dependent `tiny`
-uses the binary64 branch. It does not claim execution of the containing solver,
-full-report branch reachability, float32 or CUDA coverage. Other predicates and
-state transitions need additional source-bound or whole-function checks.
+The first probe extracts 43 clamp calls and checks 257 boundary values exactly.
+The second compiles verbatim production statements/expressions and the complete
+native Newton trial function with explicit intermediate physical inputs. Its 97
+fixtures cover the other 95 occurrences, including nonfinite-input rejection,
+policy-disabled and inactive-gradient controls. See `SOURCE-GUARD-EFFECTS.md` and
+the committed JSON inputs/results. The source file hashes, exact fragments,
+manifest and probe identities are checked; missing or failed evidence stays red.
 
-The coverage command still **exits 1: 43 measured, 95 unresolved**. Classification
-alone produces 0 measured / 138 unresolved. Hand-transcribed operation fixtures
-are not credited as native-source evidence. Negative controls reject an omitted
-original candidate and a changed observed value. The unchanged 1000-step
-invariants and actual-source mutations remain the full-solver checks.
+Coverage passes only with both measured artifacts: 138 applicable occurrences,
+zero missing. Classification alone still has zero measured occurrences; the
+clamp-only subset still leaves 95 missing. This does not assert full-report branch
+reachability, float32/CUDA behavior or the physical harmlessness of every floor.
+It measures each listed operation's local physical/numerical effect. The source
+bindings document the binary64 constants, default options and intermediate states.
+
+Exact equality is required except for six log/exp/pow fixtures allowing eight
+binary64 eps relative and zero absolute tolerance for transcendental rounding.
+All measured errors were zero. Existing exact-zero/nonnegative assertions,
+1e-12 per-step budgets and scientific/figure baselines are unchanged. Whole-solver
+source mutation checks remain separate and their original evidence is preserved.

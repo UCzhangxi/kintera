@@ -59,7 +59,7 @@
       "classification": "physical_guard",
       "policy": "residual_tol",
       "reason": "Phase residual stopping target cannot be below binary64 rounding scale.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/arrhenius.cpp:198",
@@ -160,7 +160,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min_(0)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:284",
@@ -173,7 +173,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0.)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:292",
@@ -185,7 +185,7 @@
       "classification": "physical_guard",
       "policy": "inactive_sub",
       "reason": "Supersaturated two-product columns receive zero dummy concentration; this differs from the general solver unit dummy.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:294",
@@ -197,7 +197,7 @@
       "classification": "physical_guard",
       "policy": "product_sum",
       "reason": "Product mask excludes nonproduct concentrations from surface sums.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:300",
@@ -209,7 +209,7 @@
       "classification": "physical_guard",
       "policy": "root_floor",
       "reason": "Evaporation radical/divisor uses the smallest positive normal number.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:301",
@@ -221,7 +221,7 @@
       "classification": "physical_guard",
       "policy": "root_floor",
       "reason": "Evaporation radical/divisor uses the smallest positive normal number.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:303",
@@ -234,7 +234,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:304",
@@ -247,7 +247,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:305",
@@ -259,7 +259,7 @@
       "classification": "physical_guard",
       "policy": "inactive_extent",
       "reason": "Inactive/saturated reaction has exactly zero evaporation extent.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:306",
@@ -272,7 +272,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0.)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation.cpp:310",
@@ -295,7 +295,7 @@
       "classification": "physical_guard",
       "policy": "surface_floor",
       "reason": "Surface concentration in log/division is bounded by the smallest positive binary64 subnormal.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:13",
@@ -307,7 +307,7 @@
       "classification": "physical_guard",
       "policy": "surface_floor",
       "reason": "Surface concentration in log/division is bounded by the smallest positive binary64 subnormal.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:19",
@@ -319,7 +319,7 @@
       "classification": "physical_guard",
       "policy": "finite_state",
       "reason": "General evaporation rejects nonfinite concentrations or log saturation quotients. This row has no qualifying executable evidence yet.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:24",
@@ -332,7 +332,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0.)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:29",
@@ -345,7 +345,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:38",
@@ -379,7 +379,7 @@
       "classification": "physical_guard",
       "policy": "stoich_divisor",
       "reason": "Nonproduct coefficient is replaced by one before logarithm/division, not seeded into species state.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:43",
@@ -392,7 +392,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_max(std::log(maxval) - 1)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:49",
@@ -415,7 +415,7 @@
       "classification": "physical_guard",
       "policy": "stoich_divisor",
       "reason": "Nonproduct coefficient is replaced by one before logarithm/division, not seeded into species state.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:56",
@@ -428,7 +428,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_max(std::log(maxval) - 1)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:57",
@@ -441,7 +441,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:58",
@@ -453,7 +453,7 @@
       "classification": "physical_guard",
       "policy": "stoich_divisor",
       "reason": "Nonproduct coefficient is replaced by one before logarithm/division, not seeded into species state.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:62",
@@ -465,7 +465,7 @@
       "classification": "physical_guard",
       "policy": "candidate_filter",
       "reason": "Nonpositive product bound is ignored through the max-value sentinel.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:64",
@@ -477,7 +477,7 @@
       "classification": "physical_guard",
       "policy": "product_bound",
       "reason": "A product bound can only tighten the available extent bracket.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:66",
@@ -490,7 +490,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:68",
@@ -502,7 +502,7 @@
       "classification": "physical_guard",
       "policy": "gas_selection",
       "reason": "Only consuming gas imposes stock/stoichiometry extent cap; other species use max-finite sentinel before reduction.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:69",
@@ -514,7 +514,7 @@
       "classification": "physical_guard",
       "policy": "gas_bound",
       "reason": "Gas stock caps evaporation extent, preventing overconsumption.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:72",
@@ -526,7 +526,7 @@
       "classification": "physical_guard",
       "policy": "inactive_conc",
       "reason": "Inactive evaporation column receives a finite unit dummy concentration; active columns retain their amounts.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:73",
@@ -538,7 +538,7 @@
       "classification": "physical_guard",
       "policy": "inactive_target",
       "reason": "Inactive column receives a zero log-saturation target.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:74",
@@ -550,7 +550,7 @@
       "classification": "physical_guard",
       "policy": "inactive_upper",
       "reason": "Inactive column has a finite upper bracket of one.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:76",
@@ -562,7 +562,7 @@
       "classification": "physical_guard",
       "policy": "surface_participating",
       "reason": "Nonparticipating species receive a dummy surface value one, while participating surfaces include the stoichiometric increment.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:78",
@@ -575,7 +575,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:91",
@@ -587,7 +587,7 @@
       "classification": "physical_guard",
       "policy": "bracket_hi",
       "reason": "Nonnegative residual tightens the upper root bracket.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:92",
@@ -599,7 +599,7 @@
       "classification": "physical_guard",
       "policy": "bracket_lo",
       "reason": "Negative residual raises the lower root bracket.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:96",
@@ -612,7 +612,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:98",
@@ -635,7 +635,7 @@
       "classification": "physical_guard",
       "policy": "surface_participating",
       "reason": "Nonparticipating species receive a dummy surface value one, while participating surfaces include the stoichiometric increment.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:102",
@@ -648,7 +648,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:108",
@@ -660,7 +660,7 @@
       "classification": "physical_guard",
       "policy": "safeguard_newton",
       "reason": "Newton proposals outside the strict interior are replaced by bisection.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:111",
@@ -672,7 +672,7 @@
       "classification": "physical_guard",
       "policy": "freeze_done",
       "reason": "Converged columns retain their root while active columns continue.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:115",
@@ -684,7 +684,7 @@
       "classification": "physical_guard",
       "policy": "inactive_extent",
       "reason": "Inactive/saturated reaction has exactly zero evaporation extent.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:119",
@@ -696,7 +696,7 @@
       "classification": "physical_guard",
       "policy": "surface_gradient",
       "reason": "Nonparticipating species receive maximum-finite surface value when choosing reciprocal gradient scale.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:121",
@@ -709,7 +709,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:122",
@@ -721,7 +721,7 @@
       "classification": "physical_guard",
       "policy": "surface_scale",
       "reason": "Smallest surface concentration sets reciprocal scaling to avoid overflow.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:127",
@@ -733,7 +733,7 @@
       "classification": "physical_guard",
       "policy": "gradient_mask",
       "reason": "Inactive or invalid negative-input derivatives are zeroed.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evaporation_extent.cpp:129",
@@ -745,7 +745,7 @@
       "classification": "physical_guard",
       "policy": "gradient_active",
       "reason": "Inactive saturation derivatives are zero; active derivatives are retained.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/evolve_implicit_dispatch.cpp:51",
@@ -769,7 +769,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kb_falloff.cpp:118",
@@ -781,7 +781,7 @@
       "classification": "physical_guard",
       "policy": "falloff_zero",
       "reason": "Nonpositive reduced pressure produces zero falloff factor.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:68",
@@ -793,7 +793,7 @@
       "classification": "physical_guard",
       "policy": "reference_T",
       "reason": "Reference temperature used by log entropy is bounded below by 1 K.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:69",
@@ -805,7 +805,7 @@
       "classification": "physical_guard",
       "policy": "reference_P",
       "reason": "Reference pressure used by log entropy is bounded below by 1 Pa.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:300",
@@ -829,7 +829,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0.)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:337",
@@ -841,7 +841,7 @@
       "classification": "physical_guard",
       "policy": "negative_power",
       "reason": "Negative-power derivative at an absent reactant remains finite; zero/negative stock is not used as a negative power base.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:345",
@@ -854,7 +854,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(tiny)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:347",
@@ -866,7 +866,7 @@
       "classification": "physical_guard",
       "policy": "negative_power",
       "reason": "Negative-power derivative at an absent reactant remains finite; zero/negative stock is not used as a negative power base.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:348",
@@ -878,7 +878,7 @@
       "classification": "physical_guard",
       "policy": "negative_power",
       "reason": "Negative-power derivative at an absent reactant remains finite; zero/negative stock is not used as a negative power base.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:378",
@@ -902,7 +902,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-250)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:400",
@@ -914,7 +914,7 @@
       "classification": "physical_guard",
       "policy": "infer_rate",
       "reason": "A zero mass-action product does not permit division by zero to infer k; its inferred k is zero.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:401",
@@ -926,7 +926,7 @@
       "classification": "physical_guard",
       "policy": "infer_rate",
       "reason": "A zero mass-action product does not permit division by zero to infer k; its inferred k is zero.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:420",
@@ -938,7 +938,7 @@
       "classification": "physical_guard",
       "policy": "order_mask",
       "reason": "Zero reaction order gets zero derivative exponent instead of minus one; fractional order retains its negative exponent.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:424",
@@ -950,7 +950,7 @@
       "classification": "physical_guard",
       "policy": "negative_power",
       "reason": "Negative-power derivative at an absent reactant remains finite; zero/negative stock is not used as a negative power base.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:436",
@@ -963,7 +963,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0.)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:446",
@@ -975,7 +975,7 @@
       "classification": "physical_guard",
       "policy": "solid_divisor",
       "reason": "Dummy divisor one where solid is nonpositive prevents a singular evaporation derivative.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:568",
@@ -1010,7 +1010,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0.)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:585",
@@ -1023,7 +1023,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0.)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:602",
@@ -1047,7 +1047,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-250)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:611",
@@ -1060,7 +1060,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-250)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:614",
@@ -1084,7 +1084,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-250)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/kinetics.cpp:621",
@@ -1096,7 +1096,7 @@
       "classification": "physical_guard",
       "policy": "reverse_derivative",
       "reason": "When Kc floor is active its derivative is zero, including the boundary.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/lindemann_falloff.cpp:248",
@@ -1131,7 +1131,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(1e-100)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/lindemann_falloff.cpp:263",
@@ -1156,7 +1156,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(1e-300, 1e300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/sri_falloff.cpp:253",
@@ -1181,7 +1181,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(1e-300, 1e300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/sri_falloff.cpp:314",
@@ -1216,7 +1216,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(1e-100)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/sri_falloff.cpp:330",
@@ -1263,7 +1263,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(1e-300, 1e300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/troe_falloff.cpp:249",
@@ -1288,7 +1288,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(1e-300, 1e300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/troe_falloff.cpp:310",
@@ -1323,7 +1323,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(1e-100)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/kinetics/troe_falloff.cpp:326",
@@ -1403,7 +1403,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(0, 2)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/interpolation.cpp:48",
@@ -1415,7 +1415,7 @@
       "classification": "physical_guard",
       "policy": "duplicate_coord",
       "reason": "Coincident interpolation coordinates use denominator one instead of zero.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/interpolation.cpp:54",
@@ -1428,7 +1428,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp(0.0, 1.0)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/leastsq_kkt.h:357",
@@ -1440,7 +1440,7 @@
       "classification": "physical_guard",
       "policy": "slack_skip",
       "reason": "Only a consuming direction with tighter slack limits the KKT step.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/leastsq_kkt.h:360",
@@ -1452,7 +1452,7 @@
       "classification": "physical_guard",
       "policy": "slack_alpha",
       "reason": "Negative slack is not allowed to reverse an active-set step.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/leastsq_kkt.h:588",
@@ -1475,7 +1475,7 @@
       "classification": "physical_guard",
       "policy": "eigen_drop",
       "reason": "Singular modes at or below rank cutoff are omitted.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/photochem/jacobian_photolysis.cpp:20",
@@ -1510,7 +1510,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-30)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/photochem/jacobian_photolysis.cpp:41",
@@ -1523,7 +1523,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-30)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/photochem/kinetics_base_reader.cpp:1618",
@@ -1580,7 +1580,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/photochem/photochem.cpp:136",
@@ -1593,7 +1593,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/photochem/photolysis.cpp:312",
@@ -1617,7 +1617,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(0)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:63",
@@ -1629,7 +1629,7 @@
       "classification": "physical_guard",
       "policy": "negative_gas",
       "reason": "TP rejects negative gas fractions, but not exact zero.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:71",
@@ -1641,7 +1641,7 @@
       "classification": "physical_guard",
       "policy": "negative_cloud",
       "reason": "Negative cloud/input concentration is reset to zero; nonnegative input is unchanged.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:170",
@@ -1653,7 +1653,7 @@
       "classification": "physical_guard",
       "policy": "log_clip",
       "reason": "Bound exponent range of phase-equilibrium derivatives.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:192",
@@ -1665,7 +1665,7 @@
       "classification": "physical_guard",
       "policy": "zero_fraction",
       "reason": "Finite Jacobian surrogate replaces division by exactly zero fraction.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:278",
@@ -1688,7 +1688,7 @@
       "classification": "physical_guard",
       "policy": "stock_tp",
       "reason": "Limit reaction extent to stock/demand, with zero allowance for absent or negative stock.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:293",
@@ -1700,7 +1700,7 @@
       "classification": "physical_guard",
       "policy": "extent_min",
       "reason": "Consumption uses the smallest admissible stock fraction.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:305",
@@ -1712,7 +1712,7 @@
       "classification": "physical_guard",
       "policy": "positive_vapor",
       "reason": "TP line search rejects negative gas and depletion of previously positive gas to zero.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:312",
@@ -1724,7 +1724,7 @@
       "classification": "physical_guard",
       "policy": "step_underflow",
       "reason": "An exhausted line-search factor returns an error rather than an unbounded update.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:339",
@@ -1736,7 +1736,7 @@
       "classification": "physical_guard",
       "policy": "mix_floor",
       "reason": "Log mixing fraction is finite at zero; stored amount is not changed.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:350",
@@ -1748,7 +1748,7 @@
       "classification": "physical_guard",
       "policy": "active_species",
       "reason": "Log/gain contribution only uses participating positive species.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:65",
@@ -1760,7 +1760,7 @@
       "classification": "physical_guard",
       "policy": "saturation",
       "reason": "Partition vapour is min(saturation concentration,total stock) without overflowing exp.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:66",
@@ -1772,7 +1772,7 @@
       "classification": "physical_guard",
       "policy": "vapor_cap",
       "reason": "Vapour cannot exceed total available material; remaining material is condensate.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:106",
@@ -1784,7 +1784,7 @@
       "classification": "physical_guard",
       "policy": "saturated_derivative",
       "reason": "Skip latent derivative when all available material is gas.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:178",
@@ -1796,7 +1796,7 @@
       "classification": "physical_guard",
       "policy": "energy_tol",
       "reason": "UV energy stopping tolerance scales with absolute energy terms; no amount repair.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:310",
@@ -1808,7 +1808,7 @@
       "classification": "physical_guard",
       "policy": "negative_cloud",
       "reason": "Negative cloud/input concentration is reset to zero; nonnegative input is unchanged.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:360",
@@ -1842,7 +1842,7 @@
       "classification": "physical_guard",
       "policy": "log_clip_uv",
       "reason": "UV log ratio is limited to avoid overflow in exp(2 log_r).",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:467",
@@ -1854,7 +1854,7 @@
       "classification": "physical_guard",
       "policy": "zero_conc",
       "reason": "UV zero-concentration derivative uses the finite exponential surrogate.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:518",
@@ -1888,7 +1888,7 @@
       "classification": "physical_guard",
       "policy": "stock_uv",
       "reason": "UV extent budget is capped by the most depleted reactant stock.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:530",
@@ -1900,7 +1900,7 @@
       "classification": "physical_guard",
       "policy": "stock_uv",
       "reason": "UV extent budget is capped by the most depleted reactant stock.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:539",
@@ -1912,7 +1912,7 @@
       "classification": "physical_guard",
       "policy": "extent_min",
       "reason": "Consumption uses the smallest admissible stock fraction.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:549",
@@ -1924,7 +1924,7 @@
       "classification": "physical_guard",
       "policy": "vapor_ratio",
       "reason": "UV line search retains changes within a factor 100; it does not seed zero gas.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:550",
@@ -1936,7 +1936,7 @@
       "classification": "physical_guard",
       "policy": "vapor_ratio",
       "reason": "UV line search retains changes within a factor 100; it does not seed zero gas.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:556",
@@ -1948,7 +1948,7 @@
       "classification": "physical_guard",
       "policy": "step_underflow",
       "reason": "An exhausted line-search factor returns an error rather than an unbounded update.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:569",
@@ -1960,7 +1960,7 @@
       "classification": "physical_guard",
       "policy": "temperature_tol",
       "reason": "Caloric iteration stopping temperature bound; not a concentration floor.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/eval_uhs.cpp:60",
@@ -2094,7 +2094,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/eval_uhs.cpp:400",
@@ -2107,7 +2107,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(1e-300)",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/extrapolate_ad.cpp:17",
@@ -2130,7 +2130,7 @@
       "classification": "physical_guard",
       "policy": "row_scale",
       "reason": "A zero row norm uses divisor one; valid rows retain their norm.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/extrapolate_ad.cpp:84",
@@ -2725,7 +2725,7 @@
       "classification": "physical_guard",
       "policy": "gas_floor",
       "reason": "Configured default gas floor is 1e-20 mol/m3; cloud amounts are outside this floor.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_dispatch.cpp:55",
@@ -2781,7 +2781,7 @@
       "classification": "physical_guard",
       "policy": "reference_T",
       "reason": "Reference temperature used by log entropy is bounded below by 1 K.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_x.cpp:72",
@@ -2793,7 +2793,7 @@
       "classification": "physical_guard",
       "policy": "reference_P",
       "reason": "Reference pressure used by log entropy is bounded below by 1 Pa.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_x.cpp:254",
@@ -2827,7 +2827,7 @@
       "classification": "physical_guard",
       "policy": "secant_guard",
       "reason": "Zero/nonfinite secant slope falls back to the existing caloric slope.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_x.cpp:297",
@@ -2839,7 +2839,7 @@
       "classification": "physical_guard",
       "policy": "freeze_temperature",
       "reason": "Unconverged cells update temperature exponentially; converged cells retain temperature. This is NOT a positivity repair or an invalid-trial fallback.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_x.cpp:332",
@@ -2852,7 +2852,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min_(options->gas_floor())",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_x.cpp:343",
@@ -2875,7 +2875,7 @@
       "classification": "physical_guard",
       "policy": "reference_T",
       "reason": "Reference temperature used by log entropy is bounded below by 1 K.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_y.cpp:74",
@@ -2887,7 +2887,7 @@
       "classification": "physical_guard",
       "policy": "reference_P",
       "reason": "Reference pressure used by log entropy is bounded below by 1 Pa.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_y.cpp:368",
@@ -2911,7 +2911,7 @@
       "policy": "native_clamp",
       "native_call": ".clamp_min(options->gas_floor())",
       "reason": "Native source clamp applied to the explicitly supplied intermediate quantity; active, boundary and inactive inputs are tested.",
-      "evidence_status": "Native clamp extraction: require numerical evidence; classification is not coverage."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/thermo_y.cpp:480",
@@ -2967,7 +2967,7 @@
       "classification": "physical_guard",
       "policy": "branch_denominator",
       "reason": "Photolysis branch normalization adds 1e-30 to the rate denominator; zero input therefore has a nonzero denominator.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/constrained_newton.h:44",
@@ -2979,7 +2979,7 @@
       "classification": "physical_guard",
       "policy": "newton_active",
       "reason": "Outward Newton direction at a depleted/negative stock is rejected.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/constrained_newton.h:81",
@@ -2991,7 +2991,7 @@
       "classification": "physical_guard",
       "policy": "trial_nonnegative",
       "reason": "Reject negative or nonfinite trial amount; exactly zero is allowed for non-strict species.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/constrained_newton.h:82",
@@ -3003,7 +3003,7 @@
       "classification": "physical_guard",
       "policy": "trial_floor",
       "reason": "Strict-positive species must exceed the floor.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/constrained_newton.h:83",
@@ -3015,7 +3015,7 @@
       "classification": "physical_guard",
       "policy": "trial_ratio",
       "reason": "Trial changes larger than factor 100 in either direction are rejected.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/constrained_newton.h:84",
@@ -3027,7 +3027,7 @@
       "classification": "physical_guard",
       "policy": "trial_ratio",
       "reason": "Trial changes larger than factor 100 in either direction are rejected.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/equilibrium/equilibrium.hpp:34",
@@ -3039,7 +3039,7 @@
       "classification": "physical_guard",
       "policy": "mole_floor",
       "reason": "Strict phase-solver domain: reject amounts at or below the configured floor; no silent seeding.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/equilibrium/phase_equilibrate_tp.h:58",
@@ -3051,19 +3051,20 @@
       "classification": "physical_guard",
       "policy": "mole_floor",
       "reason": "Strict phase-solver domain: reject amounts at or below the configured floor; no silent seeding.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
-      "id": "src/equilibrium/phase_equilibrate_tp.h:116",
+      "id": "src/equilibrium/phase_equilibrate_tp.h:115",
       "path": "src/equilibrium/phase_equilibrate_tp.h",
-      "line": 116,
-      "code": "for (int j = 0; j < nreaction; ++j) {",
-      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/equilibrium/phase_equilibrate_tp.h#L116",
+      "line": 115,
+      "code": "bounds[i] = out_moles[i] - mole_floor;",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/equilibrium/phase_equilibrate_tp.h#L115",
       "source_context": "    for (int i = 0; i < nspecies; ++i) {\n      bounds[i] = out_moles[i] - mole_floor;\n      for (int j = 0; j < nreaction; ++j) {\n        constraints[i * nreaction + j] = -stoich[i * nreaction + j];\n      }\n    }",
       "classification": "physical_guard",
       "policy": "mole_bounds",
       "reason": "Constraint slack n-floor limits how much matter may be removed.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage.",
+      "previous_locator": "src/equilibrium/phase_equilibrate_tp.h:116"
     },
     {
       "id": "src/equilibrium/phase_equilibrate_tp.h:138",
@@ -3075,7 +3076,7 @@
       "classification": "physical_guard",
       "policy": "mole_trial",
       "reason": "Phase solver passes mole_floor into the strict native trial-state domain.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/psolve.h:131",
@@ -3087,7 +3088,7 @@
       "classification": "physical_guard",
       "policy": "eigen_roundoff",
       "reason": "Only tiny negative eigenvalues from roundoff are set to zero; not a species clamp.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/psolve.h:137",
@@ -3099,7 +3100,7 @@
       "classification": "physical_guard",
       "policy": "eigen_tol",
       "reason": "Pseudoinverse rank cutoff scales with largest eigenvalue.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/leastsq_kkt.h:232",
@@ -3111,7 +3112,7 @@
       "classification": "physical_guard",
       "policy": "origin_tol",
       "reason": "Feasible-origin tolerance scales with constraint stock, rather than an absolute species floor.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/leastsq_kkt.h:483",
@@ -3123,7 +3124,7 @@
       "classification": "physical_guard",
       "policy": "active_origin",
       "reason": "Active single-variable bound is imposed exactly; zero stock gives exactly zero extent.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/math/leastsq_kkt.h:492",
@@ -3135,7 +3136,7 @@
       "classification": "physical_guard",
       "policy": "active_origin",
       "reason": "Active single-variable bound is imposed exactly; zero stock gives exactly zero extent.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_tp.h:284",
@@ -3147,7 +3148,7 @@
       "classification": "physical_guard",
       "policy": "consumption",
       "reason": "Only negative species increments contribute to demand; production must not cancel consumption.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     },
     {
       "id": "src/thermo/equilibrate_uv.h:525",
@@ -3159,10 +3160,10 @@
       "classification": "physical_guard",
       "policy": "consumption",
       "reason": "Only negative species increments contribute to demand; production must not cancel consumption.",
-      "evidence_status": "UNVERIFIED: reviewed operation fixture is not source-extracted or a demonstrated full-report reachability result."
+      "evidence_status": "Requires passing source-extracted numerical evidence; classification alone is not coverage."
     }
   ],
-  "coverage_note": "43 source-extracted clamp operations have executable boundary probes. The other 95 applicable rows remain UNVERIFIED; do not credit hand-transcribed policies as production evidence.",
+  "coverage_note": "All 138 applicable rows have committed source-bound fixtures: 43 clamp operations and 95 statement/function operations. Coverage is granted only by verified runtime result files, never this classification.",
   "search_gaps": [
     "Lexical/manual review, not an AST proof. Macro expansion and guards outside src are not covered.",
     "Float32/CUDA behavior is not established by the binary64 CPU operation probes.",

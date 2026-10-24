@@ -1,0 +1,2968 @@
+{
+  "source": "e357792d50639d68e9090b542edf038d2b029aa2",
+  "scope": "Source-extracted statements/functions with explicit intermediate physical inputs; not full-report branch coverage.",
+  "fixtures": [
+    {
+      "name": "phase-residual-target",
+      "rows": [
+        "src/equilibrium/phase_equilibrate_tp.h:84"
+      ],
+      "fragments": [
+        {
+          "path": "src/equilibrium/phase_equilibrate_tp.h",
+          "start": 84,
+          "end": 84,
+          "kind": "lines",
+          "source_text": "  T target = fmax(log1p(ftol), 4. * std::numeric_limits<T>::epsilon());"
+        }
+      ],
+      "bindings": "T ftol=z;",
+      "result": "return target;",
+      "inputs": [
+        0,
+        1e-06
+      ],
+      "expected": [
+        8.881784197001252e-16,
+        9.999995000003334e-07
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 1.7763568394002505e-15,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "reject-negative-gas",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:63"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 63,
+          "end": 66,
+          "kind": "lines",
+          "source_text": "    if (xfrac[i] < 0) {\n      printf(\"Error: Negative gas fraction for species %d.\\n\", i);\n      return 1;  // error: negative gas fraction\n    }"
+        }
+      ],
+      "bindings": "double xfrac[]={z}; int i=0;",
+      "result": "return 0.;",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        1,
+        0,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "reset-negative-cloud",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:71"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 71,
+          "end": 79,
+          "kind": "lines",
+          "source_text": "    if (xfrac[i] < 0) {\n      printf(\n          \"Warning: Negative solid concentration (%f) for species %d. Setting \"\n          \"to \"\n          \"zero\\n\",\n          xfrac[i], i);\n      xfrac[i] = 0.;\n      // return 1;  // error: negative solid concentration\n    }"
+        }
+      ],
+      "bindings": "double xfrac[]={z}; int i=0;",
+      "result": "return xfrac[0];",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "TP-log-bound",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:170"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 169,
+          "end": 170,
+          "kind": "lines",
+          "source_text": "        T bound = 0.5 * log(std::numeric_limits<T>::max());\n        log_r = fmax(-bound, fmin(bound, log_r));"
+        }
+      ],
+      "bindings": "T log_r=z;",
+      "result": "return log_r;",
+      "inputs": [
+        -1000,
+        0,
+        1000
+      ],
+      "expected": [
+        -354.891356446692,
+        0,
+        354.891356446692
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 1.7763568394002505e-15,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "TP-empty-jacobian",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:192"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 191,
+          "end": 193,
+          "kind": "lines",
+          "source_text": "            weight[first * nspecies + i] +=\n                xfrac[i] > 0. ? nu / xfrac[i]\n                              : (nu > 0. ? 1. : -1.) * exp(-log_r);"
+        }
+      ],
+      "bindings": "double weight[]={0.},xfrac[]={z},nu=1.,log_r=0.; int first=0,nspecies=1,i=0;",
+      "result": "return weight[0];",
+      "inputs": [
+        0,
+        0.5,
+        1
+      ],
+      "expected": [
+        1,
+        2,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "TP-stock-cap",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:287"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 286,
+          "end": 287,
+          "kind": "lines",
+          "source_text": "      theta[i] =\n          demand > xfrac0[i] ? (xfrac0[i] > 0. ? xfrac0[i] / demand : 0.) : 1.;"
+        }
+      ],
+      "bindings": "double theta[]={0.},xfrac0[]={z},demand=2.; int i=0;",
+      "result": "return theta[0];",
+      "inputs": [
+        -1,
+        0,
+        1,
+        4
+      ],
+      "expected": [
+        0,
+        0,
+        0.5,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "TP-extent-cap",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:293"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 293,
+          "end": 293,
+          "kind": "lines",
+          "source_text": "        if (ck < 0. && theta[i] < lam) lam = theta[i];"
+        }
+      ],
+      "bindings": "double ck=-1.,theta[]={z},lam=1.; int i=0;",
+      "result": "return lam;",
+      "inputs": [
+        0,
+        0.25,
+        1,
+        2
+      ],
+      "expected": [
+        0,
+        0.25,
+        1,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "TP-positive-vapor",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:305"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 305,
+          "end": 306,
+          "kind": "lines",
+          "source_text": "        if (i < ngas && (xfrac[i] < 0. || (xfrac0[i] > 0. && xfrac[i] == 0.)))\n          positive_vapor = false;"
+        }
+      ],
+      "bindings": "double xfrac[]={z},xfrac0[]={1.}; int i=0,ngas=1; bool positive_vapor=true;",
+      "result": "return positive_vapor;",
+      "inputs": [
+        -1,
+        0,
+        0.01
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "TP-line-search-underflow",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:312"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 312,
+          "end": 315,
+          "kind": "lines",
+          "source_text": "      if (lambda < std::numeric_limits<T>::min()) {\n        kkt_err = 4;\n        break;\n      }"
+        }
+      ],
+      "bindings": "double lambda=z; int kkt_err=0; do {",
+      "result": "}while(false); return kkt_err;",
+      "inputs": [
+        0,
+        2.2250738585072014e-308,
+        1
+      ],
+      "expected": [
+        4,
+        0,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "TP-log-mixing-floor",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:339"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 338,
+          "end": 339,
+          "kind": "lines",
+          "source_text": "        log_frac_sum += (-stoich[i * nreaction + j]) *\n                        log(fmax(xfrac[i] / xg, std::numeric_limits<T>::min()));"
+        }
+      ],
+      "bindings": "double log_frac_sum=0,stoich[]={-1.},xfrac[]={z},xg=1.; int i=0,j=0,nreaction=1;",
+      "result": "return log_frac_sum;",
+      "inputs": [
+        0,
+        2.2250738585072014e-308,
+        1
+      ],
+      "expected": [
+        -708.3964185322641,
+        -708.3964185322641,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 1.7763568394002505e-15,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "TP-active-positive-species",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:350"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 350,
+          "end": 352,
+          "kind": "lines",
+          "source_text": "        if (stoich[i * nreaction + j] != 0. && xfrac[i] > 0.) {\n          weight[first * nspecies + i] -= stoich[i * nreaction + j] / xfrac[i];\n        }"
+        }
+      ],
+      "bindings": "double weight[]={0.},stoich[]={1.},xfrac[]={z}; int i=0,j=0,nreaction=1,first=0,nspecies=1;",
+      "result": "return weight[0];",
+      "inputs": [
+        0,
+        0.5,
+        1
+      ],
+      "expected": [
+        0,
+        -2,
+        -1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-saturation-stock",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:65"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 65,
+          "end": 65,
+          "kind": "lines",
+          "source_text": "    T vapor = log_saturation >= log(total) ? total : exp(log_saturation);"
+        }
+      ],
+      "bindings": "double log_saturation=z,total=1.;",
+      "result": "return vapor;",
+      "inputs": [
+        -100,
+        0,
+        1
+      ],
+      "expected": [
+        3.720075976020836e-44,
+        1,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 1.7763568394002505e-15,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-vapor-roundoff-cap",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:66"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 66,
+          "end": 66,
+          "kind": "lines",
+          "source_text": "    if (vapor > total) vapor = total;"
+        }
+      ],
+      "bindings": "double vapor=z,total=1.;",
+      "result": "return vapor;",
+      "inputs": [
+        0.5,
+        1,
+        2
+      ],
+      "expected": [
+        0.5,
+        1,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-latent-derivative-skip",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:106"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 106,
+          "end": 106,
+          "kind": "lines",
+          "source_text": "    if (conc[vapor_index] >= totals[reaction_index]) continue;"
+        }
+      ],
+      "bindings": "double conc[]={z},totals[]={1.}; int vapor_index=0,reaction_index=0; double evaluated=0; for(int iteration=0;iteration<1;iteration++){",
+      "result": "evaluated=1;} return evaluated;",
+      "inputs": [
+        0.5,
+        1,
+        2
+      ],
+      "expected": [
+        1,
+        0,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-energy-roundoff-budget",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:178"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 177,
+          "end": 178,
+          "kind": "lines",
+          "source_text": "    tolerance =\n        64. * std::numeric_limits<T>::epsilon() * fmax(energy_scale, terms);"
+        }
+      ],
+      "bindings": "double tolerance=0,energy_scale=1.,terms=z;",
+      "result": "return tolerance;",
+      "inputs": [
+        0,
+        1,
+        10
+      ],
+      "expected": [
+        1.4210854715202004e-14,
+        1.4210854715202004e-14,
+        1.4210854715202004e-13
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-negative-reset",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:310"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 310,
+          "end": 316,
+          "kind": "lines",
+          "source_text": "    if (conc[i] < 0) {\n      printf(\"Warning: Negative concentration for species %d = %g.\\n\", i,\n             conc[i]);\n      printf(\"Setting it to zero.\\n\");\n      conc[i] = 0.;\n      // return 1;  // error: negative concentration\n    }"
+        }
+      ],
+      "bindings": "double conc[]={z}; int i=0;",
+      "result": "return conc[0];",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-log-bound",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:444"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 443,
+          "end": 444,
+          "kind": "lines",
+          "source_text": "        T log_r_min = -0.5 * log(std::numeric_limits<T>::max());\n        log_r = fmax(log_r_min, fmin(-log_r_min, log_r));"
+        }
+      ],
+      "bindings": "T log_r=z;",
+      "result": "return log_r;",
+      "inputs": [
+        -1000,
+        0,
+        1000
+      ],
+      "expected": [
+        -354.891356446692,
+        0,
+        354.891356446692
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 1.7763568394002505e-15,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-empty-jacobian",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:467"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 466,
+          "end": 468,
+          "kind": "lines",
+          "source_text": "            weight[first * nspecies + i] +=\n                conc[i] == 0. ? (nu > 0. ? 1. : -1.) * exp(-log_r)\n                              : nu / conc[i];"
+        }
+      ],
+      "bindings": "double weight[]={0.},conc[]={z},nu=1.,log_r=0.; int first=0,nspecies=1,i=0;",
+      "result": "return weight[0];",
+      "inputs": [
+        0,
+        0.5,
+        1
+      ],
+      "expected": [
+        1,
+        2,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-stock-cap",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:529",
+        "src/thermo/equilibrate_uv.h:530"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 529,
+          "end": 533,
+          "kind": "lines",
+          "source_text": "      if (demand > conc0[i]) {\n        theta[i] = conc0[i] > 0. ? conc0[i] / demand : 0.;\n      } else {\n        theta[i] = 1.;\n      }"
+        }
+      ],
+      "bindings": "double theta[]={0.},conc0[]={z},demand=2.; int i=0;",
+      "result": "return theta[0];",
+      "inputs": [
+        -1,
+        0,
+        1,
+        4
+      ],
+      "expected": [
+        0,
+        0,
+        0.5,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-extent-cap",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:539"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 539,
+          "end": 539,
+          "kind": "lines",
+          "source_text": "        if (ck < 0. && theta[i] < lam) lam = theta[i];"
+        }
+      ],
+      "bindings": "double ck=-1.,theta[]={z},lam=1.; int i=0;",
+      "result": "return lam;",
+      "inputs": [
+        0,
+        0.25,
+        1,
+        2
+      ],
+      "expected": [
+        0,
+        0.25,
+        1,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-vapor-ratio",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:549",
+        "src/thermo/equilibrate_uv.h:550"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 549,
+          "end": 551,
+          "kind": "lines",
+          "source_text": "        if ((i < ngas) && (conc0[i] > 0.) &&\n            ((conc[i] / conc0[i] > 100.) || (conc[i] / conc0[i] < 0.01)))\n          good = false;"
+        }
+      ],
+      "bindings": "double conc[]={z},conc0[]={1.}; int i=0,ngas=1; bool good=true;",
+      "result": "return good;",
+      "inputs": [
+        0.001,
+        0.01,
+        1,
+        100,
+        101
+      ],
+      "expected": [
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-line-search-underflow",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:556"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 556,
+          "end": 559,
+          "kind": "lines",
+          "source_text": "      if (lambda < std::numeric_limits<T>::min()) {\n        err_code = 4;\n        break;\n      }"
+        }
+      ],
+      "bindings": "double lambda=z; int err_code=0; do {",
+      "result": "}while(false); return err_code;",
+      "inputs": [
+        0,
+        2.2250738585072014e-308,
+        1
+      ],
+      "expected": [
+        4,
+        0,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "UV-temperature-stop",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:569"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 569,
+          "end": 570,
+          "kind": "call",
+          "token": "fmax",
+          "source_text": "           fmax(T(1.e-4),\n                T(8.) * std::numeric_limits<T>::epsilon() * fabs(*temp))) {"
+        }
+      ],
+      "bindings": "double temperature=z; double* temp=&temperature;",
+      "result": "return {{0}};",
+      "inputs": [
+        0,
+        300,
+        1000000000000.0
+      ],
+      "expected": [
+        0.0001,
+        0.0001,
+        0.0017763568394002505
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "consumption-284",
+      "rows": [
+        "src/thermo/equilibrate_tp.h:284"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_tp.h",
+          "start": 284,
+          "end": 284,
+          "kind": "lines",
+          "source_text": "        if (ck < 0.) demand -= ck;"
+        }
+      ],
+      "bindings": "double ck=z,demand=0.;",
+      "result": "return demand;",
+      "inputs": [
+        -2,
+        0,
+        2
+      ],
+      "expected": [
+        2,
+        0,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "consumption-525",
+      "rows": [
+        "src/thermo/equilibrate_uv.h:525"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/equilibrate_uv.h",
+          "start": 525,
+          "end": 525,
+          "kind": "lines",
+          "source_text": "        if (ck < 0.) demand -= ck;"
+        }
+      ],
+      "bindings": "double ck=z,demand=0.;",
+      "result": "return demand;",
+      "inputs": [
+        -2,
+        0,
+        2
+      ],
+      "expected": [
+        2,
+        0,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "kinetics-reference-T",
+      "rows": [
+        "src/kinetics/kinetics.cpp:68"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 68,
+          "end": 68,
+          "kind": "lines",
+          "source_text": "      auto Tref = std::max(options->Tref(), 1.);"
+        }
+      ],
+      "bindings": "struct Opt {double value; double Tref(){return value;} double Pref(){return value;}} opt{z}; auto options=&opt;",
+      "result": "return Tref;",
+      "inputs": [
+        -1,
+        0,
+        1,
+        300
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        300
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "kinetics-reference-P",
+      "rows": [
+        "src/kinetics/kinetics.cpp:69"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 69,
+          "end": 69,
+          "kind": "lines",
+          "source_text": "      auto Pref = std::max(options->Pref(), 1.);"
+        }
+      ],
+      "bindings": "struct Opt {double value; double Tref(){return value;} double Pref(){return value;}} opt{z}; auto options=&opt;",
+      "result": "return Pref;",
+      "inputs": [
+        -1,
+        0,
+        1,
+        300
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        300
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "thermo_x-reference-T",
+      "rows": [
+        "src/thermo/thermo_x.cpp:71"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/thermo_x.cpp",
+          "start": 71,
+          "end": 71,
+          "kind": "lines",
+          "source_text": "      auto Tref = std::max(options->Tref(), 1.);"
+        }
+      ],
+      "bindings": "struct Opt {double value; double Tref(){return value;} double Pref(){return value;}} opt{z}; auto options=&opt;",
+      "result": "return Tref;",
+      "inputs": [
+        -1,
+        0,
+        1,
+        300
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        300
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "thermo_x-reference-P",
+      "rows": [
+        "src/thermo/thermo_x.cpp:72"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/thermo_x.cpp",
+          "start": 72,
+          "end": 72,
+          "kind": "lines",
+          "source_text": "      auto Pref = std::max(options->Pref(), 1.);"
+        }
+      ],
+      "bindings": "struct Opt {double value; double Tref(){return value;} double Pref(){return value;}} opt{z}; auto options=&opt;",
+      "result": "return Pref;",
+      "inputs": [
+        -1,
+        0,
+        1,
+        300
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        300
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "thermo_y-reference-T",
+      "rows": [
+        "src/thermo/thermo_y.cpp:73"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/thermo_y.cpp",
+          "start": 73,
+          "end": 73,
+          "kind": "lines",
+          "source_text": "      auto Tref = std::max(options->Tref(), 1.);"
+        }
+      ],
+      "bindings": "struct Opt {double value; double Tref(){return value;} double Pref(){return value;}} opt{z}; auto options=&opt;",
+      "result": "return Tref;",
+      "inputs": [
+        -1,
+        0,
+        1,
+        300
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        300
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "thermo_y-reference-P",
+      "rows": [
+        "src/thermo/thermo_y.cpp:74"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/thermo_y.cpp",
+          "start": 74,
+          "end": 74,
+          "kind": "lines",
+          "source_text": "      auto Pref = std::max(options->Pref(), 1.);"
+        }
+      ],
+      "bindings": "struct Opt {double value; double Tref(){return value;} double Pref(){return value;}} opt{z}; auto options=&opt;",
+      "result": "return Pref;",
+      "inputs": [
+        -1,
+        0,
+        1,
+        300
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        300
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "eigen-roundoff",
+      "rows": [
+        "src/math/psolve.h:131"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/psolve.h",
+          "start": 131,
+          "end": 131,
+          "kind": "lines",
+          "source_text": "    if (eval[i] < 0 && eval[i] > -1e-14) eval[i] = 0.0;"
+        }
+      ],
+      "bindings": "double eval[]={z}; int i=0;",
+      "result": "return eval[0];",
+      "inputs": [
+        -1e-12,
+        -1e-15,
+        0,
+        1
+      ],
+      "expected": [
+        -1e-12,
+        0,
+        0,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "eigen-cutoff",
+      "rows": [
+        "src/math/psolve.h:137"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/psolve.h",
+          "start": 137,
+          "end": 137,
+          "kind": "lines",
+          "source_text": "  T tol = (maxlam > 0 ? maxlam : 1.0) * 1e-12;"
+        }
+      ],
+      "bindings": "double maxlam=z;",
+      "result": "return tol;",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        1e-12,
+        1e-12,
+        2e-12
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "eigen-drop",
+      "rows": [
+        "src/math/psolve.h:142"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/psolve.h",
+          "start": 142,
+          "end": 142,
+          "kind": "lines",
+          "source_text": "    if (lam <= tol) continue;  // treat as zero singular value"
+        }
+      ],
+      "bindings": "double lam=z,tol=1e-12,used=0; for(int iteration=0;iteration<1;iteration++){",
+      "result": "used=1;} return used;",
+      "inputs": [
+        0,
+        1e-12,
+        2e-12
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "origin-tolerance",
+      "rows": [
+        "src/math/leastsq_kkt.h:232"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/leastsq_kkt.h",
+          "start": 232,
+          "end": 232,
+          "kind": "lines",
+          "source_text": "    T origin_tolerance = 64. * std::numeric_limits<T>::epsilon() * bound_scale;"
+        }
+      ],
+      "bindings": "double bound_scale=z;",
+      "result": "return origin_tolerance;",
+      "inputs": [
+        0,
+        1,
+        10
+      ],
+      "expected": [
+        0,
+        1.4210854715202004e-14,
+        1.4210854715202004e-13
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "slack-skip",
+      "rows": [
+        "src/math/leastsq_kkt.h:357"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/leastsq_kkt.h",
+          "start": 357,
+          "end": 357,
+          "kind": "lines",
+          "source_text": "        if (!(cp > 0.) || !(slack < alpha * cp)) continue;"
+        }
+      ],
+      "bindings": "double cp=1.,slack=z,alpha=1.,used=0; for(int iteration=0;iteration<1;iteration++){",
+      "result": "used=1;} return used;",
+      "inputs": [
+        -1,
+        0,
+        0.5,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "slack-step-cap",
+      "rows": [
+        "src/math/leastsq_kkt.h:360"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/leastsq_kkt.h",
+          "start": 360,
+          "end": 360,
+          "kind": "lines",
+          "source_text": "          alpha = fmax(slack, T(0.)) / cp;"
+        }
+      ],
+      "bindings": "double slack=z,cp=1.,alpha=1.;",
+      "result": "return alpha;",
+      "inputs": [
+        -1,
+        0,
+        0.5,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        0.5,
+        2
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "exact-active-origin",
+      "rows": [
+        "src/math/leastsq_kkt.h:483",
+        "src/math/leastsq_kkt.h:492"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/leastsq_kkt.h",
+          "start": 483,
+          "end": 493,
+          "kind": "lines",
+          "source_text": "  if (Policy == KktActivePolicy::AddOneIndependent && status == 0 && converged)\n    for (int i = 0; i < nactive; ++i) {\n      int row = ct_indx[i], col = -1, count = 0;\n      for (int j = 0; j < n2; ++j)\n        if (C(row, j) != 0.) {\n          col = j;\n          ++count;\n        }\n      if (count == 1) b[col] = d[row] / C(row, col);\n    }\n"
+        }
+      ],
+      "bindings": "enum class KktActivePolicy {AddOneIndependent,Other}; const auto Policy=KktActivePolicy::AddOneIndependent; int status=0; bool converged=true; int nactive=1,n2=2,ct_indx[]={0}; double b[]={9.,9.},d[]={z}; auto C=[](int,int j){return j==0?2.:0.;};",
+      "result": "return b[0];",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        0,
+        0.5,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "reject-depleted-outward-step",
+      "rows": [
+        "src/math/constrained_newton.h:44"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/constrained_newton.h",
+          "start": 44,
+          "end": 44,
+          "kind": "lines",
+          "source_text": "    if (!(d[i] > 0.) && value > 0.) usable = false;"
+        }
+      ],
+      "bindings": "double d[]={z},value=1.;int i=0;bool usable=true;",
+      "result": "return usable;",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "native-trial-nonnegative",
+      "rows": [
+        "src/math/constrained_newton.h:81"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/constrained_newton.h",
+          "start": 68,
+          "end": 89,
+          "kind": "lines",
+          "source_text": "template <typename T>\nDISPATCH_MACRO bool constrained_newton_trial(T* trial, T const* state,\n                                             T const* constraint, T const* step,\n                                             int nstate, int nstep,\n                                             int npositive, int nlimited,\n                                             T scale, T floor = 0.,\n                                             T max_ratio = 0.) {\n  for (int i = 0; i < nstate; ++i) {\n    T delta = 0.;\n    for (int j = 0; j < nstep; ++j) {\n      delta -= constraint[i * nstep + j] * step[j];\n    }\n    trial[i] = state[i] + scale * delta;\n    if (!std::isfinite(trial[i]) || trial[i] < 0.) return false;\n    if (i < npositive && !(trial[i] > floor)) return false;\n    if (max_ratio > 0. && i < nlimited && state[i] > 0. &&\n        (trial[i] > max_ratio * state[i] || trial[i] * max_ratio < state[i])) {\n      return false;\n    }\n  }\n  return true;\n}"
+        }
+      ],
+      "bindings": "",
+      "result": "double trial[1],state[]={z},constraint[]={0.},step[]={0.}; return constrained_newton_trial(trial,state,constraint,step,1,1,0,0,1.);",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        0,
+        1,
+        1
+      ],
+      "kind": "function",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "native-trial-floor",
+      "rows": [
+        "src/math/constrained_newton.h:82"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/constrained_newton.h",
+          "start": 68,
+          "end": 89,
+          "kind": "lines",
+          "source_text": "template <typename T>\nDISPATCH_MACRO bool constrained_newton_trial(T* trial, T const* state,\n                                             T const* constraint, T const* step,\n                                             int nstate, int nstep,\n                                             int npositive, int nlimited,\n                                             T scale, T floor = 0.,\n                                             T max_ratio = 0.) {\n  for (int i = 0; i < nstate; ++i) {\n    T delta = 0.;\n    for (int j = 0; j < nstep; ++j) {\n      delta -= constraint[i * nstep + j] * step[j];\n    }\n    trial[i] = state[i] + scale * delta;\n    if (!std::isfinite(trial[i]) || trial[i] < 0.) return false;\n    if (i < npositive && !(trial[i] > floor)) return false;\n    if (max_ratio > 0. && i < nlimited && state[i] > 0. &&\n        (trial[i] > max_ratio * state[i] || trial[i] * max_ratio < state[i])) {\n      return false;\n    }\n  }\n  return true;\n}"
+        }
+      ],
+      "bindings": "",
+      "result": "double trial[1],state[]={z},constraint[]={0.},step[]={0.}; return constrained_newton_trial(trial,state,constraint,step,1,1,1,0,1.,1e-30);",
+      "inputs": [
+        0,
+        1e-30,
+        2e-30
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "function",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "native-trial-ratio",
+      "rows": [
+        "src/math/constrained_newton.h:83",
+        "src/math/constrained_newton.h:84"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/constrained_newton.h",
+          "start": 68,
+          "end": 89,
+          "kind": "lines",
+          "source_text": "template <typename T>\nDISPATCH_MACRO bool constrained_newton_trial(T* trial, T const* state,\n                                             T const* constraint, T const* step,\n                                             int nstate, int nstep,\n                                             int npositive, int nlimited,\n                                             T scale, T floor = 0.,\n                                             T max_ratio = 0.) {\n  for (int i = 0; i < nstate; ++i) {\n    T delta = 0.;\n    for (int j = 0; j < nstep; ++j) {\n      delta -= constraint[i * nstep + j] * step[j];\n    }\n    trial[i] = state[i] + scale * delta;\n    if (!std::isfinite(trial[i]) || trial[i] < 0.) return false;\n    if (i < npositive && !(trial[i] > floor)) return false;\n    if (max_ratio > 0. && i < nlimited && state[i] > 0. &&\n        (trial[i] > max_ratio * state[i] || trial[i] * max_ratio < state[i])) {\n      return false;\n    }\n  }\n  return true;\n}"
+        }
+      ],
+      "bindings": "",
+      "result": "double trial[1],state[]={1.},constraint[]={1.},step[]={1.-z}; return constrained_newton_trial(trial,state,constraint,step,1,1,0,1,1.,0.,100.);",
+      "inputs": [
+        0.001,
+        0.01,
+        1,
+        100,
+        101
+      ],
+      "expected": [
+        0,
+        1,
+        1,
+        1,
+        0
+      ],
+      "kind": "function",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "configured-mole-floor",
+      "rows": [
+        "src/equilibrium/equilibrium.hpp:34",
+        "src/equilibrium/phase_equilibrate_tp.h:58"
+      ],
+      "fragments": [
+        {
+          "path": "src/equilibrium/equilibrium.hpp",
+          "start": 34,
+          "end": 34,
+          "kind": "lines",
+          "source_text": "  ADD_ARG(double, mole_floor) = 1.e-30;"
+        },
+        {
+          "path": "src/equilibrium/phase_equilibrate_tp.h",
+          "start": 58,
+          "end": 61,
+          "kind": "lines",
+          "source_text": "    if (!(in_moles[i] > mole_floor)) {\n      diag[0] = 1.;\n      return 1;\n    }"
+        }
+      ],
+      "bindings": "double in_moles[]={z},diag[]={0.};int i=0;",
+      "result": "return 0.;",
+      "inputs": [
+        -1,
+        0,
+        1e-30,
+        2e-30
+      ],
+      "expected": [
+        1,
+        1,
+        1,
+        0
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "mole-slack",
+      "rows": [
+        "src/equilibrium/phase_equilibrate_tp.h:115"
+      ],
+      "fragments": [
+        {
+          "path": "src/equilibrium/phase_equilibrate_tp.h",
+          "start": 115,
+          "end": 118,
+          "kind": "lines",
+          "source_text": "      bounds[i] = out_moles[i] - mole_floor;\n      for (int j = 0; j < nreaction; ++j) {\n        constraints[i * nreaction + j] = -stoich[i * nreaction + j];\n      }"
+        }
+      ],
+      "bindings": "double out_moles[]={z},bounds[]={0.},mole_floor=1e-30,constraints[1],stoich[]={1.};int i=0,nreaction=1;",
+      "result": "return bounds[0];",
+      "inputs": [
+        0,
+        1e-30,
+        2e-30
+      ],
+      "expected": [
+        -1e-30,
+        0,
+        1e-30
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "phase-native-trial-call",
+      "rows": [
+        "src/equilibrium/phase_equilibrate_tp.h:138"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/constrained_newton.h",
+          "start": 68,
+          "end": 89,
+          "kind": "lines",
+          "source_text": "template <typename T>\nDISPATCH_MACRO bool constrained_newton_trial(T* trial, T const* state,\n                                             T const* constraint, T const* step,\n                                             int nstate, int nstep,\n                                             int npositive, int nlimited,\n                                             T scale, T floor = 0.,\n                                             T max_ratio = 0.) {\n  for (int i = 0; i < nstate; ++i) {\n    T delta = 0.;\n    for (int j = 0; j < nstep; ++j) {\n      delta -= constraint[i * nstep + j] * step[j];\n    }\n    trial[i] = state[i] + scale * delta;\n    if (!std::isfinite(trial[i]) || trial[i] < 0.) return false;\n    if (i < npositive && !(trial[i] > floor)) return false;\n    if (max_ratio > 0. && i < nlimited && state[i] > 0. &&\n        (trial[i] > max_ratio * state[i] || trial[i] * max_ratio < state[i])) {\n      return false;\n    }\n  }\n  return true;\n}"
+        },
+        {
+          "path": "src/equilibrium/phase_equilibrate_tp.h",
+          "start": 135,
+          "end": 137,
+          "kind": "lines",
+          "source_text": "      bool positive = constrained_newton_trial(trial, out_moles, constraints,\n                                               step, nspecies, nreaction,\n                                               nspecies, 0, scale, mole_floor);"
+        },
+        {
+          "path": "src/equilibrium/phase_equilibrate_tp.h",
+          "start": 138,
+          "end": 138,
+          "kind": "condition",
+          "token": "if",
+          "source_text": "      if (positive) {"
+        }
+      ],
+      "bindings": "double trial[1],out_moles[]={z},constraints[]={0.},step[]={0.},scale=1.,mole_floor=1e-30;int nspecies=1,nreaction=1;",
+      "result": "{{1}} return {{2}};",
+      "inputs": [
+        0,
+        1e-30,
+        2e-30
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "function",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "two-product-inactive",
+      "rows": [
+        "src/kinetics/evaporation.cpp:292"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 292,
+          "end": 292,
+          "kind": "lines",
+          "source_text": "    c = torch::where(sub.unsqueeze(-2), c, torch::zeros_like(c));"
+        }
+      ],
+      "bindings": "auto c=input.unsqueeze(0); auto sub=input.gt(0);",
+      "result": "return c.flatten();",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "product-concentration-sum",
+      "rows": [
+        "src/kinetics/evaporation.cpp:294"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 294,
+          "end": 294,
+          "kind": "lines",
+          "source_text": "    auto sum = torch::where(is_product, c, torch::zeros_like(c)).sum(-2);"
+        }
+      ],
+      "bindings": "auto c=input.unsqueeze(0); auto is_product=c.gt(0);",
+      "result": "return sum;",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "two-product-normal-floor",
+      "rows": [
+        "src/kinetics/evaporation.cpp:300",
+        "src/kinetics/evaporation.cpp:301"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 299,
+          "end": 301,
+          "kind": "lines",
+          "source_text": "    double tiny = c.dtype() == torch::kFloat32\n                      ? std::numeric_limits<float>::min()\n                      : std::numeric_limits<double>::min();"
+        },
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 303,
+          "end": 303,
+          "kind": "call",
+          "token": ".clamp_min",
+          "source_text": "    auto root = (diff * diff + 4. * k2).clamp_min(tiny).sqrt();"
+        }
+      ],
+      "bindings": "auto c=input;",
+      "result": "return input{{1}};",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "two-product-inactive-extent",
+      "rows": [
+        "src/kinetics/evaporation.cpp:305"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 305,
+          "end": 305,
+          "kind": "lines",
+          "source_text": "    x = torch::where(sub, x, torch::zeros_like(x));"
+        }
+      ],
+      "bindings": "auto x=input;auto sub=input.gt(0);",
+      "result": "return x;",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "surface-subnormal-floor",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:12",
+        "src/kinetics/evaporation_extent.cpp:13"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 11,
+          "end": 13,
+          "kind": "lines",
+          "source_text": "  const bool single = conc.scalar_type() == torch::kFloat32;\n  const double tiny = single ? std::numeric_limits<float>::denorm_min()\n                             : std::numeric_limits<double>::denorm_min();"
+        },
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 29,
+          "end": 29,
+          "kind": "call",
+          "token": ".clamp_min",
+          "source_text": "      torch::where(participating, conc, torch::ones_like(conc)).clamp_min(tiny);"
+        }
+      ],
+      "bindings": "auto conc=input;",
+      "result": "return input{{1}};",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        5e-324,
+        5e-324,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "finite-input-contract",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:19"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 18,
+          "end": 21,
+          "kind": "lines",
+          "source_text": "  TORCH_CHECK(\n      (torch::isfinite(conc).all() & torch::isfinite(logkc).all()).item<bool>(),\n      \"General evaporation requires finite concentrations \"\n      \"and a finite log saturation quotient\");"
+        }
+      ],
+      "bindings": "auto conc=input;auto logkc=torch::zeros_like(input);",
+      "result": "return torch::ones({1},torch::kFloat64);",
+      "inputs": [
+        0,
+        1
+      ],
+      "expected": [
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "finite-reject-nan",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 18,
+          "end": 21,
+          "kind": "lines",
+          "source_text": "  TORCH_CHECK(\n      (torch::isfinite(conc).all() & torch::isfinite(logkc).all()).item<bool>(),\n      \"General evaporation requires finite concentrations \"\n      \"and a finite log saturation quotient\");"
+        }
+      ],
+      "bindings": "auto conc=input;auto logkc=torch::zeros_like(input);",
+      "result": "return torch::ones({1},torch::kFloat64);",
+      "inputs": [
+        "nan"
+      ],
+      "expected": [
+        0
+      ],
+      "kind": "reject",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "finite-reject-inf",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 18,
+          "end": 21,
+          "kind": "lines",
+          "source_text": "  TORCH_CHECK(\n      (torch::isfinite(conc).all() & torch::isfinite(logkc).all()).item<bool>(),\n      \"General evaporation requires finite concentrations \"\n      \"and a finite log saturation quotient\");"
+        }
+      ],
+      "bindings": "auto conc=input;auto logkc=torch::zeros_like(input);",
+      "result": "return torch::ones({1},torch::kFloat64);",
+      "inputs": [
+        "inf"
+      ],
+      "expected": [
+        0
+      ],
+      "kind": "reject",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "finite-reject--inf",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 18,
+          "end": 21,
+          "kind": "lines",
+          "source_text": "  TORCH_CHECK(\n      (torch::isfinite(conc).all() & torch::isfinite(logkc).all()).item<bool>(),\n      \"General evaporation requires finite concentrations \"\n      \"and a finite log saturation quotient\");"
+        }
+      ],
+      "bindings": "auto conc=input;auto logkc=torch::zeros_like(input);",
+      "result": "return torch::ones({1},torch::kFloat64);",
+      "inputs": [
+        "-inf"
+      ],
+      "expected": [
+        0
+      ],
+      "kind": "reject",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "stoich-dummy-41",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:41"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 41,
+          "end": 41,
+          "kind": "call",
+          "token": "torch::where",
+          "source_text": "       (pos * torch::where(product, pos, torch::ones_like(pos)).log()).sum(0)) /"
+        }
+      ],
+      "bindings": "auto pos=input;auto product=pos.gt(0);",
+      "result": "return {{0}};",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "stoich-dummy-51",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:51"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 51,
+          "end": 51,
+          "kind": "call",
+          "token": "torch::where",
+          "source_text": "      torch::where(product, pos, torch::ones_like(pos));"
+        }
+      ],
+      "bindings": "auto pos=input;auto product=pos.gt(0);",
+      "result": "return {{0}};",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "stoich-dummy-58",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:58"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 58,
+          "end": 58,
+          "kind": "call",
+          "token": "torch::where",
+          "source_text": "      torch::where(product, pos, torch::ones_like(pos));"
+        }
+      ],
+      "bindings": "auto pos=input;auto product=pos.gt(0);",
+      "result": "return {{0}};",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "product-candidate-filter",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:62"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 62,
+          "end": 63,
+          "kind": "lines",
+          "source_text": "  candidate = torch::where(product & other_zeros.eq(0) & candidate.gt(0),\n                           candidate, torch::full_like(candidate, maxval));"
+        }
+      ],
+      "bindings": "auto candidate=input;auto product=torch::tensor({true,true,true,false,true});auto other_zeros=torch::tensor({0,0,0,0,1});double maxval=std::numeric_limits<double>::max();",
+      "result": "return candidate;",
+      "inputs": [
+        -1,
+        0,
+        2,
+        2,
+        2
+      ],
+      "expected": [
+        1.7976931348623157e+308,
+        1.7976931348623157e+308,
+        2,
+        1.7976931348623157e+308,
+        1.7976931348623157e+308
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "product-upper-cap",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:64"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 64,
+          "end": 64,
+          "kind": "lines",
+          "source_text": "  upper = torch::minimum(upper, std::get<0>(candidate.min(-2)));"
+        }
+      ],
+      "bindings": "auto upper=torch::ones_like(input);auto candidate=input.unsqueeze(0);",
+      "result": "return upper;",
+      "inputs": [
+        0.25,
+        1,
+        2
+      ],
+      "expected": [
+        0.25,
+        1,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "consuming-gas-cap",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:68"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 65,
+          "end": 68,
+          "kind": "lines",
+          "source_text": "  auto gas_bound =\n      std::get<0>(torch::where(reactant, conc / (-nu).clamp_min(tiny),\n                               torch::full_like(conc, maxval))\n                      .min(-2));"
+        }
+      ],
+      "bindings": "auto nu=input.unsqueeze(0);auto conc=torch::full_like(nu,2.);auto reactant=nu.lt(0);double tiny=std::numeric_limits<double>::denorm_min(),maxval=std::numeric_limits<double>::max();",
+      "result": "return gas_bound;",
+      "inputs": [
+        -2,
+        0,
+        2
+      ],
+      "expected": [
+        1,
+        1.7976931348623157e+308,
+        1.7976931348623157e+308
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "combined-gas-cap",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:69"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 69,
+          "end": 69,
+          "kind": "lines",
+          "source_text": "  upper = torch::minimum(upper, gas_bound);"
+        }
+      ],
+      "bindings": "auto upper=torch::ones_like(input);auto gas_bound=input;",
+      "result": "return upper;",
+      "inputs": [
+        0.25,
+        1,
+        2
+      ],
+      "expected": [
+        0.25,
+        1,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "general-inactive-concentration",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:72"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 72,
+          "end": 72,
+          "kind": "lines",
+          "source_text": "  auto c = torch::where(active.unsqueeze(-2), conc, torch::ones_like(conc));"
+        }
+      ],
+      "bindings": "auto conc=input.unsqueeze(0);auto active=input.gt(0);",
+      "result": "return c.flatten();",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "general-inactive-target",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:73"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 73,
+          "end": 73,
+          "kind": "lines",
+          "source_text": "  auto target = torch::where(active, logkc, torch::zeros_like(logkc));"
+        }
+      ],
+      "bindings": "auto logkc=input;auto active=input.gt(0);",
+      "result": "return target;",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "general-inactive-upper",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:74"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 74,
+          "end": 74,
+          "kind": "lines",
+          "source_text": "  upper = torch::where(active, upper, torch::ones_like(upper));"
+        }
+      ],
+      "bindings": "auto upper=input;auto active=input.gt(0);",
+      "result": "return upper;",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "surface-mask-76",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:76"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 76,
+          "end": 78,
+          "kind": "lines",
+          "source_text": "    auto surface = torch::where(participating, c + nu * x.unsqueeze(-2),\n                                torch::ones_like(c))\n                       .clamp_min(tiny);"
+        }
+      ],
+      "bindings": "auto c=torch::ones_like(input).unsqueeze(0);auto participating=input.gt(0).unsqueeze(0);auto nu=torch::ones_like(c);auto x=torch::ones_like(input);double tiny=std::numeric_limits<double>::denorm_min(),maxval=std::numeric_limits<double>::max();",
+      "result": "return surface.flatten();",
+      "inputs": [
+        0,
+        1
+      ],
+      "expected": [
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "surface-mask-100",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:100"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 100,
+          "end": 102,
+          "kind": "lines",
+          "source_text": "    auto surface = torch::where(participating, c + nu * x.unsqueeze(-2),\n                                torch::ones_like(c))\n                       .clamp_min(tiny);"
+        }
+      ],
+      "bindings": "auto c=torch::ones_like(input).unsqueeze(0);auto participating=input.gt(0).unsqueeze(0);auto nu=torch::ones_like(c);auto x=torch::ones_like(input);double tiny=std::numeric_limits<double>::denorm_min(),maxval=std::numeric_limits<double>::max();",
+      "result": "return surface.flatten();",
+      "inputs": [
+        0,
+        1
+      ],
+      "expected": [
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "surface-mask-119",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:119"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 119,
+          "end": 121,
+          "kind": "lines",
+          "source_text": "  auto surface = torch::where(participating, c + nu * x.unsqueeze(-2),\n                              torch::full_like(c, maxval))\n                     .clamp_min(tiny);"
+        }
+      ],
+      "bindings": "auto c=torch::ones_like(input).unsqueeze(0);auto participating=input.gt(0).unsqueeze(0);auto nu=torch::ones_like(c);auto x=torch::ones_like(input);double tiny=std::numeric_limits<double>::denorm_min(),maxval=std::numeric_limits<double>::max();",
+      "result": "return surface.flatten();",
+      "inputs": [
+        0,
+        1
+      ],
+      "expected": [
+        1.7976931348623157e+308,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "root-upper-bracket",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:91"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 91,
+          "end": 91,
+          "kind": "lines",
+          "source_text": "    hi = torch::where((~done) & f.ge(0), x, hi);"
+        }
+      ],
+      "bindings": "auto f=input;auto done=torch::zeros_like(input,torch::kBool);auto x=torch::ones_like(input);auto hi=torch::full_like(input,2.);",
+      "result": "return hi;",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        2,
+        1,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "root-lower-bracket",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:92"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 92,
+          "end": 92,
+          "kind": "lines",
+          "source_text": "    lo = torch::where((~done) & f.lt(0), x, lo);"
+        }
+      ],
+      "bindings": "auto f=input;auto done=torch::zeros_like(input,torch::kBool);auto x=torch::ones_like(input);auto lo=torch::zeros_like(input);",
+      "result": "return lo;",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        1,
+        0,
+        0
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "safeguarded-newton",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:108"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 108,
+          "end": 110,
+          "kind": "lines",
+          "source_text": "    next = torch::where(torch::isfinite(next) & next.gt(lo + .05 * width) &\n                            next.lt(hi - .05 * width),\n                        next, bisect);"
+        }
+      ],
+      "bindings": "auto next=input;auto lo=torch::zeros_like(input),hi=torch::ones_like(input);auto width=hi-lo;auto bisect=torch::full_like(input,.5);",
+      "result": "return next;",
+      "inputs": [
+        -1,
+        0.05,
+        0.25,
+        0.5,
+        0.75,
+        0.95,
+        2
+      ],
+      "expected": [
+        0.5,
+        0.5,
+        0.25,
+        0.5,
+        0.75,
+        0.5,
+        0.5
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "freeze-converged-root",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:111"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 111,
+          "end": 111,
+          "kind": "lines",
+          "source_text": "    x = torch::where(done, x, next);"
+        }
+      ],
+      "bindings": "auto x=input;auto done=input.le(1);auto next=torch::ones_like(input);",
+      "result": "return x;",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        0,
+        1,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "general-inactive-extent",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:115"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 115,
+          "end": 115,
+          "kind": "lines",
+          "source_text": "  x = torch::where(active, x, torch::zeros_like(x));"
+        }
+      ],
+      "bindings": "auto x=input;auto active=input.gt(0);",
+      "result": "return x;",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "surface-reciprocal-scale",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:122"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 122,
+          "end": 122,
+          "kind": "lines",
+          "source_text": "  auto smallest = std::get<0>(surface.min(-2));"
+        }
+      ],
+      "bindings": "auto surface=input.unsqueeze(-1);",
+      "result": "return smallest;",
+      "inputs": [
+        0.25,
+        1,
+        2
+      ],
+      "expected": [
+        0.25
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "mask-invalid-gradient",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:127"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 127,
+          "end": 128,
+          "kind": "lines",
+          "source_text": "  dc = torch::where(active.unsqueeze(-2) & nonnegative, dc,\n                    torch::zeros_like(dc));"
+        }
+      ],
+      "bindings": "auto dc=torch::ones_like(input).unsqueeze(0);auto active=torch::ones_like(input,torch::kBool);auto nonnegative=input.ge(0).unsqueeze(0);",
+      "result": "return dc.flatten();",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        1,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "mask-inactive-saturation-gradient",
+      "rows": [
+        "src/kinetics/evaporation_extent.cpp:129"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 129,
+          "end": 129,
+          "kind": "lines",
+          "source_text": "  dk = torch::where(active, dk, torch::zeros_like(dk));"
+        }
+      ],
+      "bindings": "auto dk=torch::ones_like(input);auto active=input.gt(0);",
+      "result": "return dk;",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "nonpositive-falloff-rate",
+      "rows": [
+        "src/kinetics/kb_falloff.cpp:118"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/kb_falloff.cpp",
+          "start": 117,
+          "end": 118,
+          "kind": "lines",
+          "source_text": "  auto positive = (k_low > 0.0).logical_and(k_high > 0.0);\n  return torch::where(positive, result, torch::zeros_like(result));"
+        }
+      ],
+      "bindings": "auto k_low=input;auto k_high=torch::ones_like(input);auto result=torch::ones_like(input);",
+      "result": "",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "native-negative-power",
+      "rows": [
+        "src/kinetics/kinetics.cpp:337",
+        "src/kinetics/kinetics.cpp:347",
+        "src/kinetics/kinetics.cpp:348",
+        "src/kinetics/kinetics.cpp:424"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 337,
+          "end": 349,
+          "kind": "lines",
+          "source_text": "  double tiny = conc.scalar_type() == torch::kFloat32 ? 1e-30 : 1e-300;\n  auto conc_row = conc_pos.unsqueeze(-2);  // (..., 1, nspecies)\n  auto present = conc_row.gt(0);\n  auto safe_pow = [&](torch::Tensor const& expo, torch::Tensor const& at_zero,\n                      bool floor_negative) {\n    auto plain = present | expo.ge(1) | expo.eq(0);\n    auto base =\n        floor_negative\n            ? torch::where(expo.lt(0), conc_row.clamp_min(tiny), conc_row)\n            : conc_row;\n    base = torch::where(plain, base, torch::ones_like(base));\n    return torch::where(plain, base.pow(expo), at_zero);\n  };"
+        },
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 420,
+          "end": 425,
+          "kind": "lines",
+          "source_text": "  auto expo = torch::where(ordinary_order.ne(0), ordinary_order - 1,\n                           torch::zeros_like(ordinary_order));\n  // at zero for a fractional order: tiny^(nu_j - 1) below 1, 0 above\n  auto at_zero =\n      torch::where(expo.lt(0), torch::full_like(expo, tiny).pow(expo),\n                   torch::zeros_like(expo));"
+        }
+      ],
+      "bindings": "auto conc=input;auto conc_pos=conc.clamp_min(0.);auto ordinary_order=torch::full_like(input,.5);",
+      "result": "return safe_pow(expo,at_zero,true).flatten();",
+      "inputs": [
+        0,
+        1,
+        4
+      ],
+      "expected": [
+        1e+150,
+        1,
+        0.5
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 1.7763568394002505e-15,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "inferred-rate-zero-product",
+      "rows": [
+        "src/kinetics/kinetics.cpp:400",
+        "src/kinetics/kinetics.cpp:401"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 399,
+          "end": 402,
+          "kind": "lines",
+          "source_text": "    auto positive = concp.gt(0);\n    k = torch::where(\n        positive, rate / torch::where(positive, concp, torch::ones_like(concp)),\n        torch::zeros_like(rate));"
+        }
+      ],
+      "bindings": "auto concp=input;auto rate=torch::ones_like(input);torch::Tensor k;",
+      "result": "return k;",
+      "inputs": [
+        0,
+        0.5,
+        2
+      ],
+      "expected": [
+        0,
+        2,
+        0.5
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "zero-order-exponent",
+      "rows": [
+        "src/kinetics/kinetics.cpp:420"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 420,
+          "end": 421,
+          "kind": "lines",
+          "source_text": "  auto expo = torch::where(ordinary_order.ne(0), ordinary_order - 1,\n                           torch::zeros_like(ordinary_order));"
+        }
+      ],
+      "bindings": "auto ordinary_order=input;",
+      "result": "return expo;",
+      "inputs": [
+        0,
+        0.5,
+        1,
+        2
+      ],
+      "expected": [
+        0,
+        -0.5,
+        0,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "solid-dummy-divisor",
+      "rows": [
+        "src/kinetics/kinetics.cpp:446"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 445,
+          "end": 446,
+          "kind": "lines",
+          "source_text": "      auto denominator =\n          torch::where(solid.gt(0), solid, torch::ones_like(solid));"
+        }
+      ],
+      "bindings": "auto solid=input;",
+      "result": "return denominator;",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "reverse-rate-derivative-floor",
+      "rows": [
+        "src/kinetics/kinetics.cpp:621"
+      ],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 621,
+          "end": 622,
+          "kind": "call",
+          "token": "torch::where",
+          "source_text": "                        kr_rev * torch::where(Kc_rev > 1e-250, dlnKc,\n                                              torch::zeros_like(dlnKc));"
+        }
+      ],
+      "bindings": "auto Kc_rev=input;auto dlnKc=torch::ones_like(input);",
+      "result": "return {{0}};",
+      "inputs": [
+        0,
+        1e-250,
+        2e-250
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "duplicate-coordinate-divisor",
+      "rows": [
+        "src/math/interpolation.cpp:48"
+      ],
+      "fragments": [
+        {
+          "path": "src/math/interpolation.cpp",
+          "start": 48,
+          "end": 49,
+          "kind": "lines",
+          "source_text": "  diff = torch::where(diff == 0, torch::ones_like(diff),\n                      diff);  // Avoid division by zero"
+        }
+      ],
+      "bindings": "auto diff=input;",
+      "result": "return diff;",
+      "inputs": [
+        0,
+        0.5,
+        2
+      ],
+      "expected": [
+        1,
+        0.5,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "zero-row-scale",
+      "rows": [
+        "src/thermo/extrapolate_ad.cpp:43"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/extrapolate_ad.cpp",
+          "start": 42,
+          "end": 43,
+          "kind": "lines",
+          "source_text": "  row_scale =\n      torch::where(row_scale > 0., row_scale, torch::ones_like(row_scale));"
+        }
+      ],
+      "bindings": "auto row_scale=input;",
+      "result": "return row_scale;",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        1,
+        1,
+        2
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "configured-gas-floor",
+      "rows": [
+        "src/thermo/thermo.hpp:82"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/thermo.hpp",
+          "start": 82,
+          "end": 82,
+          "kind": "lines",
+          "source_text": "  ADD_ARG(double, gas_floor) = 1.e-20;"
+        },
+        {
+          "path": "src/thermo/thermo_x.cpp",
+          "start": 332,
+          "end": 332,
+          "kind": "call",
+          "token": ".clamp_min_",
+          "source_text": "  ideal_gas_conc.clamp_min_(options->gas_floor());"
+        }
+      ],
+      "bindings": "",
+      "result": "struct Opt {double v;double gas_floor(){return v;}} opt{gas_floor};auto options=&opt;return input{{1}};",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        1e-20,
+        1e-20,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "nonfinite-zero-secant-fallback",
+      "rows": [
+        "src/thermo/thermo_x.cpp:293"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/thermo_x.cpp",
+          "start": 293,
+          "end": 293,
+          "kind": "lines",
+          "source_text": "      slope = torch::where(secant.isfinite() & (secant != 0.), secant, slope);"
+        }
+      ],
+      "bindings": "auto secant=input;auto slope=torch::ones_like(input);",
+      "result": "return slope;",
+      "inputs": [
+        0,
+        0.5,
+        2,
+        "nan",
+        "inf"
+      ],
+      "expected": [
+        1,
+        0.5,
+        2,
+        1,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "freeze-converged-temperature",
+      "rows": [
+        "src/thermo/thermo_x.cpp:297"
+      ],
+      "fragments": [
+        {
+          "path": "src/thermo/thermo_x.cpp",
+          "start": 297,
+          "end": 298,
+          "kind": "lines",
+          "source_text": "    out.copy_(torch::where(\n        active, out * torch::exp((entropy - entropy_vol) / slope), out));"
+        }
+      ],
+      "bindings": "auto active=input.gt(0);auto out=torch::full_like(input,300.);auto entropy=torch::full_like(input,std::log(2.)),entropy_vol=torch::zeros_like(input),slope=torch::ones_like(input);",
+      "result": "return out;",
+      "inputs": [
+        0,
+        1
+      ],
+      "expected": [
+        300,
+        600
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "branch-normalization-floor",
+      "rows": [
+        "src/photochem/photolysis.cpp:318"
+      ],
+      "fragments": [
+        {
+          "path": "src/photochem/photolysis.cpp",
+          "start": 318,
+          "end": 318,
+          "kind": "lines",
+          "source_text": "  auto total_rate = branch_rate.sum() + 1e-30;"
+        }
+      ],
+      "bindings": "auto branch_rate=input;",
+      "result": "return total_rate.reshape({1});",
+      "inputs": [
+        0,
+        0
+      ],
+      "expected": [
+        1e-30
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "finite-logkc-reject-nan",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 18,
+          "end": 21,
+          "kind": "lines",
+          "source_text": "  TORCH_CHECK(\n      (torch::isfinite(conc).all() & torch::isfinite(logkc).all()).item<bool>(),\n      \"General evaporation requires finite concentrations \"\n      \"and a finite log saturation quotient\");"
+        }
+      ],
+      "bindings": "auto logkc=input;auto conc=torch::zeros_like(input);",
+      "result": "return torch::ones({1},torch::kFloat64);",
+      "inputs": [
+        "nan"
+      ],
+      "expected": [
+        0
+      ],
+      "kind": "reject",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "finite-logkc-reject-inf",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 18,
+          "end": 21,
+          "kind": "lines",
+          "source_text": "  TORCH_CHECK(\n      (torch::isfinite(conc).all() & torch::isfinite(logkc).all()).item<bool>(),\n      \"General evaporation requires finite concentrations \"\n      \"and a finite log saturation quotient\");"
+        }
+      ],
+      "bindings": "auto logkc=input;auto conc=torch::zeros_like(input);",
+      "result": "return torch::ones({1},torch::kFloat64);",
+      "inputs": [
+        "inf"
+      ],
+      "expected": [
+        0
+      ],
+      "kind": "reject",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "finite-logkc-reject--inf",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 18,
+          "end": 21,
+          "kind": "lines",
+          "source_text": "  TORCH_CHECK(\n      (torch::isfinite(conc).all() & torch::isfinite(logkc).all()).item<bool>(),\n      \"General evaporation requires finite concentrations \"\n      \"and a finite log saturation quotient\");"
+        }
+      ],
+      "bindings": "auto logkc=input;auto conc=torch::zeros_like(input);",
+      "result": "return torch::ones({1},torch::kFloat64);",
+      "inputs": [
+        "-inf"
+      ],
+      "expected": [
+        0
+      ],
+      "kind": "reject",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "origin-disabled-policy",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/math/leastsq_kkt.h",
+          "start": 483,
+          "end": 493,
+          "kind": "lines",
+          "source_text": "  if (Policy == KktActivePolicy::AddOneIndependent && status == 0 && converged)\n    for (int i = 0; i < nactive; ++i) {\n      int row = ct_indx[i], col = -1, count = 0;\n      for (int j = 0; j < n2; ++j)\n        if (C(row, j) != 0.) {\n          col = j;\n          ++count;\n        }\n      if (count == 1) b[col] = d[row] / C(row, col);\n    }\n"
+        }
+      ],
+      "bindings": "enum class KktActivePolicy {AddOneIndependent,Other}; const auto Policy=KktActivePolicy::Other; int status=0; bool converged=true; int nactive=1,n2=2,ct_indx[]={0}; double b[]={9.,9.},d[]={z}; auto C=[](int,int j){return j==0?2.:0.;};",
+      "result": "return b[0];",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        9,
+        9,
+        9
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "origin-disabled-status",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/math/leastsq_kkt.h",
+          "start": 483,
+          "end": 493,
+          "kind": "lines",
+          "source_text": "  if (Policy == KktActivePolicy::AddOneIndependent && status == 0 && converged)\n    for (int i = 0; i < nactive; ++i) {\n      int row = ct_indx[i], col = -1, count = 0;\n      for (int j = 0; j < n2; ++j)\n        if (C(row, j) != 0.) {\n          col = j;\n          ++count;\n        }\n      if (count == 1) b[col] = d[row] / C(row, col);\n    }\n"
+        }
+      ],
+      "bindings": "enum class KktActivePolicy {AddOneIndependent,Other}; const auto Policy=KktActivePolicy::AddOneIndependent; int status=1; bool converged=true; int nactive=1,n2=2,ct_indx[]={0}; double b[]={9.,9.},d[]={z}; auto C=[](int,int j){return j==0?2.:0.;};",
+      "result": "return b[0];",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        9,
+        9,
+        9
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "origin-disabled-converged",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/math/leastsq_kkt.h",
+          "start": 483,
+          "end": 493,
+          "kind": "lines",
+          "source_text": "  if (Policy == KktActivePolicy::AddOneIndependent && status == 0 && converged)\n    for (int i = 0; i < nactive; ++i) {\n      int row = ct_indx[i], col = -1, count = 0;\n      for (int j = 0; j < n2; ++j)\n        if (C(row, j) != 0.) {\n          col = j;\n          ++count;\n        }\n      if (count == 1) b[col] = d[row] / C(row, col);\n    }\n"
+        }
+      ],
+      "bindings": "enum class KktActivePolicy {AddOneIndependent,Other}; const auto Policy=KktActivePolicy::AddOneIndependent; int status=0; bool converged=false; int nactive=1,n2=2,ct_indx[]={0}; double b[]={9.,9.},d[]={z}; auto C=[](int,int j){return j==0?2.:0.;};",
+      "result": "return b[0];",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        9,
+        9,
+        9
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "origin-disabled-two-columns",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/math/leastsq_kkt.h",
+          "start": 483,
+          "end": 493,
+          "kind": "lines",
+          "source_text": "  if (Policy == KktActivePolicy::AddOneIndependent && status == 0 && converged)\n    for (int i = 0; i < nactive; ++i) {\n      int row = ct_indx[i], col = -1, count = 0;\n      for (int j = 0; j < n2; ++j)\n        if (C(row, j) != 0.) {\n          col = j;\n          ++count;\n        }\n      if (count == 1) b[col] = d[row] / C(row, col);\n    }\n"
+        }
+      ],
+      "bindings": "enum class KktActivePolicy {AddOneIndependent,Other}; const auto Policy=KktActivePolicy::AddOneIndependent; int status=0; bool converged=true; int nactive=1,n2=2,ct_indx[]={0}; double b[]={9.,9.},d[]={z}; auto C=[](int,int j){return 2.;};",
+      "result": "return b[0];",
+      "inputs": [
+        0,
+        1,
+        2
+      ],
+      "expected": [
+        9,
+        9,
+        9
+      ],
+      "kind": "scalar",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "mask-inactive-concentration-gradient",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 127,
+          "end": 128,
+          "kind": "lines",
+          "source_text": "  dc = torch::where(active.unsqueeze(-2) & nonnegative, dc,\n                    torch::zeros_like(dc));"
+        }
+      ],
+      "bindings": "auto dc=torch::ones_like(input).unsqueeze(0);auto active=torch::zeros_like(input,torch::kBool);auto nonnegative=input.ge(0).unsqueeze(0);",
+      "result": "return dc.flatten();",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        0
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "nonpositive-high-pressure-falloff",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/kb_falloff.cpp",
+          "start": 117,
+          "end": 118,
+          "kind": "lines",
+          "source_text": "  auto positive = (k_low > 0.0).logical_and(k_high > 0.0);\n  return torch::where(positive, result, torch::zeros_like(result));"
+        }
+      ],
+      "bindings": "auto k_high=input;auto k_low=torch::ones_like(input);auto result=torch::ones_like(input);",
+      "result": "",
+      "inputs": [
+        -1,
+        0,
+        2
+      ],
+      "expected": [
+        0,
+        0,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    },
+    {
+      "name": "nonzero-branch-normalization",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/photochem/photolysis.cpp",
+          "start": 318,
+          "end": 318,
+          "kind": "lines",
+          "source_text": "  auto total_rate = branch_rate.sum() + 1e-30;"
+        }
+      ],
+      "bindings": "auto branch_rate=input;",
+      "result": "return total_rate.reshape({1});",
+      "inputs": [
+        1,
+        2
+      ],
+      "expected": [
+        3
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0
+    }
+  ]
+}

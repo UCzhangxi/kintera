@@ -40,4 +40,33 @@ class CoverageTests(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError,'Original candidate omitted'):
                 gate.coverage(dest)
 
+    def test_all_source_operations_have_measured_effects(self):
+        result=gate.coverage(HERE,HERE/'evidence/guard-operations.json',HERE/'evidence/guard-source-effects.json')
+        self.assertEqual(result['proven'],138)
+        self.assertEqual(result['unresolved'],0)
+        self.assertTrue(result['passed'])
+
+    def check_bad_source(self, change, message):
+        data=json.loads((HERE/'evidence/guard-source-effects.json').read_text())
+        change(data)
+        with tempfile.TemporaryDirectory() as tmp:
+            path=Path(tmp)/'bad-source.json';path.write_text(json.dumps(data))
+            with self.assertRaisesRegex(AssertionError,message):
+                gate.coverage(HERE,HERE/'evidence/guard-operations.json',path)
+
+    def test_missing_source_fixture_is_rejected(self):
+        self.check_bad_source(lambda data:data['results'].pop(),'Missing source fixture')
+
+    def test_source_numeric_failure_is_not_hidden_by_pass_label(self):
+        self.check_bad_source(lambda data:data['results'][0]['observed'].__setitem__(0,-1.),'Source effect numerical mismatch')
+
+    def test_nonfinite_source_result_is_rejected(self):
+        self.check_bad_source(lambda data:data['results'][0]['observed'].__setitem__(0,float('nan')),'Source effect numerical mismatch')
+
+    def test_forged_expected_value_is_rejected(self):
+        self.check_bad_source(lambda data:data['results'][0]['expected'].__setitem__(0,-1.),'Expected value mismatch')
+
+    def test_changed_source_fragment_is_rejected(self):
+        self.check_bad_source(lambda data:data['results'][0]['fragments'][0].__setitem__('source_text','return true;'),'Fragment identity mismatch')
+
 if __name__=='__main__':unittest.main()

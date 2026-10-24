@@ -28,7 +28,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 1.7763568394002505e-15,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "reject-negative-gas",
@@ -58,7 +59,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "reset-negative-cloud",
@@ -88,7 +90,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "TP-log-bound",
@@ -118,7 +121,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 1.7763568394002505e-15,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "TP-empty-jacobian",
@@ -148,7 +152,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "TP-stock-cap",
@@ -180,7 +185,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "TP-extent-cap",
@@ -212,7 +218,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "TP-positive-vapor",
@@ -242,7 +249,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "TP-line-search-underflow",
@@ -272,7 +280,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "TP-log-mixing-floor",
@@ -302,7 +311,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 1.7763568394002505e-15,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "TP-active-positive-species",
@@ -332,7 +342,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-saturation-stock",
@@ -362,7 +373,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 1.7763568394002505e-15,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-vapor-roundoff-cap",
@@ -392,7 +404,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-latent-derivative-skip",
@@ -422,7 +435,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-energy-roundoff-budget",
@@ -452,7 +466,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-negative-reset",
@@ -482,7 +497,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-log-bound",
@@ -512,7 +528,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 1.7763568394002505e-15,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-empty-jacobian",
@@ -542,7 +559,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-stock-cap",
@@ -575,7 +593,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-extent-cap",
@@ -607,7 +626,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-vapor-ratio",
@@ -642,7 +662,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-line-search-underflow",
@@ -672,7 +693,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "UV-temperature-stop",
@@ -703,7 +725,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "consumption-284",
@@ -733,7 +756,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "consumption-525",
@@ -763,7 +787,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "kinetics-reference-T",
@@ -795,7 +820,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "kinetics-reference-P",
@@ -827,7 +853,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "thermo_x-reference-T",
@@ -859,7 +886,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "thermo_x-reference-P",
@@ -891,7 +919,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "thermo_y-reference-T",
@@ -923,7 +952,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "thermo_y-reference-P",
@@ -955,7 +985,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "eigen-roundoff",
@@ -987,7 +1018,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "eigen-cutoff",
@@ -1017,7 +1049,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "eigen-drop",
@@ -1047,7 +1080,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "origin-tolerance",
@@ -1077,7 +1111,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "slack-skip",
@@ -1109,7 +1144,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "slack-step-cap",
@@ -1141,7 +1177,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "exact-active-origin",
@@ -1172,7 +1209,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "reject-depleted-outward-step",
@@ -1202,7 +1240,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "native-trial-nonnegative",
@@ -1232,7 +1271,8 @@
       ],
       "kind": "function",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "native-trial-floor",
@@ -1262,7 +1302,8 @@
       ],
       "kind": "function",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "native-trial-ratio",
@@ -1297,7 +1338,8 @@
       ],
       "kind": "function",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "configured-mole-floor",
@@ -1337,7 +1379,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "mole-slack",
@@ -1367,7 +1410,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "phase-native-trial-call",
@@ -1412,7 +1456,8 @@
       ],
       "kind": "function",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "two-product-inactive",
@@ -1442,7 +1487,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "product-concentration-sum",
@@ -1472,7 +1518,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "two-product-normal-floor",
@@ -1511,7 +1558,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "two-product-inactive-extent",
@@ -1541,7 +1589,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "surface-subnormal-floor",
@@ -1580,7 +1629,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "finite-input-contract",
@@ -1607,7 +1657,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "finite-reject-nan",
@@ -1631,7 +1682,8 @@
       ],
       "kind": "reject",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "finite-reject-inf",
@@ -1655,7 +1707,8 @@
       ],
       "kind": "reject",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "finite-reject--inf",
@@ -1679,7 +1732,8 @@
       ],
       "kind": "reject",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "stoich-dummy-41",
@@ -1710,7 +1764,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "stoich-dummy-51",
@@ -1741,7 +1796,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "stoich-dummy-58",
@@ -1772,7 +1828,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "product-candidate-filter",
@@ -1806,7 +1863,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "product-upper-cap",
@@ -1836,7 +1894,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "consuming-gas-cap",
@@ -1866,7 +1925,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "combined-gas-cap",
@@ -1896,7 +1956,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "general-inactive-concentration",
@@ -1926,7 +1987,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "general-inactive-target",
@@ -1956,7 +2018,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "general-inactive-upper",
@@ -1986,7 +2049,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "surface-mask-76",
@@ -2014,7 +2078,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "surface-mask-100",
@@ -2042,7 +2107,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "surface-mask-119",
@@ -2070,7 +2136,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "root-upper-bracket",
@@ -2100,7 +2167,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "root-lower-bracket",
@@ -2130,7 +2198,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "safeguarded-newton",
@@ -2168,7 +2237,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "freeze-converged-root",
@@ -2198,7 +2268,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "general-inactive-extent",
@@ -2228,7 +2299,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "surface-reciprocal-scale",
@@ -2256,7 +2328,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "mask-invalid-gradient",
@@ -2286,7 +2359,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "mask-inactive-saturation-gradient",
@@ -2316,7 +2390,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "nonpositive-falloff-rate",
@@ -2346,7 +2421,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "native-negative-power",
@@ -2386,7 +2462,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 1.7763568394002505e-15,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "inferred-rate-zero-product",
@@ -2417,7 +2494,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "zero-order-exponent",
@@ -2449,7 +2527,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "solid-dummy-divisor",
@@ -2479,7 +2558,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "reverse-rate-derivative-floor",
@@ -2510,7 +2590,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "duplicate-coordinate-divisor",
@@ -2540,7 +2621,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "zero-row-scale",
@@ -2570,7 +2652,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "configured-gas-floor",
@@ -2608,7 +2691,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "nonfinite-zero-secant-fallback",
@@ -2642,7 +2726,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "freeze-converged-temperature",
@@ -2670,7 +2755,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "branch-normalization-floor",
@@ -2697,7 +2783,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "finite-logkc-reject-nan",
@@ -2721,7 +2808,8 @@
       ],
       "kind": "reject",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "finite-logkc-reject-inf",
@@ -2745,7 +2833,8 @@
       ],
       "kind": "reject",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "finite-logkc-reject--inf",
@@ -2769,7 +2858,8 @@
       ],
       "kind": "reject",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "origin-disabled-policy",
@@ -2797,7 +2887,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "origin-disabled-status",
@@ -2825,7 +2916,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "origin-disabled-converged",
@@ -2853,7 +2945,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "origin-disabled-two-columns",
@@ -2881,7 +2974,8 @@
       ],
       "kind": "scalar",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "mask-inactive-concentration-gradient",
@@ -2909,7 +3003,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "nonpositive-high-pressure-falloff",
@@ -2937,7 +3032,8 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
     },
     {
       "name": "nonzero-branch-normalization",
@@ -2962,7 +3058,118 @@
       ],
       "kind": "tensor",
       "relative_tolerance": 0,
-      "absolute_tolerance": 0
+      "absolute_tolerance": 0,
+      "input_dtype": "float64"
+    },
+    {
+      "name": "float32-normal-floor",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 299,
+          "end": 301,
+          "kind": "lines",
+          "source_text": "    double tiny = c.dtype() == torch::kFloat32\n                      ? std::numeric_limits<float>::min()\n                      : std::numeric_limits<double>::min();"
+        },
+        {
+          "path": "src/kinetics/evaporation.cpp",
+          "start": 303,
+          "end": 303,
+          "kind": "call",
+          "token": ".clamp_min",
+          "source_text": "    auto root = (diff * diff + 4. * k2).clamp_min(tiny).sqrt();"
+        }
+      ],
+      "bindings": "auto c=input;",
+      "result": "return input{{1}};",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        1.1754943508222875e-38,
+        1.1754943508222875e-38,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0,
+      "input_dtype": "float32"
+    },
+    {
+      "name": "float32-subnormal-floor",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 11,
+          "end": 13,
+          "kind": "lines",
+          "source_text": "  const bool single = conc.scalar_type() == torch::kFloat32;\n  const double tiny = single ? std::numeric_limits<float>::denorm_min()\n                             : std::numeric_limits<double>::denorm_min();"
+        },
+        {
+          "path": "src/kinetics/evaporation_extent.cpp",
+          "start": 29,
+          "end": 29,
+          "kind": "call",
+          "token": ".clamp_min",
+          "source_text": "      torch::where(participating, conc, torch::ones_like(conc)).clamp_min(tiny);"
+        }
+      ],
+      "bindings": "auto conc=input;",
+      "result": "return input{{1}};",
+      "inputs": [
+        -1,
+        0,
+        1
+      ],
+      "expected": [
+        1.401298464324817e-45,
+        1.401298464324817e-45,
+        1
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0,
+      "input_dtype": "float32"
+    },
+    {
+      "name": "float32-negative-power",
+      "rows": [],
+      "fragments": [
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 337,
+          "end": 349,
+          "kind": "lines",
+          "source_text": "  double tiny = conc.scalar_type() == torch::kFloat32 ? 1e-30 : 1e-300;\n  auto conc_row = conc_pos.unsqueeze(-2);  // (..., 1, nspecies)\n  auto present = conc_row.gt(0);\n  auto safe_pow = [&](torch::Tensor const& expo, torch::Tensor const& at_zero,\n                      bool floor_negative) {\n    auto plain = present | expo.ge(1) | expo.eq(0);\n    auto base =\n        floor_negative\n            ? torch::where(expo.lt(0), conc_row.clamp_min(tiny), conc_row)\n            : conc_row;\n    base = torch::where(plain, base, torch::ones_like(base));\n    return torch::where(plain, base.pow(expo), at_zero);\n  };"
+        },
+        {
+          "path": "src/kinetics/kinetics.cpp",
+          "start": 420,
+          "end": 425,
+          "kind": "lines",
+          "source_text": "  auto expo = torch::where(ordinary_order.ne(0), ordinary_order - 1,\n                           torch::zeros_like(ordinary_order));\n  // at zero for a fractional order: tiny^(nu_j - 1) below 1, 0 above\n  auto at_zero =\n      torch::where(expo.lt(0), torch::full_like(expo, tiny).pow(expo),\n                   torch::zeros_like(expo));"
+        }
+      ],
+      "bindings": "auto conc=input;auto conc_pos=conc.clamp_min(0.);auto ordinary_order=torch::full_like(input,.5);",
+      "result": "return safe_pow(expo,at_zero,true).flatten();",
+      "inputs": [
+        0,
+        1,
+        4
+      ],
+      "expected": [
+        999999986991104.0,
+        1,
+        0.5
+      ],
+      "kind": "tensor",
+      "relative_tolerance": 0,
+      "absolute_tolerance": 0,
+      "input_dtype": "float32"
     }
   ]
 }

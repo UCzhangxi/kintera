@@ -45,11 +45,14 @@ def coverage(directory, effects=None, source_effects=None):
         manifest_rows=[key for f in manifest['fixtures'] for key in f['rows']]
         assert len(manifest_rows)==len(set(manifest_rows))
         assert set(manifest_rows)=={r['id'] for r in rows if r.get('policy') and r['policy']!='native_clamp'}, 'Source manifest coverage mismatch'
+        dtype_cases={f['name'] for f in manifest['fixtures'] if f.get('input_dtype')=='float32'}
+        assert {'float32-normal-floor','float32-subnormal-floor','float32-negative-power'}<=dtype_cases, 'Missing dtype branch evidence'
         seen=set()
         for result in data['results']:
             name=result['name']; assert name not in seen; seen.add(name)
             spec=specifications[name]
             assert result['rows']==spec['rows'] and result['inputs']==spec['inputs']
+            assert result['input_dtype']==spec['input_dtype']
             assert result['expected']==spec['expected'], 'Expected value mismatch'
             assert result['relative_tolerance']==spec['relative_tolerance']
             assert result['absolute_tolerance']==spec['absolute_tolerance']==0

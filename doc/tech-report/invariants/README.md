@@ -112,3 +112,15 @@ binary64 eps relative and zero absolute tolerance for transcendental rounding.
 All measured errors were zero. Existing exact-zero/nonnegative assertions,
 1e-12 per-step budgets and scientific/figure baselines are unchanged. Whole-solver
 source mutation checks remain separate and their original evidence is preserved.
+
+### Dtype branch regression
+
+The initial statement run compiled but did not select the explicit float32
+constant branches. A new coverage regression failed before adding native
+float32 normal-floor, subnormal-floor and negative-power cases; it passes now.
+Both dtype branches of those source definitions are exercised. The source-bound
+suite has 100 fixtures and 302 scalar observations; together with clamps, 559
+observations were exact. This does not claim general float32 solver coverage.
+The superseded reproduction at 868ec3206435730c0a79e47d0130662a5d1b1b61 was stopped
+with exit 143 during source building; it is not a completed audit or a setup
+failure. Its logs are retained, and a new final-head reproduction is required.

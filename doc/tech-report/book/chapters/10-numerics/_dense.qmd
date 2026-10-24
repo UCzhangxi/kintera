@@ -113,7 +113,7 @@ written yet.
 
 : Code map of the dense helpers. {#tbl-ch10-dense-code}
 
-1. `core.h` also holds `set_identity`, `vvdot`, `norm2`, `normalize`, `mvdot_t` and `mmdot_t`; `swap.h` holds
+1. `core.h` also holds `set_identity`, `vvdot`, `norm2`, `normalize`, `mvdot_t`; `swap.h` holds
    `swap_cols`, `swap_cols_safe`, `swap_vals` and `swap_rows`. All are templates marked for host and device.
 2. The implicit kinetics step of @sec-ch06 builds $\mathsf I/\Delta t - \mathsf S \mathsf J$ with `mmdot` and calls
    `dsolve_lu`; if it returns `false`, the step falls back to `psolve` of @sec-ch10-pseudo-inverse
@@ -134,11 +134,8 @@ run record is attached in this draft (missing evidence).
 
 ### Limits
 
-- `mmdot_t` does not compute $\mathsf a\,\mathsf b^{\mathrm T}$: its inner sum reads `a[i * n2 + j] * b[j * n2 + k]`,
-  with `j` where `k` belongs ({{< code src/math/core.h mmdot_t >}}). It has no caller in `src`, `python`, `tests` or
-  `examples` at the pin, so no result depends on it. `check_ch10_dense.py`: "(f) mmdot_t against a b^T: max error
-  9.70e-01 (tol 1e-14) EXPECTED-FAIL (S10-1, already in the report Limits)"; this is row K20 of the defect
-  list.[^ch10-dense-k20]
+- `mmdot_t` is not an API at this pin ({{< code src/math/core.h >}}).[^ch10-dense-k20] Its removal does not
+  establish numerical correctness of a transpose-product implementation; check (f) records absence.
 - `swap_cols` carries the comment "no-op trick won't work; do normal swap" next to a comma expression. Read under
   C++17 sequencing rules, the expression does swap the two columns; this is a hypothesis, not tested. It has no
   caller; `psolve` uses `swap_cols_safe` ({{< code src/math/swap.h swap_cols >}}).

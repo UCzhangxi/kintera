@@ -123,9 +123,9 @@ for k, what in ((0, "forward"), (1, "reverse")):
         err = abs(J - fd_u) / abs(fd_u)
         worst = max(worst, err)
         print(f"  {what} dr/dc_{n}: jacobian {J:.10e}  FD(fixed U) {fd_u:.10e}  rel err {err:.2e}")
-    tag = "PASS" if worst <= tol else ("EXPECTED-FAIL" if k == 1 else "FAIL")
+    tag = "PASS" if worst <= tol else "FAIL"
     fails += int(tag == "FAIL")
-    note = "  (D65: reverse rc_ddT is a copy of dk_f/dT)" if k == 1 else ""
+    note = "  (D65 regression)" if k == 1 else ""
     print(f"reversible O + O2 <=> O3, {what} column T-feedback Jacobian vs fixed-U FD, worst rel err: "
           f"measured {worst:.3e}  tol {tol:.0e}  {tag}{note}")
 sys.exit(1 if fails else 0)  # a FAIL line also fails the process; EXPECTED-FAIL does not

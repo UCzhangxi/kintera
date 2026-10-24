@@ -1,23 +1,23 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
 (a1) h/R = (u0 - cv Tref) + cv T (+ T for a gas), H2O, H2O(l), NH3(s) at 200-400 K (rel): measured 0.000e+00  tol 1e-13  PASS
 (a2) pure H2O gas s/R = (cv+1) ln(T/Tref) - ln(p/Pref) (abs): measured 1.776e-15  tol 1e-12  PASS
-   T=250.0 K: l = h_v - h_c = 33299.412300 J/mol, L = u_v - u_c = 31220.797300 J/mol, l - L = 2078.615000 (R T = 2078.615000)
-   T=300.0 K: l = h_v - h_c = 31012.935800 J/mol, L = u_v - u_c = 28518.597800 J/mol, l - L = 2494.338000 (R T = 2494.338000)
-   T=350.0 K: l = h_v - h_c = 28726.459300 J/mol, L = u_v - u_c = 25816.398300 J/mol, l - L = 2910.061000 (R T = 2910.061000)
-(a3) l - L = R T for H2O -> H2O(l) (rel to l): measured 4.749e-17  tol 1e-12  PASS
+   T=250.0 K: l = h_v - h_c = 46063.421669 J/mol, L = u_v - u_c = 43984.806669 J/mol, l - L = 2078.615000 (R T = 2078.615000)
+   T=300.0 K: l = h_v - h_c = 43990.623049 J/mol, L = u_v - u_c = 41496.285049 J/mol, l - L = 2494.338000 (R T = 2494.338000)
+   T=350.0 K: l = h_v - h_c = 41917.824430 J/mol, L = u_v - u_c = 39007.763430 J/mol, l - L = 2910.061000 (R T = 2910.061000)
+(a3) l - L = R T for H2O -> H2O(l) (rel to l): measured 1.410e-16  tol 1e-12  PASS
    use-nasa9-cp, Tref = 300.0 K: u(300 K)/R = 1000.000000 (u* + c* (300 - Tref) = 1000.000000), u(Tref)/R = 1000.000000
    use-nasa9-cp, Tref = 250.0 K: u(300 K)/R = 1150.000000 (u* + c* (300 - Tref) = 1150.000000), u(Tref)/R = 998.513027
 (a4) u(300 K)/R = u* + c* (300 K - Tref) under use-nasa9-cp, Tref 300 and 250 K (abs): measured 0.000e+00  tol 1e-09  PASS
-   tests/jupiter.yaml: H2O(l) l_card/l_svp = 0.712354, 0.708706, 0.704990, 0.701202, 0.697342
-   tests/jupiter.yaml: NH3(s) l_card/l_svp = 1.763756, 1.754351, 1.744875, 1.735328, 1.725707
-(g1) tests/jupiter.yaml: |l_card/l_svp - 1| on the forming branch, worst: measured 7.638e-01  tol 1e-06  EXPECTED-FAIL (K8)
-   tests/jupiter.yaml: H2O(l) T ds_c/dT / c_p,c = 0.384691, 0.403940, 0.421905, 0.438711, 0.454466
-   tests/jupiter.yaml: NH3(s) T ds_c/dT / c_p,c = 3.025308, 2.868323, 2.729806, 2.606681, 2.496515
-(g3) tests/jupiter.yaml: solved condensate entropy has T ds_c/dT = c_p,c, worst rel: measured 2.025e+00  tol 1e-06  EXPECTED-FAIL (K8)
+   tests/jupiter.yaml: H2O(l) l_card/l_svp = 1.000000, 1.000000, 1.000000, 1.000000, 1.000000
+   tests/jupiter.yaml: NH3(s) l_card/l_svp = 1.000000, 1.000000, 1.000000, 1.000000, 1.000000
+(g1) tests/jupiter.yaml: |l_card/l_svp - 1| on the forming branch, worst: measured 5.237e-11  tol 1e-06  PASS
+   tests/jupiter.yaml: H2O(l) T ds_c/dT / c_p,c = 1.000000, 1.000000, 1.000000, 1.000000, 1.000000
+   tests/jupiter.yaml: NH3(s) T ds_c/dT / c_p,c = 1.000000, 1.000000, 1.000000, 1.000000, 1.000000
+(g3) tests/jupiter.yaml: solved condensate entropy has T ds_c/dT = c_p,c, worst rel: measured 2.196e-09  tol 1e-06  PASS
    corrected cards: H2O(l) l_card/l_svp = 1.000000, 1.000000, 1.000000, 1.000000, 1.000000
    corrected cards: NH3(s) l_card/l_svp = 1.000000, 1.000000, 1.000000, 1.000000, 1.000000
 (g2) corrected cards: |l_card/l_svp - 1| on the forming branch, worst: measured 5.237e-11  tol 1e-06  PASS
    corrected cards: H2O(l) T ds_c/dT / c_p,c = 1.000000, 1.000000, 1.000000, 1.000000, 1.000000
    corrected cards: NH3(s) T ds_c/dT / c_p,c = 1.000000, 1.000000, 1.000000, 1.000000, 1.000000
 (g3) corrected cards: solved condensate entropy has T ds_c/dT = c_p,c, worst rel: measured 2.196e-09  tol 1e-06  PASS
-SUMMARY: 6 PASS, 0 FAIL, 2 EXPECTED-FAIL
+SUMMARY: 8 PASS, 0 FAIL, 0 EXPECTED-FAIL

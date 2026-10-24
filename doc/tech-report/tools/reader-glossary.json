@@ -6,7 +6,7 @@
       "term": "reference-state",
       "meaning": "map of reference constants (Tref, Pref, use-nasa9-cp, use-h2-cp, h2-cp-mode); unknown keys are refused; checked by `check_reference_state`",
       "section": "sec-ch11-yaml-input",
-      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L231-L246"
+      "source": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L231-L246"
     },
     {
       "kind": "key",
@@ -18,9 +18,9 @@
     {
       "kind": "key",
       "term": "Pref",
-      "meaning": "reference pressure in Pa; kinetics default 101325 Pa, thermodynamics default 1e5 Pa; kinetics option `Pref`",
+      "meaning": "reference pressure in Pa; kinetics and thermodynamics default 1e5 Pa; kinetics option `Pref`",
       "section": "sec-ch11-yaml-input",
-      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics.hpp#L62"
+      "source": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.hpp#L62"
     },
     {
       "kind": "key",
@@ -48,7 +48,7 @@
       "term": "cv_R",
       "meaning": "reference heat capacity at constant volume divided by the gas constant; default 5/2; stored in `species_cref_R`",
       "section": "sec-ch11-yaml-input",
-      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/species.cpp#L172-L176"
+      "source": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/species.cpp#L172-L176"
     },
     {
       "kind": "key",
@@ -62,7 +62,7 @@
       "term": "reactions",
       "meaning": "top-level list of reactions, one map per reaction; read by `ArrheniusOptionsImpl::from_yaml` and the other readers",
       "section": "sec-ch11-yaml-reactions",
-      "source": "https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/kinetics/kinetics_options.cpp#L66-L69"
+      "source": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics_options.cpp#L66-L69"
     },
     {
       "kind": "key",

@@ -1,4 +1,4 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
 == a. two-phase vapour-liquid, T=300 K, p=1e5 Pa, n0=(1, .05, .05)
   n_v=3.66933196081383e-02 analytic=3.66933196082227e-02 rel=2.3e-12 tol 1e-10 PASS
   status=0 (0 = converged) PASS; iterations=4; reported error=2.2e-12 <= ftol=1e-08 PASS
@@ -23,11 +23,11 @@ kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
     returned liquid=3.027e-15 mol; last halving loop: 40 scales rejected by the floor test, 0 by no decrease of max|r| (INFO)
 == f. phase rule P <= C: three-phase system of line d (N=6, C=2, P=3, R=4), J singular
   rank S=4 (reactions independent), N - P = 3
-  start state: sigma_min(J)=1.6e-17 sigma_max=2.214e+01 cond=1.4e+18 rank=3 tol 1e-12 PASS
-  200 random states (seed 0, amounts 0.01..1 mol): max sigma_min(J)=5.5e-15 tol 1e-12 PASS
+  start state: sigma_min(J)=1.2e-16 sigma_max=2.214e+01 cond=1.8e+17 rank=3 tol 1e-12 PASS
+  200 random states (seed 0, amounts 0.01..1 mol): max sigma_min(J)=4.9e-15 tol 1e-12 PASS
   kintera on it: max-iter 1: status 3 after 0 steps; max-iter default: status 4 after 1 steps (INFO: status 3 or 4 is decided by rounding)
 == g. kinetics reference pressure: K_c of O + O2 <=> O3 at 1500 K (dn = -1)
   Pref=100000 Pa: K_c=9.7402248543e-05 vs 1-bar NASA-9 9.7402248543e-05 rel=1.1e-16 tol 1e-12 PASS
-  default Pref=101325 Pa: K_c/K_c(1 bar)=0.986923, i.e. -1.3077e-02; expected (1e5/Pref)^(-dn)=0.986923, rel=4.4e-16 tol 1e-12 PASS
+  default Pref=100000 Pa: K_c/K_c(1 bar)=1.000000, i.e. 0.0000e+00; expected (1e5/Pref)^(-dn)=1.000000, rel=0.0e+00 tol 1e-12 PASS
 Warning: leastsq_kkt maximum number of iterations reached (1).
 Warning: leastsq_kkt maximum number of iterations reached (1).

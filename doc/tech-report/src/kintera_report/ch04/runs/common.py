@@ -1,6 +1,6 @@
 """Shared helpers of the chapter 4 runs (@sec-ch04): input cards, ThermoX residuals, ThermoY cells.
 
-Needs kintera built at kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (CPU, double). The kintera test input
+Needs kintera built at kintera@e357792d50639d68e9090b542edf038d2b029aa2 (CPU, double). The kintera test input
 `tests/jupiter.yaml` is found through the environment variable KINTERA_REPO, the root of a kintera checkout at
 that commit. Self-written cards are defined in the scripts that use them and written to a temporary directory.
 """
@@ -18,7 +18,7 @@ TMP = Path(tempfile.mkdtemp(prefix="kintera_ch04_"))
 def jupiter():
     root = os.environ.get("KINTERA_REPO")
     if not root:
-        raise SystemExit("set KINTERA_REPO to a kintera checkout at 0d9f67f97d841147e23283d2dcdab302238d2c45")
+        raise SystemExit("set KINTERA_REPO to a kintera checkout at e357792d50639d68e9090b542edf038d2b029aa2")
     return str(Path(root) / "tests" / "jupiter.yaml")
 
 

@@ -1,0 +1,51 @@
+## Invariants over repeated updates {#sec-ch13-invariants}
+
+The 2603 checks use the existing chapter 6 A-to-B reaction card and chapter 4
+water-condensation card. The committed `invariants/README.md` defines inputs,
+system boundaries, normalization and the source-mutation protocol.
+
+```bash
+python invariants/check_invariants.py --output invariants-result.json
+python invariants/inventory_guards.py .reproduce/sources/kintera --check
+```
+
+The reaction check executes 1000 implicit steps of 0.001 s. An exactly absent
+reactant must give an exactly zero rate; every species amount must remain
+nonnegative, without an epsilon or post-step clamp. A second cell undergoes
+nonzero conversion. The condensation case performs 1000 closed-volume UV
+projections, beginning with supersaturated water; these are equilibrium
+projections, not kinetic timesteps. No heat, work, transport or material source
+is imposed. Atom totals and independent internal energy must drift by at most
+1e-12 of their initial scales on **each** update. Total accumulated drift is
+reported separately; it is not divided by 1000 to obtain a pass.
+
+The source guard inventory includes full-SHA links and explicit coverage gaps.
+Its separate `--require-effects` gate remains failing until each candidate is
+classified and supported by effect or non-reachability evidence.
+Passing these two decks does not establish non-reachability of a guard in the
+rest of the report, or validate GPU execution. Existing figure baselines and
+chapter-owner findings remain unchanged.
+
+The input cards come from @sec-ch06-implicit and @sec-ch04-equilibrate-uv.
+The energy oracle uses each card's constant heat capacities and reference
+energies, independently of native energy evaluation. The relative drift of an
+individual update is its budget change divided by the initial nonzero atom
+total, or by the initial sum of absolute energy contributions. This avoids a
+small difference of large energy terms in the normalization.
+
+| source | absent-reactant rate | minimum amount (mol/m³) | outcome |
+|---|---:|---:|---|
+| pre-#151, `53f3ffcc6fefd34513dc04214d506103b2d917ed` | 1e-300 | -9.990009990010119e-301 | fails |
+| current, `e357792d50639d68e9090b542edf038d2b029aa2` | 0 | 0 | passes |
+
+: Exact-zero and positivity measurements after 1000 implicit steps. {#tbl-ch13-invariants-zero}
+
+The current-source maximum relative atom drift per reaction step is
+2.220446049250313e-16; the maximum relative energy drift per condensation
+projection is 9.032488358547774e-16. Both are below 1e-12. These results are
+CPU binary64 measurements, not a guarantee for other decks or devices.
+Actual-source break builds make the same checks fail: restoring the kinetics
+floor produces negative amounts; removing product production gives an atom
+budget error of 9.990009990009652e-4 per step; removing the cloud reference-energy
+term gives an energy error of 0.1655127589519766 per step. The committed
+`invariants/RESULTS.md` and JSON preserve all old/new values and source patches.

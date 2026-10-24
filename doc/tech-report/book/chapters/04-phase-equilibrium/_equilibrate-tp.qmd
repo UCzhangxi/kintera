@@ -1,7 +1,7 @@
 ## Saturation adjustment at fixed temperature and pressure (`equilibrate_tp`) {#sec-ch04-equilibrate-tp}
 
 <!-- PROVENANCE
-pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+pin: kintera@e357792d50639d68e9090b542edf038d2b029aa2 (main)
 sources: src/thermo/equilibrate_tp.h, src/thermo/thermo_x.cpp, src/thermo/thermo_options.cpp, src/utils/alloc.h
 status: draft
 author: gitlinffff
@@ -15,7 +15,7 @@ conditions of @sec-ch04-conditions hold. It works in mole fractions, one cell at
 iteration linearises the logarithmic saturation conditions of the reactions that are out of equilibrium. It solves a
 small constrained least-squares problem for the reaction extents, limits the step so that no amount goes negative,
 renormalises the mole fractions, and repeats. It stops when no reaction is out of equilibrium or after `max-iter`
-iterations. The default `max-iter` of 10 is too small for cold starts far from equilibrium (Limits).
+iterations. The default `max-iter` is 100; explicitly reducing it to 10 can fail cold starts far from equilibrium (Limits).
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** Satisfy @eq-ch04-conditions-saturation at given $T$ and $p$.
@@ -24,7 +24,7 @@ iterations. The default `max-iter` of 10 is too small for cold starts far from e
 
 **Placement.** `ThermoX` forward, per cell, on CPU or CUDA.
 
-**Activation.** Whenever the options list nucleation reactions; YAML `max-iter` (10) and `ftol` ($10^{-6}$).
+**Activation.** Whenever the options list nucleation reactions; YAML `max-iter` (100) and `ftol` ($10^{-6}$).
 
 **Guarantee / limits.** Mole fractions stay non-negative; failures are reported in the diagnostic, not raised.
 
@@ -135,12 +135,12 @@ are the vapour fractions left at the two temperatures; more water is condensed a
 The per-cell scratch arrays come from a workspace sized by `equilibrate_tp_space`
 ({{< code src/utils/alloc.h equilibrate_tp_space >}}); on CUDA they live in shared memory, as @sec-ch12 explains.
 
-@fig-ch04-equilibrate-tp-coldstart shows how many outer iterations a cold start needs and what the default `max-iter`
+@fig-ch04-equilibrate-tp-coldstart shows how many outer iterations a cold start needs and what an explicitly reduced `max-iter`
 leaves behind.
 
 ```{python}
 #| label: fig-ch04-equilibrate-tp-coldstart
-#| fig-cap: "Cold-start saturation adjustment at fixed temperature and pressure for tests/jupiter.yaml at 1 bar. (a) Outer iterations needed to converge with max-iter 60 (green circles) against the default max-iter of 10 (dashed vermillion line). (b) Largest remaining ln RH after the solve with max-iter 10 (vermillion squares) and 60 (green circles); grey bands mark the temperatures where max-iter 10 returns a failure."
+#| fig-cap: "Cold-start saturation adjustment at fixed temperature and pressure for tests/jupiter.yaml at 1 bar. (a) Outer iterations needed to converge with max-iter 60 (green circles) against the explicit reduced max-iter of 10 (dashed vermillion line). (b) Largest remaining ln RH after the solve with max-iter 10 (vermillion squares) and 60 (green circles); grey bands mark the temperatures where max-iter 10 returns a failure."
 #| fig-alt: "Left: iterations fall from 44 at 130 K to 7 at 250 K, crossing the line at 10 near 230 K. Right: with max-iter 10 the remaining log relative humidity falls from 18 at 130 K to about zero at 210 K; with max-iter 60 it is zero everywhere."
 #| echo: false
 from kintera_report.ch04.figures.fig_tp_coldstart import make_fig
@@ -158,7 +158,7 @@ make_fig()
 
 : Code map of saturation adjustment at fixed temperature and pressure. {#tbl-ch04-equilibrate-tp-code}
 
-The options are read from the YAML block `dynamics: equation-of-state:` with the keys `max-iter` (default 10) and
+The options are read from the YAML block `dynamics: equation-of-state:` with the keys `max-iter` (default 100) and
 `ftol` (default $10^{-6}$) ({{< code src/thermo/thermo_options.cpp >}}).
 
 ### Tests
@@ -181,7 +181,7 @@ GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- **The default `max-iter` of 10 at the code pin fails cold starts.** For `tests/jupiter.yaml` cells at $10^5$ Pa that start with all
+- **An explicit `max-iter: 10` fails cold starts.** For `tests/jupiter.yaml` cells at $10^5$ Pa that start with all
   water, ammonia and hydrogen sulfide in the vapour, the solve needs 44 outer iterations at 130 K, falling to 15 at
   200 K, 11 at 220 K and 7 at 250 K (@fig-ch04-equilibrate-tp-coldstart). With `max-iter: 10` every cell from 130 to
   220 K returns diagnostic $-2010$. The largest remaining $\ln\mathrm{RH}$ is 18.0 at 130 K, 10.9 at 150 K and 0.60 at
@@ -189,9 +189,10 @@ GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
   and 11 iterations, so they too are reported as failures. With
   `max-iter: 60` every cell converges, to $|\ln\mathrm{RH}| < 3\times10^{-7}$.[^ch04-tp-maxiter] For cold starts a
   `max-iter` of about 50 is needed. A host that adjusts every step starts near equilibrium and needs fewer. The
-  derivation does not depend on the cap; the correct default for cold starts is of order 100, and the fix batch sets
-  it to 100.[^ch04-tp-d4] The check `check_ch4_tp.py` (line c) records the pin: with the default 12 of 13 cold-start
-  cells fail (expected failure), with 100 all converge in 9 to 46 passes (run record in the Derivation layer).
+  derivation does not depend on the cap. The default is 100.[^ch04-tp-d4]
+  The distinct composition in `check_ch4_tp.py` line c converges in all 13 cells with that default,
+  in 9 to 46 passes; the explicit 100-iteration control agrees.[^ch04-tp-check]
+
 :::
 
 - The step is a linearisation, and convergence is not proven. A cell that does not converge keeps the state of its
@@ -202,21 +203,20 @@ GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
 [^ch04-tp-k15]: [source: UCzhangxi/kintera issue #54, row K15 (reach check of the returned gain with absent gases,
 14,688 converged instances, CPU, float64, kintera@0d9f67f97d841147e23283d2dcdab302238d2c45); recorded there as latent.]
 
-[^ch04-tp-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`, cells at
+[^ch04-tp-check]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; deck: `tests/jupiter.yaml`, cells at
 300, 250, 200 and 160 K (line b) and the 13 cold-start cells 130 to 250 K (line c), $10^5$ Pa; run:
 `python derivation-checks/check_ch4_tp.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
-lines a and b PASS, line c EXPECTED-FAIL at the default cap and PASS with `max-iter` 100; CPU, double;
-kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126.]
+lines a, b and c PASS at the default cap and with explicit `max-iter` 100; CPU, double;
+kintera 2.6.7 source build, Python 3.11.13, torch 2.10.0+cu128.]
 
 [^ch04-tp-d4]: [source: UCzhangxi/kintera issue #54, row D4; the default is the `max_iter` argument of
-`ThermoOptionsImpl` ({{< code src/thermo/thermo.hpp ThermoOptionsImpl >}}) at the pin; the fix sets it to 100 there
-and in the YAML fallback; it is not part of the code pin.]
+`ThermoOptionsImpl` ({{< code src/thermo/thermo.hpp ThermoOptionsImpl >}}) at the pin; it is 100 there and in the YAML fallback.]
 
-[^ch04-tp-maxiter]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` with
+[^ch04-tp-maxiter]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; deck: `tests/jupiter.yaml` with
 `dynamics: {equation-of-state: {max-iter: 10}}` or `60`, cells from 130 to 250 K in steps of 10 K at $10^5$ Pa with
 $x_{\mathrm{H_2O}} = 3\times10^{-3}$, $x_{\mathrm{NH_3}} = 3\times10^{-4}$, $x_{\mathrm{H_2S}} = 10^{-4}$, rest dry, no
 condensate; run: `python -P src/kintera_report/ch04/runs/fig_tp_sweep.py tp_coldstart.json` with `KINTERA_REPO` set to
 a kintera checkout at the pin, which calls `ThermoX.forward` and `relative_humidity`
 and writes the data file of the figure, `src/kintera_report/ch04/data/tp_coldstart.json` (its `provenance` field
-repeats this record); CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126; a measurement
+repeats this record); CPU, double; kintera 2.6.7 source build, Python 3.11.13, torch 2.10.0+cu128; a measurement
 outside the suite, not a committed check.]

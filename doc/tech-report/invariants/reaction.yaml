@@ -1,0 +1,9 @@
+
+reference-state: {Tref: 0., Pref: 1.e5}
+species:
+  - {name: A, composition: {H: 1}, cv_R: 1.5}
+  - {name: B, composition: {H: 1}, cv_R: 1.5}
+reactions:
+  - equation: A => B
+    type: arrhenius
+    rate-constant: {A: 1., b: 0., Ea_R: 0.}

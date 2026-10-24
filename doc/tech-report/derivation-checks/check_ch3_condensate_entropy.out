@@ -1,18 +1,18 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
-   H2O(l)    T= 250.0 K, p=7.620637e+01 Pa: sum nu (h - T s)/(R T) = -2.069e-10
-   H2O(l)    T= 280.0 K, p=9.921322e+02 Pa: sum nu (h - T s)/(R T) = -5.934e-10
-   H2O(l)    T= 300.0 K, p=3.539458e+03 Pa: sum nu (h - T s)/(R T) = -5.385e-10
-   NH3(s)    T= 150.0 K, p=1.712495e+01 Pa: sum nu (h - T s)/(R T) = -2.260e-09
-   NH3(s)    T= 180.0 K, p=1.165598e+03 Pa: sum nu (h - T s)/(R T) = +1.297e-09
-   NH3(s)    T= 220.0 K, p=2.938858e+04 Pa: sum nu (h - T s)/(R T) = +3.730e-10
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
+   H2O(l)    T= 250.0 K, p=7.620637e+01 Pa: sum nu (h - T s)/(R T) = +8.840e-10
+   H2O(l)    T= 280.0 K, p=9.921322e+02 Pa: sum nu (h - T s)/(R T) = -8.421e-10
+   H2O(l)    T= 300.0 K, p=3.539458e+03 Pa: sum nu (h - T s)/(R T) = +4.789e-10
+   NH3(s)    T= 150.0 K, p=1.712495e+01 Pa: sum nu (h - T s)/(R T) = +5.250e-10
+   NH3(s)    T= 180.0 K, p=1.165598e+03 Pa: sum nu (h - T s)/(R T) = -2.820e-13
+   NH3(s)    T= 220.0 K, p=2.938858e+04 Pa: sum nu (h - T s)/(R T) = -2.700e-11
    NH4SH(s)  T= 200.0 K, p=9.000085e+00 Pa: sum nu (h - T s)/(R T) = +3.350e-08
    NH4SH(s)  T= 240.0 K, p=8.216054e+02 Pa: sum nu (h - T s)/(R T) = -3.802e-09
 (e1) nucleation reactions at saturation: |sum_n nu_n (h_n - T s_n)|/(R T), worst: measured 3.350e-08  tol 1e-06  PASS
-   H2O(l,p): s/R = 0.000000, source H2O(l): s/R = -9.342692 (T=280.0 K, p=5.0e+05 Pa)
-   NH3(s,p): s/R = 0.000000, source NH3(s): s/R = -40.716115 (T=140.0 K, p=5.0e+04 Pa)
-(e2) coagulation copy entropy equals its source's, worst rel: measured 1.000e+00  tol 1e-09  EXPECTED-FAIL (D64)
+   H2O(l,p): s/R = -14.880469, source H2O(l): s/R = -14.880469 (T=280.0 K, p=5.0e+05 Pa)
+   NH3(s,p): s/R = -19.550801, source NH3(s): s/R = -19.550801 (T=140.0 K, p=5.0e+04 Pa)
+(e2) coagulation copy entropy equals its source's, worst rel: measured 3.497e-10  tol 1e-09  PASS
    H2O gas (constant cp): cp = [33.25784, 33.25784, 33.25784, 33.25784, 33.25784], T ds/dT = [33.25784, 33.25784, 33.25784, 33.25784, 33.25784] J/(mol K) at 250-900 K
 (e3) T (ds/dT)_p = cp for H2O gas, flag off, worst rel: measured 4.899e-11  tol 1e-06  PASS
-   H2O gas, use-nasa9-cp: true: cp = [33.435519, 33.595723, 34.265063, 36.323676, 39.997566], T ds/dT = [33.25784, 33.25784, 33.25784, 33.25784, 33.25784] J/(mol K) at 250-900 K
-(e3) T (ds/dT)_p = cp for H2O gas, use-nasa9-cp on, worst rel: measured 1.685e-01  tol 1e-06  EXPECTED-FAIL (K6)
-SUMMARY: 2 PASS, 0 FAIL, 2 EXPECTED-FAIL
+   H2O gas, use-nasa9-cp: true: cp = [33.435519, 33.595723, 34.265063, 36.323676, 39.997566], T ds/dT = [33.435519, 33.595723, 34.265063, 36.323676, 39.997566] J/(mol K) at 250-900 K
+(e3) T (ds/dT)_p = cp for H2O gas, use-nasa9-cp on, worst rel: measured 4.991e-11  tol 1e-06  PASS
+SUMMARY: 4 PASS, 0 FAIL, 0 EXPECTED-FAIL

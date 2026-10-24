@@ -1,7 +1,7 @@
 ## Saturation adjustment inside a snapy stage (thermodynamics card) {#sec-ch14-saturation}
 
 <!-- PROVENANCE
-pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70
+pin: kintera@e357792d50639d68e9090b542edf038d2b029aa2 (main); snapy@f93b1cf12819be2d310f8aa84fb74cc627e9ac70
 sources: src/thermo/thermo.hpp, src/thermo/thermo_y.cpp; snapy src/mesh/meshblock.cpp, src/eos/moist_mixture.cpp
 status: draft
 author: XinyueWang05
@@ -106,10 +106,10 @@ limiter and sets the kinetic energy to zero), in six supersaturated cells from 1
 - "(k) adjustment moved mass fractions by up to 1.00e+00 of the largest (state was supersaturated) PASS"
 - "(l) total density rho_dry + sum y' rho equals rho (dry row untouched): max rel err 2.22e-16 (tol 1e-14) PASS"
 - "(m) element moles H, He, N, O, S per cell conserved: max rel err 3.69e-16 (tol 1e-13) PASS"
-- "(n) snapy's next VU->T at fixed ie (meshblock.cpp:825) = linear-model T: max rel err 4.44e-16 (tol 1e-12) PASS"
-- "(o) latent warming T' - T per cell [K]: 22.352 21.810 20.554 13.713 9.087 3.756 INFO"
-- "(p) max relative humidity per cell at (T', p') after the adjustment: 1.000000 1.000001 1.000000 1.000000 1.000000 1.000000 INFO"
-- "(k0) diag per cell at the default max_iter 10 (negative = failed, D4 filed): -2010 -2010 8 7 6 4 INFO"
+- "(n) snapy's next VU->T at fixed ie (meshblock.cpp:825) = linear-model T: max rel err 2.22e-16 (tol 1e-12) PASS"
+- "(o) latent warming T' - T per cell [K]: 28.163 27.660 26.127 18.686 11.822 4.714 INFO"
+- "(p) max relative humidity per cell at (T', p') after the adjustment: 1.000000 1.000000 1.000000 1.000000 1.000000 1.000000 INFO"
+- "(k0) diag per cell at the default max_iter 100 (negative = failed): 11 9 9 7 5 4 INFO"
 - "(q) max_iter = 1: 6 failed cell(s) counted, count reset to 0 on the second read PASS"
 - "(r) failed cells: written state still conserves total density: max rel err 2.22e-16 (tol 1e-14) PASS"
 
@@ -117,9 +117,9 @@ limiter and sets the kinetic energy to zero), in six supersaturated cells from 1
 <!-- equation-check: eq-ch14-saturation-mass check_ch14_coupling.py (r) -->
 <!-- equation-check: eq-ch14-saturation-elements check_ch14_coupling.py (m) -->
 
-Line (k0) shows two cells failing at the default limit of 10 iterations in this run; the output of the same script
-in the round-2 spec, run on another machine at the same pin, shows one. That difference is measured, not explained.
-The script tags the failures with the known row D4, and line (q) checks the count with the limit set to 1.
+Line (k0) shows all six cells converging at the default limit of 100 iterations. Line (q) deliberately reduces
+that limit to 1 and verifies the failure count. With an explicit limit of 10, the first cell reports failure,
+but all six warming values in line (o) are unchanged at the printed 0.001 K precision.[^ch14-iteration-control]
 
 No published derivation is quoted. The steps are the first law at fixed volume and the stoichiometry of
 @sec-ch04, matched to the code at the two pins.
@@ -155,12 +155,15 @@ figure is not provided: the figure module is not written yet.
 
 The kintera test covers the count, not snapy's use of it.
 
-[^ch14-check-sat]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
+[^ch14-check-sat]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch14_coupling.py` from a scratch directory,
-    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch14_coupling.out`, lines (k0) and (k) to (r), from an x86-64 Linux build, as its `build:` line records. Lines (k0)
-    and (p) are build-dependent: a run of the same script on an arm64 build at the pin gives `-2010 10 9 7 6 4` for
-    (k0), one failed cell, and 1.000000 in every cell for (p).]
+    with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.7; output:
+    `derivation-checks/check_ch14_coupling.out`, lines (k0) and (k) to (r), from the recorded x86-64 Linux build.]
+
+[^ch14-iteration-control]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; deck: the same six cells and `tests/jupiter.yaml`;
+run: `KINTERA_WT=<build> python derivation-checks/check_ch14_coupling.py --max-iter 10`;
+CPU, double; output: `derivation-checks/check_ch14_coupling-maxiter10.out`, lines (k0), (o) and (p).
+Only the saturation iteration cap is changed; the script retains its separate one-iteration failure-count test.]
 
 ### Limits
 

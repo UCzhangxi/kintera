@@ -1,0 +1,14 @@
+max-iter 10: diag [-2010.0, -2010.0, -2010.0, -2010.0, -2010.0, -2010.0, -2010.0, -2010.0, -2010.0, -2010.0, 10.0, 8.0, 7.0]
+  max ln RH [18.0, 13.9, 10.9, 8.91, 6.06, 4.04, 2.23, 0.603, -2.52e-06, -1.32e-07, -5.55e-10, -2.11e-12, -1.21e-11]
+max-iter 60: diag [44.0, 39.0, 34.0, 27.0, 23.0, 20.0, 18.0, 15.0, 13.0, 11.0, 10.0, 8.0, 7.0]
+  max ln RH [-3.79e-11, -2.86e-12, -5.4e-12, -2.43e-07, -9.36e-10, -1.01e-07, -1.69e-07, -1.34e-07, -2.79e-09, -1.32e-07, -5.55e-10, -2.11e-12, -1.21e-11]
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.
+equilibrate_tp did not converge after 10 iterations.

@@ -14,7 +14,7 @@ build and on a CUDA build, which code paths the suite exercises on one device on
 compare against. Appendix C (@sec-appc) lists every `ctest` entry; this chapter explains how those entries come to
 exist and how to read their results.
 
-TODO (structure draft): a dependency-map figure of the six schemes (the suite layout feeds the measured results and
+TODO (structure draft): a dependency-map figure of the seven schemes (the suite layout feeds the measured results and
 the device coverage; the comparison cases and the examples sit beside the suite).
 
 | scheme | option | default | main test |
@@ -24,6 +24,7 @@ the device coverage; the comparison cases and the examples sit beside the suite)
 | @sec-ch13-device-coverage | device of the inputs | CPU | `test_cuda_workspace.py` |
 | @sec-ch13-kinetics-base | external paths for the Titan cases | in-tree cases run | `test_kinetics_base.py` |
 | @sec-ch13-vulcan | none | not runnable from the repository | scoped out |
+| @sec-ch13-invariants | committed decks, 1000 steps | CPU binary64 | `check_invariants.py` |
 | @sec-ch13-examples | none | not registered | run by hand: 7 of 9 |
 
 : Schemes of this chapter. {#tbl-ch13-schemes}
@@ -39,3 +40,5 @@ the device coverage; the comparison cases and the examples sit beside the suite)
 {{< include 13-verification/_vulcan.qmd >}}
 
 {{< include 13-verification/_examples.qmd >}}
+
+{{< include 13-verification/_invariants.qmd >}}

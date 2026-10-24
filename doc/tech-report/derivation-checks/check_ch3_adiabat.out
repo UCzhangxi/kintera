@@ -1,13 +1,13 @@
-kintera 2.6.5 from $KINTERA_WT/_pyinstall/kintera/__init__.py
+kintera 2.6.7 from $KINTERA_WT/../../../../../../usr/local/lib/python3.11/site-packages/kintera/__init__.py
    ftol=1e-06: T1 = 260.063369404122 K, analytic 260.063369925054 K (cp/R = 3.5), p1 = 60653.065971 Pa
 4a dry adiabat T1 vs 300 exp(-0.5 R/cp), ftol=1e-06 (rel): measured 2.003e-09  tol 1e-08  PASS
    ftol=1e-12: T1 = 260.063369925054 K, analytic 260.063369925054 K (cp/R = 3.5), p1 = 60653.065971 Pa
 4a dry adiabat T1 vs 300 exp(-0.5 R/cp), ftol=1e-12 (rel): measured 0.000e+00  tol 1e-08  PASS
    state T=280 K, p=1e6 Pa, condensate mole fractions {'H2O(l)': 0.001509365302325915, 'NH3(s)': 0.0, 'NH4SH(s)': 0.0}
-   effective_cp = 31.3464857806, FD d(H/n)/dT = 31.3464858864, frozen cp = 29.169633 J/(mol K)
-4b effective_cp vs central FD of equilibrium molar enthalpy (rel): measured 3.375e-09  tol 1e-05  PASS
-   saturated step dlnp=-0.01: T 280.0 -> 279.24698789 K, s -21.1429530619 -> -21.1429525986 J/(mol K)
-4b |ds| over saturated extrapolate_dlnp step (J/(mol K)): measured 4.634e-07  tol 1e-05  PASS
-   S(600 K) = 404.3358553266 J/(K m^3); PXS->T returns 594.1625594241 K (start guess Tref = 300.0 K, max_iter = 10)
-4c PXS->T round trip |T - 600| (K): measured 5.837e+00  tol 1e-06  EXPECTED-FAIL (D8)
-SUMMARY: 4 PASS, 0 FAIL, 1 EXPECTED-FAIL
+   effective_cp = 32.2190406313, FD d(H/n)/dT = 32.2190407845, frozen cp = 29.163182 J/(mol K)
+4b effective_cp vs central FD of equilibrium molar enthalpy (rel): measured 4.756e-09  tol 1e-05  PASS
+   saturated step dlnp=-0.01: T 280.0 -> 279.26480447 K, s -21.2124497180 -> -21.2124497181 J/(mol K)
+4b |ds| over saturated extrapolate_dlnp step (J/(mol K)): measured 1.762e-10  tol 1e-05  PASS
+   S(600 K) = 404.3358553266 J/(K m^3); PXS->T returns 600.0000000000 K (start guess Tref = 300.0 K, max_iter = 100)
+4c PXS->T round trip |T - 600| (K): measured 2.728e-12  tol 1e-06  PASS
+SUMMARY: 5 PASS, 0 FAIL, 0 EXPECTED-FAIL

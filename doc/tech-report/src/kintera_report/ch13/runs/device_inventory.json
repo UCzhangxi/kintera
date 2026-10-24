@@ -1,0 +1,30 @@
+{
+  "source_sha": "e357792d50639d68e9090b542edf038d2b029aa2",
+  "definition": "case-sensitive literal \"cuda\" anywhere in tests/test*.py",
+  "total": 43,
+  "cuda_named": [
+    "test_atm2d.py",
+    "test_cuda_workspace.py",
+    "test_evaporation_general.py",
+    "test_inline_svp.py",
+    "test_k18_contract.py",
+    "test_kinetics_base_units.py",
+    "test_kinetics_null_options.py",
+    "test_kkt_cycling_uv.py",
+    "test_mass_action_zero_concentration.py",
+    "test_rate_constant_ddC.py",
+    "test_reaction_equilibrium.py",
+    "test_refactor_phase1.py",
+    "test_saturation_failure_reported.py",
+    "test_species_registry.py",
+    "test_thermo_default_nucleation.py",
+    "test_thermo_none_nucleation.py",
+    "test_thermo_none_nucleation_after_reset.py",
+    "test_thermo_x_warm_start_shape.py",
+    "test_thermo_y_none_nucleation.py",
+    "test_warm_start_shape.py"
+  ],
+  "cuda_named_count": 20,
+  "no_cuda_named_count": 23,
+  "runtime_cuda_validation": false
+}

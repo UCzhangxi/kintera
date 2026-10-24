@@ -1,0 +1,14 @@
+diff --git a/src/kinetics/evolve_implicit_impl.h b/src/kinetics/evolve_implicit_impl.h
+index 4d5ec0a..dd7884b 100644
+--- a/src/kinetics/evolve_implicit_impl.h
++++ b/src/kinetics/evolve_implicit_impl.h
+@@ -81,7 +81,7 @@ DISPATCH_MACRO void evolve_implicit_cell(T* delta, const T* rate, const T* jac,
+     psolve<T, Backend>(x, A, nspecies, work);
+   }
+ 
+-  for (int t = 0; t < nspecies; ++t) delta[t] = x[t];
++  for (int t = 0; t < nspecies; ++t) delta[t] = t == nspecies - 1 ? T(0) : x[t];
+ 
+   pfree<Backend>(A);
+   pfree<Backend>(Alu);
+

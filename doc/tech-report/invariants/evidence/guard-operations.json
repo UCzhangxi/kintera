@@ -1,0 +1,1487 @@
+{
+  "probe_sha256": "d96b6f294f82defce79c57f1fcad1c1429b6bdc1e11acd57d45c266348276dab",
+  "source": "e357792d50639d68e9090b542edf038d2b029aa2",
+  "torch": "2.10.0+cu128",
+  "compiler_command": [
+    "c++",
+    "-std=c++17",
+    "-O0",
+    "-g0",
+    "-D_GLIBCXX_USE_CXX11_ABI=1",
+    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-192-evidence/complete-clamps-build/operations.cpp",
+    "-o",
+    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-192-evidence/complete-clamps-build/operations",
+    "-I/usr/local/lib/python3.11/site-packages/torch/include",
+    "-I/usr/local/lib/python3.11/site-packages/torch/include/torch/csrc/api/include",
+    "-L/usr/local/lib/python3.11/site-packages/torch/lib",
+    "-Wl,-rpath,/usr/local/lib/python3.11/site-packages/torch/lib",
+    "-ltorch",
+    "-ltorch_cpu",
+    "-lc10"
+  ],
+  "generated_source_sha256": "52729a154c98c82273ba4586ac4821ea6557a3e3cf6ff335723cba68fc823120",
+  "registry_sha256": "2ecbef064f1721b41580e16a659f48bc0f2f10f97441dd86eaeb1089699764e1",
+  "rows": [
+    {
+      "id": "src/kinetics/evaporation.cpp:278",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation.cpp#L278",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min_(0)",
+      "source_file_sha256": "d4a70e4917ac1cc5c05c66ee6dcfa2b458b0a13e972e6e4937655caf318dbed7"
+    },
+    {
+      "id": "src/kinetics/evaporation.cpp:284",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation.cpp#L284",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0.)",
+      "source_file_sha256": "d4a70e4917ac1cc5c05c66ee6dcfa2b458b0a13e972e6e4937655caf318dbed7"
+    },
+    {
+      "id": "src/kinetics/evaporation.cpp:303",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation.cpp#L303",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        2.225073858507201e-308,
+        2.2250738585072014e-308,
+        2.225073858507202e-308
+      ],
+      "expected": [
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        1.0,
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        2.225073858507202e-308
+      ],
+      "observed": [
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        1.0,
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        2.225073858507202e-308
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "d4a70e4917ac1cc5c05c66ee6dcfa2b458b0a13e972e6e4937655caf318dbed7"
+    },
+    {
+      "id": "src/kinetics/evaporation.cpp:304",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation.cpp#L304",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        2.225073858507201e-308,
+        2.2250738585072014e-308,
+        2.225073858507202e-308
+      ],
+      "expected": [
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        1.0,
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        2.225073858507202e-308
+      ],
+      "observed": [
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        1.0,
+        2.2250738585072014e-308,
+        2.2250738585072014e-308,
+        2.225073858507202e-308
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "d4a70e4917ac1cc5c05c66ee6dcfa2b458b0a13e972e6e4937655caf318dbed7"
+    },
+    {
+      "id": "src/kinetics/evaporation.cpp:306",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation.cpp#L306",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0.)",
+      "source_file_sha256": "d4a70e4917ac1cc5c05c66ee6dcfa2b458b0a13e972e6e4937655caf318dbed7"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:24",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L24",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0.)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:29",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L29",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "expected": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "observed": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:43",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L43",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        708.7827128933839,
+        708.782712893384,
+        708.7827128933841
+      ],
+      "expected": [
+        -1.0,
+        0.0,
+        1.0,
+        708.7827128933839,
+        708.782712893384,
+        708.782712893384
+      ],
+      "observed": [
+        -1.0,
+        0.0,
+        1.0,
+        708.7827128933839,
+        708.782712893384,
+        708.782712893384
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_max(std::log(maxval) - 1)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:56",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L56",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        708.7827128933839,
+        708.782712893384,
+        708.7827128933841
+      ],
+      "expected": [
+        -1.0,
+        0.0,
+        1.0,
+        708.7827128933839,
+        708.782712893384,
+        708.782712893384
+      ],
+      "observed": [
+        -1.0,
+        0.0,
+        1.0,
+        708.7827128933839,
+        708.782712893384,
+        708.782712893384
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_max(std::log(maxval) - 1)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:57",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L57",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:66",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L66",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "expected": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "observed": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:78",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L78",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "expected": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "observed": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:96",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L96",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "expected": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "observed": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:102",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L102",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "expected": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "observed": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/evaporation_extent.cpp:121",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/evaporation_extent.cpp#L121",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "expected": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "observed": [
+        5e-324,
+        5e-324,
+        1.0,
+        5e-324,
+        1e-323
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "2fb295cd287058bcd80ec1d82c8566ab35da02ba268359f9311af0a27c8e1807"
+    },
+    {
+      "id": "src/kinetics/kb_falloff.cpp:112",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kb_falloff.cpp#L112",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-300)",
+      "source_file_sha256": "395ebff09b9e74712ce3b86df8b9ec1a6b6e2007af6785898cb3f8977abf92de"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:327",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L327",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0.)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:345",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L345",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(tiny)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:395",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L395",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-251,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "expected": [
+        1e-250,
+        1e-250,
+        1.0,
+        1e-250,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "observed": [
+        1e-250,
+        1e-250,
+        1.0,
+        1e-250,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-250)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:436",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L436",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0.)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:578",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L578",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0.)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:585",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L585",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0.)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:603",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L603",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-251,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "expected": [
+        1e-250,
+        1e-250,
+        1.0,
+        1e-250,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "observed": [
+        1e-250,
+        1e-250,
+        1.0,
+        1e-250,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-250)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:611",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L611",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-251,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "expected": [
+        1e-250,
+        1e-250,
+        1.0,
+        1e-250,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "observed": [
+        1e-250,
+        1e-250,
+        1.0,
+        1e-250,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-250)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/kinetics.cpp:620",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/kinetics.cpp#L620",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-251,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "expected": [
+        1e-250,
+        1e-250,
+        1.0,
+        1e-250,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "observed": [
+        1e-250,
+        1e-250,
+        1.0,
+        1e-250,
+        1e-250,
+        1.0000000000000002e-250
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-250)",
+      "source_file_sha256": "1be5231fbcf13c5ed19741ef7fd33e64ecf991c0509db7ae9b4919bdcf17ee2f"
+    },
+    {
+      "id": "src/kinetics/lindemann_falloff.cpp:262",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/lindemann_falloff.cpp#L262",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-101,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "expected": [
+        1e-100,
+        1e-100,
+        1.0,
+        1e-100,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "observed": [
+        1e-100,
+        1e-100,
+        1.0,
+        1e-100,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(1e-100)",
+      "source_file_sha256": "63a34337efde606bdc430f56734fc293b1f44fb7caed5993ef478f9a72effcfe"
+    },
+    {
+      "id": "src/kinetics/sri_falloff.cpp:252",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/sri_falloff.cpp#L252",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1.0000000000000002e+300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1e+300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1e+300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(1e-300, 1e300)",
+      "source_file_sha256": "bde329a60786adb2fa4dabc0938bfa7a33ee1047704a9710a7024cd0db3ec53f"
+    },
+    {
+      "id": "src/kinetics/sri_falloff.cpp:279",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/sri_falloff.cpp#L279",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1.0000000000000002e+300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1e+300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1e+300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(1e-300, 1e300)",
+      "source_file_sha256": "bde329a60786adb2fa4dabc0938bfa7a33ee1047704a9710a7024cd0db3ec53f"
+    },
+    {
+      "id": "src/kinetics/sri_falloff.cpp:329",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/sri_falloff.cpp#L329",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-101,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "expected": [
+        1e-100,
+        1e-100,
+        1.0,
+        1e-100,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "observed": [
+        1e-100,
+        1e-100,
+        1.0,
+        1e-100,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(1e-100)",
+      "source_file_sha256": "bde329a60786adb2fa4dabc0938bfa7a33ee1047704a9710a7024cd0db3ec53f"
+    },
+    {
+      "id": "src/kinetics/troe_falloff.cpp:248",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/troe_falloff.cpp#L248",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1.0000000000000002e+300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1e+300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1e+300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(1e-300, 1e300)",
+      "source_file_sha256": "3df9040a1d9ba368da4a54b9448005f1fceaafd2a9e251383e6cf897ddd0a1fa"
+    },
+    {
+      "id": "src/kinetics/troe_falloff.cpp:275",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/troe_falloff.cpp#L275",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1.0000000000000002e+300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1e+300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300,
+        9.999999999999999e+299,
+        1e+300,
+        1e+300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(1e-300, 1e300)",
+      "source_file_sha256": "3df9040a1d9ba368da4a54b9448005f1fceaafd2a9e251383e6cf897ddd0a1fa"
+    },
+    {
+      "id": "src/kinetics/troe_falloff.cpp:325",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/kinetics/troe_falloff.cpp#L325",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-101,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "expected": [
+        1e-100,
+        1e-100,
+        1.0,
+        1e-100,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "observed": [
+        1e-100,
+        1e-100,
+        1.0,
+        1e-100,
+        1e-100,
+        1.0000000000000001e-100
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(1e-100)",
+      "source_file_sha256": "3df9040a1d9ba368da4a54b9448005f1fceaafd2a9e251383e6cf897ddd0a1fa"
+    },
+    {
+      "id": "src/math/interpolation.cpp:41",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/math/interpolation.cpp#L41",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324,
+        1.9999999999999998,
+        2.0,
+        2.0000000000000004
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324,
+        1.9999999999999998,
+        2.0,
+        2.0
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324,
+        1.9999999999999998,
+        2.0,
+        2.0
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(0, 2)",
+      "source_file_sha256": "c901b3c482d4d7b7f2cb05f76524db14d5cd8290a68041a0816297bb54e9eee6"
+    },
+    {
+      "id": "src/math/interpolation.cpp:54",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/math/interpolation.cpp#L54",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324,
+        0.9999999999999999,
+        1.0000000000000002
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324,
+        0.9999999999999999,
+        1.0
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324,
+        0.9999999999999999,
+        1.0
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp(0.0, 1.0)",
+      "source_file_sha256": "c901b3c482d4d7b7f2cb05f76524db14d5cd8290a68041a0816297bb54e9eee6"
+    },
+    {
+      "id": "src/photochem/jacobian_photolysis.cpp:32",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/photochem/jacobian_photolysis.cpp#L32",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-31,
+        1e-30,
+        1.0000000000000003e-30
+      ],
+      "expected": [
+        1e-30,
+        1e-30,
+        1.0,
+        1e-30,
+        1e-30,
+        1.0000000000000003e-30
+      ],
+      "observed": [
+        1e-30,
+        1e-30,
+        1.0,
+        1e-30,
+        1e-30,
+        1.0000000000000003e-30
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-30)",
+      "source_file_sha256": "10d885a9097c6256010847bb61447fd3681dd2228e8efcec9130131d808155cd"
+    },
+    {
+      "id": "src/photochem/jacobian_photolysis.cpp:41",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/photochem/jacobian_photolysis.cpp#L41",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-31,
+        1e-30,
+        1.0000000000000003e-30
+      ],
+      "expected": [
+        1e-30,
+        1e-30,
+        1.0,
+        1e-30,
+        1e-30,
+        1.0000000000000003e-30
+      ],
+      "observed": [
+        1e-30,
+        1e-30,
+        1.0,
+        1e-30,
+        1e-30,
+        1.0000000000000003e-30
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-30)",
+      "source_file_sha256": "10d885a9097c6256010847bb61447fd3681dd2228e8efcec9130131d808155cd"
+    },
+    {
+      "id": "src/photochem/photochem.cpp:130",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/photochem/photochem.cpp#L130",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-300)",
+      "source_file_sha256": "de85091f0593190ee61d63f0b8aa6304532bddbd00eb61bf27d654d514fb5c4e"
+    },
+    {
+      "id": "src/photochem/photochem.cpp:136",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/photochem/photochem.cpp#L136",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-300)",
+      "source_file_sha256": "de85091f0593190ee61d63f0b8aa6304532bddbd00eb61bf27d654d514fb5c4e"
+    },
+    {
+      "id": "src/photochem/photolysis.cpp:315",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/photochem/photolysis.cpp#L315",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        -5e-324,
+        5e-324
+      ],
+      "expected": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "observed": [
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        5e-324
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(0)",
+      "source_file_sha256": "c68d25e6d0047558f71c36bee46b45af13122ef98dcc36e358400605de5bab51"
+    },
+    {
+      "id": "src/thermo/eval_uhs.cpp:339",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/thermo/eval_uhs.cpp#L339",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-300)",
+      "source_file_sha256": "3933936a96755e1f9b652ac8305a0fdeb3995e2c7fad05f40573f05df7645820"
+    },
+    {
+      "id": "src/thermo/eval_uhs.cpp:400",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/thermo/eval_uhs.cpp#L400",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999999e-301,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "expected": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "observed": [
+        1e-300,
+        1e-300,
+        1.0,
+        1e-300,
+        1e-300,
+        1.0000000000000002e-300
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(1e-300)",
+      "source_file_sha256": "3933936a96755e1f9b652ac8305a0fdeb3995e2c7fad05f40573f05df7645820"
+    },
+    {
+      "id": "src/thermo/thermo_x.cpp:332",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/thermo/thermo_x.cpp#L332",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999998e-21,
+        1e-20,
+        1.0000000000000001e-20
+      ],
+      "expected": [
+        1e-20,
+        1e-20,
+        1.0,
+        1e-20,
+        1e-20,
+        1.0000000000000001e-20
+      ],
+      "observed": [
+        1e-20,
+        1e-20,
+        1.0,
+        1e-20,
+        1e-20,
+        1.0000000000000001e-20
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min_(options->gas_floor())",
+      "source_file_sha256": "0a860d5a2bb1fbab81d06c741d1c92a8c08e5a66824cfc73847825fe8d8e2556"
+    },
+    {
+      "id": "src/thermo/thermo_y.cpp:460",
+      "citation": "https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/src/thermo/thermo_y.cpp#L460",
+      "inputs": [
+        -1.0,
+        0.0,
+        1.0,
+        9.999999999999998e-21,
+        1e-20,
+        1.0000000000000001e-20
+      ],
+      "expected": [
+        1e-20,
+        1e-20,
+        1.0,
+        1e-20,
+        1e-20,
+        1.0000000000000001e-20
+      ],
+      "observed": [
+        1e-20,
+        1e-20,
+        1.0,
+        1e-20,
+        1e-20,
+        1.0000000000000001e-20
+      ],
+      "pass_": true,
+      "absolute_tolerance": 0,
+      "relative_tolerance": 0,
+      "scope": "Source-extracted clamp on the intermediate shown in the cited statement; scalar binary64 boundary fixtures. No claim about full-solver reachability.",
+      "native_call": ".clamp_min(options->gas_floor())",
+      "source_file_sha256": "d615603908312583d6cc9660f4d29fe208ff8d4b7248b5dbc6ef9967f8a68b71"
+    }
+  ],
+  "passed": 43,
+  "total": 43
+}

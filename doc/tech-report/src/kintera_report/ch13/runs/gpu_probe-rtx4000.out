@@ -1,0 +1,10 @@
+kintera 2.6.7, torch 2.10.0+cu128 (CUDA 12.8), Python 3.11.13, Quadro RTX 4000, double, 64 cells, dt 10 s
+  kessler          rate           shape (64, 2)        max|cpu| 2.174e-02  rel diff 5.98e-17  bitwise equal False
+  kessler          rate constant  shape (64, 2)        max|cpu| 9.388e-03  rel diff 6.93e-17  bitwise equal False
+  kessler          jacobian       shape (64, 2, 3)     max|cpu| 9.217e-03  rel diff 7.06e-17  bitwise equal False
+  kessler          implicit step  shape (64, 3)        max|cpu| 1.981e-01  rel diff 7.01e-17  bitwise equal False
+  pressure switch  rate           shape (64, 2)        max|cpu| 3.007e-02  rel diff 1.15e-16  bitwise equal False
+  pressure switch  rate constant  shape (64, 2)        max|cpu| 1.000e+00  rel diff 0.00e+00  bitwise equal True
+  pressure switch  jacobian       shape (64, 2, 4)     max|cpu| 1.000e+00  rel diff 0.00e+00  bitwise equal True
+  pressure switch  implicit step  shape (64, 4)        max|cpu| 2.733e-02  rel diff 5.08e-16  bitwise equal False
+largest relative CPU-CUDA difference 5.08e-16 (tol 1e-13) PASS

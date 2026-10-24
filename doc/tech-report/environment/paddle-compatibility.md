@@ -73,12 +73,10 @@ The same library load under Torch 2.10.0 succeeded. This demonstrates that
 switching only the Torch runtime does not work for the validated native stack;
 it does not prove that every possible historical rebuild is impossible.
 
-Chapter 14 explicitly limits the driver description to source reading and
-identifies both the dependency conflict and a three-argument `crm` call to a
-five-argument `evolve_kinetics` function. Installing older kintera/snapy releases
-would change the report's public source targets; it would not validate its
-current pins, its newer kinetics options, or that call. No such substitution or
-scientific-content change is included here.
+The historical driver contract and dependency conflict motivated the migration. The current public pin uses a
+six-argument `evolve_kinetics` and supports the installed Torch 2.10.0 stack. Its `crm` script still supplies
+three arguments; the four migration cases exercise the function directly, not that CRM entry point.
+No historical native packages are substituted for the report source pins.
 
 ## Remaining chapter-owner review
 

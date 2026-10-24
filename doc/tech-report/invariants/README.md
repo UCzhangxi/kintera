@@ -94,16 +94,16 @@ python invariants/test_guard_coverage.py
 
 The first probe extracts 43 clamp calls and checks 257 boundary values exactly.
 The second compiles verbatim production statements/expressions and the complete
-native Newton trial function with explicit intermediate physical inputs. Its 97
+native Newton trial function with explicit intermediate physical inputs. Its 100
 fixtures cover the other 95 occurrences, including nonfinite-input rejection,
-policy-disabled and inactive-gradient controls. See `SOURCE-GUARD-EFFECTS.md` and
+policy-disabled, inactive-gradient and explicit float32-branch controls. See `SOURCE-GUARD-EFFECTS.md` and
 the committed JSON inputs/results. The source file hashes, exact fragments,
 manifest and probe identities are checked; missing or failed evidence stays red.
 
 Coverage passes only with both measured artifacts: 138 applicable occurrences,
 zero missing. Classification alone still has zero measured occurrences; the
 clamp-only subset still leaves 95 missing. This does not assert full-report branch
-reachability, float32/CUDA behavior or the physical harmlessness of every floor.
+reachability, general float32/CUDA behavior or the physical harmlessness of every floor.
 It measures each listed operation's local physical/numerical effect. The source
 bindings document the binary64 constants, default options and intermediate states.
 

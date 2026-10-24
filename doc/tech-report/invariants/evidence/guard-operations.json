@@ -8,9 +8,9 @@
     "-O0",
     "-g0",
     "-D_GLIBCXX_USE_CXX11_ABI=1",
-    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-e992-evidence/native-build/operations.cpp",
+    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-e992-evidence/corrected-native-build/operations.cpp",
     "-o",
-    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-e992-evidence/native-build/operations",
+    "/mnt/data1/chengcli/ai_workspace/worker1/inventory-e992-evidence/corrected-native-build/operations",
     "-I/usr/local/lib/python3.11/site-packages/torch/include",
     "-I/usr/local/lib/python3.11/site-packages/torch/include/torch/csrc/api/include",
     "-L/usr/local/lib/python3.11/site-packages/torch/lib",
@@ -20,7 +20,7 @@
     "-lc10"
   ],
   "generated_source_sha256": "52729a154c98c82273ba4586ac4821ea6557a3e3cf6ff335723cba68fc823120",
-  "registry_sha256": "520958206c3eb69f34a693ec9e7cb1168a3b22b38dced28dc4a34d2e138b8235",
+  "registry_sha256": "062d4092b0ccb2e9e80e4fce4a5d64829e40768eb0e05dc7bebc3c6e1e942e2a",
   "rows": [
     {
       "id": "src/kinetics/evaporation.cpp:278",

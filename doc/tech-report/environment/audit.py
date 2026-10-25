@@ -15,6 +15,7 @@ import signal
 import subprocess
 import time
 from inventory_policy import gpu_only
+from expected_failures import load_policy, classify_ledger
 
 D = Path(__file__).resolve().parents[1]
 E = D / '.reproduce/logs'
@@ -154,10 +155,19 @@ if freeze.exists():
     shutil.move(str(freeze), str(E/'original-freeze'))
 run('render', 'quarto render book/ -M latex-auto-install:false', D, 3600)
 run('render-gate', 'python tools/render_gate.py book/', D, 3600)
+policy = load_policy(D/'environment/expected_failures.json')
+source_sha = subprocess.check_output(['git', '-C', str(P), 'rev-parse', 'HEAD'], text=True).strip()
+summary = classify_ledger(list(seen.values()), policy, source_sha)
+for result in seen.values():
+    (E/(result['name']+'.execution.json')).write_text(json.dumps(result, indent=2))
+    if result['status'] != 'PASS':
+        print(json.dumps(result), flush=True)
+(E/'expected-failures.json').write_text(json.dumps(summary, indent=2))
 (E/'inventory-results.json').write_text(json.dumps(results, indent=2))
 (E/'executions.json').write_text(json.dumps(list(seen.values()), indent=2))
-failures = sum(r['exit'] != 0 for r in seen.values())
-print(f'{len(seen)} executions; {failures} nonzero exits. Numerical comparisons require review.')
+print(f"{len(seen)} executions; {summary['raw_nonzero']} raw nonzero exits; "
+      f"{summary['expected_failures']} EXPECTED-FAIL; {summary['unexpected']} unexpected outcomes. "
+      'Numerical comparisons require review.')
 paddle_conflicts = json.loads((E/'paddle-conflicts.json').read_text())
 print('Unresolved Paddle runtime constraints:', paddle_conflicts)
-raise SystemExit(bool(failures or paddle_conflicts))
+raise SystemExit(bool(summary['unexpected'] or paddle_conflicts))

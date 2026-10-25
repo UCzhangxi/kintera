@@ -199,7 +199,7 @@ $\epsilon/h$ with margin), and all eight lines pass:[^ch09-sources-check]
     built in the script (seed 9); run: `python doc/tech-report/derivation-checks/check_ch9_sources.py` from a scratch
     directory, with `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13,
     torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch9_sources.out`, 8 PASS, 0 FAIL.]
+    `doc/tech-report/derivation-checks/check_ch9_sources.out`, 8 PASS, 0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch09-sources-sum check_ch9_sources.py (d1) -->
 <!-- equation-check: eq-ch09-sources-stoich check_ch9_sources.py (b) -->

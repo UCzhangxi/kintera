@@ -36,6 +36,8 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # historical measurements are checked against immutable report witnesses
 
       - name: Set up Python
         uses: actions/setup-python@v5

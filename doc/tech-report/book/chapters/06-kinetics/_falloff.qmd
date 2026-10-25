@@ -188,7 +188,7 @@ range.[^ch06-check-c] The Troe and SRI broadening still has no reference-value t
 [^ch06-check-c]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the fall-off card inside the script;
     run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch6_rates.out` lines `[c1]`, `[c2]`, `[c3]`.]
+    `derivation-checks/check_ch6_rates.out` lines `[c1]`, `[c2]`, `[c3]`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

@@ -9,20 +9,26 @@ STYLE section 4, in the text or in a footnote definition:
 N7 sharpens it. A tag fails when
   - its `sha` field holds no full 40-hex commit (as `<sha>`, `kintera@<sha>` or `chengcli/kintera@<sha>`); a phrase
     such as "the code pin" or an abbreviated sha does not count;
-  - the sha does not resolve in chengcli/kintera, or is not the code pin of code_pin.yml or a later commit;
+  - the sha does not resolve in chengcli/kintera, or is off the code pin without verified historical attribution;
   - it has no `run:` field with a backticked command;
   - it quotes a timing (a number of seconds or milliseconds, or a wall-clock time, in the tag or the rest of its
     footnote) and has no `scope:` field (what the time covers) or no `reps:` field (how many repetitions).
 
-The count of failing tags per chapter may only fall. tools/provenance-baseline.json records it, and the check fails
+Historical measurements carry `historical: <full source sha>` in addition to `sha:`.
+The registry tools/historical-provenance.json binds each tag to the same claim and source label in an immutable
+report commit. The source must be an ancestor of the current pin. A registry is not an arbitrary SHA allowlist:
+missing/wrong labels, changed claims, missing witnesses and unregistered historical labels fail. Source attribution
+failures cannot be waived through the count baseline. Every check prints the verified historical count and each
+current file:line/source commit as the next-repin to-do. No historical value is relabeled as a current-pin result.
+
+The count of other failing tags per chapter may only fall. tools/provenance-baseline.json records it, and the check fails
 when the file is missing, when a chapter's count differs from its baseline (a rise, or a fall not yet recorded), and,
 given the target branch (`--base-ref`), when the baseline rises against the target's copy: a new chapter entry is a
 rise from 0. The comparison reads the target's copy as tools/ratchet_gate.py does, and allows a rise only when the
 code pin moves. `--update` writes the current counts.
 
 Shas are resolved like tools/code_anchors.py resolves the pin: a local clone (`KINTERA_REPO`, then the repository
-holding this report), else a cache under `KINTERA_REPORT_CACHE` fetched from GitHub with its history, so that "the pin
-or later" can be decided.
+holding this report), else a cache under `KINTERA_REPORT_CACHE` fetched from GitHub with its history, so that historical ancestry can be decided.
 
 usage: python3 tools/check_provenance.py [report_dir] [--update] [--list] [--base-ref REF]   (exit 0: at the baseline)
 """
@@ -92,14 +98,23 @@ def _context(text, end):
     return rest[:stop.start()] if stop else rest
 
 
-def tags(book):
-    """Every provenance tag: dict(file, line, chapter, fields, text)."""
+def parse_tags(rel, text):
+    """Tags retain source spans and paragraph context for immutable evidence checks."""
     out = []
-    for rel, text in _sources(book):
-        for m in _TAG.finditer(text):
-            out.append(dict(file=rel, line=text.count("\n", 0, m.start()) + 1, chapter=_chapter(rel),
-                            fields=_fields(m.group(1)), text=m.group(1) + _context(text, m.end())))
+    for index, m in enumerate(_TAG.finditer(text)):
+        prefix = re.split(r"\n\s*\n", text[:m.start()])[-1]
+        suffix = _context(text, m.end())
+        footnote = re.match(r"\[\^([^]]+)\]:", prefix.strip())
+        out.append(dict(file=rel, line=text.count("\n", 0, m.start()) + 1,
+                        chapter=_chapter(rel), index=index, identity=footnote.group(1) if footnote else f"tag:{index}",
+                        start=m.start(), end=m.end(),
+                        body=m.group(1), prefix=prefix, suffix=suffix,
+                        fields=_fields(m.group(1)), text=m.group(1) + suffix))
     return out
+
+
+def tags(book):
+    return [tag for rel, text in _sources(book) for tag in parse_tags(rel, text)]
 
 
 # --- shas ---------------------------------------------------------------------------------------------------------
@@ -113,7 +128,7 @@ def _has(gitdir, sha):
 
 
 class Resolver:
-    """Decide whether a sha is a commit of chengcli/kintera at or after the pin."""
+    """Resolve the current pin and verify historical source ancestry."""
 
     def __init__(self, report, pin, fetch=True, local=None):
         self.pin, self.fetch, self.memo = pin, fetch, {}
@@ -143,14 +158,23 @@ class Resolver:
                 _git(self.bare, "fetch", "--quiet", f"https://github.com/{REPO}.git", s)
         return self.bare if _has(self.bare, sha) and _has(self.bare, self.pin) else None
 
+    def historical(self, sha):
+        """A historical source must resolve and be a strict ancestor of the current pin."""
+        d = self._dir(sha)
+        if d is None:
+            return f"historical source {sha} does not resolve in {REPO}"
+        if sha == self.pin or _git(d, "merge-base", "--is-ancestor", sha, self.pin).returncode:
+            return f"historical source {sha} is not an ancestor of the code pin"
+        return None
+
     def __call__(self, sha):
-        """None when the sha is at or after the pin, else the reason it fails."""
+        """None for the current pin; off-pin tags need separate historical verification."""
         if sha not in self.memo:
             d = self._dir(sha)
             if d is None:
                 self.memo[sha] = f"sha {sha[:12]} does not resolve in {REPO}"
-            elif _git(d, "merge-base", "--is-ancestor", self.pin, sha).returncode != 0:
-                self.memo[sha] = f"sha {sha[:12]} is not the code pin {self.pin[:12]} or a later commit"
+            elif sha != self.pin:
+                self.memo[sha] = f"sha {sha[:12]} is off the code pin {self.pin[:12]}; a verified historical label is required"
             else:
                 self.memo[sha] = None
         return self.memo[sha]
@@ -167,6 +191,8 @@ def problems(tag, resolve):
     full = [h for h in ours if len(h) == 40]
     if not full:
         out.append(f"short sha {ours[0]}" if ours else f"no full sha (sha field: {f['sha'][:40]!r})")
+    elif len(full) != 1:
+        out.append("ambiguous source sha field")
     else:
         why = resolve(full[0])
         if why:
@@ -188,12 +214,132 @@ def read_pin(report):
     return re.search(r"\b([0-9a-f]{40})\b", text).group(1)
 
 
-def violations(report, resolve=None):
+HISTORICAL = "tools/historical-provenance.json"
+_HISTORICAL_FIELD = re.compile(r";\s*historical:\s*[0-9a-f]{40}\s*(?=;|$|\])")
+
+
+def _source(fields):
+    shas = [h for repo, h in _HEX.findall(fields.get("sha", ""))
+            if (not repo or repo in ("kintera", REPO)) and len(h) == 40]
+    return shas[0] if len(shas) == 1 else None
+
+
+def _claim(tag):
+    # Preserve the complete tag and adjacent claim, allowing only whitespace reflow
+    # and the added historical field. No change of numbers, commands or source labels.
+    def canonical(text):
+        text = _HISTORICAL_FIELD.sub("", text)
+        parts, end = [], 0
+        for match in re.finditer(r"(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)", text, re.S):
+            parts.append(" ".join(text[end:match.start()].split()))
+            parts.append(match.group())  # command whitespace can change shell/string semantics
+            end = match.end()
+        parts.append(" ".join(text[end:].split()))
+        return tuple(parts)
+    return tuple(canonical(tag[k]) for k in ("prefix", "body", "suffix"))
+
+
+def historical_audit(report, resolve=None):
+    """Verify explicit labels against immutable report witnesses, never a SHA allowlist.
+
+    A registry row binds one tag (file + stable footnote ID) to the source recorded in the
+    witness commit. Missing/changed rows, labels, claims or witnesses fail closed.
+    """
+    report = Path(report)
+    all_tags = tags(report / "book")
+    current = {(t["file"], t["identity"]): t for t in all_tags}
+    valid, errors, registered, witnesses = [], [], set(), {}
+
+    def error(key, why):
+        tag = current.get(key, {})
+        errors.append(dict(file=key[0], line=tag.get("line", 1),
+                           chapter=tag.get("chapter", _chapter(key[0])), why=why))
+
+    seen = set()
+    for tag in all_tags:
+        key = (tag["file"], tag["identity"])
+        if key in seen:
+            error(key, "duplicate provenance tag identity")
+        seen.add(key)
+    path = report / HISTORICAL
+    manifest = {"version": 1, "measurements": []}
+    if path.exists():
+        try:
+            manifest = json.loads(path.read_text())
+            if manifest.get("version") != 1 or not isinstance(manifest.get("measurements"), list):
+                raise ValueError("unsupported historical registry schema")
+        except (ValueError, AttributeError) as exc:
+            error((HISTORICAL, 0), f"invalid historical registry: {exc}")
+            manifest = {"measurements": []}
+    witness = manifest.get("evidence_commit", "")
+    evidence_root = manifest.get("evidence_root", "")
+    if (not isinstance(evidence_root, str) or Path(evidence_root).is_absolute()
+            or ".." in Path(evidence_root).parts):
+        error((HISTORICAL, 0), "invalid historical evidence root")
+        return [], errors
+    evidence_prefix = evidence_root.rstrip("/") + "/" if evidence_root else ""
+    for row in manifest["measurements"]:
+        if not isinstance(row, dict) or not isinstance(row.get("file"), str) or not isinstance(row.get("tag"), str):
+            error((HISTORICAL, 0), "invalid historical registry row")
+            continue
+        key = (row["file"], row["tag"])
+        if key in registered:
+            error(key, "duplicate historical registry row")
+            continue
+        registered.add(key)
+        tag, sha = current.get(key), row.get("source_sha", "")
+        if tag is None:
+            error(key, "registered historical measurement is missing")
+            continue
+        if not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{40}", sha):
+            error(key, "historical registry needs a full source commit")
+            continue
+        if (tag["fields"].get("historical") != sha or _source(tag["fields"]) != sha
+                or len(re.findall(r"(?:^|;)\s*historical:", tag["body"])) != 1):
+            error(key, "missing or wrong historical/source label; expected " + sha)
+            continue
+        if not isinstance(witness, str) or not re.fullmatch(r"[0-9a-f]{40}", witness):
+            error(key, "historical registry needs an immutable report witness commit")
+            continue
+        if key[0] not in witnesses:
+            old = _git(report, "show", f"{witness}:{evidence_prefix}book/{key[0]}")
+            witnesses[key[0]] = {t["identity"]: t for t in parse_tags(key[0], old.stdout)} if old.returncode == 0 else {}
+        old_tags = witnesses[key[0]]
+        if key[1] not in old_tags:
+            error(key, "historical report witness does not resolve")
+            continue
+        original = old_tags[key[1]]
+        if _source(original["fields"]) != sha or _claim(tag) != _claim(original):
+            error(key, "historical claim/source differs from its immutable report witness")
+            continue
+        if resolve is None:
+            resolve = Resolver(report, read_pin(report))
+        why = resolve.historical(sha)
+        if why:
+            error(key, why)
+            continue
+        valid.append(dict(tag, historical_sha=sha))
+    for key, tag in current.items():
+        if "historical" in tag["fields"] and key not in registered:
+            error(key, "historical label has no verified registry witness")
+    return valid, errors
+
+
+def print_historical(rows):
+    print(f"[historical] {len(rows)} verified measurement(s); next-repin to-do")
+    for t in rows:
+        print(f"  {t['file']}:{t['line']}: {t['historical_sha']}")
+
+
+def violations(report, resolve=None, historical=None):
     report = Path(report)
     resolve = resolve or Resolver(report, read_pin(report))
-    out = []
+    valid, errors = historical if historical is not None else historical_audit(report, resolve)
+    accepted = {(t["file"], t["index"]) for t in valid}
+    out = list(errors)
     for t in tags(report / "book"):
-        for why in problems(t, resolve):
+        resolver = (lambda sha: None) if (t["file"], t["index"]) in accepted else resolve
+        for why in problems(t, resolver):
             out.append(dict(file=t["file"], line=t["line"], chapter=t["chapter"], why=why))
     return out
 
@@ -252,7 +398,9 @@ def check(report, baseline=None, resolve=None, ref=None):
     against the baseline at `ref`."""
     report = Path(report)
     baseline = Path(baseline) if baseline else report / BASELINE
-    found = violations(report, resolve)
+    historical = historical_audit(report, resolve)
+    print_historical(historical[0])
+    found = violations(report, resolve, historical)
     if not baseline.exists():
         return 1, [f"{BASELINE} is missing; write it with python3 tools/check_provenance.py --update"], found
     base = json.loads(baseline.read_text(encoding="utf-8"))
@@ -267,6 +415,8 @@ def check(report, baseline=None, resolve=None, ref=None):
         elif n < b:
             msgs.append(f"{ch}: {n} tag problem(s), baseline {b}; the baseline must equal the count "
                         "(record a fall with python3 tools/check_provenance.py --update)")
+    hard = historical[1] + [v for v in found if v["why"].startswith(("sha ", "short sha ", "no full sha", "ambiguous source"))]
+    msgs += [f"invalid source attribution {v['file']}:{v['line']}: {v['why']}" for v in hard]
     if ref:
         msgs += raised(report, ref, base)
     return (1 if msgs else 0), msgs, found
@@ -279,6 +429,11 @@ def main(argv):
     baseline = report / BASELINE
     status, msgs, found = check(report, baseline, ref=ref)
     if "--update" in argv:
+        if any(m.startswith("invalid source attribution") for m in msgs):
+            print("[provenance] refusing to baseline invalid source attribution")
+            for m in msgs:
+                print("  " + m)
+            return 1
         baseline.write_text(json.dumps(counts(found), indent=1) + "\n", encoding="utf-8")
         print(f"[provenance] baseline written: {len(found)} tag problem(s)")
         return 0

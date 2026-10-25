@@ -98,6 +98,13 @@ def test_prs_on_different_chapters_merge_and_stay_current(tmp_path):
     _copy_report(tree)
     _scaffold_schemes(tree)
     _git(tree, "init", "-q", "-b", "base")
+    # The copy still verifies historical claims; retain the real immutable witness
+    # objects rather than dropping the registry or weakening the gate in the fixture.
+    registry = tree / "tools/historical-provenance.json"
+    if registry.exists():
+        witness = json.loads(registry.read_text())["evidence_commit"]
+        repository = _run(REPORT, "git", "rev-parse", "--show-toplevel").stdout.strip()
+        _git(tree, "fetch", "--quiet", "--no-tags", repository, witness)
     # the base: a history phrase in each chapter, counted into a fresh baseline
     for ch in ("04", "05"):
         f = _derivation_file(tree, ch)

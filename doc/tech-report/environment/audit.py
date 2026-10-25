@@ -52,6 +52,16 @@ def run(name, command, cwd=D, timeout=600):
     seen[key] = result
     return result
 
+
+def report_command(command):
+    """Resolve report-owned scripts and data before moving a recipe to scratch."""
+    pattern = r"(?<![\w/])(?:doc/tech-report/)?(?:src/kintera_report/|derivation-checks/)[^\s\"'`]+\.(?:py|sh|json|ya?ml)(?=[\s\"'`]|$)"
+    def absolute(match):
+        return shlex.quote(str(D / match.group().removeprefix('doc/tech-report/')))
+    rewritten, count = re.subn(pattern, absolute, command)
+    cwd = E/('scratch-'+hashlib.sha256(rewritten.encode()).hexdigest()[:16]) if count else D
+    return rewritten, cwd
+
 for i, item in enumerate(rows):
     c = item['command']
     name = f'item-{i:03d}'
@@ -78,11 +88,7 @@ for i, item in enumerate(rows):
     c = c.replace('<names>', 'h2o_ideal h2o_ideal_ddT nh3_ideal na_h2s_visscher_ddT')
     c = c.replace('<venv>', str(D/'.reproduce'/name))
     c = c.replace('<fresh check_ch12_twins output>', str(E/'gpu-not-run.log'))
-    cwd = D
-    for token in re.findall(r'(?:doc/tech-report/)?(?:src/kintera_report/|derivation-checks/)[^\s]+\.(?:py|sh)', c):
-        rel = token.removeprefix('doc/tech-report/')
-        c = c.replace(token, shlex.quote(str(D/rel)))
-        cwd = E/('scratch-'+hashlib.sha256(c.encode()).hexdigest()[:16])
+    c, cwd = report_command(c)
     if c.startswith('python check_ch12_'):
         c = c.replace('python ', 'python '+str(D/'derivation-checks/ch12')+'/')
     if 'ch01/runs/snippet.py' in c:

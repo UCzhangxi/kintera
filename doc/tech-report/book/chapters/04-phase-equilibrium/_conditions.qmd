@@ -335,7 +335,7 @@ at 300, 250, 200 and 160 K and $10^5$ Pa from $x_{\mathrm{H_2O}} = 2.5\times10^{
 directory with `KINTERA_WT` set to a build tree at the pin, line a: worst $|\Delta_r|$ at a present condensate
 $6.95\times10^{-8}$ (tol $10^{-6}$), every absent condensate subsaturated (7 cases), element ratios changed by at most
 $5.6\times10^{-16}$ (tol $10^{-14}$), PASS; CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch
-2.10.0+cu126.]
+2.10.0+cu126.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch04-conditions-lio18]: [source: C. Li, A. P. Ingersoll and F. Oyafuso, "Moist adiabats with multiple condensing
 species: a new theory with application to giant-planet atmospheres", J. Atmos. Sci. 75, 1063-1072 (2018),
@@ -346,7 +346,7 @@ cell at 300 K and $10^5$ Pa with $x_{\mathrm{H_2O}} = x_{\mathrm{H_2O(l,p)}} = 1
 src/kintera_report/ch04/runs/precip_not_adjusted.py` with `KINTERA_REPO` set to a kintera checkout at the pin, which
 calls `ThermoX.forward`, CPU, double: diagnostic 1, both mole fractions unchanged, final
 $\ln\mathrm{RH}$ of water $-3.57$; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a
-committed check.]
+committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

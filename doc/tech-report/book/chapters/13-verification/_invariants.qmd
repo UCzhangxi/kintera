@@ -35,7 +35,7 @@ small difference of large energy terms in the normalization.
 
 | source | absent-reactant rate | minimum amount (mol/m³) | outcome |
 |---|---:|---:|---|
-| pre-#151, `53f3ffcc6fefd34513dc04214d506103b2d917ed` | 1e-300 | -9.990009990010119e-301 | fails |
+| historical source[^ch13-invariant-source] | 1e-300 | -9.990009990010119e-301 | fails |
 | current, `e357792d50639d68e9090b542edf038d2b029aa2` | 0 | 0 | passes |
 
 : Exact-zero and positivity measurements after 1000 implicit steps. {#tbl-ch13-invariants-zero}
@@ -49,3 +49,5 @@ floor produces negative amounts; removing product production gives an atom
 budget error of 9.990009990009652e-4 per step; removing the cloud reference-energy
 term gives an energy error of 0.1655127589519766 per step. The committed
 `invariants/RESULTS.md` and JSON preserve all old/new values and source patches.
+
+[^ch13-invariant-source]: Source before chengcli/kintera#151: `53f3ffcc6fefd34513dc04214d506103b2d917ed`; the retained measurements and patches are in `invariants/RESULTS.md` and `invariants/evidence/`.

@@ -72,4 +72,4 @@ the Chapman script uses, `evolve_ros2`, has no test in the suite; the solvers ar
 [^ch13-vulcan-tree]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `git ls-tree -r --name-only
 0d9f67f97d841147e23283d2dcdab302238d2c45 tests/vulcan`, which lists no path under `tests/vulcan/VULCAN`, and
 `git cat-file -p 0d9f67f97d841147e23283d2dcdab302238d2c45:tests/vulcan/photo_cross`, a mode-120000 entry whose target
-is `VULCAN/thermo/photo_cross`; git 2.52.0.]
+is `VULCAN/thermo/photo_cross`; git 2.52.0.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]

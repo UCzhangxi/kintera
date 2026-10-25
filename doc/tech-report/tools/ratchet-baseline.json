@@ -2,115 +2,121 @@
  "chapters": {
   "appa": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 1,
    "status": 0,
    "xref": 1
   },
   "appb": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 1,
    "status": 0,
    "xref": 1
   },
   "appc": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 1,
    "status": 0,
    "xref": 0
   },
   "appf": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 1,
    "status": 0,
    "xref": 0
   },
   "appg": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 1,
    "status": 0,
    "xref": 0
   },
   "apph": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 24,
    "status": 0,
    "xref": 1
   },
   "ch01": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 4,
+   "status": 0,
+   "xref": 0
+  },
+  "ch01b": {
+   "history": 0,
+   "offpin": 3,
    "status": 0,
    "xref": 0
   },
   "ch02": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 17,
    "status": 0,
    "xref": 0
   },
   "ch03": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 9,
    "status": 0,
    "xref": 0
   },
   "ch04": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 10,
    "status": 0,
    "xref": 0
   },
   "ch05": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 8,
    "status": 0,
    "xref": 0
   },
   "ch06": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 23,
    "status": 0,
    "xref": 0
   },
   "ch07": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 8,
    "status": 0,
    "xref": 0
   },
   "ch08": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 6,
    "status": 0,
    "xref": 0
   },
   "ch09": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 9,
    "status": 0,
    "xref": 0
   },
   "ch10": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 14,
    "status": 0,
    "xref": 0
   },
   "ch11": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 23,
    "status": 0,
    "xref": 0
   },
   "ch12": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 12,
    "status": 0,
    "xref": 0
   },
   "ch13": {
    "history": 0,
-   "offpin": 0,
+   "offpin": 7,
    "status": 0,
    "xref": 0
   },
@@ -127,5 +133,5 @@
    "xref": 0
   }
  },
- "pin": "0d9f67f97d841147e23283d2dcdab302238d2c45"
+ "pin": "e357792d50639d68e9090b542edf038d2b029aa2"
 }

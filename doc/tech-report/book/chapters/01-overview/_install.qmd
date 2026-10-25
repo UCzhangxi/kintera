@@ -96,12 +96,12 @@ Both routes were run in fresh virtual environments, CPU only. The source build a
 [^ch01-build]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: README "Installation / Quick Start";
     run: `bash src/kintera_report/ch01/runs/build_from_source.sh <venv>` with `KINTERA_REPO` at the pin, CPU, GCC
     13.3.1, CMake 3.26.5, Python 3.11.13, torch 2.10.0, pyharp 2.7.6, pydisort 1.8.13, numpy 2.4.6; output:
-    `src/kintera_report/ch01/data/build_from_source.out`.]
+    `src/kintera_report/ch01/data/build_from_source.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch01-pip]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 for the card and script, package PyPI kintera
     2.6.4; deck: `examples/jupiter.yaml`; run: `bash src/kintera_report/ch01/runs/pip_install.sh <venv>`, CPU,
     Python 3.11.13, torch 2.10.0, pyharp 2.7.6, pydisort 1.8.13, numpy 2.4.6; output:
-    `src/kintera_report/ch01/data/pip_install.out`.]
+    `src/kintera_report/ch01/data/pip_install.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

@@ -136,7 +136,7 @@ draft (missing evidence).
 tables and compiles `src/math/interpolation.cpp` at the pin into a torch extension (needs ninja); run: `python
 derivation-checks/check_ch10_interp.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
 committed output `derivation-checks/check_ch10_interp.out`: 4 PASS, 1 EXPECTED-FAIL; a rerun on a clean v2.6.5 build
-(x86_64, Python 3.11.13, torch 2.10.0+cu126) gives the identical output.]
+(x86_64, Python 3.11.13, torch 2.10.0+cu126) gives the identical output.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch10-interp-k24]: [source: UCzhangxi/kintera issue #54, row K24 (spec suspect S10-7).]
 

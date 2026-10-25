@@ -216,7 +216,7 @@ has a single face (information line).
     the script; run: `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, lines `b1`, `b2`, PASS.]
+    `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, lines `b1`, `b2`, PASS.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch09-molecular-centred check_ch9_atm2d.py (b1) -->
 <!-- equation-check: eq-ch09-molecular-exp check_ch9_atm2d.py (b1) -->

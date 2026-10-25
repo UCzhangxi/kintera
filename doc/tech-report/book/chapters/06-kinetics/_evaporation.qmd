@@ -194,7 +194,7 @@ CUDA cases skip when no GPU is present.
     `X(s) => A + B` cards inside the script; run: `KINTERA_WT=<build> python
     doc/tech-report/derivation-checks/check_ch6_evaporation.py` from a scratch directory, with `<build>` a kintera build
     at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch6_evaporation.out` lines `(a1)`-`(a3)`, `(b)`.]
+    `derivation-checks/check_ch6_evaporation.out` lines `(a1)`-`(a3)`, `(b)`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

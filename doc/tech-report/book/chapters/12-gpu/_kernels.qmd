@@ -216,12 +216,12 @@ precision is checked by neither (Limits).
 [^ch12-kernels-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `ctest --timeout 1800
 --output-on-failure`, serial, in `build/tests` of a `-DCUDA=ON` Release build, two compute capability 6.1 GPUs; CUDA
 12.6.85,
-GCC 11.5.0, torch 2.10.0+cu126, Python 3.11.13.]
+GCC 11.5.0, torch 2.10.0+cu126, Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-kernels-smem]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none; run: `python -c "import
 torch; p =
 torch.cuda.get_device_properties(0); print(p.shared_memory_per_block, p.shared_memory_per_block_optin)"` and the
-same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python 3.11.13.]
+same for device 1, which print `49152 49152` on both; torch 2.10.0+cu126, Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 
@@ -265,14 +265,14 @@ ordinary and 101376 opt-in bytes; the 17-species case is a saved `ThermoX` run o
 a dry gas, 200 cells, 250 to 400 K at $10^5$ Pa, `max-iter` 50, double, CPU against CUDA; the 9-thread block is
 computed from the size functions, not profiled; committed output
 `derivation-checks/ch12/check_ch12_spec_complement.launch.out` for the launch rows; the 17-species ThermoX
-comparison and its 10152-byte figure are a measurement outside the suite, not a committed check.]
+comparison and its 10152-byte figure are a measurement outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-kernels-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, the check parses the
 source tree and calls `evolve_implicit`; run: `python derivation-checks/check_ch12_twins.py` from a scratch
 directory with `KINTERA_WT` set to a build tree at the pin; 17 PASS and 1 INFO, exit 0, empty stderr, confirmed by
 `derivation-checks/ch12/validate_ch12_output.py`; CPU, double and single; the script is the one supplied with the
 round-2 check bundle, committed unchanged, and the committed `.out` is our own run of it on a verified pin build,
-with the bundle's output kept beside it as `derivation-checks/ch12/check_ch12_twins.supplied.out`.]
+with the bundle's output kept beside it as `derivation-checks/ch12/check_ch12_twins.supplied.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch12-kernels-threads check_ch12_twins.py (h) -->
 <!-- equation-check: eq-ch12-kernels-implicit-bytes-double check_ch12_twins.py (g) -->

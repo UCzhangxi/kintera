@@ -84,6 +84,11 @@ def _strip_uncheckable(text):
             continue
         out.append(line)
     text = "\n".join(out)
+    # Pandoc treats dollars inside matching backtick spans as literal code.
+    # Match the same delimiter length, including multiline and double-backtick
+    # spans, and retain newlines so diagnostics still name the source line.
+    text = re.sub(r"(?<![\\`])(`+)(?!`)(.*?)(?<!`)\1(?!`)",
+                  lambda m: re.sub(r"[^\n]", " ", m.group(0)), text, flags=re.S)
     text = re.sub(r"\$\$.*?\$\$",
                   lambda m: re.sub(r"[^\n]", " ", m.group(0)),
                   text, flags=re.S)

@@ -126,7 +126,7 @@ only one whose names or length disagree.
 [^ch12-devfn-test]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the curve catalogue of
 `docs/reaction_catalogue.py`; run: `python -m pytest -q "tests/test_reaction_equilibrium.py::test_documented_native_curves"`
 from the source tree, CUDA build with one compute capability 6.1 GPU (2 passed) and CPU build with no GPU visible
-(1 passed, 1 skipped); CUDA 12.6.85, Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.]
+(1 passed, 1 skipped); CUDA 12.6.85, Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 
@@ -150,7 +150,7 @@ the test function; run: `cmake --build . --target kintera_release` in the `build
 build, so that only the CPU library and its tables change, then `python -P probe.py <names>`, a scratch script that
 evaluates $\ln K$ at 250 K and 300 K through `relative_humidity` on CPU and CUDA tensors; source restored and the
 library rebuilt bit-identical afterwards; GeForce GTX 1080 Ti, CUDA 12.6.85, GCC 11.5.0, torch 2.10.0+cu126,
-Python 3.11.13.]
+Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch12-device-functions-index check_ch12_twins.py (a) -->
 

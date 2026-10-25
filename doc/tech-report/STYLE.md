@@ -321,7 +321,11 @@ Every number that is a measurement (an error, a drift, a rate, a timing, a growt
 > max relative error $= <value>$ [sha: the code pin; deck: `<test file or YAML input>` case `<case>`;
 > run: `ctest -R <test_name>`, CPU, double; Python <version>, torch <version>, numpy <version>].
 
-- **sha**: the code that produced it.
+- **sha**: the code that produced it. A verified historical measurement may retain its producing commit,
+  with `historical: <full source sha>` and a matching immutable report witness registered in
+  `tools/historical-provenance.json`. The provenance and ratchet gates list these measurements on every run
+  for the next repin. Missing or incorrect source labels fail; historical numbers are never relabeled as
+  current-pin results. The witness preserves the claim and command as well as the source commit.
 - **deck**: the input (YAML input file, or the test/script and case that builds the input).
 - **run**: the **exact command**, then the device (CPU or CUDA) and precision, then the **versions that can move
   the digits** — interpreter, and the numerical libraries the result goes through (`numpy`, `sympy`, `torch`,

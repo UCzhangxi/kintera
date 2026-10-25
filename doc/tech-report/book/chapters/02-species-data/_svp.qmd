@@ -281,7 +281,7 @@ which `eval_logsvp` dispatches to their own functions. The inline `ideal` path e
     `python doc/tech-report/derivation-checks/check_ch2_svp.py` from a scratch directory, with `KINTERA_WT` set to
     the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch2_svp.out`, 15 PASS,
-    0 FAIL.]
+    0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch02-svp-ideal check_ch2_svp.py -->
 <!-- equation-check: eq-ch02-svp-ideal-ddT check_ch2_svp.py -->

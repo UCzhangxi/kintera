@@ -176,19 +176,19 @@ These two lines are expected to pass when the fix lands.
     (seed 9); run: `python doc/tech-report/derivation-checks/check_ch9_budget_exact.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch9_budget_exact.out`, 9 PASS, 0 FAIL.]
+    `doc/tech-report/derivation-checks/check_ch9_budget_exact.out`, 9 PASS, 0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch09-budget-below1-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: states built in the
     script; run: `python doc/tech-report/derivation-checks/check_ch9_budget_below1.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch9_budget_below1.out`, 4 PASS, 2 EXPECTED-FAIL, 0 FAIL.]
+    `doc/tech-report/derivation-checks/check_ch9_budget_below1.out`, 4 PASS, 2 EXPECTED-FAIL, 0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch09-conservation-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: built in the script (seed
     9); run: `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, line `d` (PASS) and line `d'` (information).]
+    `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, line `d` (PASS) and line `d'` (information).; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch09-r57]: `src/kintera_report/ch09/runs/atm2d_run.py`, output `atm2d_run.out`, lines `[R5]` and `[R7]`.
 

@@ -220,7 +220,7 @@ the net tendency is zero, but the rate is not (from reading `update_xs_diss_stac
     branches `OH:1 H:1` and `H2:1 O:1` inside the script, slabs at 200 and 300 K; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch07_photolysis.out` lines `[a1]`, `[a2]`, `[b]`.]
+    `derivation-checks/check_ch07_photolysis.out` lines `[a1]`, `[a2]`, `[b]`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch07-rate-src]: [source: `PhotoChemOptions.from_yaml` on a deck with `O2 => O + O` (rows `[100, 5e-18, 1e-18]`,
     `[150, 6e-18, 2e-18]`, `[200, 7e-18, 4e-18]`), `create_uniform_flux(wavelength, 1e14)`, $T = 250$ K, CPU,

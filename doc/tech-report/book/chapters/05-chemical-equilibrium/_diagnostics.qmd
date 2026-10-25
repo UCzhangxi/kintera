@@ -142,23 +142,23 @@ the status is 3 or 4 depending on rounding (@sec-ch05-newton). A suite test woul
 
 [^ch05-diagnostics-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: N$_2$, H$_2$O and H$_2$O(l) in a gas and a liquid phase, 300 K, $10^5$ Pa, starts (1, 0.05, 0.05) and (1, 0.01, 0.001) mol; run:
 `python derivation-checks/check_ch5_equilibrium.py` from a scratch directory with `KINTERA_WT` set to a build tree at
-the pin: lines b, d and e PASS (line e to round-off); CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.]
+the pin: lines b, d and e PASS (line e to round-off); CPU, double; kintera 2.6.5, a clean Release CPU build of the tagged checkout v2.6.5 (x86_64, GCC 11.5.0), Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch05-water-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`, the cases of `water_condensation.json`; run: `python -P
 src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>` (lines `[R5]`, `[R6]`), CPU, double; kintera 2.6.5 source
-build, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6; a measurement outside the suite, not a committed check.]
+build, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6; a measurement outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch05-status-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `WATER` in
 `src/kintera_report/ch05/runs/run_equilibrium.py` at 300 K and $10^5$ Pa, the cases of `status_cases.json`; run:
 `python -P src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>` (lines `[S]`), CPU, double; kintera 2.6.5 source
-build, Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed check.]
+build, Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch05-cuda-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `BINARY` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`; run: `python -P src/kintera_report/ch05/runs/run_equilibrium.py
 <out_dir> --device cuda` on the CUDA build, then `python -P src/kintera_report/ch05/runs/run_equilibrium.py --compare
 <cpu_dir> <cuda_dir>` (lines `[X1]`, `[X2]`); double; CUDA 12.6.85, GeForce GTX 1080 Ti, Python 3.11.13, torch
-2.10.0+cu126; a measurement outside the suite, not a committed check.]
+2.10.0+cu126; a measurement outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

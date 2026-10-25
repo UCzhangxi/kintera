@@ -223,7 +223,7 @@ The figure of the call order is not provided: the figure module is not written y
     (H2O, OH, H, H2, O), step $10^{-6} c_m$; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch07_photolysis.out` lines `[e1]`, `[e2]`.]
+    `derivation-checks/check_ch07_photolysis.out` lines `[e1]`, `[e2]`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch07-check-stoich]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: the `H2O => OH + H` card inside
     the script, and the first reaction and species of `data/ch4_photolysis.yaml` at the pin with inline cross
@@ -232,7 +232,7 @@ The figure of the call order is not provided: the figure module is not written y
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
     `derivation-checks/check_ch07_photolysis.out` lines `[f1]`–`[g2]`; `[g]` is EXPECTED-FAIL by design (S7-1, #54
-    row K22).]
+    row K22).; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch07-jac-src]: [source: a C++ driver linked against libkintera built from the pin, calling
     `jacobian_photolysis_species` for `A => B` with $k = 10^{-5}\ \mathrm{s^{-1}}$ and $c_A = 10^3$ (input $k$: $-10^{-8}$;

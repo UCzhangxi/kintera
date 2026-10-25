@@ -353,7 +353,7 @@ device.[^ch12-dispatch-devices]
 run: `ctest -V -R '\.release'` in `build/tests` of a `-DCUDA=ON` Release build, which selects the 16 gtest programs;
 48 instances per device are
 skipped, all fixture placeholders or single-precision skips that mirror the CPU ones; CUDA 12.6.85, GCC 11.5.0,
-torch 2.10.0+cu126.]
+torch 2.10.0+cu126.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-dispatch-pytest]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `python -m pytest tests -p
 no:cacheprovider -rfEs -q`
@@ -361,7 +361,7 @@ from the source tree against the installed build; CUDA build with two compute ca
 with `CUDA_VISIBLE_DEVICES=""`; Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, pytest 9.1.1. Skips on the CUDA
 build: 4 cases of `test_kinetics_base.py` need an external data file, and the 2 version-test modules need
 `setuptools_scm`. Serial `ctest` gives 48 of 49 passing on both builds; the failing entry is
-`test_version_floor.py`, whose module skips without `setuptools_scm`, which ctest counts as a failure.]
+`test_version_floor.py`, whose module skips without `setuptools_scm`, which ctest counts as a failure.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-dispatch-agree]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: the YAML inputs of
 `tests/test_evaporation_kessler.py` and `tests/test_coagulation_pressure_switch.py`, and `tests/jupiter.yaml`,
@@ -370,7 +370,7 @@ seed 20261020, 64 cells per deck and precision, $\Delta t = 10$ s, temperature 8
 `Kinetics.forward_with_rate_constants`, `Kinetics.jacobian` and `evolve_implicit` on each device, the largest
 difference over the largest CPU value; committed values in
 `derivation-checks/ch12/saved-preparation/kinetics64.jsonl` and `kinetics32.jsonl`, which the `conditioning` mode
-reads directly (`check_ch12_spec_complement.py:131-134`); one CUDA build on one host.]
+reads directly (`check_ch12_spec_complement.py:131-134`); one CUDA build on one host.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 
@@ -418,16 +418,16 @@ reads directly (`check_ch12_spec_complement.py:131-134`); one CUDA build on one 
 [^ch12-dispatch-move]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and a
 two-species gas `A <=> B`; run: `python -P src/kintera_report/ch12/runs/device_probe.py <case>` with `KINTERA_REPO`
 set to a kintera checkout at the pin, one case per process, on a `-DCUDA=ON` Release build with one compute
-capability 6.1 GPU; CUDA 12.6.85, torch 2.10.0+cu126, Python 3.11.13.]
+capability 6.1 GPU; CUDA 12.6.85, torch 2.10.0+cu126, Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-dispatch-batch]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and a
 two-species gas `A <=> B`; run: `python -P src/kintera_report/ch12/runs/batch_probe.py` with `KINTERA_REPO` set to a
-kintera checkout at the pin, CPU, double; torch 2.10.0+cu126, Python 3.11.13.]
+kintera checkout at the pin, CPU, double; torch 2.10.0+cu126, Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-dispatch-missing]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML input of
 `tests/test_coagulation_pressure_switch.py`; run: `python -P ei_case.py cuda ok` against a `-DCUDA=OFF` build, which
 calls `evolve_implicit` on CUDA tensors;
-torch 2.10.0+cu126, Python 3.11.13.]
+torch 2.10.0+cu126, Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch12-dispatch-implicit check_ch12_twins.py (i) -->
 <!-- equation-check: eq-ch12-dispatch-pinv check_ch12_twins.py (j) -->
@@ -439,7 +439,7 @@ only, which recomputes $\kappa_2$ of $\mathsf I/\Delta t - \mathsf S\mathsf J$ f
 $\mathsf S$ and $\mathsf J$ cast to double and reads the saved paired differences against it; no paired campaign
 was re-run, and $\kappa_2$ does not account for the CPU-CUDA perturbation of $\mathsf J$ itself; ratios use global
 maxima over all cells and components; committed output
-`derivation-checks/ch12/check_ch12_spec_complement.conditioning.out`.]
+`derivation-checks/ch12/check_ch12_spec_complement.conditioning.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-dispatch-devices]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: none, random cells with
 seed 12, 64 cells, $n_{\mathrm s} = 5$, $n_{\mathrm r} = 4$, $\Delta t = 0.3$, plus one rank-2 singular cell; run:
@@ -450,7 +450,7 @@ $2.56\times10^{4}$ (the check's `max_cond2` field is `np.linalg.cond`, the condi
 $7.90\times10^{-6}$, each device $6.14\times10^{-5}$ (CPU) and $5.35\times10^{-5}$ (CUDA) from the float64 oracle,
 reported as INFO and not as a tolerance requirement; the same build re-ran `check_ch12_twins.py` and reproduced its
 committed output except for the build path, line i ($2.92\times10^{-13}$) and line k ($6.14\times10^{-5}$); one
-CUDA build on one host; committed as `derivation-checks/ch12/check_ch12_numeric_devices.py` with its `.out`.]
+CUDA build on one host; committed as `derivation-checks/ch12/check_ch12_numeric_devices.py` with its `.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-dispatch-ftol32]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the synthetic
 eight-vapour card of `derivation-checks/ch12/saved-preparation/one-cell.yaml`, 17 species and 8 reactions (hence 17
@@ -461,7 +461,7 @@ isolated cell is cell 1, at $T = 250.75376892089844$ K and $10^5$ Pa, `float32`,
 $\texttt{atol} = 10^{-6}$, $\texttt{rtol} = 10^{-4}$; at `1.e-12` the diagnostics are 11 (CPU) and $-2050$ (CUDA),
 fractions differ by at most $3.73\times10^{-9}$ with 0 entries outside tolerance and the gain by up to 5110 with 15
 of 64 outside; at `1.e-5` both diagnostics are 11 and the fractions differ by at most $1.86\times10^{-9}$; one pair
-of builds, one state, not a sweep over states or devices; a measurement outside the suite, not a committed check.]
+of builds, one state, not a sweep over states or devices; a measurement outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-dispatch-absent]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; decks: `tests/jupiter.yaml`,
 `tests/earth.yaml` and `examples/jupiter_kcl_mgsio3.yaml` over 110 to 1600 K and $10^2$ to $10^7$ Pa, five vapour
@@ -470,14 +470,14 @@ amounts and every one- and two-vapour-zeroed variant, 12750 cells; run: `ThermoX
 solve with a finite-difference $\mathrm d\xi_r/\mathrm dT$; 14790 absent-gas reaction instances, 14688 at a
 converged exit, none with a live condensate or a non-zero gain row; `tests/jup-thermo.yaml` could not be loaded
 through `ThermoX`; CPU and double precision only, no CUDA leg; a measurement outside the suite, not a committed
-check.]
+check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-dispatch-stoich]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the YAML input of
 `tests/test_coagulation_pressure_switch.py`, 64 cells; run: `python -P ei_case.py cuda cpu`, `python -P ei_case.py
 cuda float32`
 and `python -P ei_case.py cuda narrow`, each in its own process; the script calls `evolve_implicit` with rates and
 Jacobian on CUDA and `stoich` on the CPU, as single precision, or with one reaction column of two; CUDA 12.6.85, torch
-2.10.0+cu126, Python 3.11.13.]
+2.10.0+cu126, Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-k21]: [source: UCzhangxi/kintera#54, row K21 (`psolve` accuracy: a fixed budget of Jacobi rotations and an
 absolute cut-off), open at the pin.]

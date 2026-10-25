@@ -163,7 +163,7 @@ present (gas sum 1.5e-16, $c_m/c_n = x_m/x_n$ to 2.2e-16).
 [^ch03-eos-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: a card built in the script; run:
     `python doc/tech-report/derivation-checks/check_ch3_eos.py` from a scratch directory, with `KINTERA_WT` set to the
     build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6, kintera 2.6.5
-    from the source build; output: `doc/tech-report/derivation-checks/check_ch3_eos.out`, 3 PASS, 1 EXPECTED-FAIL.]
+    from the source build; output: `doc/tech-report/derivation-checks/check_ch3_eos.out`, 3 PASS, 1 EXPECTED-FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch03-d16]: [source: UCzhangxi/kintera#54, row D16 (condensate concentration at $x_0 = 0$), merged on the
     staging branch of that issue.]

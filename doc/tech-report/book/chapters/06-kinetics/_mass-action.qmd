@@ -230,18 +230,18 @@ predicted $\mathrm{d}k_j/\mathrm{d}T - \mathrm{d}k_{\bar j}/\mathrm{d}T$ to $2.4
 [^ch06-check-a]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the four-reaction card inside the
     script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a scratch
     directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
-    output: `derivation-checks/check_ch6_rates.out` lines `[a1]`, `[a2]`.]
+    output: `derivation-checks/check_ch6_rates.out` lines `[a1]`, `[a2]`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch06-check-d1]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the ozone card inside the script, with
     `data/nasa9.dat`; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a
     scratch directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera
-    2.6.5; output: `derivation-checks/check_ch6_rates.out` lines `[d1]`.]
+    2.6.5; output: `derivation-checks/check_ch6_rates.out` lines `[d1]`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch06-check-d2]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the ozone card inside the script; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a scratch directory, with
     `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
     `derivation-checks/check_ch6_rates.out` lines `[d2]`; the reverse line is EXPECTED-FAIL by
-    design.]
+    design.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch06-kee]: [source: R. J. Kee, M. E. Coltrin and P. Glarborg, Chemically Reacting Flow: Theory and Practice, Wiley
     (2003), <https://doi.org/10.1002/0471461296>, the chapters on thermochemistry and mass-action kinetics.]

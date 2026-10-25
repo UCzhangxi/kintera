@@ -13,6 +13,7 @@ reviewer:
 Chemistry and cloud conversion are stiff, so kintera advances them with one linearly implicit backward Euler step:
 it linearizes the tendency about the current state and solves one small linear system per cell. A two-stage
 Rosenbrock variant with an error estimate is also provided.
+Repeated-update positivity and conservation checks for this step are in @sec-ch13-invariants.
 
 ::: {.callout-note title="At a glance"}
 **Purpose.** $(\mathsf I/\Delta t - S J)\,\delta = S r$, @eq-ch06-implicit-system.
@@ -156,7 +157,7 @@ $2.2 \times 10^{-16}$ and $5.6 \times 10^{-16}$.[^ch06-check-h]
 [^ch06-check-h]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the `A => B` card inside the script;
     run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_implicit.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch6_implicit.out`.]
+    `derivation-checks/check_ch6_implicit.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch06-verwer]: [source: J. G. Verwer, E. J. Spee, J. G. Blom and W. Hundsdorfer, A second-order Rosenbrock method
     applied to photochemical dispersion problems, SIAM J. Sci. Comput. 20, 1456-1480 (1999),

@@ -205,6 +205,6 @@ jobs:
             echo "::error title=$1 (last 40 lines)::$msg"
           }
           annotate "render gate output" "$RUNNER_TEMP/gate.txt"
-          log=$(ls -t book/*.log 2>/dev/null | head -1)
+          log=$(ls -t book/*.log 2>/dev/null | head -1 || true)
           [ -n "$log" ] && annotate "LaTeX log $log" "$log"
           true

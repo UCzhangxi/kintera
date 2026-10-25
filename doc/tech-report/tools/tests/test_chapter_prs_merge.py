@@ -35,6 +35,38 @@ def _git(tree, *args, ok=True):
     return _run(tree, "git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false", *args, ok=ok)
 
 
+def _import_history(source, tree, bundle):
+    # Read the trusted worktree into a bundle without upload-pack trust changes.
+    _run(source, "git", "bundle", "create", str(bundle), "HEAD")
+    # Other gate tests may fetch a shallow base into the source checkout. Carry
+    # its boundary into this empty fixture so bundle connectivity is truthful.
+    shallow = Path(_run(source, "git", "rev-parse", "--git-path", "shallow").stdout.strip())
+    if not shallow.is_absolute():
+        shallow = source / shallow
+    if shallow.exists():
+        shutil.copyfile(shallow, tree / ".git" / "shallow")
+    _git(tree, "fetch", "--quiet", "--no-tags", str(bundle), "HEAD")
+
+
+def test_historical_witness_transfer_from_shallow_checkout(tmp_path):
+    source = tmp_path / "source"
+    source.mkdir()
+    _git(source, "init", "-q", "-b", "main")
+    for n in range(3):
+        (source / "claim").write_text(str(n))
+        _git(source, "add", "claim")
+        _git(source, "commit", "-q", "-m", str(n))
+    shallow = tmp_path / "shallow"
+    _git(tmp_path, "clone", "--quiet", "--depth=2", source.as_uri(), str(shallow))
+    witness = _git(shallow, "rev-parse", "HEAD~1").stdout.strip()
+    target = tmp_path / "target"
+    target.mkdir()
+    _git(target, "init", "-q")
+    _import_history(shallow, target, tmp_path / "witness.bundle")
+    assert _git(target, "show", f"{witness}:claim").stdout == "1"
+    _git(target, "fsck", "--no-reflogs")
+
+
 def _regenerate(tree):
     """What an author runs before committing a chapter edit."""
     for tool in ("gen_derivation_index.py", "gen_notation_index.py"):
@@ -103,12 +135,7 @@ def test_prs_on_different_chapters_merge_and_stay_current(tmp_path):
     registry = tree / "tools/historical-provenance.json"
     if registry.exists():
         witness = json.loads(registry.read_text())["evidence_commit"]
-        # A local fetch invokes upload-pack against .git, which can reject a
-        # host-owned bind mount even when the report worktree is trusted. Read
-        # the trusted worktree once into a bundle; do not broaden Git trust.
-        bundle = tmp_path / "historical-witness.bundle"
-        _run(REPORT, "git", "bundle", "create", str(bundle), "HEAD")
-        _git(tree, "fetch", "--quiet", "--no-tags", str(bundle), "HEAD")
+        _import_history(REPORT, tree, tmp_path / "historical-witness.bundle")
         _git(tree, "cat-file", "-e", f"{witness}^{{commit}}")
     # the base: a history phrase in each chapter, counted into a fresh baseline
     for ch in ("04", "05"):

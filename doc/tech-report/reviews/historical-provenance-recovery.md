@@ -77,3 +77,11 @@ correctly rejected even though the report worktree itself was trusted. The fixtu
 bundle from that trusted worktree and fetches the bundle, preserving the witness objects without broadening
 Git trust. The same chapter-merge regression passes in the root-container/host-owned-checkout configuration
 (one passed, exit 0). The prior audit is retained; final-head reproduction and CI must be refreshed after this fix.
+
+The next exact-head CI exposed the shallow-checkout variant of witness transfer: earlier gate tests can fetch
+a shallow base into the report repository. A new minimal shallow-source regression reproduces the missing-parent
+failure (exit 1), then passes when the fixture preserves that source boundary alongside the bundle. Its imported
+witness is readable and `git fsck` passes. The existing missing-render-log diagnostic also has RED/GREEN coverage:
+it previously returned 2 under Bash pipefail when no log existed, and now returns 0 while leaving the original
+failed test verdict untouched. The combined merge, shallow-transfer and diagnostic checks pass (three tests)
+in the root-container/host-owned-checkout setup. No scientific gate or report-mode threshold changes.

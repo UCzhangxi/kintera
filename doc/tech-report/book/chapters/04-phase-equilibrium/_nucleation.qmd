@@ -4,7 +4,7 @@
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
 sources: src/thermo/nucleation.cpp, src/thermo/nucleation.hpp, src/thermo/thermo_y.cpp, src/vapors/vapor_functions.h
 status: draft
-author: gitlinffff
+author: chapter owner
 reviewer:
 -->
 

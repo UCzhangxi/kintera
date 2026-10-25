@@ -11,7 +11,7 @@ The six owner-authored appendix content exclusions remain in force.
 
 ## Supplied invariant specification
 
-Xi supplied the full 2603 definition in the continuation: exact zero rates,
+The lead supplied the full 2603 definition in the continuation: exact zero rates,
 1000-step nonnegativity, source-floor inventory, many-step atom/energy budgets
 at 1e-12 relative per step and actual-source break tests. See
 [invariant inputs and definitions](invariants/README.md). Per-occurrence source
@@ -20,10 +20,10 @@ is now claimed.
 
 ## Chapter continuations
 
-Tianhao's public head `abc96e3f486942568d0a058722ad56c73a0f4b47` was resolved and inspected
-but is not incorporated here. Its chapter-12 drivers and claims remain his work; they
+The chapter 12 owner's public head `abc96e3f486942568d0a058722ad56c73a0f4b47` was resolved and inspected
+but is not incorporated here. Its chapter-12 drivers and claims remain the chapter owner’s work; they
 need reconciliation against the new scientific source before integration. The reported
-Linfeng commits `81f803c97ae425fc1710661424b8b3c1d1373a50` and
+The chapter 4/5/13 owner commits `81f803c97ae425fc1710661424b8b3c1d1373a50` and
 `17f1178a32b911c675167662fbd8e050435002d5` were unavailable in this checkout/public fork;
 the supplied report is context, not incorporated code or new execution evidence.
 The round-3 UV regression concerns convergence at the new pin, not a duplicate GPU probe.
@@ -138,9 +138,9 @@ S7-1/S7-2 (photolysis), S10-2/S10-3/S10-4 (dense), S10-7 (interpolation), and S1
 | `check_ch14_coupling.py` | 1 | 1 |
 
 The full old/new value diff is in [SOURCE-PIN-VALUES.md](SOURCE-PIN-VALUES.md).
-These numbers require chapter-owner review; Linfeng owns chapter 4, Jiheng and Xinyue
+These numbers require chapter-owner review; the chapter 4 owner covers chapter 4, and the two designated reviewers cover
 chapter 14. Ownership for changed values in chapters 3, 6, 7, 9 and 10 needs routing;
-no author approval is claimed. Chapter 12 remains Tianhao's continuation, and Linfeng's
+no author approval is claimed. Chapter 12 remains with its designated owner, and the chapter 4/5/13 owner's
 chapter 5 acceptance and chapter 13 GPU continuation remain separate owner evidence.
 Historical provenance is intentionally retained at the source actually measured until
 the corresponding claim is independently rerun or its owner migrates it. Consequently,

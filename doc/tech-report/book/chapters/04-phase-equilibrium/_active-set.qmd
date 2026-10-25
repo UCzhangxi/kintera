@@ -4,7 +4,7 @@
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
 sources: src/math/leastsq_kkt.h, src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h
 status: draft
-author: gitlinffff
+author: chapter owner
 reviewer:
 -->
 

@@ -28,5 +28,5 @@ history 0 / offpin 182 / status 0 / xref 3. The affected math-span check passes.
 book was rejected by the off-pin ratchet; the immutable output links are retained here instead, with no baseline change.
 
 Final-head reproduction and exact-head CI must be refreshed after this change. The prior four-command failure
-ledger and CI layout finding remain visible, with Tianhao/Jiheng routing but acceptance unresolved. Both PRs
+ledger and CI layout finding remain visible, with chapter-owner/package-fix routing but acceptance unresolved. Both PRs
 stay draft unless reproduction exits 0 and relevant CI is green; no merge or review approval is authorized.

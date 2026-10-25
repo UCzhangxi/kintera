@@ -1,7 +1,7 @@
 ## What the suite covers on CPU only (device coverage) {#sec-ch13-device-coverage}
 
 <!-- PROVENANCE
-pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
+pin: kintera@e357792d50639d68e9090b542edf038d2b029aa2 (main)
 sources: tests/device_testing.hpp, tests/test_evaporation_kessler.py, tests/test_coagulation_pressure_switch.py,
   tests/test_evaporation_general.py, tests/test_cuda_workspace.py
 status: draft
@@ -91,7 +91,7 @@ Equivalent to `grep -l "cuda" test*.py` in `tests/`; a static inventory, not a C
 switches), 64 cells each: methane at 70 to 100 K and 1 to 2 bar, one in eight without precipitation; pressures
 $10^3$ to $10^5$ Pa including the threshold and its neighbouring doubles at 80 K; run: `python -P
 src/kintera_report/ch13/runs/gpu_probe.py` with `KINTERA_REPO` at the pin and a matching CUDA source build installed;
-`Kinetics.forward_with_rate_constants`, `Kinetics.jacobian` and `evolve_implicit`, double, step 10 s; Quadro RTX 4000,
+`Kinetics.forward_with_rate_constants`, `Kinetics.jacobian` and `evolve_implicit`, double, default `--dt` (10), the integration timestep in seconds, not a measured runtime; Quadro RTX 4000,
 driver 610.57.04, compiler CUDA 12.9.86, torch 2.10.0+cu128 (runtime CUDA 12.8), Python 3.11.13, kintera 2.6.7.
 Recorded in `src/kintera_report/ch13/runs/gpu_probe-rtx4000.out`: largest difference $5.08\times10^{-16}$ (pressure-switch
 implicit step), at most $1.15\times10^{-16}$ for rates, rate constants and Jacobian; switched rate constants and

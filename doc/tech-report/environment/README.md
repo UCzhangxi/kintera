@@ -67,5 +67,14 @@ files in this disposable checkout.
 Logs, command/exit-code JSON and the extracted inventory are under
 `.reproduce/logs/`. A zero command exit is **not** a numerical reproduction
 verdict: compare the output with the chapter's stated tolerances. The runner exits
-nonzero if an executed command fails and retains subsequent results for review.
+nonzero for any unexpected execution outcome and retains subsequent results for review.
+The three pre-existing example failures tracked in [issue #103](https://github.com/UCzhangxi/kintera/issues/103)
+are `EXPECTED-FAIL` only when their exact commands, source/script identities, exit status and normalized Python
+tracebacks match `expected_failures.json`. Their errors were independently reproduced at both full commits in
+`expected_failure_evidence.json`. Raw nonzero exits and issue links remain in every execution ledger; the summary
+in `expected-failures.json` separates raw nonzero exits, expected failures and unexpected outcomes. A missing
+expected execution, unexpected success, changed error, signal, timeout, missing evidence or setup failure is red.
+The type-hints script's recorded failure is its module-level `pytest.skip`, not the separate `SpeciesThermo.species()`
+segfault in #103; the latter is not accepted as a substitute signature. Expected failure does not mean the scientific
+bug is fixed or its output is valid.
 It does not repair missing experiments, chapter content, or numerical outputs.

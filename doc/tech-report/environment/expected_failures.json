@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "rules": {
+    "example-example_chapman_cycle": {
+      "command": "python example_chapman_cycle.py",
+      "script": "example_chapman_cycle.py",
+      "source_sha": "e357792d50639d68e9090b542edf038d2b029aa2",
+      "script_sha256": "c3bf86c6acf4c536fa59ec7c1d1296081d606979dd9979e836fecf00f9d38f87",
+      "exit": 1,
+      "traceback": "Traceback (most recent call last):\n  File \"example_chapman_cycle.py\", line 212, in <module>\n    history = run_chapman_cycle()\n              ^^^^^^^^^^^^^^^^^^^\n  File \"example_chapman_cycle.py\", line 134, in run_chapman_cycle\n    k = arrhenius.forward(temp, pres, conc)\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: forward(): incompatible function arguments. The following argument types are supported:\n    1. (self: kintera.cpp.Arrhenius, arg0: torch.Tensor, arg1: torch.Tensor, arg2: torch.Tensor, arg3: collections.abc.Mapping[str, torch.Tensor]) -> torch.Tensor\n    2. (self: kintera.cpp.Arrhenius, temp: torch.Tensor, pres: torch.Tensor, conc: torch.Tensor, other: collections.abc.Mapping[str, torch.Tensor]) -> torch.Tensor\n\nInvoked with: kintera::ArrheniusImpl, tensor([250.]), tensor([1000.]), tensor([[3.7527e-01, 1.0103e-01, 4.8112e-11, 4.8112e-09]])",
+      "issue": "https://github.com/UCzhangxi/kintera/issues/103"
+    },
+    "example-example_earth_dry": {
+      "command": "python example_earth_dry.py",
+      "script": "example_earth_dry.py",
+      "source_sha": "e357792d50639d68e9090b542edf038d2b029aa2",
+      "script_sha256": "54f4147d527097cc888bac3a7e3e8d2fd1b1f43f55e44465628c63a8e1a3134d",
+      "exit": 1,
+      "traceback": "Traceback (most recent call last):\n  File \"example_earth_dry.py\", line 62, in <module>\n    thermo.extrapolate_ad(temp[:, i], pres[:, i], xfrac[:, i, :], grav, dz);\n    ^^^^^^^^^^^^^^^^^^^^^\n  File \"module.py\", line 1965, in __getattr__\n    raise AttributeError(\nAttributeError: 'ThermoX' object has no attribute 'extrapolate_ad'. Did you mean: 'extrapolate_dz'?",
+      "issue": "https://github.com/UCzhangxi/kintera/issues/103"
+    },
+    "example-test_type_hints": {
+      "command": "python test_type_hints.py",
+      "script": "test_type_hints.py",
+      "source_sha": "e357792d50639d68e9090b542edf038d2b029aa2",
+      "script_sha256": "24b243f92550c31341b8d4438d95690a7a24a9477c99fe0bc172df81aa583e1b",
+      "exit": 1,
+      "traceback": "Traceback (most recent call last):\n  File \"test_type_hints.py\", line 13, in <module>\n    pytest.skip(\n  File \"outcomes.py\", line 138, in __call__\n    raise Skipped(msg=reason, allow_module_level=allow_module_level)\nSkipped: type-hint demonstration only; not a runtime pytest module",
+      "issue": "https://github.com/UCzhangxi/kintera/issues/103"
+    }
+  },
+  "baseline_source": "53f3ffcc6fefd34513dc04214d506103b2d917ed",
+  "evidence": "expected_failure_evidence.json"
+}

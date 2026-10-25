@@ -373,11 +373,6 @@
       "tag": "ch12-devfn-test"
     },
     {
-      "file": "chapters/12-gpu/_device-functions.qmd",
-      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
-      "tag": "ch12-devfn-scratch"
-    },
-    {
       "file": "chapters/12-gpu/_dispatch.qmd",
       "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
       "tag": "ch12-dispatch-gtest"

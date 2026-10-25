@@ -54,3 +54,26 @@ Separately, implementation ownership of `example_chapman_cycle.py`,
 `example_earth_dry.py`, and `test_type_hints.py` is **unassigned in the available
 evidence**. Linfeng's ch13 reporting assignment does not assign those package
 fixes to him. Historical provenance entries also need per-claim author routing.
+
+## Closure disposition after Xi's expected-failure ruling and ch12 delivery
+
+The four-command table above is retained as the original audit record, not rewritten as successful
+scientific experiments. The three example commands are now strictly matched EXPECTED-FAIL entries
+linked to [#103](https://github.com/UCzhangxi/kintera/issues/103); raw exits remain 1.
+See `environment/expected_failure_evidence.json` for independent current and full resolved pre-151
+source measurements and `reviews/expected-failure-closure.md` for boundaries. The type-hint script's
+recorded failure is the uncaught module skip, not the separately reproduced native segfault.
+Jiheng is the requested fix-batch routing; acceptance of implementation ownership remains unresolved.
+
+Tianhao delivered a stand-in probe before the deadline at
+[c197d576a42f430444f9ffffe73ef282ebdace3d](https://github.com/happysky19/kintera/commit/c197d576a42f430444f9ffffe73ef282ebdace3d).
+The original scratch probe was not recovered. Its dependent patched-CUDA claim is withdrawn from the
+chapter and preserved with the next-repin task in `reviews/ch12-next-repin.md`. The replacement
+recipe covers only two deck nucleation formulas on the unmodified build; it does not turn the old
+missing-producer row into a successful historical experiment. The old name list now fails explicitly
+because its derivative names are not nucleation formulas in the input deck. Cheng owns this report
+integration; acceptance of the deferred paired-device experiment remains unresolved.
+
+The separate raw CI layout gate finding (15 overfull boxes under existing report-mode policy) remains
+open; layout implementation ownership is unresolved. Green workflow status does not mean that raw
+gate returned zero.

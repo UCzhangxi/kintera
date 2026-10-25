@@ -1,6 +1,6 @@
 # Paddle migration and compatibility history
 
-Xi authorized migration. The installed runtime is now public
+The lead authorized migration. The installed runtime is now public
 [`a4cac94451ab5fc800735edb00180e98859a20c2`](https://github.com/elijah-mullens/paddle/blob/a4cac94451ab5fc800735edb00180e98859a20c2/pyproject.toml#L33),
 which permits Torch 2.10.0. The following investigation concerns the OLD pin,
 retained for evidence rather than a current installation blocker.
@@ -83,7 +83,7 @@ No historical native packages are substituted for the report source pins.
 The owner has chosen migration, not historical isolation. Chapter 14 authors
 must review the six-argument interface, slicing and rate-constant changes and the
 old/new values emitted by `paddle_migration.py`. The provenance names
-XinyueWang05; subsequent derivation commits name jihenghu. The formal ownership
+the chapter author; subsequent derivation commits name the derivation contributor. The formal ownership
 table remains unassigned, so the editor must confirm reviewer responsibility.
 Chapter 5's two changed water-data leaves also require review despite satisfying
 the eight-ULP numerical check. Chapter 4's disputed UV result and chapter 12/13

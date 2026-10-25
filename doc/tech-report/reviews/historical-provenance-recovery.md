@@ -1,6 +1,6 @@
 # Verified historical measurements and recovery checks
 
-Xi's ruling permits verified historical measurements while retaining their source attribution and next-repin list.
+The lead's ruling permits verified historical measurements while retaining their source attribution and next-repin list.
 Implementation ownership remains under [issue 101](https://github.com/UCzhangxi/kintera/issues/101).
 
 ## Evidence boundary

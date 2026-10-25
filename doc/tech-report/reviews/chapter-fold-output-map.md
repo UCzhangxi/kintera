@@ -404,7 +404,7 @@ This index also maps rounded narrative quantities and all control experiments to
 
 Regenerating the partition figure reduced its y range to order 1e-6. The old Tref annotation at data y=0.45 made Agg PNG rendering fail (FT_Render_Glyph/raster overflow). The reproduction and implementation ownership were recorded on issue 101 before repair. The new regression renders the real figure and checks the annotation stays in the axes. It failed before the fix and passed afterward. The fix uses axes coordinates for annotation height; it does not change plotted values.
 
-Strict guard coverage, 1000-step assertions, actual-source mutation evidence, six appendix exclusions and all original audit artifacts remain intact. Historical provenance and owner-routed failures are not waived. Linfeng must recheck chapters 4/5; Jiheng and Xinyue must recheck chapter 14; no approval is claimed. Jiheng owns the separate examples issue/fix batch under Xi’s routing. Tianhao’s chapter 12 continuation has not been integrated here; chapter 13 GPU continuation remains with Linfeng.
+Strict guard coverage, 1000-step assertions, actual-source mutation evidence, six appendix exclusions and all original audit artifacts remain intact. Historical provenance and owner-routed failures are not waived. The chapter 4/5/13 owner must recheck chapters 4/5; the two designated reviewers must recheck chapter 14; no approval is claimed. The designated package-fix contact owns the separate examples issue/fix batch under the lead’s routing. the chapter 12 continuation has not been integrated here; chapter 13 GPU continuation remains with chapter 4/5/13 owner.
 
 ## Every changed ch4 data leaf (provenance excluded)
 

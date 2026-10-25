@@ -5,7 +5,7 @@ pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
 sources: src/thermo/equilibrate_tp.h, src/thermo/equilibrate_uv.h, src/thermo/log_svp.cpp, src/thermo/nucleation.cpp,
   src/thermo/thermo_y.cpp
 status: draft
-author: gitlinffff
+author: chapter owner
 reviewer:
 -->
 

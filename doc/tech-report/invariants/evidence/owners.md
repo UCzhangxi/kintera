@@ -1,32 +1,32 @@
 # Eight retained nonzero commands: ownership and available responses
 
-Evidence belongs to the completed audit at `83c4ee3e489139fefbaa863257623ebf80411bb1`; this continuation does not relabel it as new execution. No Slack access or direct contact is claimed. GitHub #100/#102 currently have no comments/reviews; #99 comments are implementation records from Cheng. Supplied thread messages and handoff attachments are attributed reports, not independent validation or current-head approval.
+Evidence belongs to the completed audit at `83c4ee3e489139fefbaa863257623ebf80411bb1`; this continuation does not relabel it as new execution. No Slack access or direct contact is claimed. GitHub #100/#102 currently have no comments/reviews; #99 comments are implementation records from report integrator. Supplied thread messages and handoff attachments are attributed reports, not independent validation or current-head approval.
 
 | Exact retained command | Exit | Owner / response available | Closure |
 |---|---:|---|
-| `python -P probe.py h2o_ideal h2o_ideal_ddT nh3_ideal na_h2s_visscher_ddT` | 2 | Tianhao (Xi assignment ch12). Supplied handoff and reported continuation abc96e3f486942568d0a058722ad56c73a0f4b47 are available; public branch rechecked. This is a response, but no new-pin integration/full reproduction is verified. | Tianhao reconciles the probe and experiments at the new pin; review/integrate with evidence. |
-| `python example_chapman_cycle.py` | 1 | Linfeng owns ch13 reporting. Package example/demo fixer remains UNASSIGNED in available evidence. Linfeng explicitly reported the same exits remain; that does not accept package implementation ownership. | Assign package/demo contract owner; validate documented command and scientific behavior. Keep raw failure visible. |
-| `python example_earth_dry.py` | 1 | Linfeng owns ch13 reporting. Package example/demo fixer remains UNASSIGNED in available evidence. Linfeng explicitly reported the same exits remain; that does not accept package implementation ownership. | Assign package/demo contract owner; validate documented command and scientific behavior. Keep raw failure visible. |
-| `python test_type_hints.py` | 1 | Linfeng owns ch13 reporting. Package example/demo fixer remains UNASSIGNED in available evidence. Linfeng explicitly reported the same exits remain; that does not accept package implementation ownership. | Assign package/demo contract owner; validate documented command and scientific behavior. Keep raw failure visible. |
-| `python tools/check_figure_values.py --out /work/doc/tech-report/.reproduce/logs/figure-values` | 1 | Linfeng (ch4/ch5). Supplied response resolves historical UV and accepts prior water roundoff, but no response approving the two new-pin ch4 figure baselines is verified. | Review new numerical values and update justified scientific references; preserve current tolerance. |
-| `python -m pytest tools/tests -q` | 1 | Cheng owns round-3 integration; affected chapter authors own historical claims. Cheng acknowledged these provenance/ratchet failures in #101. No evidence supplies a separate named owner for each historical tag or author resolution. | Reconcile measured claims with actual source identities and author evidence; rerun without mechanically relabeling history or waiving gates. |
-| `python tools/ratchet_gate.py check` | 1 | Cheng owns round-3 integration; affected chapter authors own historical claims. Cheng acknowledged these provenance/ratchet failures in #101. No evidence supplies a separate named owner for each historical tag or author resolution. | Reconcile measured claims with actual source identities and author evidence; rerun without mechanically relabeling history or waiving gates. |
-| `python tools/render_gate.py book/` | 1 | Cheng owns round-3 integration; affected chapter authors own historical claims. Cheng acknowledged these provenance/ratchet failures in #101. No evidence supplies a separate named owner for each historical tag or author resolution. | Reconcile measured claims with actual source identities and author evidence; rerun without mechanically relabeling history or waiving gates. |
+| `python -P probe.py h2o_ideal h2o_ideal_ddT nh3_ideal na_h2s_visscher_ddT` | 2 | chapter 12 owner (lead assignment ch12). Supplied handoff and reported continuation abc96e3f486942568d0a058722ad56c73a0f4b47 are available; public branch rechecked. This is a response, but no new-pin integration/full reproduction is verified. | chapter 12 owner reconciles the probe and experiments at the new pin; review/integrate with evidence. |
+| `python example_chapman_cycle.py` | 1 | chapter 4/5/13 owner owns ch13 reporting. Package example/demo fixer remains UNASSIGNED in available evidence. The chapter 4/5/13 owner explicitly reported the same exits remain; that does not accept package implementation ownership. | Assign package/demo contract owner; validate documented command and scientific behavior. Keep raw failure visible. |
+| `python example_earth_dry.py` | 1 | chapter 4/5/13 owner owns ch13 reporting. Package example/demo fixer remains UNASSIGNED in available evidence. The chapter 4/5/13 owner explicitly reported the same exits remain; that does not accept package implementation ownership. | Assign package/demo contract owner; validate documented command and scientific behavior. Keep raw failure visible. |
+| `python test_type_hints.py` | 1 | chapter 4/5/13 owner owns ch13 reporting. Package example/demo fixer remains UNASSIGNED in available evidence. The chapter 4/5/13 owner explicitly reported the same exits remain; that does not accept package implementation ownership. | Assign package/demo contract owner; validate documented command and scientific behavior. Keep raw failure visible. |
+| `python tools/check_figure_values.py --out /work/doc/tech-report/.reproduce/logs/figure-values` | 1 | chapter 4/5/13 owner (ch4/ch5). Supplied response resolves historical UV and accepts prior water roundoff, but no response approving the two new-pin ch4 figure baselines is verified. | Review new numerical values and update justified scientific references; preserve current tolerance. |
+| `python -m pytest tools/tests -q` | 1 | report integrator owns round-3 integration; affected chapter authors own historical claims. report integrator acknowledged these provenance/ratchet failures in #101. No evidence supplies a separate named owner for each historical tag or author resolution. | Reconcile measured claims with actual source identities and author evidence; rerun without mechanically relabeling history or waiving gates. |
+| `python tools/ratchet_gate.py check` | 1 | report integrator owns round-3 integration; affected chapter authors own historical claims. report integrator acknowledged these provenance/ratchet failures in #101. No evidence supplies a separate named owner for each historical tag or author resolution. | Reconcile measured claims with actual source identities and author evidence; rerun without mechanically relabeling history or waiving gates. |
+| `python tools/render_gate.py book/` | 1 | report integrator owns round-3 integration; affected chapter authors own historical claims. report integrator acknowledged these provenance/ratchet failures in #101. No evidence supplies a separate named owner for each historical tag or author resolution. | Reconcile measured claims with actual source identities and author evidence; rerun without mechanically relabeling history or waiving gates. |
 
-Missing/unverified responses for reassignment: package-example and demo implementation owners are unresolved; current-new-pin ch4 figure review is unanswered in available evidence; individual authors for all historical provenance entries are not fully routed. Jiheng/Xinyue accepted ch14 review in supplied context, but no current-head verdict is available; ch14 is separate from these eight raw exits.
+Missing/unverified responses for reassignment: package-example and demo implementation owners are unresolved; current-new-pin ch4 figure review is unanswered in available evidence; individual authors for all historical provenance entries are not fully routed. first chapter 14 reviewer/second chapter 14 reviewer accepted ch14 review in supplied context, but no current-head verdict is available; ch14 is separate from these eight raw exits.
 
-Public ch12 branch observation: `abc96e3f486942568d0a058722ad56c73a0f4b47	refs/heads/ch12-missing-experiments-tianhao`. Not incorporated. Linfeng’s reported 81f803c97ae425fc1710661424b8b3c1d1373a50 / 17f1178a32b911c675167662fbd8e050435002d5 are not incorporated.
+Public ch12 branch observation: `abc96e3f486942568d0a058722ad56c73a0f4b47	chapter-owner continuation`. Not incorporated. The chapter 4/5/13 owner’s reported 81f803c97ae425fc1710661424b8b3c1d1373a50 / 17f1178a32b911c675167662fbd8e050435002d5 are not incorporated.
 
 ## Four inherited command failures: source and assigned ownership
 
-These commands are re-executed in this audit. Chapter ownership follows Xi’s assignments; it does not assign implementation ownership of package examples.
+These commands are re-executed in this audit. Chapter ownership follows lead’s assignments; it does not assign implementation ownership of package examples.
 
 | Exact command | Exit | Observed failure | Chapter / immutable source | Owner mapping | Minimal closure |
 |---|---:|---|---|---|---|
-| `python -P probe.py h2o_ideal h2o_ideal_ddT nh3_ideal na_h2s_visscher_ddT` | 2 | Cannot open `/work/doc/tech-report/probe.py`: ENOENT. | 12; [scratch probe/patch provenance:147](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/12-gpu/_device-functions.qmd#L147) | **Tianhao**, assigned ch12 by Xi. | Commit the probe, required inputs/patch and executable recipe and demonstrate its claimed behavior; alternatively remove the unsupported claim and update the inventory explicitly. A CPU pass alone cannot establish the paired CUDA claim. |
-| `python example_chapman_cycle.py` | 1 | `TypeError`: three-argument `arrhenius.forward(temp, pres, conc)` lacks required fourth mapping `other`. | 13 example inventory; [documented failure:69](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/13-verification/_examples.qmd#L69); [package call:134](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/examples/example_chapman_cycle.py#L134) | **Linfeng** owns ch13 reporting; **package-example fix owner unresolved**. Xi did not assign this example’s implementation. | Assign a package fixer; supply the semantically correct binding input, validate the example and its outputs at a public pin, and update ch13. Do not merely swallow the exception. |
-| `python example_earth_dry.py` | 1 | `AttributeError`: `ThermoX` has no `extrapolate_ad`; traceback suggests `extrapolate_dz`. | 13 example inventory; [documented failure:74](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/13-verification/_examples.qmd#L74); [package call:62](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/examples/example_earth_dry.py#L62) | **Linfeng** owns ch13 reporting; **package-example fix owner unresolved**. | Assign a package fixer; choose and validate an equivalent supported adiabatic API, preserve intended physics, demonstrate exit 0 at a public pin and reconcile ch13/stub claims. The traceback suggestion alone is not proof of equivalence. |
-| `python test_type_hints.py` | 1 | Uncaught `pytest.skip(..., allow_module_level=True)` raises `Skipped`: “type-hint demonstration only; not a runtime pytest module”. | 13 explicitly excludes this demo; [non-runtime exclusion:39](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/13-verification/_examples.qmd#L39); [module skip:13](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/examples/test_type_hints.py#L13); [runner executes every example:112](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/environment/audit.py#L112) | **Linfeng** owns ch13 reporting; **demo/package owner unresolved**. Cheng retains #99 setup/runner coordination, not an invented package authorship assignment. | Resolve the runner/report contract explicitly: validate the demo through its intended static/skip mechanism and regression-test the inventory policy, with maintainer acceptance. Preserve the raw exit; do not silently drop required runtime coverage to force success. |
+| `python -P probe.py h2o_ideal h2o_ideal_ddT nh3_ideal na_h2s_visscher_ddT` | 2 | Cannot open `/work/doc/tech-report/probe.py`: ENOENT. | 12; [scratch probe/patch provenance:147](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/12-gpu/_device-functions.qmd#L147) | **chapter 12 owner**, assigned ch12 by lead. | Commit the probe, required inputs/patch and executable recipe and demonstrate its claimed behavior; alternatively remove the unsupported claim and update the inventory explicitly. A CPU pass alone cannot establish the paired CUDA claim. |
+| `python example_chapman_cycle.py` | 1 | `TypeError`: three-argument `arrhenius.forward(temp, pres, conc)` lacks required fourth mapping `other`. | 13 example inventory; [documented failure:69](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/13-verification/_examples.qmd#L69); [package call:134](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/examples/example_chapman_cycle.py#L134) | **chapter 4/5/13 owner** owns ch13 reporting; **package-example fix owner unresolved**. lead did not assign this example’s implementation. | Assign a package fixer; supply the semantically correct binding input, validate the example and its outputs at a public pin, and update ch13. Do not merely swallow the exception. |
+| `python example_earth_dry.py` | 1 | `AttributeError`: `ThermoX` has no `extrapolate_ad`; traceback suggests `extrapolate_dz`. | 13 example inventory; [documented failure:74](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/13-verification/_examples.qmd#L74); [package call:62](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/examples/example_earth_dry.py#L62) | **chapter 4/5/13 owner** owns ch13 reporting; **package-example fix owner unresolved**. | Assign a package fixer; choose and validate an equivalent supported adiabatic API, preserve intended physics, demonstrate exit 0 at a public pin and reconcile ch13/stub claims. The traceback suggestion alone is not proof of equivalence. |
+| `python test_type_hints.py` | 1 | Uncaught `pytest.skip(..., allow_module_level=True)` raises `Skipped`: “type-hint demonstration only; not a runtime pytest module”. | 13 explicitly excludes this demo; [non-runtime exclusion:39](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/book/chapters/13-verification/_examples.qmd#L39); [module skip:13](https://github.com/chengcli/kintera/blob/e357792d50639d68e9090b542edf038d2b029aa2/examples/test_type_hints.py#L13); [runner executes every example:112](https://github.com/UCzhangxi/kintera/blob/83c4ee3e489139fefbaa863257623ebf80411bb1/doc/tech-report/environment/audit.py#L112) | **chapter 4/5/13 owner** owns ch13 reporting; **demo/package owner unresolved**. report integrator retains #99 setup/runner coordination, not an invented package authorship assignment. | Resolve the runner/report contract explicitly: validate the demo through its intended static/skip mechanism and regression-test the inventory policy, with maintainer acceptance. Preserve the raw exit; do not silently drop required runtime coverage to force success. |
 
 
 
@@ -36,26 +36,26 @@ No one was contacted. GitHub PR #102 reviews/comments were read again and both
 lists were empty. Supplied thread acknowledgments are attributed context, not
 current-head verdicts:
 
-* **Linfeng:** historical ch4/ch5/ch13 response is available. Current-new-pin
-  review of the two ch4 figure changes is **unverified**. His previous water-value
+* **chapter 4/5/13 owner:** historical ch4/ch5/ch13 response is available. Current-new-pin
+  review of the two ch4 figure changes is **unverified**. The previous water-value
   acceptance is not a blanket approval of later values or this PR head.
-* **Jiheng:** ch14 review acceptance is available in the supplied thread;
+* **first chapter 14 reviewer:** ch14 review acceptance is available in the supplied thread;
   a completed current-head API/value verdict is **unverified**.
-* **Xinyue:** likewise accepted ch14 review in the supplied thread;
+* **second chapter 14 reviewer:** likewise accepted ch14 review in the supplied thread;
   a completed current-head API/value verdict is **unverified**.
-* **Tianhao:** ch12 continuation/handoff is a response, not an absent
+* **chapter 12 owner:** ch12 continuation/handoff is a response, not an absent
   acknowledgment. Integration and successful full reproduction at the current
   scientific pin are **unverified**.
-* **Cheng:** ownership of inventory and provenance/ratchet integration is
+* **report integrator:** ownership of inventory and provenance/ratchet integration is
   explicitly acknowledged on issue #101. Those obligations remain unfinished;
   this is not an unanswered-owner case.
 
 Separately, implementation ownership of `example_chapman_cycle.py`,
 `example_earth_dry.py`, and `test_type_hints.py` is **unassigned in the available
-evidence**. Linfeng's ch13 reporting assignment does not assign those package
-fixes to him. Historical provenance entries also need per-claim author routing.
+evidence**. The chapter 4/5/13 owner's ch13 reporting assignment does not assign those package
+fixes to that chapter owner. Historical provenance entries also need per-claim author routing.
 
-## Closure disposition after Xi's expected-failure ruling and ch12 delivery
+## Closure disposition after lead's expected-failure ruling and ch12 delivery
 
 The four-command table above is retained as the original audit record, not rewritten as successful
 scientific experiments. The three example commands are now strictly matched EXPECTED-FAIL entries
@@ -63,15 +63,15 @@ linked to [#103](https://github.com/UCzhangxi/kintera/issues/103); raw exits rem
 See `environment/expected_failure_evidence.json` for independent current and full resolved pre-151
 source measurements and `reviews/expected-failure-closure.md` for boundaries. The type-hint script's
 recorded failure is the uncaught module skip, not the separately reproduced native segfault.
-Jiheng is the requested fix-batch routing; acceptance of implementation ownership remains unresolved.
+The designated package-fix contact is the requested fix-batch routing; acceptance of implementation ownership remains unresolved.
 
-Tianhao delivered a stand-in probe before the deadline at
+The chapter 12 owner delivered a stand-in probe before the deadline at
 [c197d576a42f430444f9ffffe73ef282ebdace3d](https://github.com/happysky19/kintera/commit/c197d576a42f430444f9ffffe73ef282ebdace3d).
 The original scratch probe was not recovered. Its dependent patched-CUDA claim is withdrawn from the
 chapter and preserved with the next-repin task in `reviews/ch12-next-repin.md`. The replacement
 recipe covers only two deck nucleation formulas on the unmodified build; it does not turn the old
 missing-producer row into a successful historical experiment. The old name list now fails explicitly
-because its derivative names are not nucleation formulas in the input deck. Cheng owns this report
+because its derivative names are not nucleation formulas in the input deck. report integrator owns this report
 integration; acceptance of the deferred paired-device experiment remains unresolved.
 
 The separate raw CI layout gate finding (15 overfull boxes under existing report-mode policy) remains

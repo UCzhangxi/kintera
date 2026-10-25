@@ -4,7 +4,7 @@
 pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
 sources: src/equilibrium/phase_equilibrate_tp.h, src/equilibrium/equilibrium.cpp, src/equilibrium/equilibrium.hpp
 status: draft
-author: gitlinffff
+author: chapter owner
 reviewer:
 -->
 

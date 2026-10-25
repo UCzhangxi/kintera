@@ -6,7 +6,7 @@ sources: src/equilibrium/equilibrium.hpp, src/equilibrium/equilibrium.cpp, src/e
   src/equilibrium/equilibrium_dispatch.cpp, src/equilibrium/equilibrium_dispatch.cu, src/equilibrium/phase_equilibrate_tp.h,
   python/equilibrium/nasa9.py, src/species.cpp, src/thermo/nasa9.hpp, src/kinetics/kinetics.cpp
 status: draft
-author: gitlinffff
+author: chapter owner
 reviewer:
 -->
 

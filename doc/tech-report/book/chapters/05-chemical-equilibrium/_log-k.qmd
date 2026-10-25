@@ -5,7 +5,7 @@ pin: kintera@e357792d50639d68e9090b542edf038d2b029aa2 (main)
 sources: python/equilibrium/nasa9.py, python/equilibrium/__init__.py, src/species.cpp, src/thermo/nasa9.hpp,
   data/nasa9.dat, examples/equilibrium_nasa9.py
 status: draft
-author: gitlinffff
+author: chapter owner
 reviewer:
 -->
 

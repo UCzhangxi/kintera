@@ -1,7 +1,7 @@
 # Strict expected failures for the report audit
 
 Accepted before editing under [issue 101](https://github.com/UCzhangxi/kintera/issues/101#issuecomment-6399576383),
-starting from report `dfe26fc9829252f162cb05d88908cbd5b51dc233`. This implements Xi's authorized closure policy;
+starting from report `dfe26fc9829252f162cb05d88908cbd5b51dc233`. This implements lead's authorized closure policy;
 it does not fix the scientific bugs tracked in [issue 103](https://github.com/UCzhangxi/kintera/issues/103).
 
 ## Independently verified scientific sources

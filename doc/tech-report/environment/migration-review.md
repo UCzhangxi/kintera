@@ -33,11 +33,11 @@ uses provenance authors and history; the editor must confirm final responsibilit
 
 | Chapter | Evidence of authorship | Review needed |
 |---|---|---|
-| 14 | [_kinetics.qmd](https://github.com/UCzhangxi/kintera/blob/1839c0dc5e51bbb4de5ee4c9ddd7340478ec7518/doc/tech-report/book/chapters/14-coupling/_kinetics.qmd#L7) provenance names XinyueWang05; later derivation commit `fae7276404b540a1bfc27bb52607175de41e12a9` names jihenghu | Six-argument API, source/citation migration, all four newly measured Paddle cases and conservation tolerances |
-| 5 | [_diagnostics.qmd](https://github.com/UCzhangxi/kintera/blob/1839c0dc5e51bbb4de5ee4c9ddd7340478ec7518/doc/tech-report/book/chapters/05-chemical-equilibrium/_diagnostics.qmd#L7) provenance names gitlinffff | Every changed water-input and plotted-coordinate value, even though within eight ULPs |
-| 4 | [_equilibrate-uv.qmd](https://github.com/UCzhangxi/kintera/blob/1839c0dc5e51bbb4de5ee4c9ddd7340478ec7518/doc/tech-report/book/chapters/04-phase-equilibrium/_equilibrate-uv.qmd#L7) provenance names gitlinffff | Disputed 302 K versus 304.80206565 K result; no scientific value was changed here |
-| 12 | `_device-functions.qmd` / `_dispatch.qmd` name gitlinffff; later correction `a31e59be3cad1895070e750cff8fbeb40e43fb1e` names Tianhao Le | Missing probe/patch and paired campaign drivers; schematic equality does not establish the missing GPU experiments |
-| 13 | `_device-coverage.qmd` / `_results.qmd` name gitlinffff | Missing GPU probe and external resources, with CPU/GPU distinctions retained |
+| 14 | [_kinetics.qmd](https://github.com/UCzhangxi/kintera/blob/1839c0dc5e51bbb4de5ee4c9ddd7340478ec7518/doc/tech-report/book/chapters/14-coupling/_kinetics.qmd#L7) provenance identifies the chapter author; later derivation commit `fae7276404b540a1bfc27bb52607175de41e12a9` identifies the derivation contributor | Six-argument API, source/citation migration, all four newly measured Paddle cases and conservation tolerances |
+| 5 | [_diagnostics.qmd](https://github.com/UCzhangxi/kintera/blob/1839c0dc5e51bbb4de5ee4c9ddd7340478ec7518/doc/tech-report/book/chapters/05-chemical-equilibrium/_diagnostics.qmd#L7) provenance identifies the chapter owner | Every changed water-input and plotted-coordinate value, even though within eight ULPs |
+| 4 | [_equilibrate-uv.qmd](https://github.com/UCzhangxi/kintera/blob/1839c0dc5e51bbb4de5ee4c9ddd7340478ec7518/doc/tech-report/book/chapters/04-phase-equilibrium/_equilibrate-uv.qmd#L7) provenance identifies the chapter owner | Disputed 302 K versus 304.80206565 K result; no scientific value was changed here |
+| 12 | `_device-functions.qmd` / `_dispatch.qmd` identify the chapter owner; later correction `a31e59be3cad1895070e750cff8fbeb40e43fb1e` identifies the chapter 12 owner | Missing probe/patch and paired campaign drivers; schematic equality does not establish the missing GPU experiments |
+| 13 | `_device-coverage.qmd` / `_results.qmd` identify the chapter owner | Missing GPU probe and external resources, with CPU/GPU distinctions retained |
 
 Chapter 4/12/13 files are not modified by this migration. The six owner-authored
 appendix content exclusions remain. Known documented example failures and missing

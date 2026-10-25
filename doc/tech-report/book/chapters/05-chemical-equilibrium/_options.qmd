@@ -5,7 +5,7 @@ pin: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 (main)
 sources: src/equilibrium/equilibrium_options.cpp, src/equilibrium/equilibrium.hpp, src/equilibrium/equilibrium.cpp,
   python/csrc/pyequilibrium.cpp
 status: draft
-author: gitlinffff
+author: chapter owner
 reviewer:
 -->
 

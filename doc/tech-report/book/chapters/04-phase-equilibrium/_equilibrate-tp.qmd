@@ -176,7 +176,7 @@ The two cases `equilibrate_tp.converges_on_its_last_allowed_iteration` and
 
 [^ch04-tp-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_equilibrate_tp_max_iter.cpp`;
 run: `ctest --output-on-failure --timeout 1800` in `build/tests`, Release builds with `-DCUDA=OFF` and `-DCUDA=ON`;
-GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.]
+GCC 11.5.0, CMake 3.31.8, CUDA 12.6.85, torch 2.10.0+cu126.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

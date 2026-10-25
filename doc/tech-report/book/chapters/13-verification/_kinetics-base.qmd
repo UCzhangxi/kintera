@@ -80,10 +80,10 @@ external-data tests skip.[^ch13-kb-cxx]
 
 [^ch13-kb-skip]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_kinetics_base.py`; run:
 `python -m pytest tests -p no:cacheprovider -rfEs -q --junitxml=<file>`, CPU and CUDA builds, counted from the JUnit
-file; Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.]
+file; Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch13-kb-cxx]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_kinetics_base.cpp`; run:
-`ctest -V -R '\.release'` in `build/tests` of the `-DCUDA=ON` build; CUDA 12.6.85, GCC 11.5.0, torch 2.10.0+cu126.]
+`ctest -V -R '\.release'` in `build/tests` of the `-DCUDA=ON` build; CUDA 12.6.85, GCC 11.5.0, torch 2.10.0+cu126.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

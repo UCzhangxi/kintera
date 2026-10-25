@@ -1,5 +1,5 @@
-"""Gate of quoted-result provenance (N7): every provenance tag names a full kintera sha at or after the code pin that
-resolves, and the command; a quoted timing adds its scope and repetitions.
+"""Gate of quoted-result provenance (N7): every provenance tag names the current kintera pin or a verified historical source,
+and the command; a quoted timing adds its scope and repetitions.
 
 The fixtures under fixtures/provenance are chapter files whose shas are placeholders ({pin}, {later}, {older},
 {unknown}, {pin7}); each test fills them with the commits of a small git repository standing in for chengcli/kintera,
@@ -76,7 +76,7 @@ def test_an_unresolvable_sha_fails(tmp_path, upstream):
 def test_a_sha_before_the_pin_fails(tmp_path, upstream):
     older, pin = upstream[1]["older"], upstream[1]["pin"]
     assert _why(tmp_path, upstream, "before-pin.qmd") == [
-        f"sha {older[:12]} is not the code pin {pin[:12]} or a later commit"]
+        f"sha {older[:12]} is off the code pin {pin[:12]}; a verified historical label is required"]
 
 
 def test_a_missing_command_fails(tmp_path, upstream):
@@ -240,3 +240,91 @@ def test_api_snippets_are_not_producing_commands(run):
     tag = {"fields": {"sha": UNKNOWN, "run": run}, "text": ""}
     assert cp.problems(tag, lambda sha: None) == [
         "no command (no `run:` field with a backticked command)"]
+
+
+def _historical_report(tmp_path, upstream):
+    report = _report(tmp_path, upstream, 'before-pin.qmd', baseline={})
+    q = report / 'book/chapters/01-before-pin.qmd'
+    q.write_text(q.read_text().replace('The relative error', '[^measured]: The relative error'))
+    witness = _target(report)
+    manifest = {'version': 1, 'evidence_commit': witness, 'measurements': [
+        {'file': 'chapters/01-before-pin.qmd', 'tag': 'measured',
+         'source_sha': upstream[1]['older']}]}
+    (report / 'tools/historical-provenance.json').write_text(json.dumps(manifest))
+    resolve = cp.Resolver(report, upstream[1]['pin'], fetch=False, local=[upstream[0]])
+    return report, q, resolve
+
+
+def test_verified_historical_label_red_green_and_listing(tmp_path, upstream, capsys):
+    report, q, resolve = _historical_report(tmp_path, upstream)
+    assert cp.check(report, resolve=resolve)[0] == 1  # unlabeled off-pin
+    q.write_text(q.read_text().replace('CPU]', 'CPU; historical: '+upstream[1]['older']+']'))
+    for _ in range(2):
+        assert cp.check(report, resolve=resolve)[0] == 0
+        output = capsys.readouterr().out
+        assert '[historical] 1 verified measurement(s); next-repin to-do' in output
+        assert 'chapters/01-before-pin.qmd:3: '+upstream[1]['older'] in output
+
+
+@pytest.mark.parametrize('mutation', ['wrong_source', 'wrong_label', 'changed_claim', 'no_registry'])
+def test_historical_evidence_cannot_be_relabelled_or_fabricated(tmp_path, upstream, mutation):
+    report, q, resolve = _historical_report(tmp_path, upstream)
+    text = q.read_text().replace('CPU]', 'CPU; historical: '+upstream[1]['older']+']')
+    if mutation == 'wrong_source':
+        text = text.replace('sha: '+upstream[1]['older'], 'sha: '+upstream[1]['pin'])
+    elif mutation == 'wrong_label':
+        text = text.replace('historical: '+upstream[1]['older'], 'historical: '+upstream[1]['pin'])
+    elif mutation == 'changed_claim':
+        text = text.replace('b.yaml', 'invented.yaml')
+    else:
+        (report / 'tools/historical-provenance.json').unlink()
+    q.write_text(text)
+    assert cp.check(report, resolve=resolve)[0] == 1
+
+
+def test_ratchet_excludes_only_verified_historical_spans(tmp_path, upstream, monkeypatch, capsys):
+    import ratchet_gate as rg
+    report, q, resolve = _historical_report(tmp_path, upstream)
+    monkeypatch.setenv('KINTERA_REPO', str(upstream[0]))
+    assert rg.count(report)['ch01']['offpin'] > 0
+    q.write_text(q.read_text().replace('CPU]', 'CPU; historical: '+upstream[1]['older']+']'))
+    assert rg.count(report)['ch01']['offpin'] == 0
+    q.write_text(q.read_text() + '\nUnrelated source: '+UNKNOWN+'\n')
+    assert rg.count(report)['ch01']['offpin'] == 1
+    assert '[historical] 1 verified measurement(s)' in capsys.readouterr().out
+
+
+def test_wrong_historical_label_cannot_be_waived_by_a_baseline(tmp_path, upstream):
+    report, q, resolve = _historical_report(tmp_path, upstream)
+    q.write_text(q.read_text().replace('CPU]', 'CPU; historical: '+upstream[1]['pin']+']')
+                 .replace('sha: '+upstream[1]['older'], 'sha: '+upstream[1]['pin']))
+    _set(report, {'ch01': 1})
+    assert cp.check(report, resolve=resolve)[0] == 1
+
+
+def test_an_unlabeled_future_source_is_also_off_pin(tmp_path, upstream):
+    report = _report(tmp_path, upstream, 'before-pin.qmd', baseline={})
+    q = next((report/'book').rglob('*.qmd'))
+    q.write_text(q.read_text().replace(upstream[1]['older'], upstream[1]['later']))
+    resolve = cp.Resolver(report, upstream[1]['pin'], fetch=False, local=[upstream[0]])
+    assert cp.check(report, resolve=resolve)[0] == 1
+
+
+def test_inserting_a_current_measurement_does_not_invalidate_historical_evidence(tmp_path, upstream):
+    report, q, resolve = _historical_report(tmp_path, upstream)
+    text = q.read_text().replace('CPU]', 'CPU; historical: '+upstream[1]['older']+']')
+    q.write_text('[^new]: [sha: '+upstream[1]['pin']+'; run: `python new.py`].\n\n'+text)
+    assert cp.check(report, resolve=resolve)[0] == 0
+
+
+def test_historical_command_whitespace_is_not_silently_normalized(tmp_path, upstream):
+    report, q, resolve = _historical_report(tmp_path, upstream)
+    q.write_text(q.read_text().replace('CPU]', 'CPU; historical: '+upstream[1]['older']+']')
+                 .replace('python3 run.py', 'python3  run.py'))
+    assert cp.check(report, resolve=resolve)[0] == 1
+
+
+def test_an_ambiguous_source_field_does_not_accept_its_first_sha(upstream):
+    tag = {'fields': {'sha': upstream[1]['pin']+', '+upstream[1]['older'],
+                      'run': '`python run.py`'}, 'text': ''}
+    assert cp.problems(tag, lambda sha: None) == ['ambiguous source sha field']

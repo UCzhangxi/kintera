@@ -78,7 +78,7 @@ Seven scripts exit with status 0: `example_earth.py`, `example_jupiter.py`, `exa
 
 [^ch13-examples-run]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: a copy of `examples/`; run:
 `python <script>` for each script, with `CUDA_VISIBLE_DEVICES=""` and `MPLBACKEND=Agg`, CPU build with
-`-DCUDA=OFF`; Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, matplotlib 3.11.2.]
+`-DCUDA=OFF`; Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, matplotlib 3.11.2.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

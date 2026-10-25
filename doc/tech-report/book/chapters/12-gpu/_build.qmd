@@ -70,7 +70,7 @@ A CUDA build with CUDA compiler 12.6 generates device code for compute capabilit
 [^ch12-build-arch]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `cmake -B build
 -DCMAKE_BUILD_TYPE=Release -DCUDA=ON`, `cmake --build build --parallel 6`, then `cuobjdump --list-elf
 build/lib/libkintera_cuda_release.so`, which lists `sm_60 sm_61 sm_70 sm_75 sm_80 sm_86 sm_89 sm_90`; nvcc 12.6.85,
-GCC 11.5.0, CMake 3.31.8, torch 2.10.0+cu126, Python 3.11.13.]
+GCC 11.5.0, CMake 3.31.8, torch 2.10.0+cu126, Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

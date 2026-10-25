@@ -77,6 +77,15 @@ are looked up in local clones first, then in cache clones under `~/.cache/kinter
 
 ## Tools
 
+- **Historical measurements.** `python tools/check_provenance.py` accepts a current-pin source, or an explicit
+  `historical: <full source sha>` label verified by `tools/historical-provenance.json`. Each registry row identifies
+  a tag and its immutable report witness; the source label, producing command and claim must still match that
+  witness, and its source must be an ancestor of the current pin. Unlabeled off-pin sources, incorrect labels,
+  altered historical claims and missing witnesses fail, even if a count baseline would otherwise allow them.
+  Every provenance and ratchet run prints the historical total and every current `file:line: source-commit`.
+  This is the next-repin to-do, not evidence that historical measurements ran at the current pin. Revalidation
+  requires new recorded measurements and review of the affected registry entries, not relabeling old results.
+  The ratchet excludes only validated historical tag spans; other off-pin references remain counted.
 - **Ratchet gate.** `tools/ratchet_gate.py` counts four things per chapter (and for the preface, `book/index.qmd`)
   and compares them with the committed baseline `tools/ratchet-baseline.json`. **history**: change history in
   body text (PR or issue numbers, "the previous pin", "is now" and the other phrases of `HISTORY_PATTERNS`; words

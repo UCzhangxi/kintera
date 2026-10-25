@@ -312,7 +312,7 @@ $K/h^2$, so any consistent unit system works, and $A$, $B$, $C$ come out in $\ma
     scratch directory, with `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python
     3.11.13, torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build, x86_64 Linux, gcc 11.5; output:
     `doc/tech-report/derivation-checks/check_ch08_eddy.out`, 18 PASS, 0 FAIL, 1 EXPECTED-FAIL (K27), 12 INFO. Values
-    at round-off (near $10^{-16}$) differ in their last digits on other builds; the text quotes them as bounds.]
+    at round-off (near $10^{-16}$) differ in their last digits on other builds; the text quotes them as bounds.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- reader glossary notes -->
 [^rg-5972ec96a93f]: Kzz — eddy diffusion coefficient on the N-1 inner faces of a column, argument of `diffusion_coefficients`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/diffusion/diffusion.cpp#L12-L20)

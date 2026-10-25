@@ -1,0 +1,527 @@
+{
+  "version": 1,
+  "evidence_commit": "94ef3f6d6675d4af9448347ec8ba557ef772e782",
+  "measurements": [
+    {
+      "file": "chapters/01-overview/_install.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01-build"
+    },
+    {
+      "file": "chapters/01-overview/_install.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01-pip"
+    },
+    {
+      "file": "chapters/01-overview/_quick-start.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01-snippet"
+    },
+    {
+      "file": "chapters/01-overview/_quick-start.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01-quick"
+    },
+    {
+      "file": "chapters/01-overview/_quick-start.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01-example"
+    },
+    {
+      "file": "chapters/01b-parcel-model/_shared.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01b-rh"
+    },
+    {
+      "file": "chapters/01b-parcel-model/_shared.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01b-evap"
+    },
+    {
+      "file": "chapters/01b-parcel-model/_shared.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01b-fp"
+    },
+    {
+      "file": "chapters/01b-parcel-model/_state.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01b-tp"
+    },
+    {
+      "file": "chapters/01b-parcel-model/_state.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01b-am"
+    },
+    {
+      "file": "chapters/01b-parcel-model/_state.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01b-uv"
+    },
+    {
+      "file": "chapters/01b-parcel-model/_state.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01b-ad"
+    },
+    {
+      "file": "chapters/01b-parcel-model/_state.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch01b-jac"
+    },
+    {
+      "file": "chapters/02-species-data/_nasa9.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch02-nasa9-join"
+    },
+    {
+      "file": "chapters/02-species-data/_nasa9.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch02-nasa9-check"
+    },
+    {
+      "file": "chapters/02-species-data/_svp-autograd.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch02-autograd-check"
+    },
+    {
+      "file": "chapters/02-species-data/_svp.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch02-svp-check"
+    },
+    {
+      "file": "chapters/03-thermodynamics/_adiabat.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch03-adiabat-check"
+    },
+    {
+      "file": "chapters/03-thermodynamics/_adiabat.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch03-adiabat-slope-check"
+    },
+    {
+      "file": "chapters/03-thermodynamics/_eos.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch03-eos-check"
+    },
+    {
+      "file": "chapters/03-thermodynamics/_reference-state.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch03-reference-check"
+    },
+    {
+      "file": "chapters/03-thermodynamics/_species-functions.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch03-scond-check"
+    },
+    {
+      "file": "chapters/03-thermodynamics/_thermo-x.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch03-pxs-check"
+    },
+    {
+      "file": "chapters/03-thermodynamics/_thermo-y.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch03-thermo-y-check"
+    },
+    {
+      "file": "chapters/04-phase-equilibrium/_conditions.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch04-conditions-check"
+    },
+    {
+      "file": "chapters/04-phase-equilibrium/_conditions.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch04-conditions-precip"
+    },
+    {
+      "file": "chapters/04-phase-equilibrium/_equilibrate-tp.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch04-tp-run"
+    },
+    {
+      "file": "chapters/04-phase-equilibrium/_warm-start-failures.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch04-gain-run"
+    },
+    {
+      "file": "chapters/04-phase-equilibrium/_warm-start-failures.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch04-warm-run"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_conditions.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-conditions-check"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_conditions.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-flash-run"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_conditions.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-tests-run"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_diagnostics.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-diagnostics-check"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_diagnostics.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-water-run"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_diagnostics.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-status-run"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_diagnostics.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-cuda-run"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_log-k.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-logk-water"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_log-k.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-logk-ho"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_newton.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-newton-check"
+    },
+    {
+      "file": "chapters/05-chemical-equilibrium/_newton.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch05-ho-run"
+    },
+    {
+      "file": "chapters/06-kinetics/_arrhenius.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch06-check-b"
+    },
+    {
+      "file": "chapters/06-kinetics/_evaporation.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch06-check-e"
+    },
+    {
+      "file": "chapters/06-kinetics/_falloff.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch06-check-c"
+    },
+    {
+      "file": "chapters/06-kinetics/_implicit.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch06-check-h"
+    },
+    {
+      "file": "chapters/06-kinetics/_jacobian.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch06-check-g"
+    },
+    {
+      "file": "chapters/06-kinetics/_mass-action.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch06-check-a"
+    },
+    {
+      "file": "chapters/06-kinetics/_mass-action.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch06-check-d1"
+    },
+    {
+      "file": "chapters/06-kinetics/_mass-action.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch06-check-d2"
+    },
+    {
+      "file": "chapters/07-photochemistry/_actinic-flux.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch07-check-af"
+    },
+    {
+      "file": "chapters/07-photochemistry/_actinic-flux.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch07-check-disort"
+    },
+    {
+      "file": "chapters/07-photochemistry/_cross-sections.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch07-check-xs"
+    },
+    {
+      "file": "chapters/07-photochemistry/_photochem.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch07-check-pc"
+    },
+    {
+      "file": "chapters/07-photochemistry/_photochem.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch07-check-stoich"
+    },
+    {
+      "file": "chapters/07-photochemistry/_rate.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch07-check-rate"
+    },
+    {
+      "file": "chapters/08-diffusion/_operator.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch08-eddy-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_conservation.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-budget-exact-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_conservation.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-budget-below1-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_conservation.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-conservation-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_molecular.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-molecular-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_newton.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-newton-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_rosenbrock.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-ros2-stab-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_rosenbrock.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-ros2-err-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_rosenbrock.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-ros2-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_sources.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-sources-check"
+    },
+    {
+      "file": "chapters/09-atm2d/_transport.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch09-transport-check"
+    },
+    {
+      "file": "chapters/10-numerics/_dense.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch10-dense-check"
+    },
+    {
+      "file": "chapters/10-numerics/_interpolation.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch10-interp-check"
+    },
+    {
+      "file": "chapters/10-numerics/_kkt.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch10-kkt-check"
+    },
+    {
+      "file": "chapters/10-numerics/_lu.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch10-lu-check"
+    },
+    {
+      "file": "chapters/10-numerics/_newton.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch10-newton-check"
+    },
+    {
+      "file": "chapters/10-numerics/_pseudo-inverse.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch10-pinv-check"
+    },
+    {
+      "file": "chapters/10-numerics/_sparse.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch10-sparse-run"
+    },
+    {
+      "file": "chapters/12-gpu/_build.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-build-arch"
+    },
+    {
+      "file": "chapters/12-gpu/_device-functions.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-devfn-test"
+    },
+    {
+      "file": "chapters/12-gpu/_device-functions.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-devfn-scratch"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-gtest"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-pytest"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-agree"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-move"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-batch"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-missing"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-kappa"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-devices"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-ftol32"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-absent"
+    },
+    {
+      "file": "chapters/12-gpu/_dispatch.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-dispatch-stoich"
+    },
+    {
+      "file": "chapters/12-gpu/_kernels.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-kernels-run"
+    },
+    {
+      "file": "chapters/12-gpu/_kernels.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-kernels-smem"
+    },
+    {
+      "file": "chapters/12-gpu/_kernels.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-kernels-launch"
+    },
+    {
+      "file": "chapters/12-gpu/_kernels.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-kernels-check"
+    },
+    {
+      "file": "chapters/12-gpu/_sparse-solver.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-sparse-run"
+    },
+    {
+      "file": "chapters/12-gpu/_sparse-solver.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch12-sparse-reach"
+    },
+    {
+      "file": "chapters/13-verification/_examples.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-examples-run"
+    },
+    {
+      "file": "chapters/13-verification/_kinetics-base.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-kb-skip"
+    },
+    {
+      "file": "chapters/13-verification/_kinetics-base.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-kb-cxx"
+    },
+    {
+      "file": "chapters/13-verification/_results.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-results-ci"
+    },
+    {
+      "file": "chapters/13-verification/_results.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-results-cpu"
+    },
+    {
+      "file": "chapters/13-verification/_results.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-results-cuda"
+    },
+    {
+      "file": "chapters/13-verification/_results.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-results-exit5"
+    },
+    {
+      "file": "chapters/13-verification/_results.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-results-tar"
+    },
+    {
+      "file": "chapters/13-verification/_suite.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-suite-run"
+    },
+    {
+      "file": "chapters/13-verification/_suite.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-suite-tol"
+    },
+    {
+      "file": "chapters/13-verification/_suite.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-suite-count"
+    },
+    {
+      "file": "chapters/13-verification/_vulcan.qmd",
+      "source_sha": "0d9f67f97d841147e23283d2dcdab302238d2c45",
+      "tag": "ch13-vulcan-tree"
+    }
+  ],
+  "evidence_root": "doc/tech-report"
+}

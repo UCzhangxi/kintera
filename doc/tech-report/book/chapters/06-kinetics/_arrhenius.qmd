@@ -231,7 +231,7 @@ The tolerances are read from the test files at the pin; the reason for each is m
 [^ch06-check-b]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the four-reaction card inside the
     script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_rates.py` from a scratch
     directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
-    output: `derivation-checks/check_ch6_rates.out` lines `[b]`.]
+    output: `derivation-checks/check_ch6_rates.out` lines `[b]`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

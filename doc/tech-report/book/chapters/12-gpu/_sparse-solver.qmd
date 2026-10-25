@@ -153,7 +153,7 @@ species, 12 unknowns, 40 non-zeros, $T = 250$ K, $p = 10^5$, $10^4$, $10^3$ Pa p
 run: `python check_ch12_spec_complement.py sparse` from `derivation-checks/ch12/`, which gives the same rounded
 $\mathsf A$ and $\mathbf b$ to the host SciPy LU and to `cuda_csr_solve_cusolver` at `tol` $= 0$, `reorder` $= 0$,
 and compares both with a dense numpy solve; exit 0, the only stderr being PyTorch's sparse-CSR[^rg-35281ab60864] beta warning;
-one CUDA build on one host, one system; committed output `derivation-checks/ch12/check_ch12_spec_complement.sparse.out`.]
+one CUDA build on one host, one system; committed output `derivation-checks/ch12/check_ch12_spec_complement.sparse.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 - No CPU fallback: the entry point exists only in the CUDA build, so a sparse solve has no host twin inside this
   scheme to be compared against; the comparison has to be made against the atm2d host path. That is a structural
@@ -186,7 +186,7 @@ assembled matrix is asserted bytewise equal to $-\mathsf L$ once the shift is lo
 check_ch12_atm2d_reach.py` and the same with `--newton-only` from `derivation-checks/ch12/`, outputs
 `check_ch12_atm2d_reach.out` and `check_ch12_atm2d_newton.out`, exit 0; mass error is $|\sum x - 3|/3$ on unit
 cell volumes, an exact invariant of that source-free state; one CUDA build on one host; targeted cases, not a
-production-deck result.]
+production-deck result.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch12-sparse-k43]: [source: UCzhangxi/kintera#54, row K43 (the identity shift of $\mathsf I/\Delta t - \mathsf L$
 lost to rounding at very large $\Delta t$), **LATENT** at the pin: the row records that no in-tree example or

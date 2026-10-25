@@ -111,12 +111,12 @@ shows agreement to that bound, not that the bound is the accuracy of the code.
 `ctest -R test_equilibrium` in `build/tests` of a `-DCUDA=OFF` Release build, first without `pytest` on the `PATH`
 (`test_equilibrium.py` reported `Not Run`, `test_equilibrium.release` passed) and then with it (both passed); then
 `python -m pytest -q -rs tests/test_reaction_equilibrium.py` from the source tree with no GPU visible (63 passed,
-57 skipped, reason `CUDA unavailable`); CMake 3.31.8, Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.]
+57 skipped, reason `CUDA unavailable`); CMake 3.31.8, Python 3.11.13, torch 2.10.0+cu126, pytest 9.1.1.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch13-suite-tol]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the options of `make_options` in
 `tests/test_equilibrium.cpp`, rebuilt in Python; run: `python -P src/kintera_report/ch13/runs/tolerance_example.py`,
 CPU, single and double precision, status 0 in every cell; kintera 2.6.5 source build, Python 3.11.13, torch
-2.10.0+cu126.]
+2.10.0+cu126.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Code
 
@@ -145,7 +145,7 @@ single-file entries.
 
 [^ch13-suite-count]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; run: `ctest -N` in `build/tests` of a
 Release build, which prints `Total Tests: 49`; CMake 3.31.8. The file counts are from `ls tests/test*.cpp` and
-`ls tests/test*.py`.]
+`ls tests/test*.py`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

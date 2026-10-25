@@ -138,7 +138,7 @@ c_i/\mathrm d t \rvert$ (the telescoping sum; PASS).
     9); run: `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, lines `a1`, `a2`, PASS.]
+    `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, lines `a1`, `a2`, PASS.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 The tolerances are read from `tests/test_atm2d.py` at the pin. `test_steady_1d_advection_diffusion_dirichlet_matches_analytic_solution`
 builds its advection-diffusion operator by hand and uses atm2d only for the boundary rows and the solve, so it is not

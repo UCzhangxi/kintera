@@ -105,28 +105,28 @@ the version tests run. On a file system that refuses symbolic links they then fa
 `build-and-test (macOS-latest)`, run 38915167085 of chengcli/kintera, read with `gh run view 38915167085 -R
 chengcli/kintera --log`, which prints `100% tests passed, 0 tests failed out of 49` for the Linux job and `100% tests
 passed out of 49` for the macOS job; CPU; Python 3.11, torch 2.10.0, numpy 2.4.6, pytest 9.1.1, setuptools-scm
-10.3.4.]
+10.3.4.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch13-results-cpu]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/`; run: `ctest
 --output-on-failure --timeout 1800` in `build/tests`, then `python -m pytest tests -p no:cacheprovider -rfEs -q`,
 both with `CUDA_VISIBLE_DEVICES=""`, CPU, double and single as each test chooses; Release build with `-DCUDA=OFF`,
-GCC 11.5.0, CMake 3.31.8, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, pytest 9.1.1.]
+GCC 11.5.0, CMake 3.31.8, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, pytest 9.1.1.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch13-results-cuda]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/`; run: `ctest
 --output-on-failure --timeout 1800` in `build/tests`, `python -m pytest tests -p no:cacheprovider -rfEs -q`, and
 `ctest -V -R '\.release'` for the per-instance C++ counts, two compute capability 6.1 GPUs visible; Release build
 with `-DCUDA=ON`, CUDA 12.6.85, GCC 11.5.0, CMake 3.31.8, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6, pytest
-9.1.1. 48 C++ instances per device skip: fixture placeholders and single-precision skips, the same on both devices.]
+9.1.1. 48 C++ instances per device skip: fixture placeholders and single-precision skips, the same on both devices.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch13-results-exit5]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck:
 `tests/test_version_floor.py`; run: `pytest tests/test_version_floor.py -q -p no:cacheprovider` without
-`setuptools_scm`, which prints `1 skipped` and returns exit code 5; pytest 9.1.1, Python 3.11.13.]
+`setuptools_scm`, which prints `1 skipped` and returns exit code 5; pytest 9.1.1, Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch13-results-tar]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/test_version_floor.py`,
 `tests/test_version_fallback.py`; run: `python -m pytest tests/test_version_floor.py tests/test_version_fallback.py
 -p no:cacheprovider -q -rfE` with `setuptools_scm` importable, on a file system without symbolic links: 1 failed, 2
 passed, 6 errors,
-every one a `tar -x` "Cannot create symlink" error; Python 3.11.13, pytest 9.1.1.]
+every one a `tar -x` "Cannot create symlink" error; Python 3.11.13, pytest 9.1.1.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

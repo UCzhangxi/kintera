@@ -171,7 +171,7 @@ written in the script, independently of atm2d. All six lines pass:[^ch09-newton-
     run: `python doc/tech-report/derivation-checks/check_ch9_newton.py` from a scratch directory, with `KINTERA_WT` set
     to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch9_newton.out`, 6 PASS,
-    0 FAIL.]
+    0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 No kintera test at the pin covers the chemistry-only Newton step, the SciPy integrators or the operator-split step.
 Run `[R6]`[^ch09-r6] (pinned `python/atm2d` source, torch 2.10.0, CPU, float64): one `operator_split_step` on a

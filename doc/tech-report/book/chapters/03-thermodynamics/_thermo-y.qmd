@@ -179,7 +179,7 @@ The derivation is checked by `check_ch3_thermo_y.py`:[^ch03-thermo-y-check]
     `python doc/tech-report/derivation-checks/check_ch3_thermo_y.py` from a scratch directory, with `KINTERA_WT` set
     to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_thermo_y.out`,
-    5 PASS, 2 EXPECTED-FAIL.]
+    5 PASS, 2 EXPECTED-FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch03-thermo-y-d12]: [source: UCzhangxi/kintera#54, row D12 (UV saturation kernel and the H2 heat capacity),
     merged on the staging branch of that issue.]

@@ -229,20 +229,20 @@ Step 5 is checked by `check_ch9_ros2_error.py`, which compares the returned `err
     script; run: `python doc/tech-report/derivation-checks/check_ch9_ros2_stability.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch9_ros2_stability.out`, 7 PASS, 0 FAIL.]
+    `doc/tech-report/derivation-checks/check_ch9_ros2_stability.out`, 7 PASS, 0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch09-ros2-err-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: one cell built in the script;
     run: `python doc/tech-report/derivation-checks/check_ch9_ros2_error.py` from a scratch directory, with
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch9_ros2_error.out`, 8 PASS, 0 FAIL.]
+    `doc/tech-report/derivation-checks/check_ch9_ros2_error.out`, 8 PASS, 0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch09-ros2-check]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: one cell,
     $\mathrm d c/\mathrm d t = -c$, built in the script; run:
     `python doc/tech-report/derivation-checks/check_ch9_atm2d.py` from a scratch directory, with `KINTERA_WT` set to
     the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, float64; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch9_atm2d.out`, line `c`,
-    PASS.]
+    PASS.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch09-rosenbrock-ros2 check_ch9_atm2d.py (c) -->
 <!-- equation-check: eq-ch09-rosenbrock-std check_ch9_atm2d.py (c) -->

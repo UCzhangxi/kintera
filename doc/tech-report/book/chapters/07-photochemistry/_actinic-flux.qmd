@@ -237,7 +237,7 @@ absorption (`[i3]`, S7-4, row K18). All of this was run on CPU only; CUDA is unv
     `create_solar_flux` on (100, 115, 150, 160, 200) nm with $F_{\mathrm{peak}} = 2 \times 10^{14}$; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
-    `derivation-checks/check_ch07_photolysis.out` lines `[d1]`, `[d2]`.]
+    `derivation-checks/check_ch07_photolysis.out` lines `[d1]`, `[d2]`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch07-check-disort]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `data/chapman_cycle.yaml` at the
     pin; state: 4 layers with faces at 0 to $4 \times 10^5$ cm, one column, 250 K, pressure $10^5$ to $10^2$ Pa
@@ -248,7 +248,7 @@ absorption (`[i3]`, S7-4, row K18). All of this was run on CPU only; CUDA is unv
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch07_photolysis.py` from a scratch directory,
     with `<build>` a kintera build at the pin, CPU, double; Python 3.13.15, torch 2.10.0, kintera 2.6.5; output:
     `derivation-checks/check_ch07_photolysis.out` lines `[i1]`, `[i0]`, `[i2]`, `[i3]`; `[i2]` and `[i3]` are
-    EXPECTED-FAIL by design (S7-3, #54 row K17; S7-4, #54 row K18).]
+    EXPECTED-FAIL by design (S7-3, #54 row K17; S7-4, #54 row K18).; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch07-check-fixes]: [source: the same script, unchanged, run on CPU in double precision against two further CPU
     builds of kintera: the K17-only fix (#95 head `dbbe7144`) and the tip of

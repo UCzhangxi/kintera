@@ -100,7 +100,7 @@ record is attached in this draft (missing evidence).
 with the `-DCUDA=ON` build at the pin installed, which calls `kintera.cuda_csr_solve_cusolver` against
 `torch.linalg.solve`; output committed as `src/kintera_report/ch10/runs/sparse_vs_dense.out`, which records the build; GTX 1080 Ti, CUDA 12.6, torch 2.10.0+cu126; the in-tree
 CUDA cases of `tests/test_atm2d.py` (`-k "cusolver or cuda"`) pass on the same build (4 passed); a measurement
-outside the suite, not a committed check.]
+outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- reader glossary notes -->
 [^rg-ae97af8e8ad8]: CSR — compressed sparse row; the sparse-matrix layout passed to `cuda_csr_solve_cusolver`; [source](https://github.com/chengcli/kintera/blob/0d9f67f97d841147e23283d2dcdab302238d2c45/src/math/sparse_solver.cu#L88-L92)

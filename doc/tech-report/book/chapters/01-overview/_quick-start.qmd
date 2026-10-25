@@ -94,14 +94,14 @@ a usage example, not a validation: the equilibrium solver is tested in @sec-ch04
 [^ch01-snippet]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `examples/jupiter.yaml`; run:
     `CUDA_VISIBLE_DEVICES="" python -P src/kintera_report/ch01/runs/snippet.py` from the checkout root (the code above,
     saved as that file), CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6, kintera 2.6.5
-    from the source build; output: `src/kintera_report/ch01/data/snippet.out`.]
+    from the source build; output: `src/kintera_report/ch01/data/snippet.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch01-quick]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `examples/jupiter.yaml`, the same
     composition; run: `python -P src/kintera_report/ch01/runs/quick_start.py` with `KINTERA_REPO` at the pin, CPU,
     double; Python 3.11.13, torch 2.10.0, numpy 2.4.6; kintera 2.6.5 (source build), output
     `src/kintera_report/ch01/data/quick_start.out`, and kintera 2.6.4 (PyPI), output
     `src/kintera_report/ch01/data/pip_install.out`; the run with argument 0 is
-    `src/kintera_report/ch01/data/quick_start_maxiter0.out`.]
+    `src/kintera_report/ch01/data/quick_start_maxiter0.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 
@@ -114,4 +114,4 @@ a usage example, not a validation: the equilibrium solver is tested in @sec-ch04
 
 [^ch01-example]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `examples/jupiter.yaml`; run:
     `bash src/kintera_report/ch01/runs/example_jupiter.sh` with `KINTERA_REPO` at the pin, CPU; Python 3.11.13,
-    kintera 2.6.5 from the source build; output: `src/kintera_report/ch01/data/example_jupiter.out`.]
+    kintera 2.6.5 from the source build; output: `src/kintera_report/ch01/data/example_jupiter.out`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]

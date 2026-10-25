@@ -85,7 +85,7 @@ the high-range $h(T)$, so $b_1$ does not cancel there, and such a jump enters th
     `python doc/tech-report/derivation-checks/check_ch2_nasa9.py` from a scratch directory, with `KINTERA_WT` set to
     the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch2_nasa9.out`, 3 PASS,
-    0 FAIL.]
+    0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 The heat-capacity path evaluates the enthalpy line multiplied by $T$, that is $h/\mathcal R = -a_0 T^{-1} + a_1 \ln T
 + a_2 T + a_3 T^2/2 + a_4 T^3/3 + a_5 T^4/4 + a_6 T^5/5 + b_1$, not $h/(\mathcal R T)$: `nasa9_h_R`
@@ -175,7 +175,7 @@ published tables remain missing evidence.
     `python doc/tech-report/derivation-checks/check_ch5_equilibrium.py` from a scratch directory, with `KINTERA_WT`
     set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0, numpy 2.4.6,
     kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch5_equilibrium.out`,
-    block c, all PASS.]
+    block c, all PASS.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch02-nasa9-forms check_ch5_equilibrium.py (c) -->
 <!-- equation-check: eq-ch02-nasa9-forms check_ch2_nasa9.py (n1) -->

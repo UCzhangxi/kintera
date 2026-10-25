@@ -158,7 +158,7 @@ rate constant is $w(T) = \kappa\,(K(T) - c_v)$ with $K = e^{L}/(\mathcal R T)$. 
     the script; run: `python doc/tech-report/derivation-checks/check_ch2_svp_autograd.py` from a scratch directory,
     with `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13,
     torch 2.10.0, numpy 2.4.6, kintera 2.6.5 from the source build; output:
-    `doc/tech-report/derivation-checks/check_ch2_svp_autograd.out`, 8 PASS, 0 FAIL.]
+    `doc/tech-report/derivation-checks/check_ch2_svp_autograd.out`, 8 PASS, 0 FAIL.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 <!-- equation-check: eq-ch02-svp-autograd-jacobian check_ch2_svp_autograd.py (a3) -->
 <!-- equation-check: eq-ch02-svp-autograd-backward check_ch2_svp_autograd.py (a1) -->

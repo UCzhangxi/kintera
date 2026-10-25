@@ -104,7 +104,7 @@ saturation.[^ch04-gain-run]
 fixed-energy runs, $x_{\mathrm v} = 5\times10^{-2}$, $10^5$ Pa, start 300 K; run: `python -P
 src/kintera_report/ch04/runs/gain_zeros.py`, which calls `ThermoX.forward` and `ThermoY.forward` and prints the
 returned gain, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement outside the suite, not a committed
-check.]
+check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 @fig-ch04-warm-start-flow summarises what the buffers do.
 
@@ -146,7 +146,7 @@ No test asserts that a warm start leaves the result unchanged.
 the cold-start cells of @sec-ch04-equilibrate-tp; run: `python -P src/kintera_report/ch04/runs/warm_start.py` with
 `KINTERA_REPO` set to a kintera checkout at the pin, a cold `ThermoX.forward`
 followed by a warm one on a fresh copy of the input, CPU, double; Python 3.11.13, torch 2.10.0+cu126; a measurement
-outside the suite, not a committed check.]
+outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

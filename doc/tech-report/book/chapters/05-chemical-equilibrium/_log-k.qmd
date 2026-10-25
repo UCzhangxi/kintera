@@ -162,12 +162,12 @@ to a build tree at the pin: line g PASS; CPU, double; kintera 2.6.7, source-buil
 `src/kintera_report/ch05/runs/run_equilibrium.py` with NASA-9 names N2, H2O and H2O_l_s; run: `python -P
 src/kintera_report/ch05/runs/run_equilibrium.py <out_dir>` (lines `[R4]`, `[R4b]`; `[R4b]` evaluates the formula of
 `h2o_ideal` in `src/vapors/vapor_functions.h`), CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch
-2.10.0+cu126, numpy 2.4.6; a measurement outside the suite, not a committed check.]
+2.10.0+cu126, numpy 2.4.6; a measurement outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch05-logk-ho]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `HO` in
 `src/kintera_report/ch05/runs/run_equilibrium.py`; run: `python -P src/kintera_report/ch05/runs/run_equilibrium.py
 <out_dir>` (line `[R9]`), CPU, double; kintera 2.6.5 source build, Python 3.11.13, torch 2.10.0+cu126, numpy 2.4.6; a
-measurement outside the suite, not a committed check.]
+measurement outside the suite, not a committed check.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

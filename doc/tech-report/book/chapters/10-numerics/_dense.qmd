@@ -151,7 +151,7 @@ the pinned headers of `src/math` into a scratch shared library called through ct
 derivation-checks/check_ch10_dense.py` from a scratch directory with `KINTERA_WT` set to a build tree at the pin;
 committed output `derivation-checks/check_ch10_dense.out`: 15 PASS, 0 FAIL, 5 EXPECTED-FAIL; a rerun on a clean
 v2.6.5 build (x86_64, GCC 11.5.0, Python 3.11.13, numpy 2.4.6) gives the same verdicts, with round-off differences
-in the quoted numbers and a different INFO line (b2).]
+in the quoted numbers and a different INFO line (b2).; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch10-dense-refs]: [source: N. J. Higham, Accuracy and Stability of Numerical Algorithms, 2nd ed., SIAM (2002),
 <https://doi.org/10.1137/1.9780898718027>, chapter 9 (LU factorization and linear equations).]

@@ -299,7 +299,7 @@ and `(f5)`-`(f8)`, `(f10)`-`(f12)` on saturated ones:[^ch03-pxs-check]
     `KINTERA_WT` set to the build tree and `CUDA_VISIBLE_DEVICES=""`, CPU, double; Python 3.11.13, torch 2.10.0,
     numpy 2.4.6, kintera 2.6.5 from the source build; output: `doc/tech-report/derivation-checks/check_ch3_pxs.out`,
     13 PASS, 3 EXPECTED-FAIL. On a build of the fix branch (kintera 2.6.6.dev44), same recipe: 15 PASS,
-    1 EXPECTED-FAIL, the `(f12)` line.]
+    1 EXPECTED-FAIL, the `(f12)` line.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch03-d8]: [source: UCzhangxi/kintera#54, row D8 (`PXS->T` slope), merged on the staging branch of that issue.]
 

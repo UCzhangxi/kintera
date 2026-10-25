@@ -11,7 +11,7 @@ Four counts per chapter (and for the preface, `book/index.qmd`), compared with t
               footnote may still carry a PR number.
   offpin      a sha of a cited package that is not that package's one pin: the pinned package's (the
               repository `code_pin.yml` names, kintera) is `code_pin.yml`, the others are in
-              `tools/package-pins.json`. Counted everywhere in the file: body text, footnotes, link targets, code comments and fenced code, and the plain fields of the PROVENANCE header. It catches
+              `tools/package-pins.json`. Counted everywhere except independently verified historical measurement tags: body text, other footnotes, link targets, code comments and fenced code, and the plain fields of the PROVENANCE header. Historical labels and immutable witnesses are checked by check_provenance.py, and their file:line/source list is printed on every run. It catches
               `<package>@<sha>`, `<path>@<sha>` (a file of the pinned tree), a GitHub blob/tree/commit URL of a
               package, and any other full 40-character sha that is no package's pin. A shortcode carries no sha.
   status      a file whose PROVENANCE says `status: reviewed` or `approved` without a valid entry in
@@ -345,7 +345,14 @@ def xref_counts(book: pathlib.Path) -> tuple[dict[str, int], list[str]]:
     return counts, detail
 
 
-def count(root: pathlib.Path = ROOT, verbose: bool = False) -> dict[str, dict[str, int]]:
+def count(root: pathlib.Path = ROOT, verbose: bool = False, historical=None) -> dict[str, dict[str, int]]:
+    from check_provenance import historical_audit, print_historical
+    if historical is None:
+        historical = historical_audit(root)
+        print_historical(historical[0])
+    historical_spans = {}
+    for t in historical[0]:
+        historical_spans.setdefault(t["file"], []).append((t["start"], t["end"]))
     book = root / "book"
     pin = pins(root)
     record = read_record(root)
@@ -363,7 +370,12 @@ def count(root: pathlib.Path = ROOT, verbose: bool = False) -> dict[str, dict[st
             add(ch, "history")
             if verbose:
                 print(f"history  {rel}: {h}")
-        for h in offpin_hits(text, pin, main_package(root)):
+        # Only independently verified historical tags are excluded. Headers,
+        # unregistered labels and unrelated off-pin references remain counted.
+        offpin_text = text
+        for start, end in reversed(historical_spans.get(rel, [])):
+            offpin_text = offpin_text[:start] + " " * (end-start) + offpin_text[end:]
+        for h in offpin_hits(offpin_text, pin, main_package(root)):
             add(ch, "offpin")
             if verbose:
                 print(f"offpin   {rel}: {h}")
@@ -558,7 +570,11 @@ def main(argv=None) -> int:
         return 0
     if a.cmd == "record":
         return record(a.root, a.kind, a.file, a.reviewer, a.author, a.note)
-    counts = count(a.root, verbose=getattr(a, "verbose", False))
+    from check_provenance import historical_audit, print_historical
+    historical = historical_audit(a.root)
+    print_historical(historical[0])
+    counts = count(a.root, verbose=getattr(a, "verbose", False), historical=historical)
+    historical_errors = [f"{v['file']}:{v['line']}: {v['why']}" for v in historical[1]]
     owners, owner_file_problems = read_owners(a.root)
     if a.cmd == "counts":
         print_table(counts, owners, assets(a.root))
@@ -567,6 +583,9 @@ def main(argv=None) -> int:
     baseline = stored.get("chapters", {})
     pin = code_pin(a.root)
     if a.cmd == "update":
+        if historical_errors:
+            print("ratchet: invalid historical evidence:\n  " + "\n  ".join(historical_errors))
+            return 1
         rises = [p for p in compare(counts, baseline) if "a rise" in p]
         if rises and baseline and stored.get("pin") == pin:
             print("ratchet: refusing to raise the baseline without a pin move:\n  " + "\n  ".join(rises))
@@ -574,7 +593,7 @@ def main(argv=None) -> int:
         base_path.write_text(json.dumps({"pin": pin, "chapters": counts}, indent=1, sort_keys=True) + "\n")
         print(f"ratchet: baseline written ({len(counts)} chapters, pin {pin[:12]})")
         return 0
-    problems = compare(counts, baseline)
+    problems = compare(counts, baseline) + historical_errors
     if stored and stored.get("pin") != pin:
         problems.append(f"the baseline was measured at pin {str(stored.get('pin'))[:12]}, code_pin.yml names "
                         f"{pin[:12]}: run update in the pin move")

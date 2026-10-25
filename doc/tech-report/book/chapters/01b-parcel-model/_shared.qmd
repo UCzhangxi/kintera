@@ -189,17 +189,17 @@ the deck requirement of Step 2 is real. Step 3 has no direct check; its kinetics
 [^ch01b-rh]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml`; run:
     `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch3_species_functions.py` from a scratch
     directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
-    output: `derivation-checks/check_ch3_species_functions.out`, lines `1d |RH - 1|`.]
+    output: `derivation-checks/check_ch3_species_functions.out`, lines `1d |RH - 1|`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch01b-evap]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: the `CH4(s,p) => CH4` card inside the
     script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch6_evaporation.py` from a scratch
     directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0, kintera 2.6.5;
-    output: `derivation-checks/check_ch6_evaporation.out`, line `(a2)`.]
+    output: `derivation-checks/check_ch6_evaporation.out`, line `(a2)`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 [^ch01b-fp]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45; deck: `tests/jupiter.yaml` and the one-vapour
     card inside the script; run: `KINTERA_WT=<build> python doc/tech-report/derivation-checks/check_ch1b_fixed_point.py`
     from a scratch directory, with `<build>` a kintera build at the pin, CPU, double; Python 3.11.13, torch 2.10.0,
-    kintera 2.6.5; output: `derivation-checks/check_ch1b_fixed_point.out`, lines `(a)`, `(b)`, `(c)`.]
+    kintera 2.6.5; output: `derivation-checks/check_ch1b_fixed_point.out`, lines `(a)`, `(b)`, `(c)`.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
 
 ### Limits
 

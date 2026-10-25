@@ -67,3 +67,13 @@ unchanged scientific source build caches may be reused; that reuse must be repor
 clean native builds. The ch12 missing probe and three package scripts remain separate owner-routed failures.
 Neither PR becomes ready unless reproduction exits 0 and its relevant exact-head CI is green. #100 remains
 unchanged and environment-only. No merge or reviewer approval is claimed.
+
+### Container-owned fixture follow-up
+
+The fresh audit at `7a7ae09309af9ac7b695318e4a4975877f040ace` exposed one additional fixture defect:
+`python -m pytest tools/tests -q` exited 1 (439 passed, two skipped, one failure). A direct local fetch of the
+historical witness invoked Git upload-pack against the host-owned `.git` directory, which the root container
+correctly rejected even though the report worktree itself was trusted. The fixture now creates a temporary
+bundle from that trusted worktree and fetches the bundle, preserving the witness objects without broadening
+Git trust. The same chapter-merge regression passes in the root-container/host-owned-checkout configuration
+(one passed, exit 0). The prior audit is retained; final-head reproduction and CI must be refreshed after this fix.

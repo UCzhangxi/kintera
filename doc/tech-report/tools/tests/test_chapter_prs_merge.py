@@ -103,8 +103,13 @@ def test_prs_on_different_chapters_merge_and_stay_current(tmp_path):
     registry = tree / "tools/historical-provenance.json"
     if registry.exists():
         witness = json.loads(registry.read_text())["evidence_commit"]
-        repository = _run(REPORT, "git", "rev-parse", "--show-toplevel").stdout.strip()
-        _git(tree, "fetch", "--quiet", "--no-tags", repository, witness)
+        # A local fetch invokes upload-pack against .git, which can reject a
+        # host-owned bind mount even when the report worktree is trusted. Read
+        # the trusted worktree once into a bundle; do not broaden Git trust.
+        bundle = tmp_path / "historical-witness.bundle"
+        _run(REPORT, "git", "bundle", "create", str(bundle), "HEAD")
+        _git(tree, "fetch", "--quiet", "--no-tags", str(bundle), "HEAD")
+        _git(tree, "cat-file", "-e", f"{witness}^{{commit}}")
     # the base: a history phrase in each chapter, counted into a fresh baseline
     for ch in ("04", "05"):
         f = _derivation_file(tree, ch)

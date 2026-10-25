@@ -57,7 +57,11 @@ $$ {#eq-ch05-newton-jacobian}
 `max-iter: 1`, the gain kintera returns (the Jacobian at the input) equals @eq-ch05-newton-jacobian to 0.0 relative
 difference.[^ch05-newton-check] That system is a deliberately singular example. It has three phases and two
 elements, so by the phase rule of @sec-ch05-conditions its Jacobian is singular in exact arithmetic (line f: smallest
-singular value $1.6\times10^{-17}$ at the start state on x86_64, $2.5\times10^{-16}$ on arm64). The solve on it is therefore ill-posed, and which status it
+singular value $1.6\times10^{-17}$ at the start state in the
+historical x86_64 build[^ch05-newton-check],
+$2.5\times10^{-16}$ in the historical arm64 build). The current Xeon measurement and its attribution are in
+@tbl-ch05-conditions-phase-rule; these are build-specific results, not architecture-wide values.
+The solve on it is therefore ill-posed, and which status it
 ends with is decided by rounding. An exactly zero LU pivot sends the step to the least-squares fallback, and status 3
 follows only if that fallback fails too (with `max-iter: 1` it has a single inner iteration). A tiny non-zero pivot
 gives a huge direct step that no scale accepts (status 4). On the build of the run record it is status 3 with

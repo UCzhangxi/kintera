@@ -131,26 +131,22 @@ from the source tree, CUDA build with one compute capability 6.1 GPU (2 passed) 
 ### Limits
 
 ::: {.callout-warning title="Limits"}
-- **A function missing from the device table gives wrong values on CUDA, not an error.** Two cases were measured with
-  a scratch build in which a test function returning $\ln K = 7$ (and its derivative) was added to `func1_table_cpu`
-  and `func1_names` only. Appended at the end, it evaluated to 7 on the CPU and to 0 on CUDA: its device index
-  $\mathrm{id}+1$ points past the end of the device table, and the slot read there was null, so the kernel added
-  nothing. Inserted at the front, it shifted every later name by two device slots. On CUDA, `h2o_ideal` then returned
-  the values of `h2o_bryan` ($\ln K$ = 4.559 against 4.333 at 250 K), the test function returned those of
-  `h2o_ideal`, and the last registered name returned 0. In every case no error was raised.[^ch12-devfn-scratch]
-  Reading past the end of a device array is undefined; that it reads a null pointer on other builds is a hypothesis.
+The historical scratch probe for a deliberately mismatched CPU/device table was not recovered.
+Its numerical claims are deferred to the next repin; the original record and the required paired-device
+experiment are preserved in `reviews/ch12-next-repin.md`. A stand-in probe on the unmodified deck
+does not validate that mutation experiment.
 :::
 
 - The device table is a fixed array compiled into the CUDA library; adding a function needs a rebuild of both
   libraries.
 
-[^ch12-devfn-scratch]: [sha: kintera@0d9f67f97d841147e23283d2dcdab302238d2c45 with `src/func_table.cpp` patched in a
-scratch copy only, not committed; deck: names `h2o_ideal`, `h2o_ideal_ddT`, `nh3_ideal`, `na_h2s_visscher_ddT` and
-the test function; run: `cmake --build . --target kintera_release` in the `build` directory of a `-DCUDA=ON` Release
-build, so that only the CPU library and its tables change, then `python -P probe.py <names>`, a scratch script that
-evaluates $\ln K$ at 250 K and 300 K through `relative_humidity` on CPU and CUDA tensors; source restored and the
-library rebuilt bit-identical afterwards; GeForce GTX 1080 Ti, CUDA 12.6.85, GCC 11.5.0, torch 2.10.0+cu126,
-Python 3.11.13.; historical: 0d9f67f97d841147e23283d2dcdab302238d2c45]
+The committed stand-in evaluates the deck's `h2o_ideal` and `nh3_ideal` nucleation formulas on the
+unmodified build. CPU-only execution does not establish a device-table gap.[^ch12-standin]
+
+[^ch12-standin]: [sha: kintera@e357792d50639d68e9090b542edf038d2b029aa2; deck: `tests/jupiter.yaml`;
+run: `python -P probe.py h2o_ideal nh3_ideal` from `doc/tech-report`, with `KINTERA_REPO` pointing to the
+source checkout; CPU float64 at 250 K and 300 K. Derivative function names are not nucleation formulas
+registered by this deck and are not covered by this command.]
 
 <!-- equation-check: eq-ch12-device-functions-index check_ch12_twins.py (a) -->
 

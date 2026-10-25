@@ -222,10 +222,10 @@ atom-conserving, and it passes in both builds of @sec-ch13-results, on the CPU d
 
 The derivation check is indirect as well. `check_ch4_tp.py` line a runs the fixed-temperature solver on
 `tests/jupiter.yaml`, where ammonia is shared by ammonia ice and ammonium hydrosulfide, which are the dependent rows of
-Step 5. At 200 and 160 K, with ammonium hydrosulfide present, the conditions of @sec-ch04-conditions hold to
+Step 5. In the historical run, at 200 and 160 K, with ammonium hydrosulfide present, the conditions of @sec-ch04-conditions hold to
 $6.95\times10^{-8}$ (tolerance $10^{-6}$), and nitrogen and sulfur change by at most $3.3\times10^{-16}$ (relative,
 tolerance $10^{-14}$). The line does not assert non-negativity; the condensate amounts it prints are non-negative
-(run record in @sec-ch04-conditions).
+(historical run record in @sec-ch04-conditions).[^ch04-conditions-check]
 
 A direct test is proposed, not present: a C++ test that calls `leastsq_kkt_feasible_origin` on a problem with a
 closed-form KKT solution. For $\mathsf A = \mathsf I_2$, $\mathbf b = (1, -1)$ and the single row $-\xi_2 \le 1/2$,

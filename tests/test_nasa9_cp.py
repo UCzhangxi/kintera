@@ -83,3 +83,23 @@ def test_nasa9_off_keeps_the_constant_cp(probe):
     assert got["off"] == got["default"]  # explicit false == key absent, bit for bit
     np.testing.assert_allclose(got["off"]["cp"], cv_R + 1.0, rtol=1e-14, atol=0)
     np.testing.assert_allclose(got["off"]["cv"], cv_R, rtol=1e-14, atol=0)
+
+
+DAT = (Path(__file__).parents[1] / "data" / "nasa9.dat").read_text().splitlines()
+KNOWN = {"PN": "g/RT jumps 0.051 at 1000 K", "C_graphite": "solid: g/RT jumps 0.0102 at 1000 K",
+         "H2O_l_s": "liquid/ice: its two ranges are two phases", "H2SO4_l": "liquid: Cp/R < 0 above 1000 K"}
+
+
+@pytest.mark.parametrize("name", [pytest.param(s, marks=pytest.mark.xfail(reason=KNOWN[s], strict=True)
+                                               if s in KNOWN else ()) for s in DAT if s[:1].isalpha()])
+def test_nasa9_positive_cp_and_continuous_g(name):  # TiH and HNO3 failed both before 2026-11
+    a = np.array(" ".join(DAT[DAT.index(name) + 1 : DAT.index(name) + 5]).split(), dtype=float).reshape(2, 10)
+    for c, T in zip(a, (np.linspace(200.0, 1000.0, 801), np.linspace(1000.0, 6000.0, 501))):
+        assert (c[:7] * T[:, None] ** np.arange(-2, 5)).sum(-1).min() > 0, "Cp/R <= 0"
+    T, lnT = 1000.0, np.log(1000.0)  # g/RT = H/RT - S/R of each range at the seam
+    g = a[:, :7] @ [-0.5 / T**2, (lnT + 1) / T, 1 - lnT, -T / 2, -T**2 / 6, -T**3 / 12, -T**4 / 20] + a[:, 8] / T - a[:, 9]
+    assert abs(g[0] - g[1]) <= 1e-2, f"g/RT jumps {g[0] - g[1]:.3g} at 1000 K"
+
+
+def test_nasa9_packaged_copy_matches():  # python/data/nasa9.dat ships in the wheel
+    assert (Path(__file__).parents[1] / "python" / "data" / "nasa9.dat").read_text().splitlines() == DAT

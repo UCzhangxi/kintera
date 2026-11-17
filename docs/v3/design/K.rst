@@ -21,7 +21,8 @@ as the root post says; 40 of the reads are in
 Lane R is read at happysky19/snapy ``4c59162a`` (R revision 2.2, header
 rev 4.2; the frozen header rev 4 is ``175af2f``); rev 1 cited
 ``543ff84f``, rev 2 ``3490d7e1``. Lane X is read at UCzhangxi/snapy
-``100bc9b3`` (X rev 3). This lane is the kintera side of lane X's provider contracts. It reuses
+``100bc9b3`` (X rev 3) and, for the names it adopts from K, at
+``9a4b78c2`` (X rev 3.1, committed, not yet pushed). This lane is the kintera side of lane X's provider contracts. It reuses
 X's precision table (``PrecisionPolicy``, X.rst section 6) and graph rules
 (``StageExecutor``, segments, ``GraphKey``, the step-reset list, X.rst
 section 7) and defines no second set. Rule of the lane: kintera files a V3
@@ -199,20 +200,21 @@ every replay.
 
 ``forward`` adds ``(diag < 0).sum()`` into row 0 with ``add_``
 (today ``src/thermo/thermo_y.cpp:379-383``). snapy's lifecycle: the step
-reset list (X's ``kStepStart`` entry, with R's ``begin_step``) calls
-``reset_failures()``. Retry cause, one representation: R's
-``flag_retry("thermo.saturation", any)``, where ``any`` is a 0-d scratch
-filled by ``consume_failures(any)``, in ``after_combine`` of the last stage;
-the cause is declared in ``RegisterRequest::retry``. R's ``retry_flags()``
-join X's step-end MAX read (X.rst lines 157-158 at ``100bc9b3``), so the pin's slot 4
-(``snapy/src/mesh/meshblock.cpp:1559-1560``) becomes R's flag and the one
-host read stays at ``snapy/src/mesh/meshblock.cpp:1566``. Rows 1 and 2 are
+reset list (X's ``kStageZero``: the ``u0`` backup, then
+``snapshot_active_set``, then ``reset_failures()``, X.rst lines 116-118 at
+``9a4b78c2``) clears the counter. Retry cause, one representation: slot 4
+of X's retry stack, as the pin has it and as R.rst line 799 at
+``4c59162a`` and X.rst lines 127-128 at ``9a4b78c2`` say: the stack calls
+``consume_failures(flags.narrow(0, 4, 1))``
+(``snapy/src/mesh/meshblock.cpp:1559-1560``) and the one host read stays
+at ``snapy/src/mesh/meshblock.cpp:1566``. R's ``flag_retry`` is not used
+for it. Rows 1 and 2 are
 not retry causes: both counters, ``thermo.temp_solve`` and
 ``thermo.pres_solve``, are declared in ``RegisterRequest::counters`` and
 posted once per step with ``count(name, failures()[1])`` and
 ``count(name, failures()[2])`` in ``after_combine`` of the last stage (R
 header rev 4.2, ``4c59162a``); ``reset_failures()`` clears all three rows
-at the next step start. Warm-up and capture: the (3,) counter and the
+at the next attempt's stage 0. Warm-up and capture: the (3,) counter and the
 active-set buffers join X's save and restore of counters and retry flags
 around warm-up and capture (X.rst lines 323-327), so a warm-up pass
 leaves no count behind. Saturation failures stay with kintera
@@ -248,14 +250,22 @@ replaces the three ``get_device_func*`` copies and their
   active-set buffers or the tables, so a reallocation with unchanged
   options changes it too. X's pre-replay check recomputes the digest on
   the host (no device read), compares the pair, and a mismatch throws (cost unmeasured; hypothesis: small next to a
-  step). ``tables_`` is a map per (device, dtype), one entry each. ``prepare`` also runs the lazy shared-memory query of
+  step). ``tables_`` is a map per (device, dtype), one entry each.
+  ``prepare()`` also registers each table in a process-wide store keyed by
+  (address of the module's options, device, dtype); ``tables_for(op,
+  like)``, used by the ``eval_*`` bodies, reads that store, so the module
+  and the free functions see the same ``shared_ptr``
+  (``ThermoOptionsImpl`` derives from ``SpeciesThermoImpl``,
+  ``src/thermo/thermo.hpp:39``). ``prepare`` also runs the lazy shared-memory query of
   ``src/loops.cuh:18-50``.
 - Lifetime: ``std::shared_ptr<const ThermoTables>``. The module holds one;
   X's ``StageExecutor`` keeps a copy with every graph that replays a kintera
   op, so a table outlives every graph that references it. The table
-  generation pair is kintera's part of the "configuration generation" in
-  X's ``GraphKey`` (X.rst lines 82-83 at ``100bc9b3``); a new pair
-  invalidates the graph.
+  generation pair of each held table is a field of X's ``GraphKey``
+  (``tables``, ``stage_executor.hpp:54`` and X.rst lines 83-84 at
+  ``9a4b78c2``), and each graph holds its ``ThermoTablesPtr`` copies in
+  ``CapturedGraph`` (``stage_executor.hpp:99-100``); a new pair invalidates
+  the graph.
 - Inside a captured segment a missing table throws (no lazy set-up during
   capture).
 - ``eval_*`` take the tables: the per-call uploads of section 2 go.
@@ -267,12 +277,13 @@ replaces the three ``get_device_func*`` copies and their
 written in place by the kernel and survive across steps. V3 adds
 ``ActiveSet snapshot_active_set(out)`` and ``restore_active_set(in)``,
 both ``copy_`` between fixed buffers of the same shape. Snapy calls
-snapshot at step start (with ``u0``/``s0``) and restore in X's reset list
-on a retry and after a graph warm-up, so a retry repeats the first attempt
-from the same active set. Order on a retry: X restores ``u0``/``s0``,
-then ``restore_active_set``, then X's ``kStepStart`` list runs again
-(which calls ``reset_failures`` and takes the snapshot again from the
-restored state). Today a retry starts from the failed attempt's
+snapshot in ``kStageZero`` (after the ``u0`` backup) and restore in X's
+``kRollback`` list on a retry and after a graph warm-up, so a retry
+repeats the first attempt from the same active set. Order on a retry
+(X.rst lines 122-126 at ``9a4b78c2``): ``u0``/``s0``, the radial
+``restore_step``, ``restore_active_set``, R's ``rollback()``; the retry
+then reruns ``kStageZero``, which takes the snapshot again from the
+restored state and calls ``reset_failures``. Today a retry starts from the failed attempt's
 active set (``snapy/src/mesh/meshblock.cpp:969-970``; the rollback does not
 touch kintera). Whether this changes results beyond round-off is a
 hypothesis (gate K-G5). Shapes are fixed by X's ``StateStore``, so the
@@ -285,16 +296,16 @@ cold-start branch (``src/thermo/thermo_y.cpp:303-312``) runs only in
 ::
 
   host, set-up: thermo.prepare(device, dtype) -> ThermoTables (shared_ptr)
-  step start:   thermo.reset_failures(); thermo.snapshot_active_set(as0)
+  kStageZero:   u0 backup; thermo.snapshot_active_set(as0); thermo.reset_failures()
   last stage [segment, FP64 totals]:
      limiter (EF) -> totals -> thermo.forward(rho, ie, yfrac, warm, diag)
         VU->T (exact | fixed) -> equilibrate_uv kernel (tables)
         failures[0] += count(diag < 0)
         -> species rows written back; cell_amount("thermo.saturation", ...)
   chemistry [segment, FP64]: kinetics step -> cell_amount("chem.*", ...)
-  last after_combine: consume_failures(any); flag_retry("thermo.saturation", any);
-                count(temp_solve, pres_solve); X's one host read at step end
-  retry:        restore u0/s0 (X); thermo.restore_active_set(as0)
+  last after_combine: count(temp_solve), count(pres_solve)
+  step end:     thermo.consume_failures(flags[4]); X's one host read
+  kRollback:    u0/s0; radial restore_step; thermo.restore_active_set(as0); R rollback()
 
 3.6 Chemistry step (study item 7)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -344,7 +355,7 @@ Names are lane R's header (``docs/v3/skeleton/R/flux_register.hpp`` at
 happysky19/snapy ``4c59162a``, header rev 4.2, R revision 2.2; the frozen
 header rev 4 is ``175af2f``): ``cell_amount(name, vol_du, stage_weight,
 kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
-``count(name, n)``, ``flag_retry(cause, any)``, ``AmountKind``,
+``count(name, n)``, ``AmountKind``,
 ``RegisterPhase::after_combine`` and ``RegisterMonitor``. Lane K posts no face flux; snapy posts for it.
 
 - Posts. In FP64, volume-weighted as R requires (``vol_du`` = cell volume
@@ -380,8 +391,8 @@ kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
   ``snapy/examples/run_hydro.cpp:177-179`` requires.
 - Chemistry has no phase of its own; R's header lists K in the last
   ``after_combine``, after the saturation adjustment.
-- Failure counts: row 0 through R's ``flag_retry``; rows 1-2 through R's
-  ``count`` (3.2).
+- Failure counts: row 0 through slot 4 of X's retry stack; rows 1-2
+  through R's ``count`` (3.2).
 - Adapter calls (snapy side). ``ThermoY``, created at
   ``snapy/src/eos/ideal_moist.cpp:26`` and
   ``snapy/src/eos/moist_mixture.cpp:20`` and
@@ -644,9 +655,9 @@ default changes.
   cell on its own changes results within ``ftol``; rev 2 keeps the bitwise
   ``fixed`` form. A graph conditional node that stops all cells at once
   would also be bitwise, and cheaper than ``fixed`` because it skips the
-  idle passes; it needs conditional graph nodes, which X's graph contract
-  does not list yet, so rev 2 offers it to X and keeps ``fixed`` as the
-  baseline (hypothesis: same stopping rule, same results).
+  idle passes (hypothesis: same stopping rule, same results). X declines
+  it for this round and revisits it with parameterized graphs (X2) (X.rst
+  lines 341-344 at ``9a4b78c2``), so ``fixed`` is the baseline.
 
 11. Open questions to other lanes
 ---------------------------------
@@ -662,23 +673,20 @@ EF:
 
 X (same owner as this lane):
 
-- Take the kintera generation pair (options digest, allocation epoch) into
-  ``GraphKey``'s configuration generation and hold the table
-  ``shared_ptr`` with each graph (3.3).
-- Add ``reset_failures`` to the ``kStepStart`` list. ``restore_active_set``
-  is not a per-step entry: it runs only on a retry and after a graph
-  warm-up (3.4). Row 0 reaches X's read through R's ``flag_retry`` (3.2),
-  not slot 4.
+- Settled by X rev 3.1 (``9a4b78c2``): ``GraphKey::tables`` and
+  ``CapturedGraph`` (3.3); ``kStageZero`` = ``u0`` backup,
+  ``snapshot_active_set``, ``reset_failures``; ``kRollback`` = ``u0``/``s0``,
+  radial ``restore_step``, ``restore_active_set``, R's ``rollback()``
+  (3.4); slot 4 for row 0 (3.2); K-F2 declined this round.
 - Add the (3,) counter and the active-set buffers to the warm-up and
-  capture save and restore (X.rst lines 323-327).
-- Accept or decline the graph conditional node of K-F2.
+  capture save and restore (X.rst lines 323-327 at ``100bc9b3``).
 
 R:
 
 - Settled by R revision 2.2 (R.rst lines 776-800 at ``4c59162a``): names,
   kinds, element rows as ``element/<name>`` derived rows, the last
-  ``after_combine`` for K. K confirms the derived rows and chooses
-  ``flag_retry`` (R's question to K, R.rst lines 1615-1616).
+  ``after_combine`` for K. K confirms the derived rows and keeps slot 4
+  of X's stack, R's default (R's question to K, R.rst lines 1615-1616).
 - Nit: the comment of ``RegisterRequest::derived`` says "hydro only"
   (``flux_register.hpp:34`` at ``4c59162a``); R.rst lines 790-793 add K's
   element rows.
@@ -789,11 +797,11 @@ Lane R's reviewer (notes 1 to 3, on rev 2 at ``fa290bb2``):
    withdrawn. K posts in the last stage's ``after_combine`` only and posts
    nothing on earlier stages (section 4, skeleton).
 3. Agree, each contract stated: the generation pair is kintera's part of
-   X's configuration generation (3.3). Retry cause: R's ``flag_retry``,
-   declared in ``RegisterRequest::retry``, joining X's step-end MAX read
-   (3.2). Both counters are declared in ``RegisterRequest::counters``,
-   posted once in the last ``after_combine``, cleared by
-   ``reset_failures`` in ``kStepStart``, and saved and restored around
+   X's ``GraphKey::tables`` (3.3). Retry cause: slot 4 of X's stack, as
+   R and X both state; R's ``flag_retry`` is not used (3.2). Both counters
+   are declared in ``RegisterRequest::counters``, posted once in the last
+   ``after_combine``, cleared by ``reset_failures`` in ``kStageZero``, and
+   saved and restored around
    warm-up and capture with the active-set buffers (3.2). The element
    amount is ``E del_conc`` from species composition (section 4). Adapter
    calls are listed (section 4). Solve mode under capture: ``automatic``
@@ -817,6 +825,7 @@ Lane A's K-1 was not in the thread when rev 2.1 was written.
 
 - ``thermo_v3.hpp``: ``SolvePlan``, ``SolveMode``, the ``ThermoY``
   additions (``prepare``, ``compute_into``, failure counter, active set).
-- ``tables.hpp``: ``FuncTable``, ``ThermoTables``.
+- ``tables.hpp``: ``FuncTable``, ``ThermoTables``, ``tables_for``,
+  ``capture_active``.
 - ``chemistry_source.hpp``: ``ChemistrySource`` (snapy, ``namespace
   snap``) and its budget names.

@@ -57,8 +57,8 @@ class ThermoYV3Api {
   //! zero_() in place; capturable (step-reset list, replaces a host read)
   void reset_failures();
   //! row 0 only: out.copy_(failures()[0] > 0), then row 0 zero_(); rows 1-2
-  //! kept for the step-end read; capturable; `out` is a 0-d scratch passed
-  //! to lane R's flag_retry("thermo.saturation", out)
+  //! kept for the step-end read; capturable; `out` is the saturation slot
+  //! of X's retry stack (snapy/src/mesh/meshblock.cpp:1559-1560)
   void consume_failures(torch::Tensor out);
   //! host read of row 0, then zero: step end or output only (kept)
   int64_t take_saturation_adjustment_failures();

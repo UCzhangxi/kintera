@@ -122,8 +122,9 @@ ThermoX equilibrium (``src/thermo/thermo_x.cpp:301``,
   relative (hypothesis for any ``ftol`` above round-off; gate K-G1).
   With a non-finite cell the pin's loop never meets its test, runs
   ``max_iter`` passes and warns; the exact plan makes one pass. Contract:
-  the exact plan adds the number of non-finite results to the
-  ``temp_solve`` row (``pres_solve`` for ``PV->T``) instead of warning;
+  the exact plan adds one to the ``temp_solve`` row (``pres_solve`` for
+  ``PV->T``) when any result is non-finite, instead of warning, as the
+  ``newton`` path adds one per unconverged solve (below);
   finite cells may then differ from the pin by the round-off of the extra
   passes (hypothesis; K-G1 includes a NaN cell). Such a state fails the
   step anyway.
@@ -363,7 +364,7 @@ Specified, not written and not run.
    "K-G3", "no host sync in a captured kintera op", "capture ``forward`` and ``compute_into`` with ``torch.cuda.graph`` under ``torch.cuda.set_sync_debug_mode('error')`` (a sync aborts the capture), then replay under the same mode", "exact"
    "K-G4", "failure counts survive replay", "inject a failing cell on replay N >= 2; ``consume_failures`` sets the flag; counts accumulate over replays", "exact"
    "K-G5", "retry repeats the first attempt", "change the active set during a step, force a retry; compare with a clean run of the same dt", "bitwise (hypothesis)"
-   "K-G6", "tables equal the pin's per-call values", "every ``eval_*`` with tables against the pin's form", "bitwise"
+   "K-G6", "tables equal the pin's per-call values", "every ``eval_*`` with tables against the pin's form; ``eval_const_cv_pressure_delta`` (unchanged) against its pin formula (src/thermo/eval_uhs.hpp:55)", "bitwise"
    "K-G7", "saturation conserves mass and energy", "``thermo.saturation`` row sum and energy, condensing column", "round-off (FP64 sum)"
    "K-G8", "chemistry conserves elements", "``chem.elements`` on a closed box", "solver tolerance"
    "K-G9", "paired revisions", "snapy CI builds against the kintera candidate tag (section 8)", "exact"
@@ -386,7 +387,7 @@ X's rows hold: "kintera totals, saturation", FP64 storage and compute
 The dtype of ``compute_into`` is governed by X's rows "hydro_w totals"
 (FP64, EOS on totals) and "kintera totals, saturation" (FP64) (X.rst
 section 6); snapy's perturbation EOS also casts to FP64 before kintera
-(``snapy/src/eos/ideal_moist.cpp:89``). An FP32 ``compute_into`` is
+(``snapy/src/eos/ideal_moist.cpp:88``). An FP32 ``compute_into`` is
 therefore not a V3 path; the FP32 row above states what the API accepts,
 and K-G1 compares it with FP64 within a tolerance, not bitwise.
 
@@ -633,14 +634,14 @@ Lane R's reviewer (notes 1 to 7, on rev 1 at ``f61d0d80``):
    entry, zeroes row 0 only, and keeps rows 1 and 2 until the step-end
    read (3.2, skeleton ``thermo_v3.hpp``).
 3. Agree: the exact plan takes one pass on a NaN cell where the pin takes
-   100 and warns (src/thermo/thermo_y.cpp:521-528). The contract is now
+   100 and warns (src/thermo/thermo_y.cpp:520-532). The contract is now
    stated: the cell is counted in ``temp_solve`` (``pres_solve`` for
    ``PV->T``) instead of the warning; finite cells may differ from the pin
    by round-off (hypothesis) (3.1); K-G1 includes the NaN cell (section 5).
 4. Agree: K-G1 is bitwise for FP64 only; FP32 is compared with FP64 within
    a tolerance (hypothesis). The governing rows are X's "hydro_w totals"
    and "kintera totals, saturation", both FP64, and snapy casts to FP64
-   before kintera (``snapy/src/eos/ideal_moist.cpp:89``) (section 6).
+   before kintera (``snapy/src/eos/ideal_moist.cpp:88``) (section 6).
 5. Agree: ``ChemistrySource`` moves to snapy (``namespace snap``), so
    kintera's API gains no snapy type; snapy owns the adapter, S-K4 in the
    section 8 plan and section 10 (3.6, skeleton). Posts are
@@ -648,8 +649,9 @@ Lane R's reviewer (notes 1 to 7, on rev 1 at ``f61d0d80``):
    R at ``3490d7e1``). Chemistry phase and element rows: questions to R
    above.
 6. Agree: ``eval_pressure_delta`` is withdrawn and
-   ``eval_const_cv_pressure_delta`` stays, gated by K-G6 (section 6,
-   section 8, K5 in section 10, skeleton ``pressure_delta.hpp`` deleted).
+   ``eval_const_cv_pressure_delta`` stays, gated by K-G6 (section 6); it
+   left the new-API list (section 8) and K5 (section 10); skeleton
+   ``pressure_delta.hpp`` deleted.
 7. Agree, each request answered: FP64 cast of the convergence maximum
    (3.1); counter use before ``prepare()`` throws and snapy calls
    ``prepare()`` at EOS set-up (3.2); inference mode (3.2, hypothesis

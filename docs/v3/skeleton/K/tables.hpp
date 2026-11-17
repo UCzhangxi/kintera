@@ -48,10 +48,14 @@ struct ThermoTables {
 
 using ThermoTablesPtr = std::shared_ptr<ThermoTables const>;
 
-//! tables of `op` for the device and dtype of `like`, used by the eval_*
-//! bodies; built if missing outside capture, throws inside
+//! tables of `op` (keyed by options digest) for the device and dtype of
+//! `like`, used by the eval_* bodies; a weak_ptr store, built if missing
+//! only outside capture and outside NoTableBuild, throws there
 ThermoTablesPtr tables_for(std::shared_ptr<struct SpeciesThermoImpl> const& op,
                            torch::Tensor const& like);
+
+//! X opens one around a segment's warm-up and capture (thread-local)
+struct NoTableBuild { NoTableBuild(); ~NoTableBuild(); };
 
 //! true while the current stream is capturing; a table build then throws
 bool capture_active(torch::Device device);

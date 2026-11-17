@@ -253,11 +253,17 @@ replaces the three ``get_device_func*`` copies and their
   the host (no device read), compares the pair, and a mismatch throws (cost unmeasured; hypothesis: small next to a
   step). ``tables_`` is a map per (device, dtype), one entry each.
   ``prepare()`` also registers each table in a process-wide store keyed by
-  (address of the module's options, device, dtype); ``tables_for(op,
-  like)``, used by the ``eval_*`` bodies, reads that store, so the module
-  and the free functions see the same ``shared_ptr``
+  (options digest, device, dtype), never by an address, so a reused
+  address with other options cannot find a stale table; the store holds
+  ``weak_ptr`` only, the owners are the module and X's graphs.
+  ``tables_for(op, like)``, used by the ``eval_*`` bodies, reads that
+  store, so the module and the free functions see the same table
   (``ThermoOptionsImpl`` derives from ``SpeciesThermoImpl``,
-  ``src/thermo/thermo.hpp:39``). ``prepare`` also runs the lazy shared-memory query of
+  ``src/thermo/thermo.hpp:39``). It builds a missing table only in eager
+  code: inside capture, or inside a ``kintera::NoTableBuild`` scope that X
+  opens around a segment's warm-up and capture, a missing table throws.
+  So every table a graph uses was made by ``prepare()`` before warm-up,
+  and its pair is in ``GraphKey::tables``. ``prepare`` also runs the lazy shared-memory query of
   ``src/loops.cuh:18-50``.
 - Lifetime: ``std::shared_ptr<const ThermoTables>``. The module holds one;
   X's ``StageExecutor`` keeps a copy with every graph that replays a kintera
@@ -375,11 +381,18 @@ kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
     (``snapy/examples/run_hydro.cpp:196-197``).
   - ``chem.elements`` (``diagnostic``): ``E del_conc``, where ``E`` is the
     element-by-species matrix built from each species' ``composition``
-    (read at ``src/species.cpp:165-169``) and ``del_conc`` the molar change;
+    and ``del_conc`` the molar change. kintera reads ``composition`` only
+    for the molar mass and keeps none of it (``src/species.cpp:163-170``;
+    the equilibrium loader builds a local map only to check element
+    balance, ``src/equilibrium/equilibrium_options.cpp:54-68``),
+    so snapy's ``ChemistrySource`` (S-K4) owns ``E`` and the element
+    names: it reads the same species ``composition`` entries at set-up;
     the species-by-reaction stoichiometry alone does not define element
     rows. Its rows are R's derived rows ``element/<name>`` declared in
     ``RegisterRequest::derived`` and posted with ``derived_amount``
-    (R.rst lines 790-793 at ``4c59162a``). It must be zero to the solver's
+    (R.rst lines 790-793 at ``4c59162a``); the same adapter posts each
+    row's step total with ``derived_total`` (``flux_register.hpp:75``).
+    It must be zero to the solver's
     tolerance; non-zero is a named non-closure.
   - ``chem.energy`` (``cell_source``): zero today (the increment leaves the energy row unchanged); declared so a later
     chemistry step with heat release posts it.
@@ -425,7 +438,7 @@ Specified, not written and not run.
 
    "K-G1", "exact plan equals the pin's ``VU->T`` and ``PV->T``", "kintera test, constant cv, random states, CPU and CUDA; a second case adds one NaN cell", "bitwise for FP64 inputs; with the NaN cell, its count in ``temp_solve`` or ``pres_solve`` exact and finite cells within round-off (3.1); FP32 inputs against the FP64 result within a tolerance (hypothesis: the pin promotes FP32 to FP64, section 6)"
    "K-G2", "``fixed`` equals ``eager_exit``", "NASA-9 and H2 decks, states that converge in 1, 5 and never, one NaN cell and one +inf and one -inf cell; FP64 and FP32 inputs", "bitwise"
-   "K-G3", "no host sync in a captured kintera op", "capture ``forward``, ``compute_into`` and lane A's four conversions (``Y->X``, ``DY->V``, ``VT->U``, ``X->Y``) with ``torch.cuda.graph`` under ``torch.cuda.set_sync_debug_mode('error')`` (a sync aborts the capture), then replay under the same mode", "exact"
+   "K-G3", "no host sync in a captured kintera op", "capture ``forward``, ``compute_into`` and lane A's four conversions (``Y->X``, ``DY->V``, ``VT->U``, ``X->Y``; ``use_h2_cp`` on and off) with ``torch.cuda.graph`` under ``torch.cuda.set_sync_debug_mode('error')`` (a sync aborts the capture), then replay under the same mode", "exact"
    "K-G4", "failure counts survive replay", "inject a failing cell on replay N >= 2; ``consume_failures`` sets the flag; counts accumulate over replays", "exact"
    "K-G5", "retry repeats the first attempt", "change the active set during a step, force a retry; compare with a clean run of the same dt", "bitwise (hypothesis)"
    "K-G6", "tables equal the pin's per-call values", "every ``eval_*`` with tables against the pin's form; ``eval_const_cv_pressure_delta`` (unchanged) against its pin formula (src/thermo/eval_uhs.hpp:55)", "bitwise"
@@ -551,7 +564,7 @@ pin and 4,770 after (target, not a measurement). Counted with
 .. csv-table:: kintera touched
    :header: "File", "Now", "After", "Change"
 
-   "src/utils/user_funcs.cu", 134, 56, "k1"
+   "src/utils/user_funcs.cu", 134, 68, "k1"
    "src/utils/user_funcs.hpp", 57, 57, "k2"
    "src/utils/utils_dispatch.cu", 105, 99, "k3"
    "src/utils/utils_dispatch.cpp", 113, 107, "k4"
@@ -565,13 +578,14 @@ pin and 4,770 after (target, not a measurement). Counted with
    "src/thermo/eval_uhs.hpp", 58, 58, "k12"
    "src/thermo/log_svp.hpp", 135, 135, "k13"
    "src/utils/utils_dispatch.hpp", 16, 16, "k14"
-   "total", 2678, 2557, "cut 121 (4.5%)"
+   "total", 2678, 2569, "cut 109 (4.1%)"
 
 Items (net lines per file):
 
-k1. -78 (src/utils/user_funcs.cu): the three ``get_device_func*`` copies
+k1. -66 (src/utils/user_funcs.cu): the three ``get_device_func*`` copies
 (14-133) become one template filling a ``FuncTable`` once per
-``prepare``.
+``prepare`` (-78); the ``tables_for`` body, the store and
+``NoTableBuild`` are added here (+12, target).
 
 k2. -0 (src/utils/user_funcs.hpp): ``FuncTable`` and ``ThermoTables``
 declared (+20); the per-call name lookup declarations go (-20).
@@ -681,6 +695,9 @@ X (same owner as this lane):
   (3.4); slot 4 for row 0 (3.2); K-F2 declined this round; the counter
   and the active set in the warm-up and capture save and restore (X.rst
   lines 348-350).
+- Add the chemistry step, an eager FP64 segment after the saturation
+  adjustment (3.6), to the segment list (X.rst lines 277-282 at
+  ``bac201d1``).
 
 R:
 
@@ -691,13 +708,15 @@ R:
 - Nit: the comment of ``RegisterRequest::derived`` says "hydro only"
   (``flux_register.hpp:34`` at ``4c59162a``); R.rst lines 790-793 add K's
   element rows.
+- List K's two counters, ``thermo.temp_solve`` and ``thermo.pres_solve``,
+  with the counter names (``flux_register.hpp:36``, R.rst section 4.2).
 
 A:
 
 - K-1 (A.rst lines 748-757 and 985-986 at ``9ee83756``), answered by
   number:
 
-  1. ``ConstGravity`` is snapy code (``snapy/src/forcing/forcing.hpp:29``)
+  1. ``ConstGravity`` is snapy code (``snapy/src/forcing/const_gravity.cpp:43``)
      with no kintera call; lane K does not migrate it or its fixer.
   2. Of ``RelaxBotComp``'s four conversions
      (``snapy/src/forcing/relax_bot_comp.cpp:98-111``), three hold no host
@@ -709,16 +728,21 @@ A:
      outputs come from ``torch::empty`` (the caching allocator). They are
      capturable (hypothesis until K-G3 runs them under capture).
   3. ``VT->U`` is not capturable at the pin. It reaches
-     ``eval_intEng_R`` (``src/thermo/thermo.hpp:234-239``,
+     ``eval_intEng_R`` (``src/thermo/thermo.hpp:234-240``,
      ``src/thermo/eval_uhs.cpp:245-281``), which calls ``call_func2``
-     (``src/utils/utils_dispatch.cu:42-46``): ``get_device_func2`` does a
-     ``cudaMemcpyFromSymbol`` (``src/utils/user_funcs.cu:59``) and fills
-     ``thrust::device_vector`` buffers from host data
-     (``src/utils/user_funcs.cu:78``, ``src/utils/user_funcs.cu:84``); then
+     (``call_func2_cuda``, ``src/utils/utils_dispatch.cu:42-46``):
+     ``get_device_func2`` does a ``cudaMemcpyFromSymbol``
+     (``src/utils/user_funcs.cu:59``), copies a host index vector into a
+     ``thrust::device_vector`` (``src/utils/user_funcs.cu:78``) and
+     allocates and frees another (``src/utils/user_funcs.cu:84``); then
      ``torch::tensor`` uploads ``cref_R`` and ``uref_R``
      (``src/thermo/eval_uhs.cpp:264-265``), and with NASA-9 species the
-     coefficient tensors (``src/thermo/eval_uhs.cpp:55-57``). Each is a
-     synchronous copy, which a capturing stream rejects.
+     coefficient tensors (``src/thermo/eval_uhs.cpp:55-57``); with the
+     ``use_h2_cp`` flag on (``src/thermo/eval_uhs.cpp:275``) ``eval_h2cp``
+     makes three more ``call_func2`` calls
+     (``src/thermo/eval_uhs.cpp:82-108``). Each copy is synchronous and each
+     ``thrust`` buffer is a ``cudaMalloc``/``cudaFree``, which a capturing
+     stream rejects. K-G3 runs with ``use_h2_cp`` on and off.
   4. Condition for ``capturable = true``: the kintera release with K1
      (``ThermoTables`` and ``FuncTable`` replace these lookups and
      uploads, 3.3, items k1, k3, k9) is pinned by snapy (EF-8);
@@ -856,6 +880,20 @@ Round-2.2 notes
   earlier head now cite it (section 1, Round-2 note 5).
 - Lane X rev 3.1 is cited at its pushed head ``bac201d1``.
 - Lane A's K-1 is answered by number under "A" above.
+
+Lane R's reviewer (notes 1 to 4, on rev 2.1 at ``dde24f2c``):
+
+1. Agree: the ``tables_for`` body, the store and ``NoTableBuild`` are
+   booked in k1 (+12, target); the cut is now 109 lines (4.1%), and no
+   file grows (section 9).
+2. Agree: ``E``, the element names and the ``derived_total`` posts belong
+   to snapy's ``ChemistrySource`` (S-K4), which reads ``composition`` at
+   set-up, since kintera keeps none (section 4).
+3. Agree: the store is keyed by options digest, holds ``weak_ptr`` only,
+   and never builds inside capture or a ``NoTableBuild`` scope that X
+   opens around warm-up and capture (3.3, skeleton ``tables.hpp``).
+4. Agree: X is cited at ``bac201d1``; questions to X (chemistry segment)
+   and R (the two counter names) are above.
 12. Skeleton index
 ------------------
 

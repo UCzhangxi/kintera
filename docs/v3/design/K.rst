@@ -1,7 +1,7 @@
 Lane K: kintera thermodynamics and chemistry contracts
 ======================================================
 
-Owner: Xi Zhang (backup owner). Round-2 reviewers: Zoey (EF), Tianhao.
+Owner: Xi Zhang (backup owner). Round-2 reviewers: the owners of lanes EF and R.
 Every ``file:line`` below is at the pins of section 1. A bare ``src/...``
 path is kintera; a path starting ``snapy/`` is snapy. "Hypothesis" marks a
 claim that only a run would settle; its gate is named next to it.
@@ -9,8 +9,8 @@ claim that only a run would settle; its gate is named next to it.
 1. Scope and pins
 -----------------
 
-Pins: kintera ``3f5ff938`` (v2.6.10), snapy ``9e5de2d4``, pyharp
-``6bc01d53``, pydisort ``9e7f0075``.
+Pins: kintera ``3f5ff938181351a84cb129a9e6314fb89b669b71`` (tag v2.6.10),
+snapy ``9e5de2d4ce497d0b2d4da3295fc1fe969fe7e410``.
 
 kintera ``src/`` is 19,228 lines at the pin (the brief's command); thermo
 4,801, kinetics 4,825, photochem 3,083, utils 1,970, math 1,691,
@@ -123,11 +123,15 @@ ThermoX equilibrium (``src/thermo/thermo_x.cpp:301``,
   - ``eager_exit`` (default, today's loop): a host read per iteration,
     early exit. Used only outside captured segments.
   - ``fixed``: ``max_iter`` passes, no read. A 0-d device flag ``run``
-    starts true; each pass computes the correction ``dT``, sets
-    ``T = where(run, T + dT, T)``, then
-    ``run &= max|1 - T_prev/(T + dT)| >= ftol``. After the converged pass
-    the state is never changed again, so ``fixed`` equals ``eager_exit``
-    bitwise (gate K-G2). Cost: ``max_iter`` passes always (100 by
+    starts true; each pass keeps ``T_prev = T``, sets
+    ``T = where(run, T + dT, T)`` (today's update first,
+    ``src/thermo/thermo_y.cpp:524``), then
+    ``run &= !(max|1 - T_prev/T| < ftol)``, the negation of today's test
+    (``src/thermo/thermo_y.cpp:525``) so a NaN keeps ``run`` true as it
+    keeps today's loop going; ``>= ftol`` would stop on NaN and differ.
+    The test is done in double, as today. After the converged pass the
+    state is never changed again, so ``fixed`` equals ``eager_exit``
+    bitwise (gate K-G2, which includes a NaN cell). Cost: ``max_iter`` passes always (100 by
     default); a T-dependent heat capacity inside a graph pays it.
     Cheaper forms (a per-cell kernel, a graph conditional node) stop cells
     at different passes and change results within ``ftol``:
@@ -232,8 +236,12 @@ cold-start branch (``src/thermo/thermo_y.cpp:303-312``) runs only in
 At the pin the step after the RK stages exists only in an example driver
 (``snapy/examples/run_hydro.cpp:171-198``): kinetics rates, a Jacobian, one
 implicit step (``kintera::evolve_implicit``), and the species rows of
-``hydro_u`` increase by ``del_rho``; total energy is not changed, so heat
-of reaction appears as a temperature change through the composition. V3
+``hydro_u`` increase by ``del_rho`` (``snapy/examples/run_hydro.cpp:197``);
+the increment does not touch the energy row, so heat of reaction appears
+as a temperature change through the composition. The EOS call before it
+(``snapy/examples/run_hydro.cpp:179``) may apply the conserved limiter,
+which can write the density and energy rows; that is EF's limiter, not
+the chemistry increment, and is posted by EF. V3
 makes it a ``ChemistrySource`` op that snapy schedules after the last
 stage in its own eager segment (host reads at
 ``src/kinetics/kinetics.cpp:442``), FP64. maxichem (an existing proposal,
@@ -280,7 +288,7 @@ vol_du)`` and ``RegisterMonitor``. Lane K posts no face flux.
   - ``chem.elements``: the element totals of ``del_rho`` (stoichiometry
     times ``del_rho``), a monitor amount that must be zero to the solver's
     tolerance; non-zero is a named non-closure.
-  - ``chem.energy``: zero today (energy untouched); declared so a later
+  - ``chem.energy``: zero today (the increment leaves the energy row unchanged); declared so a later
     chemistry step with heat release posts it.
 
 - Reads. None from the register; kintera reads only cell state.
@@ -307,7 +315,7 @@ Specified, not written and not run.
    :header: "Gate", "Identity", "Case", "Comparison"
 
    "K-G1", "exact plan equals the pin's ``VU->T`` and ``PV->T``", "kintera test, constant cv, random states, FP64 and FP32 inputs, CPU and CUDA", "bitwise"
-   "K-G2", "``fixed`` equals ``eager_exit``", "NASA-9 and H2 decks, states that converge in 1, 5 and never", "bitwise"
+   "K-G2", "``fixed`` equals ``eager_exit``", "NASA-9 and H2 decks, states that converge in 1, 5 and never, and one NaN cell", "bitwise"
    "K-G3", "no host sync in a captured kintera op", "replay ``forward`` and ``compute_into`` under ``torch.cuda.set_sync_debug_mode('error')``", "exact"
    "K-G4", "failure counts survive replay", "inject a failing cell on replay N >= 2; ``consume_failures`` sets the flag; counts accumulate over replays", "exact"
    "K-G5", "retry repeats the first attempt", "change the active set during a step, force a retry; compare with a clean run of the same dt", "bitwise (hypothesis)"
@@ -327,7 +335,7 @@ X's rows hold: "kintera totals, saturation", FP64 storage and compute
 
    "``eval_cv_R``, ``eval_cp_R``, ``eval_czh``, ``eval_intEng_R``", "yes", "input dtype", "elementwise; the dispatch covers float (src/utils/utils_dispatch.cu:49)"
    "``compute`` / ``compute_into`` conversions", "yes after K3", "FP64 buffers today", "``inv_mu``, ``cv0``, ``u0`` are FP64 (src/thermo/thermo_y.cpp:57-58, src/thermo/thermo_y.cpp:100-103): mixed arithmetic returns FP64 by type promotion; V3 casts the tables to the compute dtype"
-   "``forward`` (saturation adjustment)", "no", "FP64", "the kernel reads FP64 buffers through ``data_ptr<scalar_t>`` (src/thermo/thermo_dispatch.cu:110-112): an FP32 call throws; phase equilibrium near saturation cancels"
+   "``forward`` (saturation adjustment)", "no (policy)", "FP64", "the kernel reads the module buffers through ``data_ptr<scalar_t>`` (src/thermo/thermo_dispatch.cu:111-113), so input and buffer dtypes must match; the default buffers are FP64 (src/thermo/thermo_y.cpp:58, src/thermo/thermo_y.cpp:100-109), so an FP32 call against them throws. FP64 is kept by policy: phase equilibrium near saturation cancels"
    "``eval_const_cv_pressure_delta``", "yes", "caller's", "perturbation form (src/thermo/eval_uhs.hpp:41-56)"
    "Kinetics, chemistry step", "no", "FP64", "stiff implicit step"
 

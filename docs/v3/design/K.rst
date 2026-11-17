@@ -253,8 +253,8 @@ replaces the three ``get_device_func*`` copies and their
   active set, registered buffers such as ``inv_mu``), so a reallocation
   with unchanged options changes it too, while modules sharing a table
   keep their own epochs. X's pre-replay check recomputes the digest on
-  the host (no device read), compares both generations, and a mismatch throws (cost unmeasured; hypothesis: small next to a
-  step). ``tables_`` is a map per (device, dtype), one entry each.
+  the host (no device read), compares both generations, and a mismatch throws unless the graph was recaptured after
+  ``reset()``/``prepare()`` (X.rst lines 386-393 at ``0fe47c6f``; cost unmeasured; hypothesis: small next to a step). ``tables_`` is a map per (device, dtype), one entry each.
   ``prepare()`` also registers each table in a process-wide store keyed by
   (options digest, device, dtype), never by an address, so a reused
   address with other options cannot find a stale table; the store holds

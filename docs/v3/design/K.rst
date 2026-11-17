@@ -20,9 +20,10 @@ as the root post says; 40 of the reads are in
 
 Lane R is read at happysky19/snapy ``4c59162a`` (R revision 2.2, header
 rev 4.2; the frozen header rev 4 is ``175af2f``); rev 1 cited
-``543ff84f``, rev 2 ``3490d7e1``. Lane X is read at UCzhangxi/snapy
-``100bc9b3`` (X rev 3) and, for the names it adopts from K, at
-``9a4b78c2`` (X rev 3.1, committed, not yet pushed). This lane is the kintera side of lane X's provider contracts. It reuses
+``543ff84f``; ``4c59162a`` is R's frozen header. Lane X is read at
+UCzhangxi/snapy ``100bc9b3`` (X rev 3) and, for the names it adopts from
+K, at ``bac201d1`` (X rev 3.1). Lane A is read at its branch ``v3-design/A``,
+``9ee83756``. This lane is the kintera side of lane X's provider contracts. It reuses
 X's precision table (``PrecisionPolicy``, X.rst section 6) and graph rules
 (``StageExecutor``, segments, ``GraphKey``, the step-reset list, X.rst
 section 7) and defines no second set. Rule of the lane: kintera files a V3
@@ -202,9 +203,9 @@ every replay.
 (today ``src/thermo/thermo_y.cpp:379-383``). snapy's lifecycle: the step
 reset list (X's ``kStageZero``: the ``u0`` backup, then
 ``snapshot_active_set``, then ``reset_failures()``, X.rst lines 116-118 at
-``9a4b78c2``) clears the counter. Retry cause, one representation: slot 4
+``bac201d1``) clears the counter. Retry cause, one representation: slot 4
 of X's retry stack, as the pin has it and as R.rst line 799 at
-``4c59162a`` and X.rst lines 127-128 at ``9a4b78c2`` say: the stack calls
+``4c59162a`` and X.rst lines 127-128 at ``bac201d1`` say: the stack calls
 ``consume_failures(flags.narrow(0, 4, 1))``
 (``snapy/src/mesh/meshblock.cpp:1559-1560``) and the one host read stays
 at ``snapy/src/mesh/meshblock.cpp:1566``. R's ``flag_retry`` is not used
@@ -216,7 +217,7 @@ posted once per step with ``count(name, failures()[1])`` and
 header rev 4.2, ``4c59162a``); ``reset_failures()`` clears all three rows
 at the next attempt's stage 0. Warm-up and capture: the (3,) counter and the
 active-set buffers join X's save and restore of counters and retry flags
-around warm-up and capture (X.rst lines 323-327), so a warm-up pass
+around warm-up and capture (X.rst lines 348-350 at ``bac201d1``), so a warm-up pass
 leaves no count behind. Saturation failures stay with kintera
 (EF's review agrees).
 
@@ -263,7 +264,7 @@ replaces the three ``get_device_func*`` copies and their
   op, so a table outlives every graph that references it. The table
   generation pair of each held table is a field of X's ``GraphKey``
   (``tables``, ``stage_executor.hpp:54`` and X.rst lines 83-84 at
-  ``9a4b78c2``), and each graph holds its ``ThermoTablesPtr`` copies in
+  ``bac201d1``), and each graph holds its ``ThermoTablesPtr`` copies in
   ``CapturedGraph`` (``stage_executor.hpp:99-100``); a new pair invalidates
   the graph.
 - Inside a captured segment a missing table throws (no lazy set-up during
@@ -280,7 +281,7 @@ both ``copy_`` between fixed buffers of the same shape. Snapy calls
 snapshot in ``kStageZero`` (after the ``u0`` backup) and restore in X's
 ``kRollback`` list on a retry and after a graph warm-up, so a retry
 repeats the first attempt from the same active set. Order on a retry
-(X.rst lines 122-126 at ``9a4b78c2``): ``u0``/``s0``, the radial
+(X.rst lines 122-126 at ``bac201d1``): ``u0``/``s0``, the radial
 ``restore_step``, ``restore_active_set``, R's ``rollback()``; the retry
 then reruns ``kStageZero``, which takes the snapshot again from the
 restored state and calls ``reset_failures``. Today a retry starts from the failed attempt's
@@ -424,7 +425,7 @@ Specified, not written and not run.
 
    "K-G1", "exact plan equals the pin's ``VU->T`` and ``PV->T``", "kintera test, constant cv, random states, CPU and CUDA; a second case adds one NaN cell", "bitwise for FP64 inputs; with the NaN cell, its count in ``temp_solve`` or ``pres_solve`` exact and finite cells within round-off (3.1); FP32 inputs against the FP64 result within a tolerance (hypothesis: the pin promotes FP32 to FP64, section 6)"
    "K-G2", "``fixed`` equals ``eager_exit``", "NASA-9 and H2 decks, states that converge in 1, 5 and never, one NaN cell and one +inf and one -inf cell; FP64 and FP32 inputs", "bitwise"
-   "K-G3", "no host sync in a captured kintera op", "capture ``forward`` and ``compute_into`` with ``torch.cuda.graph`` under ``torch.cuda.set_sync_debug_mode('error')`` (a sync aborts the capture), then replay under the same mode", "exact"
+   "K-G3", "no host sync in a captured kintera op", "capture ``forward``, ``compute_into`` and lane A's four conversions (``Y->X``, ``DY->V``, ``VT->U``, ``X->Y``) with ``torch.cuda.graph`` under ``torch.cuda.set_sync_debug_mode('error')`` (a sync aborts the capture), then replay under the same mode", "exact"
    "K-G4", "failure counts survive replay", "inject a failing cell on replay N >= 2; ``consume_failures`` sets the flag; counts accumulate over replays", "exact"
    "K-G5", "retry repeats the first attempt", "change the active set during a step, force a retry; compare with a clean run of the same dt", "bitwise (hypothesis)"
    "K-G6", "tables equal the pin's per-call values", "every ``eval_*`` with tables against the pin's form; ``eval_const_cv_pressure_delta`` (unchanged) against its pin formula (src/thermo/eval_uhs.hpp:55)", "bitwise"
@@ -657,7 +658,7 @@ default changes.
   would also be bitwise, and cheaper than ``fixed`` because it skips the
   idle passes (hypothesis: same stopping rule, same results). X declines
   it for this round and revisits it with parameterized graphs (X2) (X.rst
-  lines 341-344 at ``9a4b78c2``), so ``fixed`` is the baseline.
+  lines 342-346 at ``bac201d1``), so ``fixed`` is the baseline.
 
 11. Open questions to other lanes
 ---------------------------------
@@ -673,13 +674,13 @@ EF:
 
 X (same owner as this lane):
 
-- Settled by X rev 3.1 (``9a4b78c2``): ``GraphKey::tables`` and
+- Settled by X rev 3.1 (``bac201d1``): ``GraphKey::tables`` and
   ``CapturedGraph`` (3.3); ``kStageZero`` = ``u0`` backup,
   ``snapshot_active_set``, ``reset_failures``; ``kRollback`` = ``u0``/``s0``,
   radial ``restore_step``, ``restore_active_set``, R's ``rollback()``
-  (3.4); slot 4 for row 0 (3.2); K-F2 declined this round.
-- Add the (3,) counter and the active-set buffers to the warm-up and
-  capture save and restore (X.rst lines 323-327 at ``100bc9b3``).
+  (3.4); slot 4 for row 0 (3.2); K-F2 declined this round; the counter
+  and the active set in the warm-up and capture save and restore (X.rst
+  lines 348-350).
 
 R:
 
@@ -693,8 +694,39 @@ R:
 
 A:
 
-- K-1: not posted in the thread when rev 2.1 was written; the next
-  revision answers it.
+- K-1 (A.rst lines 748-757 and 985-986 at ``9ee83756``), answered by
+  number:
+
+  1. ``ConstGravity`` is snapy code (``snapy/src/forcing/forcing.hpp:29``)
+     with no kintera call; lane K does not migrate it or its fixer.
+  2. Of ``RelaxBotComp``'s four conversions
+     (``snapy/src/forcing/relax_bot_comp.cpp:98-111``), three hold no host
+     read, no upload and no symbol lookup at the pin: ``Y->X``
+     (``src/thermo/thermo_y.cpp:420-437``), ``DY->V``
+     (``src/thermo/thermo_y.cpp:439-453``) and ``X->Y``
+     (``src/thermo/thermo_x.cpp:263-276``) are tensor ops on the module
+     buffers ``inv_mu`` and ``mu`` and host scalars from the options; their
+     outputs come from ``torch::empty`` (the caching allocator). They are
+     capturable (hypothesis until K-G3 runs them under capture).
+  3. ``VT->U`` is not capturable at the pin. It reaches
+     ``eval_intEng_R`` (``src/thermo/thermo.hpp:234-239``,
+     ``src/thermo/eval_uhs.cpp:245-281``), which calls ``call_func2``
+     (``src/utils/utils_dispatch.cu:42-46``): ``get_device_func2`` does a
+     ``cudaMemcpyFromSymbol`` (``src/utils/user_funcs.cu:59``) and fills
+     ``thrust::device_vector`` buffers from host data
+     (``src/utils/user_funcs.cu:78``, ``src/utils/user_funcs.cu:84``); then
+     ``torch::tensor`` uploads ``cref_R`` and ``uref_R``
+     (``src/thermo/eval_uhs.cpp:264-265``), and with NASA-9 species the
+     coefficient tensors (``src/thermo/eval_uhs.cpp:55-57``). Each is a
+     synchronous copy, which a capturing stream rejects.
+  4. Condition for ``capturable = true``: the kintera release with K1
+     (``ThermoTables`` and ``FuncTable`` replace these lookups and
+     uploads, 3.3, items k1, k3, k9) is pinned by snapy (EF-8);
+     ``RelaxBotComp``'s ``ThermoY`` (``snapy/src/forcing/relax_bot_comp.cpp:66``)
+     calls ``prepare()`` at set-up, since a missing table throws inside
+     capture (3.3); and K-G3 passes for the four calls. Its ``ThermoX``
+     (``X->Y`` only) needs no table. Until then ``capturable = false``
+     stands.
 
 O:
 
@@ -722,7 +754,7 @@ Lane R's reviewer (notes 1 to 7, on rev 1 at ``f61d0d80``):
    kintera's API gains no snapy type; snapy owns the adapter, S-K4 in the
    section 8 plan and section 10 (3.6, skeleton). Posts are
    volume-weighted and saturation posts in ``after_combine`` (section 4,
-   R at ``3490d7e1``). Chemistry phase and element rows: questions to R
+   R at ``4c59162a``). Chemistry phase and element rows: questions to R
    above.
 6. Agree: ``eval_pressure_delta`` is withdrawn and
    ``eval_const_cv_pressure_delta`` stays, gated by K-G6 (section 6); it
@@ -817,7 +849,13 @@ EF's reviewer (conflicts-only notes on rev 2, from the thread):
 2. Agree: ``restore_active_set`` runs only on a retry and after a graph
    warm-up, never every step; the question to X is corrected.
 
-Lane A's K-1 was not in the thread when rev 2.1 was written.
+Round-2.2 notes
+~~~~~~~~~~~~~~~
+
+- Lane R's frozen header is ``4c59162a``; the two citations of R's
+  earlier head now cite it (section 1, Round-2 note 5).
+- Lane X rev 3.1 is cited at its pushed head ``bac201d1``.
+- Lane A's K-1 is answered by number under "A" above.
 12. Skeleton index
 ------------------
 

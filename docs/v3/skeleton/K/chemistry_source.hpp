@@ -27,7 +27,7 @@ class ChemistrySource {
   virtual std::vector<int> rows() const = 0;
   //! element-by-species matrix for the chem.elements amount (FP64)
   virtual torch::Tensor element_matrix() const = 0;
-  //! adds the increment to u in place; posts the four amounts as
+  //! adds the increment to u in place; posts the three chem.* amounts as
   //! cell_amount(name, vol_du) in phase after_combine
   virtual void apply(torch::Tensor u, torch::Tensor const& temp,
                      torch::Tensor const& pres, double dt,

@@ -135,7 +135,8 @@ ThermoX equilibrium (``src/thermo/thermo_x.cpp:301``,
   - ``fixed``: ``max_iter`` passes, no read. A 0-d device flag ``run``
     starts true; each pass keeps ``T_prev = T``, sets
     ``T = where(run, T + dT, T)`` (today's update first,
-    ``src/thermo/thermo_y.cpp:524``), then
+    ``src/thermo/thermo_y.cpp:524``; for ``PV->T``
+    ``T = where(run, T - dT, T)``, ``src/thermo/thermo_y.cpp:479``), then
     ``run &= !(max|1 - T_prev/T| < ftol)``, the negation of today's test
     (``src/thermo/thermo_y.cpp:525``) so a NaN keeps ``run`` true as it
     keeps today's loop going; ``>= ftol`` would stop on NaN and differ.
@@ -148,6 +149,11 @@ ThermoX equilibrium (``src/thermo/thermo_x.cpp:301``,
     A graph conditional node on the same global flag stops after the
     converged pass and is also bitwise; only per-cell stopping (a per-cell
     kernel or mask) changes results within ``ftol``: ``FOR CHENG`` K-F2.
+  - Selection: ``compute`` and ``compute_into`` use ``fixed`` when the
+    current CUDA stream is capturing and ``eager_exit`` otherwise. EF calls
+    ``compute`` inside stages (``snapy/src/eos/moist_mixture.cpp:65``,
+    ``snapy/src/eos/moist_mixture.cpp:190``). The two modes are bitwise
+    equal (K-G2), so the mode does not join X's ``GraphKey``.
 
 - On non-convergence the pin warns (``src/thermo/thermo_y.cpp:531-532``).
   V3 adds one to the ``temp_solve`` (or ``pres_solve``) row of the failure
@@ -171,9 +177,10 @@ calls ``prepare()`` when its EOS is set up, before the first step. The
 counter is a normal tensor made outside inference mode, so the in-place
 ``add_`` inside ``forward`` is legal with or without inference mode (the
 pin avoids ``+=`` for that reason, ``src/thermo/thermo_y.cpp:376``;
-hypothesis, K-G4 runs both). A graph records the counter's address, so
-``reset()`` or a new ``prepare()`` bumps the table generation and
-invalidates every graph that holds it (3.3).
+hypothesis, K-G4 runs both). A graph records the addresses of the
+counter and of the active-set buffers (3.4), so ``reset()`` or a new
+``prepare()`` bumps the generation and invalidates every graph that holds
+them; X compares the generation before every replay (3.3).
 
 .. csv-table::
    :header: "Call", "Effect", "Capturable", "Replaces"
@@ -219,8 +226,11 @@ replaces the three ``get_device_func*`` copies and their
   ``reset()`` is unsupported; ``prepare()`` stores a digest of the options
   and every forward outside capture checks it (debug builds), so a stale
   table throws instead of being used.
-- Key: device index, dtype, and an options generation bumped by
-  ``reset()``. ``prepare`` also runs the lazy shared-memory query of
+- Key: device index, dtype, and an options generation: a digest of the
+  options content, so an in-place change of the options also changes it.
+  X's pre-replay check recomputes the digest on the host (no device read)
+  and a mismatch throws (cost unmeasured; hypothesis: small next to a
+  step). ``tables_`` is a map per (device, dtype), one entry each. ``prepare`` also runs the lazy shared-memory query of
   ``src/loops.cuh:18-50``.
 - Lifetime: ``std::shared_ptr<const ThermoTables>``. The module holds one;
   X's ``StageExecutor`` keeps a copy with every graph that replays a kintera
@@ -335,7 +345,7 @@ vol_du)``, ``count(name, n)``, ``RegisterPhase::after_combine`` and
 
 - Reads. None from the register; kintera reads only cell state.
 - Corrects. Nothing; kintera is not a fixer.
-- Ordering. After the last stage's limiter (``snapy/src/mesh/meshblock.cpp:951``)
+- Ordering. After the last stage's limiter (``snapy/src/mesh/meshblock.cpp:952``)
   and after ``end_stage`` of the last stage; before X's step-end read. The
   chemistry step follows the saturation adjustment, as
   ``snapy/examples/run_hydro.cpp:177-179`` requires.
@@ -360,7 +370,7 @@ Specified, not written and not run.
    :header: "Gate", "Identity", "Case", "Comparison"
 
    "K-G1", "exact plan equals the pin's ``VU->T`` and ``PV->T``", "kintera test, constant cv, random states, CPU and CUDA; a second case adds one NaN cell", "bitwise for FP64 inputs; with the NaN cell, its count in ``temp_solve`` or ``pres_solve`` exact and finite cells within round-off (3.1); FP32 inputs against the FP64 result within a tolerance (hypothesis: the pin promotes FP32 to FP64, section 6)"
-   "K-G2", "``fixed`` equals ``eager_exit``", "NASA-9 and H2 decks, states that converge in 1, 5 and never, and one NaN cell", "bitwise"
+   "K-G2", "``fixed`` equals ``eager_exit``", "NASA-9 and H2 decks, states that converge in 1, 5 and never, one NaN cell and one +inf and one -inf cell; FP64 and FP32 inputs", "bitwise"
    "K-G3", "no host sync in a captured kintera op", "capture ``forward`` and ``compute_into`` with ``torch.cuda.graph`` under ``torch.cuda.set_sync_debug_mode('error')`` (a sync aborts the capture), then replay under the same mode", "exact"
    "K-G4", "failure counts survive replay", "inject a failing cell on replay N >= 2; ``consume_failures`` sets the flag; counts accumulate over replays", "exact"
    "K-G5", "retry repeats the first attempt", "change the active set during a step, force a retry; compare with a clean run of the same dt", "bitwise (hypothesis)"
@@ -441,7 +451,10 @@ New in kintera (skeleton ``thermo_v3.hpp``): ``SolvePlan``,
 ``SolveMode``, ``ThermoTables``, ``FuncTable``, ``ThermoY::prepare``,
 ``compute_into``, ``failures``, ``reset_failures``,
 ``consume_failures``, ``snapshot_active_set``, ``restore_active_set``.
-Kept for one minor release: public ``nfail_``
+Kept unchanged through K1 to K5: ``eval_const_cv_pressure_delta``,
+header-only, same name and formula (src/thermo/eval_uhs.hpp:41-56;
+snapy calls it at ``snapy/src/eos/ideal_moist.cpp:154-155``). Kept for one
+minor release: public ``nfail_``
 (snapy reads it, ``snapy/src/mesh/meshblock.cpp:1544``) and
 ``take_saturation_adjustment_failures``; ``nfail_`` goes private in the
 release after snapy stops using it.
@@ -451,9 +464,11 @@ Version contract (study item 8): snapy states its floor in one place,
 today (``snapy/CMakeLists.txt:97-105``), mirrored in
 ``snapy/pyproject.toml:7``. A paired revision is tested before release:
 kintera tags a release candidate; snapy's PR raises the floor and its CI
-builds that tag (gate K-G9); kintera releases; snapy merges. The floor
-is raised once, in the first snapy PR that calls the new API (EF-8 or
-S-K1, whichever merges first); the other PR keeps it.
+builds that tag (gate K-G9); kintera releases; snapy merges. The pin's
+floor is already 2.6.9 (``snapy/CMakeLists.txt:104-105``,
+``snapy/pyproject.toml:7``), so no raise has to land before EF-8. The
+floor is raised to the V3 release once, by EF-8 (the first snapy PR that
+needs K1 and K3); S-K1 to S-K4 keep it.
 
 Merge order (provider first):
 
@@ -461,8 +476,8 @@ Merge order (provider first):
 2. kintera K1 (tables), K2 (counter API, ``nfail_`` kept), K3 (solve
    plans, ``compute_into``), K4 (active-set snapshot). One release.
 3. snapy, X1 to X7 (X), with EF's and K's snapy PRs: S-K1 (the counter in
-   the reset list and retry stack, after EF-2), S-K2 (warm-start
-   snapshot), S-K3 (saturation adjustment inside the segment), S-K4
+   the reset list and retry stack), S-K2 (warm-start snapshot; S-K1 and
+   S-K2 after EF-2, same block ``snapy/src/mesh/meshblock.cpp:1538-1547``), S-K3 (saturation adjustment inside the segment), S-K4
    (``ChemistrySource``: snapy owns the adapter over kintera's
    ``Kinetics`` and ``evolve_implicit``; no kintera change). Of EF's
    PRs only EF-8 waits for the kintera release.
@@ -548,7 +563,7 @@ them):
 .. csv-table:: joint, not counted
    :header: "File", "Now", "After", "Owner"
 
-   "snapy/src/eos/ideal_moist.cpp", 372, 345, "EF (-27, EF revision 2.3)"
+   "snapy/src/eos/ideal_moist.cpp", 372, 345, "EF (-27, EF revision 2.3; 3.7 swaps not booked)"
    "snapy/src/mesh/meshblock.cpp", 1919, 1903, "X (1447-1454 and 1541-1547 become two calls)"
 
 10. Migration
@@ -559,7 +574,7 @@ them):
 
    "K1", "kintera", "``ThermoTables``, ``FuncTable``, ``prepare``; ``eval_*`` read tables", "bitwise (same values, same kernels)"
    "K2", "kintera", "fixed failure counter; ``failures``, ``reset_failures``, ``consume_failures``", "bitwise (counts only)"
-   "K3", "kintera", "``SolvePlan``, ``SolveMode``, ``compute_into``", "bitwise (K-G1, K-G2; hypothesis for ``ftol`` near round-off)"
+   "K3", "kintera", "``SolvePlan``, ``SolveMode``, ``compute_into``", "bitwise (K-G1, K-G2; hypothesis for ``ftol`` near round-off); exception: with a non-finite cell the exact plan makes one pass where the pin makes 100 (3.1)"
    "K4", "kintera", "active-set snapshot and restore", "bitwise when unused"
    "S-K1", "snapy", "counter in X's reset list and retry stack", "bitwise"
    "S-K2", "snapy", "snapshot at step start, restore on retry", "changes retried steps (hypothesis, K-G5): ``FOR CHENG`` K-F1"
@@ -612,7 +627,8 @@ R:
   rows that are elements rather than conserved variables? If not, K posts
   ``chem.elements`` as one row per element under its own name each.
 - Chemistry posts in ``after_combine`` (section 4); does R want a
-  ``chemistry`` phase after it instead?
+  ``chemistry`` phase after it instead? K joins EF's question to R on
+  posts made after the combine.
 - ``count("thermo.temp_solve", n)`` and ``count("thermo.pres_solve", n)``
   for rows 1 and 2 (3.2).
 
@@ -658,41 +674,55 @@ Lane R's reviewer (notes 1 to 7, on rev 1 at ``f61d0d80``):
    until K-G4); restore order (3.4); H2 table lifetime and tables per
    (device, dtype) (3.3); generation in ``GraphKey`` (3.3, question to X
    above); a check during capture (K-G3, section 5); EF's version question
-   (section 8: floor raised once, by EF-8 or S-K1) and counter question
+   (section 8: floor raised once, by EF-8) and counter question
    (rows 1 and 2 are diagnostics; saturation failures stay with kintera).
 
-EF's reviewer (16 notes; only the summary was in the thread when rev 2 was
-written, so the points below follow the summary's order, not the note
-numbers; the numbered notes are answered by number when posted):
+EF's reviewer (numbered notes 1 to 16, on rev 1 at ``f61d0d80``):
 
-1. Fixed mode matches the early-exit loop, NaN included: agree; hypothesis
-   until K-G2.
-2. Saturation failures stay with kintera (Q-K2): agree (3.2).
-3. ``cell_amount`` names match R: kept; re-read at R ``3490d7e1``
-   (section 4).
-4. Merge order: agree; only EF-8 waits for the kintera release and S-K1
-   goes after EF-2 (section 8).
-5. K-F1 supported: no change.
-6. ``consume_failures`` row 0 only: as note 2 above.
-7. Exact plan with non-finite cells: as note 3 above.
-8. ``ChemistrySource`` in kintera's API: as note 5 above.
-9. Keep ``eval_const_cv_pressure_delta``: as note 6 above.
-10. Joint ``ideal_moist.cpp`` row: after is 345 (EF -27), not 268
+1. Agree: counts. No change; the table now has 14 rows (note 15).
+2. Agree: ``PV->T`` written out as ``where(run, T - dT, T)``
+   (src/thermo/thermo_y.cpp:479) (3.1); K-G2 adds +inf, -inf and FP32
+   cells (section 5).
+3. Agree: the exception is stated in 3.1 and in the K3 row (section 10);
+   K-G1 has a second case with a NaN cell (section 5).
+4. Agree: ``compute`` and ``compute_into`` select ``fixed`` when the
+   stream is capturing; the modes are bitwise equal, so the mode does not
+   join ``GraphKey`` (3.1).
+5. Agree: row 0 only; rows 1 and 2 are diagnostics (3.2, skeleton).
+6. Agree, second option: ``reset()`` or ``prepare()`` bumps the
+   generation, which covers the counter and the active-set buffers, and X
+   compares it before every replay (3.2, 3.3; question to X above).
+7. Agree. No change.
+8. Agree, first option: the generation is a digest of the options content,
+   checked before every replay; ``tables_`` is a map per (device, dtype)
+   (3.3).
+9. Agree: ``eval_const_cv_pressure_delta`` is listed as kept, header-only,
+   same name and formula, through K1 to K5 (section 8).
+10. Agree: ``eval_pressure_delta`` dropped; ``eval_const_cv_pressure_delta``
+    stays with gate K-G6 (section 6); a T-dependent entry point is a later
+    PR with its own signature and gate.
+11. Agree: the joint row is 372 to 345, "EF -27; 3.7 swaps not booked"
     (section 9).
-11. K-F2 wording: agree; a global conditional node is also bitwise; only
-    per-cell stopping changes results (3.1, section 10).
-12. Counter lifetime under graphs: a fixed tensor made in ``prepare()``
-    outside inference mode; ``reset()`` or ``prepare()`` bumps the
-    generation and invalidates graphs (3.2, 3.3).
-13. Stale tables when options change in place: options freeze after
-    ``prepare()``; a debug build checks an options digest (3.3).
-14. Four headers missing from the no-growth table: added as k11 to k14,
-    no growth (section 9).
-15. R moved to ``3490d7e1``: re-read; ``count`` used for rows 1 and 2
-    (section 1, 3.2, section 4).
-16. Bitwise claims unverified: agree; every one stays a gate in section 5,
-    specified and not run.
+12. (i) Element rows: question to R above. (ii) ``thermo.saturation`` is
+    posted (species rows); total mass and energy are checked by the
+    monitor, not posted (section 4). (iii) K joins EF's question to R on
+    posts after the combine (above). Nit: the limiter is at
+    ``snapy/src/mesh/meshblock.cpp:952``; fixed (section 4).
+13. Agree: the adapter moves to snapy (``namespace snap``), S-K4 in the
+    section 8 plan and section 10; the skeleton comment now says the three
+    ``chem.*`` amounts (saturation posts ``thermo.saturation``).
+14. Agree: only EF-8 waits for the kintera release; S-K1 and S-K2 come
+    after EF-2 (same block, ``snapy/src/mesh/meshblock.cpp:1538-1547``).
+    The 2.6.9 floor is already at the pin (``snapy/CMakeLists.txt:105``),
+    so EF-8 raises it to the V3 release (section 8).
+15. Agree: the four headers are rows k11 to k14 (section 9). The skeleton
+    ``tables.hpp`` carries review comments; the shipped declarations are
+    held to the +20 and +12 of k2 and k8 (target). If they do not fit,
+    K1 names a new file and the thermo total counts it.
+16. Agree: K-F2 corrected (3.1, section 10); ``fixed`` kept; K-F1 with
+    S-K2 as a separate PR after EF-2.
 
+Lane A's K-1 was not posted when rev 2 was written.
 12. Skeleton index
 ------------------
 

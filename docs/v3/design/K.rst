@@ -204,7 +204,7 @@ reset list (X's ``kStepStart`` entry, with R's ``begin_step``) calls
 ``flag_retry("thermo.saturation", any)``, where ``any`` is a 0-d scratch
 filled by ``consume_failures(any)``, in ``after_combine`` of the last stage;
 the cause is declared in ``RegisterRequest::retry``. R's ``retry_flags()``
-join X's step-end MAX read (X.rst section 4, rev 3), so the pin's slot 4
+join X's step-end MAX read (X.rst lines 157-158 at ``100bc9b3``), so the pin's slot 4
 (``snapy/src/mesh/meshblock.cpp:1559-1560``) becomes R's flag and the one
 host read stays at ``snapy/src/mesh/meshblock.cpp:1566``. Rows 1 and 2 are
 not retry causes: both counters, ``thermo.temp_solve`` and
@@ -214,7 +214,7 @@ posted once per step with ``count(name, failures()[1])`` and
 header rev 4.2, ``4c59162a``); ``reset_failures()`` clears all three rows
 at the next step start. Warm-up and capture: the (3,) counter and the
 active-set buffers join X's save and restore of counters and retry flags
-around warm-up and capture (X.rst section 7, rev 3), so a warm-up pass
+around warm-up and capture (X.rst lines 323-327), so a warm-up pass
 leaves no count behind. Saturation failures stay with kintera
 (EF's review agrees).
 
@@ -270,9 +270,9 @@ both ``copy_`` between fixed buffers of the same shape. Snapy calls
 snapshot at step start (with ``u0``/``s0``) and restore in X's reset list
 on a retry and after a graph warm-up, so a retry repeats the first attempt
 from the same active set. Order on a retry: X restores ``u0``/``s0``,
-then ``restore_active_set``, then X's stage-0 reset list runs (which
-calls ``reset_failures`` and takes the snapshot again from the restored
-state). Today a retry starts from the failed attempt's
+then ``restore_active_set``, then X's ``kStepStart`` list runs again
+(which calls ``reset_failures`` and takes the snapshot again from the
+restored state). Today a retry starts from the failed attempt's
 active set (``snapy/src/mesh/meshblock.cpp:969-970``; the rollback does not
 touch kintera). Whether this changes results beyond round-off is a
 hypothesis (gate K-G5). Shapes are fixed by X's ``StateStore``, so the
@@ -292,7 +292,8 @@ cold-start branch (``src/thermo/thermo_y.cpp:303-312``) runs only in
         failures[0] += count(diag < 0)
         -> species rows written back; cell_amount("thermo.saturation", ...)
   chemistry [segment, FP64]: kinetics step -> cell_amount("chem.*", ...)
-  step end:     thermo.consume_failures(flags[4]); X's one host read
+  last after_combine: consume_failures(any); flag_retry("thermo.saturation", any);
+                count(temp_solve, pres_solve); X's one host read at step end
   retry:        restore u0/s0 (X); thermo.restore_active_set(as0)
 
 3.6 Chemistry step (study item 7)
@@ -383,7 +384,8 @@ kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
   ``count`` (3.2).
 - Adapter calls (snapy side). ``ThermoY``, created at
   ``snapy/src/eos/ideal_moist.cpp:26`` and
-  ``snapy/src/eos/moist_mixture.cpp:20``: ``prepare()`` at EOS set-up;
+  ``snapy/src/eos/moist_mixture.cpp:20`` and
+  ``snapy/src/forcing/relax_bot_comp.cpp:66``: ``prepare()`` at set-up;
   ``compute_into("VU->T")`` and ``compute_into("PV->T")`` in place of
   ``compute`` (``snapy/src/eos/moist_mixture.cpp:65``,
   ``snapy/src/eos/moist_mixture.cpp:190``); ``forward`` for the
@@ -589,9 +591,14 @@ k10. -0 (src/thermo/log_svp.cpp): the three moves (100-101, 111-112,
 k11. -0 (src/thermo/thermo_dispatch.hpp): the dispatch declarations take
 a ``FuncTable`` in place of the name arguments, line for line.
 
-k12. -0 (src/thermo/eval_uhs.hpp): no overload is added; each ``eval_*``
-declaration here takes ``ThermoTables const&`` in place of the per-call
-constant arguments it now has, line for line (target).
+k12. -0 (src/thermo/eval_uhs.hpp): unchanged; no overload is added. The
+declarations take ``SpeciesThermo const& op`` (src/thermo/eval_uhs.hpp:15-39)
+and the constants are uploaded inside the bodies
+(src/thermo/eval_uhs.cpp:264-265 and the sites of section 2). The bodies
+(k9) get the tables from ``tables_for(op, temp)``, declared with
+``ThermoTables`` in k2 (within its +20, target): it returns the tables
+of ``op`` for the device and dtype of ``temp``, builds them if missing
+outside capture and throws inside (3.3).
 
 k13. -0 (src/thermo/log_svp.hpp): the device-pointer members read the
 table, line for line.
@@ -796,8 +803,9 @@ Lane R's reviewer (notes 1 to 3, on rev 2 at ``fa290bb2``):
 EF's reviewer (conflicts-only notes on rev 2, from the thread):
 
 1. Agree: the ``eval_*`` table overloads were not booked. None is added:
-   each ``eval_uhs.hpp`` declaration takes the tables in place of its
-   per-call constants, line for line (k12, target).
+   ``eval_uhs.hpp`` is unchanged and the ``eval_uhs.cpp`` bodies read
+   the tables through ``tables_for`` (k12, k2, skeleton ``tables.hpp``;
+   target).
 2. Agree: ``restore_active_set`` runs only on a retry and after a graph
    warm-up, never every step; the question to X is corrected.
 

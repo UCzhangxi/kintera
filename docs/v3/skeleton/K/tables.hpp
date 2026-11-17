@@ -1,5 +1,5 @@
 #pragma once
-// V3 lane K skeleton: declarations only, in no build. Rev 1.
+// V3 lane K skeleton: declarations only, in no build. Rev 2.1.
 // Pin kintera 3f5ff938. Replaces the per-call lookups of
 // src/utils/user_funcs.cu:14-133 and the per-call uploads of
 // src/thermo/eval_uhs.cpp:155-156 and src/thermo/log_svp.cpp:36-38.
@@ -47,6 +47,11 @@ struct ThermoTables {
 };
 
 using ThermoTablesPtr = std::shared_ptr<ThermoTables const>;
+
+//! tables of `op` for the device and dtype of `like`, used by the eval_*
+//! bodies; built if missing outside capture, throws inside
+ThermoTablesPtr tables_for(std::shared_ptr<struct SpeciesThermoImpl> const& op,
+                           torch::Tensor const& like);
 
 //! true while the current stream is capturing; a table build then throws
 bool capture_active(torch::Device device);

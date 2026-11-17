@@ -1,5 +1,5 @@
 #pragma once
-// V3 lane K skeleton: declarations only, in no build. Rev 2.
+// V3 lane K skeleton: declarations only, in no build. Rev 2.1.
 // Additions to ThermoYImpl (src/thermo/thermo.hpp:115-276) at kintera
 // 3f5ff938. Precision and graph types are lane X's; none is redefined here.
 #include <array>
@@ -16,7 +16,8 @@ enum class SolvePlan : uint8_t {
 
 //! how a newton plan iterates
 enum class SolveMode : uint8_t {
-  eager_exit,  // today: host read per pass (src/thermo/thermo_y.cpp:525)
+  automatic,   // fixed while capturing, eager_exit otherwise
+  eager_exit,  // host read per pass (thermo_y.cpp:525); throws if capturing
   fixed,       // max_iter passes, 0-d device flag freezes converged state;
                // bitwise equal to eager_exit (gate K-G2)
 };
@@ -71,7 +72,7 @@ class ThermoYV3Api {
   ThermoTablesPtr tables_;
   torch::Tensor failures_;  // replaces public nfail_ after one release
   SolvePlan temp_plan_ = SolvePlan::newton, pres_plan_ = SolvePlan::newton;
-  SolveMode mode_ = SolveMode::eager_exit;
+  SolveMode mode_ = SolveMode::automatic;
 };
 
 }  // namespace kintera

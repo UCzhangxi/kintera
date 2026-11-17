@@ -18,7 +18,9 @@ equilibrium 673. Host reads (``.item<``) 60 and hard FP64 dtype sites 80,
 as the root post says; 40 of the reads are in
 ``src/thermo/extrapolate_ad.cpp`` (set-up, not on a step path).
 
-This lane is the kintera side of lane X's provider contracts. It reuses
+Lane R's header is read at happysky19/snapy ``3490d7e1``, its live head
+when rev 2 was written (rev 1 cited ``543ff84f``); R's frozen rev 2 sha was
+not yet posted, and the next revision re-cites to it. This lane is the kintera side of lane X's provider contracts. It reuses
 X's precision table (``PrecisionPolicy``, X.rst section 6) and graph rules
 (``StageExecutor``, segments, ``GraphKey``, the step-reset list, X.rst
 section 7) and defines no second set. Rule of the lane: kintera files a V3
@@ -118,6 +120,13 @@ ThermoX equilibrium (``src/thermo/thermo_x.cpp:301``,
   empty. Bitwise against the pin whenever the pin's loop stops after one
   pass, i.e. whenever one correction changes T by less than ``ftol``
   relative (hypothesis for any ``ftol`` above round-off; gate K-G1).
+  With a non-finite cell the pin's loop never meets its test, runs
+  ``max_iter`` passes and warns; the exact plan makes one pass. Contract:
+  the exact plan adds the number of non-finite results to the
+  ``temp_solve`` row (``pres_solve`` for ``PV->T``) instead of warning;
+  finite cells may then differ from the pin by the round-off of the extra
+  passes (hypothesis; K-G1 includes a NaN cell). Such a state fails the
+  step anyway.
 - ``newton`` with ``SolveMode``:
 
   - ``eager_exit`` (default, today's loop): a host read per iteration,
@@ -129,13 +138,15 @@ ThermoX equilibrium (``src/thermo/thermo_x.cpp:301``,
     ``run &= !(max|1 - T_prev/T| < ftol)``, the negation of today's test
     (``src/thermo/thermo_y.cpp:525``) so a NaN keeps ``run`` true as it
     keeps today's loop going; ``>= ftol`` would stop on NaN and differ.
-    The test is done in double, as today. After the converged pass the
+    The maximum is cast to FP64 before the compare (``.to(kFloat64)``),
+    so the test is done in double, as today; for FP64 input the cast is a
+    no-op. After the converged pass the
     state is never changed again, so ``fixed`` equals ``eager_exit``
     bitwise (gate K-G2, which includes a NaN cell). Cost: ``max_iter`` passes always (100 by
     default); a T-dependent heat capacity inside a graph pays it.
-    Cheaper forms (a per-cell kernel, a graph conditional node) stop cells
-    at different passes and change results within ``ftol``:
-    ``FOR CHENG`` K-F2.
+    A graph conditional node on the same global flag stops after the
+    converged pass and is also bitwise; only per-cell stopping (a per-cell
+    kernel or mask) changes results within ``ftol``: ``FOR CHENG`` K-F2.
 
 - On non-convergence the pin warns (``src/thermo/thermo_y.cpp:531-532``).
   V3 adds one to the ``temp_solve`` (or ``pres_solve``) row of the failure
@@ -154,13 +165,21 @@ One fixed device tensor per ``ThermoY``, int64, shape (3,), rows
 ``saturation``, ``temp_solve``, ``pres_solve``. Allocated by ``prepare()``
 (3.3) and never rebound; ``reset()`` and ``clone()`` drop it, as
 ``src/thermo/thermo_y.cpp:172-173`` does today. ``nfail_`` becomes private.
+Before ``prepare()`` every counter call throws (``TORCH_CHECK``); snapy
+calls ``prepare()`` when its EOS is set up, before the first step. The
+counter is a normal tensor made outside inference mode, so the in-place
+``add_`` inside ``forward`` is legal with or without inference mode (the
+pin avoids ``+=`` for that reason, ``src/thermo/thermo_y.cpp:376``;
+hypothesis, K-G4 runs both). A graph records the counter's address, so
+``reset()`` or a new ``prepare()`` bumps the table generation and
+invalidates every graph that holds it (3.3).
 
 .. csv-table::
    :header: "Call", "Effect", "Capturable", "Replaces"
 
    "``failures()``", "the (3,) device tensor, a view; never read here", "yes", "``nfail_`` (snapy/src/mesh/meshblock.cpp:1544)"
    "``reset_failures()``", "``zero_()`` in place", "yes", "snapy/src/mesh/meshblock.cpp:736 (a host read today)"
-   "``consume_failures(out)``", "``out.copy_(failures() > 0)``, then ``zero_()``; device only", "yes", "snapy/src/mesh/meshblock.cpp:1544-1546"
+   "``consume_failures(out)``", "row 0 only: ``out.copy_(failures()[0] > 0)``, then row 0 ``zero_()``; rows 1-2 kept for the step-end read", "yes", "snapy/src/mesh/meshblock.cpp:1544-1546"
    "``take_saturation_adjustment_failures()``", "host read of row 0, then zero; kept", "no: step end or output only", "itself (src/thermo/thermo_y.cpp:400-405)"
 
 ``forward`` adds ``(diag < 0).sum()`` into row 0 with ``add_``
@@ -169,7 +188,12 @@ reset list (X) calls ``reset_failures()``; the retry stack calls
 ``consume_failures(flags.narrow(0, 4, 1))`` so the saturation slot keeps
 its place in the stack (``snapy/src/mesh/meshblock.cpp:1559-1560``); the
 one host read stays at ``snapy/src/mesh/meshblock.cpp:1566``. Rows 1 and 2
-are read only by diagnostics after the accept.
+are not retry causes: before the step-end read snapy posts them with lane
+R's device counter call ``count("thermo.temp_solve", ...)`` and
+``count("thermo.pres_solve", ...)`` (R header rev 3, ``3490d7e1``), so they
+reach X's one read through R's monitor; ``reset_failures()`` clears all
+three rows at the next step start. Saturation failures stay with kintera
+(EF's review agrees).
 
 3.3 Persistent device tables (study item 2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -186,6 +210,14 @@ replaces the three ``get_device_func*`` copies and their
 ``thrust::device_vector`` results, and on the CPU it holds host pointers
 (``get_host_func``, ``src/utils/user_funcs.hpp:23``).
 
+- Per dtype: one ``ThermoTables`` per (device, dtype); FP64 and FP32
+  callers of one module get two. The H2 mask and every ``FuncTable``
+  (the H2 heat-capacity functions included) live exactly as long as
+  their table.
+- Options are frozen after ``prepare()``: changing them in place without
+  ``reset()`` is unsupported; ``prepare()`` stores a digest of the options
+  and every forward outside capture checks it (debug builds), so a stale
+  table throws instead of being used.
 - Key: device index, dtype, and an options generation bumped by
   ``reset()``. ``prepare`` also runs the lazy shared-memory query of
   ``src/loops.cuh:18-50``.
@@ -207,7 +239,10 @@ written in place by the kernel and survive across steps. V3 adds
 both ``copy_`` between fixed buffers of the same shape. Snapy calls
 snapshot at step start (with ``u0``/``s0``) and restore in X's reset list
 on a retry and after a graph warm-up, so a retry repeats the first attempt
-from the same active set. Today a retry starts from the failed attempt's
+from the same active set. Order on a retry: X restores ``u0``/``s0``,
+then ``restore_active_set``, then X's stage-0 reset list runs (which
+calls ``reset_failures`` and takes the snapshot again from the restored
+state). Today a retry starts from the failed attempt's
 active set (``snapy/src/mesh/meshblock.cpp:969-970``; the rollback does not
 touch kintera). Whether this changes results beyond round-off is a
 hypothesis (gate K-G5). Shapes are fixed by X's ``StateStore``, so the
@@ -242,8 +277,11 @@ as a temperature change through the composition. The EOS call before it
 (``snapy/examples/run_hydro.cpp:179``) may apply the conserved limiter,
 which can write the density and energy rows; that is EF's limiter, not
 the chemistry increment, and is posted by EF. V3
-makes it a ``ChemistrySource`` op that snapy schedules after the last
-stage in its own eager segment (host reads at
+makes it a ``ChemistrySource`` op: a snapy type (``namespace snap``,
+declared in this lane's skeleton for review, owned by snapy), so kintera's
+API gains no snapy type; kintera provides only what exists at the pin
+(``Kinetics``, ``evolve_implicit``, ``stoich``). Snapy schedules it after
+the last stage in its own eager segment (host reads at
 ``src/kinetics/kinetics.cpp:442``), FP64. maxichem (an existing proposal,
 not this lane's) fits the same op: species in, species increments out.
 Its budget declarations are section 4.
@@ -271,12 +309,15 @@ stays in snapy: kintera holds totals, not perturbations.
 4. Flux-register contract
 -------------------------
 
-Names are lane R's provisional header (``docs/v3/skeleton/R/flux_register.hpp``
-at happysky19/snapy ``543ff84f``): ``FluxRegister::cell_amount(name,
-vol_du)`` and ``RegisterMonitor``. Lane K posts no face flux.
+Names are lane R's header (``docs/v3/skeleton/R/flux_register.hpp`` at
+happysky19/snapy ``3490d7e1``, rev 3): ``FluxRegister::cell_amount(name,
+vol_du)``, ``count(name, n)``, ``RegisterPhase::after_combine`` and
+``RegisterMonitor``. Lane K posts no face flux; snapy posts for it.
 
-- Posts. Both kintera ops are cell sources, posted with ``cell_amount``,
-  FP64, in the segment that applies them:
+- Posts. Both ops are cell sources, posted with ``cell_amount`` in FP64,
+  volume-weighted as R requires (``vol_du`` = cell volume times the
+  increment per unit volume), in phase ``after_combine`` (both run after
+  the RK combine, ``snapy/src/mesh/meshblock.cpp:949-982``):
 
   - ``thermo.saturation``: the change of each species row from the
     saturation adjustment (``snapy/src/mesh/meshblock.cpp:972``). Total
@@ -297,8 +338,11 @@ vol_du)`` and ``RegisterMonitor``. Lane K posts no face flux.
   and after ``end_stage`` of the last stage; before X's step-end read. The
   chemistry step follows the saturation adjustment, as
   ``snapy/examples/run_hydro.cpp:177-179`` requires.
-- Failure counts are not register counters: they go into X's retry stack
-  (3.2), as R's ``retry_flags()`` does.
+- Chemistry has no phase of its own in R's header; it posts in
+  ``after_combine`` after the saturation adjustment, unless R adds a
+  phase (question in section 11).
+- Failure counts: row 0 goes into X's retry stack (3.2); rows 1-2 go
+  through R's ``count``.
 
 Of the ten requirements, lane K answers 6 (no host read: posts are device
 ops, the counter is consumed on the device), 7 (each source names its
@@ -314,9 +358,9 @@ Specified, not written and not run.
 .. csv-table::
    :header: "Gate", "Identity", "Case", "Comparison"
 
-   "K-G1", "exact plan equals the pin's ``VU->T`` and ``PV->T``", "kintera test, constant cv, random states, FP64 and FP32 inputs, CPU and CUDA", "bitwise"
+   "K-G1", "exact plan equals the pin's ``VU->T`` and ``PV->T``", "kintera test, constant cv, random states, CPU and CUDA; a second case adds one NaN cell", "bitwise for FP64 inputs; with the NaN cell, its count in ``temp_solve`` or ``pres_solve`` exact and finite cells within round-off (3.1); FP32 inputs against the FP64 result within a tolerance (hypothesis: the pin promotes FP32 to FP64, section 6)"
    "K-G2", "``fixed`` equals ``eager_exit``", "NASA-9 and H2 decks, states that converge in 1, 5 and never, and one NaN cell", "bitwise"
-   "K-G3", "no host sync in a captured kintera op", "replay ``forward`` and ``compute_into`` under ``torch.cuda.set_sync_debug_mode('error')``", "exact"
+   "K-G3", "no host sync in a captured kintera op", "capture ``forward`` and ``compute_into`` with ``torch.cuda.graph`` under ``torch.cuda.set_sync_debug_mode('error')`` (a sync aborts the capture), then replay under the same mode", "exact"
    "K-G4", "failure counts survive replay", "inject a failing cell on replay N >= 2; ``consume_failures`` sets the flag; counts accumulate over replays", "exact"
    "K-G5", "retry repeats the first attempt", "change the active set during a step, force a retry; compare with a clean run of the same dt", "bitwise (hypothesis)"
    "K-G6", "tables equal the pin's per-call values", "every ``eval_*`` with tables against the pin's form", "bitwise"
@@ -339,13 +383,21 @@ X's rows hold: "kintera totals, saturation", FP64 storage and compute
    "``eval_const_cv_pressure_delta``", "yes", "caller's", "perturbation form (src/thermo/eval_uhs.hpp:41-56)"
    "Kinetics, chemistry step", "no", "FP64", "stiff implicit step"
 
-``eval_const_cv_pressure_delta`` generalises to
-``eval_pressure_delta(thermal0, gas0, cv0, dthermal, dgas, dcv, tables)``:
-for constant cv it is today's formula; for a T-dependent cv the change in T
-comes from the ``fixed`` Newton solve on the perturbation about the
-reference state. Until its eager gate passes, NASA-9 and H2 heat
-capacities stay refused in FP32, as today
-(``snapy/src/eos/ideal_moist.cpp:87``). Explicitly unsupported in FP32:
+The dtype of ``compute_into`` is governed by X's rows "hydro_w totals"
+(FP64, EOS on totals) and "kintera totals, saturation" (FP64) (X.rst
+section 6); snapy's perturbation EOS also casts to FP64 before kintera
+(``snapy/src/eos/ideal_moist.cpp:89``). An FP32 ``compute_into`` is
+therefore not a V3 path; the FP32 row above states what the API accepts,
+and K-G1 compares it with FP64 within a tolerance, not bitwise.
+
+``eval_const_cv_pressure_delta`` stays as it is
+(src/thermo/eval_uhs.hpp:41-56), gated by K-G6. Rev 1's
+``eval_pressure_delta`` is withdrawn: its arguments carry no reference
+temperature and no cv(T), so it cannot hold a T-dependent cv. A later
+T-dependent entry point needs its own signature (reference temperature and
+the cv tables) and its own gate; until then NASA-9 and H2 heat capacities
+stay refused in the perturbation path, as today
+(``snapy/src/eos/ideal_moist.cpp:86-87``). Explicitly unsupported in FP32:
 NASA-9 and H2 heat capacities, saturation adjustment, kinetics.
 Explicitly unsupported in graphs: ThermoX equilibrium and kinetics (host
 reads above) and ``extrapolate_ad`` (set-up only). Neither falls back
@@ -387,8 +439,8 @@ G7 accepts it.
 New in kintera (skeleton ``thermo_v3.hpp``): ``SolvePlan``,
 ``SolveMode``, ``ThermoTables``, ``FuncTable``, ``ThermoY::prepare``,
 ``compute_into``, ``failures``, ``reset_failures``,
-``consume_failures``, ``snapshot_active_set``, ``restore_active_set``,
-``eval_pressure_delta``. Kept for one minor release: public ``nfail_``
+``consume_failures``, ``snapshot_active_set``, ``restore_active_set``.
+Kept for one minor release: public ``nfail_``
 (snapy reads it, ``snapy/src/mesh/meshblock.cpp:1544``) and
 ``take_saturation_adjustment_failures``; ``nfail_`` goes private in the
 release after snapy stops using it.
@@ -398,7 +450,9 @@ Version contract (study item 8): snapy states its floor in one place,
 today (``snapy/CMakeLists.txt:97-105``), mirrored in
 ``snapy/pyproject.toml:7``. A paired revision is tested before release:
 kintera tags a release candidate; snapy's PR raises the floor and its CI
-builds that tag (gate K-G9); kintera releases; snapy merges.
+builds that tag (gate K-G9); kintera releases; snapy merges. The floor
+is raised once, in the first snapy PR that calls the new API (EF-8 or
+S-K1, whichever merges first); the other PR keeps it.
 
 Merge order (provider first):
 
@@ -406,9 +460,12 @@ Merge order (provider first):
 2. kintera K1 (tables), K2 (counter API, ``nfail_`` kept), K3 (solve
    plans, ``compute_into``), K4 (active-set snapshot). One release.
 3. snapy, X1 to X7 (X), with EF's and K's snapy PRs: S-K1 (the counter in
-   the reset list and retry stack), S-K2 (warm-start snapshot), S-K3
-   (saturation adjustment inside the segment).
-4. kintera K5 (``nfail_`` private; ``eval_pressure_delta``).
+   the reset list and retry stack, after EF-2), S-K2 (warm-start
+   snapshot), S-K3 (saturation adjustment inside the segment), S-K4
+   (``ChemistrySource``: snapy owns the adapter over kintera's
+   ``Kinetics`` and ``evolve_implicit``; no kintera change). Of EF's
+   PRs only EF-8 waits for the kintera release.
+4. kintera K5 (``nfail_`` private).
 
 Decision: kintera merges first because every snapy change needs the API,
 and K1 to K4 are bitwise against the pin for every caller (section 10).
@@ -433,7 +490,11 @@ pin and 4,770 after (target, not a measurement). Counted with
    "src/thermo/thermo.hpp", 454, 454, "k8"
    "src/thermo/eval_uhs.cpp", 477, 477, "k9"
    "src/thermo/log_svp.cpp", 160, 160, "k10"
-   "total", 2434, 2313, "cut 121 (5.0%)"
+   "src/thermo/thermo_dispatch.hpp", 35, 35, "k11"
+   "src/thermo/eval_uhs.hpp", 58, 58, "k12"
+   "src/thermo/log_svp.hpp", 135, 135, "k13"
+   "src/utils/utils_dispatch.hpp", 16, 16, "k14"
+   "total", 2678, 2557, "cut 121 (4.5%)"
 
 Items (net lines per file):
 
@@ -468,13 +529,25 @@ line.
 k10. -0 (src/thermo/log_svp.cpp): the three moves (100-101, 111-112,
 127-128) read the table (-6); ``make_svp_spec`` fills it (+6).
 
+k11. -0 (src/thermo/thermo_dispatch.hpp): the dispatch declarations take
+a ``FuncTable`` in place of the name arguments, line for line.
+
+k12. -0 (src/thermo/eval_uhs.hpp): unchanged; ``eval_*`` gain a tables
+overload declared in ``tables.hpp`` of the skeleton, not here.
+
+k13. -0 (src/thermo/log_svp.hpp): the device-pointer members read the
+table, line for line.
+
+k14. -0 (src/utils/utils_dispatch.hpp): ``call_func*`` declarations take
+a ``FuncTable``, line for line.
+
 snapy rows, joint with other lanes, not counted here (the owner counts
 them):
 
 .. csv-table:: joint, not counted
    :header: "File", "Now", "After", "Owner"
 
-   "snapy/src/eos/ideal_moist.cpp", 372, 268, "EF (3.7: up to 104 lines)"
+   "snapy/src/eos/ideal_moist.cpp", 372, 345, "EF (-27, EF revision 2.3)"
    "snapy/src/mesh/meshblock.cpp", 1919, 1903, "X (1447-1454 and 1541-1547 become two calls)"
 
 10. Migration
@@ -490,7 +563,8 @@ them):
    "S-K1", "snapy", "counter in X's reset list and retry stack", "bitwise"
    "S-K2", "snapy", "snapshot at step start, restore on retry", "changes retried steps (hypothesis, K-G5): ``FOR CHENG`` K-F1"
    "S-K3", "snapy", "saturation adjustment in the captured segment", "bitwise (graph equals eager)"
-   "K5", "kintera", "``nfail_`` private; ``eval_pressure_delta``", "bitwise for constant cv"
+   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage", "bitwise against the example driver's step (``snapy/examples/run_hydro.cpp:171-198``), hypothesis"
+   "K5", "kintera", "``nfail_`` private", "bitwise"
 
 Removed: per-call function-name resolution on both devices; the dead
 dump blocks; snapy's direct use of ``nfail_``. No option is dropped and no
@@ -501,40 +575,121 @@ default changes.
 - K-F1: restoring the active set on a retry changes the solver's starting
   point for retried steps (results within ``ftol`` of today's, by
   hypothesis).
-- K-F2: a cheaper graph form of the T-dependent inversion (per-cell stop)
-  changes results within ``ftol``; rev 1 keeps the bitwise ``fixed`` form.
+- K-F2: a cheaper graph form of the T-dependent inversion that stops each
+  cell on its own changes results within ``ftol``; rev 2 keeps the bitwise
+  ``fixed`` form. A graph conditional node that stops all cells at once
+  would also be bitwise, and cheaper than ``fixed`` because it skips the
+  idle passes; it needs conditional graph nodes, which X's graph contract
+  does not list yet, so rev 2 offers it to X and keeps ``fixed`` as the
+  baseline (hypothesis: same stopping rule, same results).
 
 11. Open questions to other lanes
 ---------------------------------
 
-EF (Zoey):
+EF:
 
 - Items 1 and 3 are 3.1 and 3.2: ``compute_into`` with the exact plan for
   constant cv, ``fixed`` for the rest; ``reset_failures`` and
-  ``consume_failures``. Does EF need ``pres_solve`` and ``temp_solve`` as
-  retry causes, or as diagnostics only (rev 1)?
+  ``consume_failures`` (row 0). Rows 1 and 2 (``temp_solve``,
+  ``pres_solve``) are diagnostics posted through R's ``count``, not retry
+  causes; does EF agree?
 - Which rows of 3.7 does EF delete, and does EF accept the rounding change?
 
-X (Xi, this owner's other lane):
+X (same owner as this lane):
 
 - Add the kintera table generation to ``GraphKey`` and hold the table
   ``shared_ptr`` with each graph (3.3).
 - Add ``reset_failures`` and ``restore_active_set`` to the step-reset
-  list; ``consume_failures`` writes slot 4 of the retry stack.
+  list in the order of 3.4; ``consume_failures`` writes slot 4 of the
+  retry stack from row 0.
+- Accept or decline the graph conditional node of K-F2.
 
-R (Linfeng):
+R:
 
 - Are ``thermo.saturation``, ``chem.species``, ``chem.elements`` and
   ``chem.energy`` acceptable ``cell_amount`` names, and may an amount have
-  rows that are elements rather than conserved variables?
+  rows that are elements rather than conserved variables? If not, K posts
+  ``chem.elements`` as one row per element under its own name each.
+- Chemistry posts in ``after_combine`` (section 4); does R want a
+  ``chemistry`` phase after it instead?
+- ``count("thermo.temp_solve", n)`` and ``count("thermo.pres_solve", n)``
+  for rows 1 and 2 (3.2).
 
-A (Jiachen):
+A:
 
-- K-1: awaited in the K thread; rev 2 answers it here.
+- K-1: not posted when rev 2 was written; the next revision answers it.
 
-O (Jiachen):
+O:
 
 - The failure rows 1 and 2 as diagnostics read after the accept.
+
+Round-2 notes
+~~~~~~~~~~~~~
+
+Lane R's reviewer (notes 1 to 7, on rev 1 at ``f61d0d80``):
+
+1. Agree: structure and counts. No change.
+2. Agree: ``consume_failures`` now copies row 0 into the one-slot retry
+   entry, zeroes row 0 only, and keeps rows 1 and 2 until the step-end
+   read (3.2, skeleton ``thermo_v3.hpp``).
+3. Agree: the exact plan takes one pass on a NaN cell where the pin takes
+   100 and warns (src/thermo/thermo_y.cpp:521-528). The contract is now
+   stated: the cell is counted in ``temp_solve`` (``pres_solve`` for
+   ``PV->T``) instead of the warning; finite cells may differ from the pin
+   by round-off (hypothesis) (3.1); K-G1 includes the NaN cell (section 5).
+4. Agree: K-G1 is bitwise for FP64 only; FP32 is compared with FP64 within
+   a tolerance (hypothesis). The governing rows are X's "hydro_w totals"
+   and "kintera totals, saturation", both FP64, and snapy casts to FP64
+   before kintera (``snapy/src/eos/ideal_moist.cpp:89``) (section 6).
+5. Agree: ``ChemistrySource`` moves to snapy (``namespace snap``), so
+   kintera's API gains no snapy type; snapy owns the adapter, S-K4 in the
+   section 8 plan and section 10 (3.6, skeleton). Posts are
+   volume-weighted and saturation posts in ``after_combine`` (section 4,
+   R at ``3490d7e1``). Chemistry phase and element rows: questions to R
+   above.
+6. Agree: ``eval_pressure_delta`` is withdrawn and
+   ``eval_const_cv_pressure_delta`` stays, gated by K-G6 (section 6,
+   section 8, K5 in section 10, skeleton ``pressure_delta.hpp`` deleted).
+7. Agree, each request answered: FP64 cast of the convergence maximum
+   (3.1); counter use before ``prepare()`` throws and snapy calls
+   ``prepare()`` at EOS set-up (3.2); inference mode (3.2, hypothesis
+   until K-G4); restore order (3.4); H2 table lifetime and tables per
+   (device, dtype) (3.3); generation in ``GraphKey`` (3.3, question to X
+   above); a check during capture (K-G3, section 5); EF's version question
+   (section 8: floor raised once, by EF-8 or S-K1) and counter question
+   (rows 1 and 2 are diagnostics; saturation failures stay with kintera).
+
+EF's reviewer (16 notes; only the summary was in the thread when rev 2 was
+written, so the points below follow the summary's order, not the note
+numbers; the numbered notes are answered by number when posted):
+
+1. Fixed mode matches the early-exit loop, NaN included: agree; hypothesis
+   until K-G2.
+2. Saturation failures stay with kintera (Q-K2): agree (3.2).
+3. ``cell_amount`` names match R: kept; re-read at R ``3490d7e1``
+   (section 4).
+4. Merge order: agree; only EF-8 waits for the kintera release and S-K1
+   goes after EF-2 (section 8).
+5. K-F1 supported: no change.
+6. ``consume_failures`` row 0 only: as note 2 above.
+7. Exact plan with non-finite cells: as note 3 above.
+8. ``ChemistrySource`` in kintera's API: as note 5 above.
+9. Keep ``eval_const_cv_pressure_delta``: as note 6 above.
+10. Joint ``ideal_moist.cpp`` row: after is 345 (EF -27), not 268
+    (section 9).
+11. K-F2 wording: agree; a global conditional node is also bitwise; only
+    per-cell stopping changes results (3.1, section 10).
+12. Counter lifetime under graphs: a fixed tensor made in ``prepare()``
+    outside inference mode; ``reset()`` or ``prepare()`` bumps the
+    generation and invalidates graphs (3.2, 3.3).
+13. Stale tables when options change in place: options freeze after
+    ``prepare()``; a debug build checks an options digest (3.3).
+14. Four headers missing from the no-growth table: added as k11 to k14,
+    no growth (section 9).
+15. R moved to ``3490d7e1``: re-read; ``count`` used for rows 1 and 2
+    (section 1, 3.2, section 4).
+16. Bitwise claims unverified: agree; every one stays a gate in section 5,
+    specified and not run.
 
 12. Skeleton index
 ------------------
@@ -544,5 +699,5 @@ O (Jiachen):
 - ``thermo_v3.hpp``: ``SolvePlan``, ``SolveMode``, the ``ThermoY``
   additions (``prepare``, ``compute_into``, failure counter, active set).
 - ``tables.hpp``: ``FuncTable``, ``ThermoTables``.
-- ``chemistry_source.hpp``: ``ChemistrySource`` and its budget names.
-- ``pressure_delta.hpp``: ``eval_pressure_delta``.
+- ``chemistry_source.hpp``: ``ChemistrySource`` (snapy, ``namespace
+  snap``) and its budget names.

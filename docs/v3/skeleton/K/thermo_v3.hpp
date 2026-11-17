@@ -1,5 +1,5 @@
 #pragma once
-// V3 lane K skeleton: declarations only, in no build. Rev 1.
+// V3 lane K skeleton: declarations only, in no build. Rev 2.
 // Additions to ThermoYImpl (src/thermo/thermo.hpp:115-276) at kintera
 // 3f5ff938. Precision and graph types are lane X's; none is redefined here.
 #include <array>
@@ -55,8 +55,9 @@ class ThermoYV3Api {
   torch::Tensor const& failures() const;
   //! zero_() in place; capturable (step-reset list, replaces a host read)
   void reset_failures();
-  //! out.copy_(failures() > 0) then zero_(); capturable; `out` is the
-  //! saturation slot of the retry stack (snapy/src/mesh/meshblock.cpp:1559-1560)
+  //! row 0 only: out.copy_(failures()[0] > 0), then row 0 zero_(); rows 1-2
+  //! kept for the step-end read; capturable; `out` is the saturation slot
+  //! of the retry stack (snapy/src/mesh/meshblock.cpp:1559-1560)
   void consume_failures(torch::Tensor out);
   //! host read of row 0, then zero: step end or output only (kept)
   int64_t take_saturation_adjustment_failures();

@@ -1,5 +1,5 @@
 #pragma once
-// V3 lane K skeleton: declarations only, in no build. Rev 2.1.
+// V3 lane K skeleton: declarations only, in no build. Rev 2.6.
 // Pin kintera 3f5ff938. Replaces the per-call lookups of
 // src/utils/user_funcs.cu:14-133 and the per-call uploads of
 // src/thermo/eval_uhs.cpp:155-156 and src/thermo/log_svp.cpp:36-38.

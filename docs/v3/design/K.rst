@@ -180,8 +180,11 @@ One fixed device tensor per ``ThermoY``, int64, shape (3,), rows
 ``saturation``, ``temp_solve``, ``pres_solve``. Allocated by ``prepare()``
 (3.3) and never rebound; ``reset()`` and ``clone()`` drop it, as
 ``src/thermo/thermo_y.cpp:172-173`` does today. ``nfail_`` becomes private.
-Before ``prepare()`` every counter call throws (``TORCH_CHECK``); snapy
-calls ``prepare()`` when its EOS is set up, before the first step. The
+X calls ``prepare()`` before warm-up (3.3). Outside capture, the first
+call that needs the module's storage (``reset_failures``,
+``snapshot_active_set`` at ``kStageZero``, or ``forward``) prepares it
+itself, so an eager-only run needs no extra call; inside capture an
+unprepared module throws (``TORCH_CHECK``). The
 counter is a normal tensor made outside inference mode, so the in-place
 ``add_`` inside ``forward`` is legal with or without inference mode (the
 pin avoids ``+=`` for that reason, ``src/thermo/thermo_y.cpp:376``;
@@ -213,8 +216,8 @@ for it. Rows 1 and 2 are
 not retry causes: both counters, ``thermo.temp_solve`` and
 ``thermo.pres_solve``, are declared in ``RegisterRequest::counters`` and
 posted once per step with ``count(name, failures()[1])`` and
-``count(name, failures()[2])`` in ``after_combine`` of the last stage (R
-header rev 4.2, ``4c59162a``); ``reset_failures()`` clears all three rows
+``count(name, failures()[2])`` in ``after_combine`` of the last stage (the
+names are requested of R rev 2.3, pending; section 11); ``reset_failures()`` clears all three rows
 at the next attempt's stage 0. Warm-up and capture: the (3,) counter and the
 active-set buffers join X's save and restore of counters and retry flags
 around warm-up and capture (X.rst lines 368-371 at ``66f797a2``), so a warm-up pass
@@ -224,8 +227,8 @@ leaves no count behind. Saturation failures stay with kintera
 3.3 Persistent device tables (study item 2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``ThermoTables``, one per (device, compute dtype), built by
-``ThermoY::prepare(device, dtype)`` outside capture: ``cref_R``,
+``ThermoTables``, one per (options digest, device, compute dtype), built
+by ``ThermoY::prepare(device, dtype, shape)`` outside capture: ``cref_R``,
 ``uref_R``, ``sref_R``, ``cv0``, ``u0`` as tensors in the compute dtype;
 NASA-9 coefficients and ``Tmid``; the H2 mask; ``svp_kind`` (int32) and
 ``svp_params`` (FP64); and ``FuncTable`` entries for ``logsvp``,
@@ -236,8 +239,9 @@ replaces the three ``get_device_func*`` copies and their
 ``thrust::device_vector`` results, and on the CPU it holds host pointers
 (``get_host_func``, ``src/utils/user_funcs.hpp:23``).
 
-- Per dtype: one ``ThermoTables`` per (device, dtype); FP64 and FP32
-  callers of one module get two. The H2 mask and every ``FuncTable``
+- Per dtype: the store holds one ``ThermoTables`` per (options digest,
+  device, dtype); a module holds one, for the device and dtype of its
+  last ``prepare()`` (3.3). The H2 mask and every ``FuncTable``
   (the H2 heat-capacity functions included) live exactly as long as
   their table.
 - Options are frozen after ``prepare()``: changing them in place without
@@ -270,6 +274,16 @@ replaces the three ``get_device_func*`` copies and their
   code: inside capture, or inside a ``kintera::NoTableBuild`` scope that X
   opens around a segment's warm-up and capture, a missing table throws.
   So every table a graph uses was made by ``prepare()`` before warm-up.
+  Who calls it: X, for each kintera module of a segment (the modules it
+  keys by ``alloc_epoch``), with the segment's device, dtype and shape,
+  before opening the scope. Not EF's ``reset()``: it runs at
+  construction (``snapy/src/eos/ideal_moist.cpp:26``,
+  ``snapy/src/eos/moist_mixture.cpp:20``), before the cell shape is
+  known and before the block moves to its device
+  (``snapy/examples/jupiter_evap_precip_1d.cpp:209``,
+  ``snapy/examples/shallow_splash.cpp:97``), and ``to()`` does not rerun
+  ``reset()``. Eager calls prepare a missing module or build a missing
+  table themselves (3.2).
 - Ownership and epoch. One table exists per (options digest, device,
   dtype); modules built from one options object share it, as the EOS's
   ``ThermoY`` and ``RelaxBotComp``'s do
@@ -324,15 +338,16 @@ cold-start branch (``src/thermo/thermo_y.cpp:303-312``) runs only in
 
 ::
 
-  host, set-up: thermo.prepare(device, dtype) -> ThermoTables (shared_ptr)
+  before warm-up (X), or lazily in eager code: thermo.prepare(device, dtype, shape)
   kStageZero:   u0 backup; thermo.snapshot_active_set(as0); thermo.reset_failures()
   last stage [segment, FP64 totals]:
      limiter (EF) -> totals -> thermo.forward(rho, ie, yfrac, warm, diag)
         VU->T (exact | fixed) -> equilibrate_uv kernel (tables)
         failures[0] += count(diag < 0)
         -> species rows written back; cell_amount("thermo.saturation", ...)
-  chemistry [segment, FP64]: kinetics step -> cell_amount("chem.*", ...)
-  last after_combine: count(temp_solve), count(pres_solve)
+  last after_combine: count(temp_solve), count(pres_solve); end_stage
+  chemistry [segment, FP64, pin order after the boundaries]: kinetics step
+     -> cell_amount("chem.*", ...); element stock and boundary posts
   step end:     thermo.consume_failures(flags[4]); X's one host read
   kRollback:    u0; radial restore_step; thermo.restore_active_set(as0); cons2prim, s0; R rollback()
 
@@ -390,9 +405,11 @@ kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
 - Posts. In FP64, volume-weighted as R requires (``vol_du`` = cell volume
   times the increment per unit volume, interior cells), with
   ``stage_weight`` 1.0 because the change is applied to ``u``. R runs
-  ``after_combine`` after every stage; K posts only in the last stage's,
-  where both ops run (``snapy/src/mesh/meshblock.cpp:949-982``), and posts
-  nothing on earlier stages:
+  ``after_combine`` after every stage. ``thermo.saturation`` posts in the
+  last stage's, where the adjustment runs
+  (``snapy/src/mesh/meshblock.cpp:949-982``); the chemistry step keeps the
+  pin order, after the boundaries and before X's step-end read (X rev
+  3.5), and posts there. Nothing is posted on earlier stages:
 
   - ``thermo.saturation`` (``AmountKind::cell_source``): the change of each species row from the
     saturation adjustment (``snapy/src/mesh/meshblock.cpp:972``). Total
@@ -413,60 +430,64 @@ kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
     the species-by-reaction stoichiometry alone does not define element
     rows. Its rows are R's derived rows ``element/<name>`` declared in
     ``RegisterRequest::derived`` and posted with ``derived_amount``
-    (R.rst lines 790-793 at ``4c59162a``). The same adapter supplies the
-    rest of R's derived-row contract (R.rst lines 535-546): the step-end
-    stock ``derived_total("element/<name>", sum over fluid cells of
-    (E conc)_name times cell volume)``, ``conc`` = species density over
-    molar mass, the same cells R uses for ``domain_total``; and each
-    boundary transfer as ``derived_amount("element/<name>.boundary.<dim>",
-    "element/<name>", -E (boundary(dim) on the species rows over molar
-    mass), 1.0, AmountKind::cell_source)``: ``boundary(dim)`` is outward
-    positive (R.rst line 556, ``flux_register.hpp:97``) and the derived
-    amount is inflow positive (R.rst lines 542-545), hence the minus.
-    Weight 1.0, posted once at step end, because ``boundary(dim)`` already
-    carries dt and the stage weights, as lane A posts ``aam.boundary.1``
-    (A.rst lines 588-602 at ``2b0ac426``). Every other amount on the
-    species rows enters the closure the same way: for each amount ``a`` of
-    kind ``cell_source``, ``floor`` or ``fixer``, the adapter posts
-    ``derived_amount("element/<name>.<a>", "element/<name>", E (amounts(a)
-    on the species rows over molar mass), 1.0, kind(a))`` at step end
-    (``flux_register.hpp:95-96``). So ``RelaxBotComp``'s species change
-    (``snapy/src/forcing/relax_bot_comp.cpp:113-117``, a ``cell_source``
-    once lane A posts it) and EF's floors and fixers (``AmountKind``,
-    ``flux_register.hpp:25-31``) enter the element closure. The image of
-    ``chem.species`` is ``chem.elements``, zero to tolerance. ``E`` has a
-    column for the dry component (species 0, conserved row ``IDN``, with
-    its own ``composition``), and every image above reads the dry row with
-    the species rows, so ``RelaxBotComp``'s move between them
-    (``snapy/src/forcing/relax_bot_comp.cpp:114-115``) closes. The
-    saturation adjustment adds nothing (hypothesis: each condensate is
-    declared with its vapor's composition).
+    (R.rst lines 790-793 at ``4c59162a``). In the chemistry segment the
+    adapter posts the stock ``derived_total(
+    "element/<name>", sum over fluid cells of (E conc)_name times cell
+    volume)``, the fluid cells R uses for ``domain_total``
+    (``flux_register.hpp:98``; derived-row convention, R.rst lines
+    535-546). ``conc`` is each component's density over its molar mass;
+    the dry density is hydro's ``dry_density(u)``, row ``IDN`` plus the
+    reference state when one is set (``snapy/src/hydro/hydro.hpp:364-366``),
+    and ``E`` has a column for the dry component with its own
+    ``composition``. The boundary transfer comes from K's own read, as
+    lane A's ``aam.boundary.1`` does (A.rst lines 588-602 at
+    ``2b0ac426``): the adapter requests ``step_field`` for the dims with a
+    physical boundary (``flux_register.hpp:38``, ``flux_register.hpp:84``)
+    and posts ``derived_amount("element/<name>.boundary.<dim>",
+    "element/<name>", inflow of E (step field over molar mass) summed over
+    the boundary faces times their areas, 1.0, AmountKind::cell_source)``
+    once in the chemistry segment; weight 1.0 because the step field
+    already carries dt and the stage weights, as ``boundary(dim)``'s
+    ``S_d`` does (R.rst lines 557-558),
+    inflow positive as R.rst lines 542-545 ask (``boundary(dim)`` itself
+    is outward positive, R.rst line 556). Other posters' species-row
+    amounts (``RelaxBotComp``'s change,
+    ``snapy/src/forcing/relax_bot_comp.cpp:113-117``; EF's floors and
+    fixers) cannot be mapped by K: they live only in R's monitor, which O
+    alone reads, after acceptance (``flux_register.hpp:89``). K gives O
+    ``E`` and the element names, and O forms their element images after
+    acceptance (question to O). The image of ``chem.species`` is
+    ``chem.elements``, zero to tolerance; the saturation adjustment adds
+    nothing (hypothesis: each condensate is declared with its vapor's
+    composition).
     It must be zero to the solver's
     tolerance; non-zero is a named non-closure.
   - ``chem.energy`` (``cell_source``): zero today (the increment leaves the energy row unchanged); declared so a later
     chemistry step with heat release posts it.
 
-- Reads. At step end the snapy adapter reads the monitor's
-  ``boundary(dim)`` and ``amounts(a)`` on the species rows
-  (``flux_register.hpp:96-97``) as device tensors, no host read; kintera
-  itself reads only cell state.
+- Reads. The snapy adapter reads its requested ``step_field`` in the
+  chemistry segment (``flux_register.hpp:84``), a device tensor, no
+  host read; it reads no monitor value before acceptance. kintera itself
+  reads only cell state.
 - Corrects. Nothing; kintera is not a fixer.
 - Ordering. After the last stage's limiter (``snapy/src/mesh/meshblock.cpp:952``)
   and after ``end_stage`` of the last stage; before X's step-end read. The
   chemistry step follows the saturation adjustment, as
   ``snapy/examples/run_hydro.cpp:177-179`` requires.
-- Chemistry has no phase of its own; R's header lists K in the last
-  ``after_combine``, after the saturation adjustment.
+- Chemistry has no register phase of its own: it runs in the pin order,
+  after the boundaries and before X's step-end read
+  (``snapy/examples/run_hydro.cpp:171-198``; X rev 3.5), so after the
+  saturation adjustment of the last ``after_combine``.
 - Failure counts: row 0 through slot 4 of X's retry stack; rows 1-2
   through R's ``count`` (3.2).
 - Adapter calls (snapy side). ``ThermoY``, created at
   ``snapy/src/eos/ideal_moist.cpp:26`` and
   ``snapy/src/eos/moist_mixture.cpp:20`` and
-  ``snapy/src/forcing/relax_bot_comp.cpp:66``: ``prepare()`` at set-up;
+  ``snapy/src/forcing/relax_bot_comp.cpp:66``: ``prepare()`` before warm-up (3.3);
   ``compute_into("VU->T")`` and ``compute_into("PV->T")`` in place of
   ``compute`` (``snapy/src/eos/moist_mixture.cpp:65``,
   ``snapy/src/eos/moist_mixture.cpp:190``); ``forward`` for the
-  saturation adjustment (``snapy/src/mesh/meshblock.cpp:965``);
+  saturation adjustment (``snapy/src/mesh/meshblock.cpp:969-970``);
   ``reset_failures``, ``consume_failures`` and ``failures`` (3.2);
   ``snapshot_active_set`` and ``restore_active_set`` (3.4). ``ThermoX``
   gets no V3 call: its users (``snapy/src/scalar/scalar.cpp:52``,
@@ -594,7 +615,8 @@ Merge order (provider first):
 
 1. pyharp ``out=`` (X).
 2. kintera K1 (tables), K2 (counter API, ``nfail_`` kept), K3 (solve
-   plans, ``compute_into``), K4 (active-set snapshot). One release.
+   plans, ``compute_into``), K4 (active-set snapshot). One release, "the
+   kintera release carrying lane K" (no number is set).
 3. snapy, X1 to X7 (X), with EF's and K's snapy PRs: S-K1 (the counter in
    the reset list and retry stack), S-K2 (warm-start snapshot; S-K1 and
    S-K2 after EF-2, same block ``snapy/src/mesh/meshblock.cpp:1538-1547``), S-K3 (saturation adjustment inside the segment), S-K4
@@ -610,7 +632,7 @@ and K1 to K4 are bitwise against the pin for every caller (section 10).
 --------------
 
 kintera: touched files do not grow in net. The thermo total is 4,801 at the
-pin and 4,777 after (target, not a measurement). Counted with
+pin and 4,787 after (target, not a measurement). Counted with
 ``wc -l`` at the pin; "after" are targets.
 
 .. csv-table:: kintera touched
@@ -618,19 +640,19 @@ pin and 4,777 after (target, not a measurement). Counted with
 
    "src/utils/user_funcs.cu", 134, 56, "k1"
    "src/utils/user_funcs.hpp", 57, 57, "k2"
-   "src/utils/utils_dispatch.cu", 105, 99, "k3"
+   "src/utils/utils_dispatch.cu", 105, 104, "k3"
    "src/utils/utils_dispatch.cpp", 113, 113, "k4"
    "src/thermo/thermo_dispatch.cu", 185, 173, "k5"
    "src/thermo/thermo_dispatch.cpp", 192, 192, "k6"
    "src/thermo/thermo_y.cpp", 557, 556, "k7"
-   "src/thermo/thermo.hpp", 454, 443, "k8"
+   "src/thermo/thermo.hpp", 454, 453, "k8"
    "src/thermo/eval_uhs.cpp", 477, 477, "k9"
    "src/thermo/log_svp.cpp", 160, 160, "k10"
    "src/thermo/thermo_dispatch.hpp", 35, 35, "k11"
    "src/thermo/eval_uhs.hpp", 58, 58, "k12"
    "src/thermo/log_svp.hpp", 135, 135, "k13"
    "src/utils/utils_dispatch.hpp", 16, 16, "k14"
-   "total", 2678, 2570, "cut 108 (4.0%)"
+   "total", 2678, 2585, "cut 93 (3.5%)"
 
 Items (net lines per file):
 
@@ -638,16 +660,21 @@ k1. -78 (src/utils/user_funcs.cu): the three ``get_device_func*`` copies
 (14-133) become one template filling a ``FuncTable`` once per
 ``prepare`` (-78). This file builds only with CUDA
 (``src/CMakeLists.txt:67-75``), so the table code below goes to files
-both builds compile (k4, k6, k7).
+both builds compile (k3 to k8).
 
 k2. -0 (src/utils/user_funcs.hpp): ``FuncTable`` and ``ThermoTables``
 declared (+20); the per-call name lookup declarations go (-20).
 
-k3. -6 (src/utils/utils_dispatch.cu): ``call_func*`` take a ``FuncTable``
-instead of names (42-65 and twins).
+k3. -1 (src/utils/utils_dispatch.cu): ``call_func*`` take a ``FuncTable``
+instead of names (42-65 and twins; -6); the CUDA kernels of the two
+stubs below, table filling and ``capture_active``, registered with
+``REGISTER_CUDA_DISPATCH`` (+5, target).
 
 k4. -0 (src/utils/utils_dispatch.cpp): the same on the CPU (28, 50, 74;
--6); ``NoTableBuild``, its thread-local list and ``used()`` (+6, target).
+-6); ``DEFINE_DISPATCH`` of the two stubs with their CPU kernels: a host
+pointer table through ``get_host_func`` and ``capture_active`` false (+6,
+target). This file is in both builds (``src/CMakeLists.txt:32-47``); the
+``.cu`` files only with CUDA (``src/CMakeLists.txt:67-99``).
 
 k5. -12 (src/thermo/thermo_dispatch.cu): four name resolutions (81-102)
 become table fields.
@@ -661,11 +688,13 @@ and the warning blocks go (-26); ``fixed``/exact plan (+8); counter
 ``alloc_epoch`` (+7) and recording the module's table in an open
 ``NoTableBuild`` scope (+1), both target.
 
-k8. -11 (src/thermo/thermo.hpp): the failure and table declarations (+12)
+k8. -1 (src/thermo/thermo.hpp): the failure and table declarations (+12)
 replace ``nfail_`` and ``take_`` comments (145-147, 164-166) and the
 duplicated per-member comments of 130-140 (-12); the ``NoTableBuild`` and
 ``alloc_epoch`` declarations (+5) come with one-line ``create()`` comments
-in place of the two nine-line blocks (117-125, 282-290; -16).
+in place of the two nine-line blocks (117-125, 282-290; -16);
+``NoTableBuild`` is defined inline here with an inline thread-local list
+(+6), and the two stubs are declared with ``DECLARE_DISPATCH`` (+4).
 
 k9. -0 (src/thermo/eval_uhs.cpp): uploads become table reads, line for
 line.
@@ -684,8 +713,8 @@ and the constants are uploaded inside the bodies
 ``ThermoTables`` in k2 (within its +20, target): it returns the tables
 of ``op`` for the device and dtype of ``temp``, builds them if missing
 only outside capture and outside a ``NoTableBuild`` scope, throws there,
-and records them for that scope's ``used()`` list (3.3); both are booked
-in k1.
+and records them for that scope's ``used()`` list (3.3); ``tables_for``
+is booked in k6, ``NoTableBuild`` in k8.
 
 k13. -0 (src/thermo/log_svp.hpp): the device-pointer members read the
 table, line for line.
@@ -701,6 +730,7 @@ them):
 
    "snapy/src/eos/ideal_moist.cpp", 372, 345, "EF (-27, EF revision 2.3; 3.7 swaps not booked)"
    "snapy/src/mesh/meshblock.cpp", 1919, 1903, "X (1447-1454 and 1541-1547 become two calls)"
+   "snapy/src/eos/moist_mixture.cpp", 194, 194, "EF (EF-8: 65 and 190 become ``compute_into`` into a pre-sized ``temp``, line for line)"
 
 10. Migration
 -------------
@@ -772,9 +802,14 @@ R:
 - Nit: the comment of ``RegisterRequest::derived`` says "hydro only"
   (``flux_register.hpp:34`` at ``4c59162a``); R.rst lines 790-793 add K's
   element rows.
-- Settled: lane R lists K's two counters, ``thermo.temp_solve`` and
-  ``thermo.pres_solve`` (``flux_register.hpp:36``), in R rev 2.3; K cites
-  its sha once posted.
+- Confirm that a ``cell_amount`` or ``derived_amount`` posted after the
+  last ``end_stage`` (the chemistry segment) joins the step's sums;
+  ``flux_register.hpp:85`` folds amounts at ``end_stage`` and only
+  ``post_split`` (``flux_register.hpp:79-81``) is stated to work outside a
+  stage.
+- Requested of R rev 2.3, pending: list K's two counters,
+  ``thermo.temp_solve`` and ``thermo.pres_solve`` (``flux_register.hpp:36``);
+  R's published head ``4c59162a`` does not list them yet.
 
 A:
 
@@ -812,7 +847,7 @@ A:
      (``ThermoTables`` and ``FuncTable`` replace these lookups and
      uploads, 3.3, items k1, k3, k9) is pinned by snapy (EF-8);
      ``RelaxBotComp``'s ``ThermoY`` (``snapy/src/forcing/relax_bot_comp.cpp:66``)
-     calls ``prepare()`` at set-up, since a missing table throws inside
+     is prepared before warm-up (3.3), since a missing table throws inside
      capture (3.3); it shares the EOS's table (same options object,
      ``snapy/src/forcing/relax_bot_comp.cpp:63``), and that table is in
      the segment's ``GraphKey::tables`` and ``CapturedGraph::tables`` by
@@ -823,6 +858,9 @@ A:
 O:
 
 - The failure rows 1 and 2 as diagnostics read after the accept.
+- Form the element images of other posters' species-row amounts
+  (``cell_source``, ``floor``, ``fixer``) after acceptance with K's ``E``
+  and element names (section 4).
 
 Round-2 notes
 ~~~~~~~~~~~~~
@@ -1009,6 +1047,53 @@ lane R's reviewer's findings 1 to 4 on rev 2.3:
    dtype) map, as in the skeleton (3.3).
 4. Agree: the counters are settled by R rev 2.3; ``543ff84f`` in section 1
    is marked as history.
+
+Round-2.6 notes
+~~~~~~~~~~~~~~~
+
+EF's reviewer's conflicts-only notes on rev 2.4, carried by the
+coordinator (Z-K1 to Z-K3):
+
+1. Z-K1, agree: ``forward`` is cited at
+   ``snapy/src/mesh/meshblock.cpp:969-970`` (section 4; ``:965`` is the
+   cast).
+2. Z-K2, agree: the joint table has a ``moist_mixture.cpp`` row (section
+   9). The release is "the kintera release carrying lane K"; no number is
+   set. ``compute_into`` needs a pre-sized ``temp``: it writes with
+   ``copy_``, which does not resize (3.1), while the pin registers
+   ``temp`` and ``ivol`` empty (``snapy/src/eos/moist_mixture.cpp:26-27``)
+   and rebinds them with ``set_`` (``snapy/src/eos/moist_mixture.cpp:64-65``,
+   ``snapy/src/eos/moist_mixture.cpp:189-190``). EF sizes them to the
+   cell shape once, in eager code before warm-up.
+3. Z-K3, ``conflict``: no ``prepare()`` in EF's ``reset()``, and EF books
+   nothing. ``reset()`` runs at construction, before the cell shape is
+   known and before the block moves to its device
+   (``snapy/examples/jupiter_evap_precip_1d.cpp:209``,
+   ``snapy/examples/shallow_splash.cpp:97``), and ``to()`` does not rerun
+   it, so its table would be for the wrong device. X calls ``prepare()``
+   for each kintera module of a segment before warm-up, with the
+   segment's device, dtype and shape (3.3); eager calls build a missing
+   table themselves. The coordinator rules.
+
+Lane R's reviewer (notes 1 to 4, on rev 2.5 at ``d83150a8``):
+
+1. Agree: the CPU build gets table filling and ``capture_active`` from two
+   dispatch stubs, declared in ``thermo.hpp`` (k8), defined with CPU
+   kernels in ``utils_dispatch.cpp`` (k4), CUDA kernels registered in
+   ``utils_dispatch.cu`` (k3); ``NoTableBuild`` moves inline to k8; k12's
+   booking line is corrected. The cut is 93 lines (3.5%), none grows.
+2. Agree: posts come after the last ``after_combine``, in the chemistry
+   segment (pin order, X rev 3.5); the dry density is hydro's
+   ``dry_density(u)`` (row ``IDN`` plus any reference state); the adapter
+   reads no monitor value
+   before acceptance. The boundary image comes from K's own
+   ``step_field`` read, as lane A; other posters' amounts are imaged by O
+   after acceptance with K's ``E``, since K cannot read them (section 4,
+   question to O).
+3. Agree: one table per (options digest, device, dtype) in the store, one
+   per module (3.3).
+4. Agree: the two counters are requested of R rev 2.3, pending; R's head
+   ``4c59162a`` does not list them (section 11, R).
 12. Skeleton index
 ------------------
 

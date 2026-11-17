@@ -1,5 +1,5 @@
 #pragma once
-// V3 lane K skeleton: declarations only, in no build. Rev 2.1.
+// V3 lane K skeleton: declarations only, in no build. Rev 2.7.
 // A snapy type: kintera's API gains none. The step now in
 // snapy/examples/run_hydro.cpp:171-198 as a registered source. FluxRegister
 // is lane R's (docs/v3/skeleton/R/flux_register.hpp, happysky19/snapy 4c59162a).
@@ -11,14 +11,14 @@ namespace snap {
 
 class FluxRegister;  // lane R
 
-//! names posted by lane K (FP64, volume-weighted, last after_combine only)
-inline constexpr char kSatSpecies[] = "thermo.saturation";  // cell_source
+//! names posted by lane K (FP64, volume-weighted); chem.* from X's set_chemistry slot
+inline constexpr char kSatSpecies[] = "thermo.saturation";  // cell_source, last after_combine
 inline constexpr char kChemSpecies[] = "chem.species";      // cell_source
 inline constexpr char kChemElements[] = "chem.elements";    // diagnostic, element/<name>
 inline constexpr char kChemEnergy[] = "chem.energy";        // cell_source, 0
 
-//! one chemistry step after the last stage, eager segment, FP64. Built on
-//! kintera's Kinetics and evolve_implicit; any provider fills it.
+//! one step after the last stage's boundaries, before the step-end retry read,
+//! eager, FP64, on kintera's Kinetics and evolve_implicit; any provider fills it.
 class ChemistrySource {
  public:
   virtual ~ChemistrySource() = default;

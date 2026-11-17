@@ -23,12 +23,12 @@ FuncTable make_func_table(std::vector<std::string> const& names, int arity,
                           torch::Device device);
 
 //! everything a kintera thermo op reads per call, built once per
-//! (device, dtype, generation pair). Immutable after prepare().
+//! (options digest, device, dtype). Immutable once built.
 struct ThermoTables {
   torch::Device device = torch::kCPU;
   torch::Dtype dtype = torch::kFloat64;  // compute dtype of eval_*
   uint64_t options_digest = 0;  // hash of the options content
-  int64_t epoch = 0;  // bumped by every reset()/prepare() that reallocates
+  int64_t epoch = 0;  // set at build, never changed; a rebuild is new
 
   // constants now uploaded per call (src/thermo/eval_uhs.cpp:264-265)
   torch::Tensor cref_R, uref_R, sref_R;  // (nspecies,), dtype
@@ -55,7 +55,12 @@ ThermoTablesPtr tables_for(std::shared_ptr<struct SpeciesThermoImpl> const& op,
                            torch::Tensor const& like);
 
 //! X opens one around a segment's warm-up and capture (thread-local)
-struct NoTableBuild { NoTableBuild(); ~NoTableBuild(); };
+struct NoTableBuild {
+  NoTableBuild();
+  ~NoTableBuild();
+  //! tables tables_for returned in this scope; X keys its graph on them
+  std::vector<ThermoTablesPtr> const& used() const;
+};
 
 //! true while the current stream is capturing; a table build then throws
 bool capture_active(torch::Device device);

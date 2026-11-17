@@ -28,6 +28,8 @@ class ChemistrySource {
   //! element-by-species matrix E from species composition (FP64);
   //! chem.elements = E del_conc
   virtual torch::Tensor element_matrix() const = 0;
+  //! row names of element_matrix(), posted as "element/<name>"
+  virtual std::vector<std::string> element_names() const = 0;
   //! adds the increment to u in place; posts cell_amount(name, vol_du,
   //! 1.0, kind) and derived_amount for chem.elements
   virtual void apply(torch::Tensor u, torch::Tensor const& temp,

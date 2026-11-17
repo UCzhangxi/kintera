@@ -22,7 +22,7 @@ Lane R is read at happysky19/snapy ``4c59162a`` (R revision 2.2, header
 rev 4.2; the frozen header rev 4 is ``175af2f``); rev 1 cited
 ``543ff84f``; ``4c59162a`` is R's frozen header. Lane X is read at
 UCzhangxi/snapy ``100bc9b3`` (X rev 3) and, for the names it adopts from
-K, at ``bac201d1`` (X rev 3.1). Lane A is read at its branch ``v3-design/A``,
+K, at ``66f797a2`` (X rev 3.2). Lane A is read at its branch ``v3-design/A``,
 ``9ee83756``. This lane is the kintera side of lane X's provider contracts. It reuses
 X's precision table (``PrecisionPolicy``, X.rst section 6) and graph rules
 (``StageExecutor``, segments, ``GraphKey``, the step-reset list, X.rst
@@ -186,10 +186,10 @@ counter is a normal tensor made outside inference mode, so the in-place
 ``add_`` inside ``forward`` is legal with or without inference mode (the
 pin avoids ``+=`` for that reason, ``src/thermo/thermo_y.cpp:376``;
 hypothesis, K-G4 runs both). A graph records the addresses of the
-counter and of the active-set buffers (3.4), so ``reset()`` or a new
-``prepare()`` bumps the allocation epoch of the generation pair (3.3)
-and invalidates every graph that holds them; X compares the pair before
-every replay.
+counter and of the active-set buffers (3.4), so ``reset()`` or a
+reallocating ``prepare()`` bumps the module's ``alloc_epoch()`` (3.3)
+and invalidates every graph that holds them; X compares it before every
+replay.
 
 .. csv-table::
    :header: "Call", "Effect", "Capturable", "Replaces"
@@ -203,9 +203,9 @@ every replay.
 (today ``src/thermo/thermo_y.cpp:379-383``). snapy's lifecycle: the step
 reset list (X's ``kStageZero``: the ``u0`` backup, then
 ``snapshot_active_set``, then ``reset_failures()``, X.rst lines 116-118 at
-``bac201d1``) clears the counter. Retry cause, one representation: slot 4
+``66f797a2``) clears the counter. Retry cause, one representation: slot 4
 of X's retry stack, as the pin has it and as R.rst line 799 at
-``4c59162a`` and X.rst lines 127-128 at ``bac201d1`` say: the stack calls
+``4c59162a`` and X.rst lines 129-131 at ``66f797a2`` say: the stack calls
 ``consume_failures(flags.narrow(0, 4, 1))``
 (``snapy/src/mesh/meshblock.cpp:1559-1560``) and the one host read stays
 at ``snapy/src/mesh/meshblock.cpp:1566``. R's ``flag_retry`` is not used
@@ -217,7 +217,7 @@ posted once per step with ``count(name, failures()[1])`` and
 header rev 4.2, ``4c59162a``); ``reset_failures()`` clears all three rows
 at the next attempt's stage 0. Warm-up and capture: the (3,) counter and the
 active-set buffers join X's save and restore of counters and retry flags
-around warm-up and capture (X.rst lines 348-350 at ``bac201d1``), so a warm-up pass
+around warm-up and capture (X.rst lines 368-371 at ``66f797a2``), so a warm-up pass
 leaves no count behind. Saturation failures stay with kintera
 (EF's review agrees).
 
@@ -244,13 +244,16 @@ replaces the three ``get_device_func*`` copies and their
   ``reset()`` is unsupported; ``prepare()`` stores a digest of the options
   and every forward outside capture checks it (debug builds), so a stale
   table throws instead of being used.
-- Key: device index, dtype, and a generation pair: (options digest,
-  allocation epoch). The digest is of the options content, so an in-place
-  change of the options changes it; the epoch is bumped by every
-  ``reset()`` and ``prepare()`` that reallocates the counter, the
-  active-set buffers or the tables, so a reallocation with unchanged
-  options changes it too. X's pre-replay check recomputes the digest on
-  the host (no device read), compares the pair, and a mismatch throws (cost unmeasured; hypothesis: small next to a
+- Key: device index, dtype, and two generations. A table carries
+  (options digest, table epoch): the digest is of the options content,
+  so an in-place change of the options changes it; the table epoch is set
+  when the table is built and never changes (a rebuild is a new table).
+  A module carries ``alloc_epoch()``, bumped by every ``reset()`` and
+  every ``prepare()`` that reallocates its own buffers (the counter, the
+  active set, registered buffers such as ``inv_mu``), so a reallocation
+  with unchanged options changes it too, while modules sharing a table
+  keep their own epochs. X's pre-replay check recomputes the digest on
+  the host (no device read), compares both generations, and a mismatch throws (cost unmeasured; hypothesis: small next to a
   step). ``tables_`` is a map per (device, dtype), one entry each.
   ``prepare()`` also registers each table in a process-wide store keyed by
   (options digest, device, dtype), never by an address, so a reused
@@ -262,15 +265,28 @@ replaces the three ``get_device_func*`` copies and their
   ``src/thermo/thermo.hpp:39``). It builds a missing table only in eager
   code: inside capture, or inside a ``kintera::NoTableBuild`` scope that X
   opens around a segment's warm-up and capture, a missing table throws.
-  So every table a graph uses was made by ``prepare()`` before warm-up,
-  and its pair is in ``GraphKey::tables``. ``prepare`` also runs the lazy shared-memory query of
+  So every table a graph uses was made by ``prepare()`` before warm-up.
+- Ownership and epoch. One table exists per (options digest, device,
+  dtype); modules built from one options object share it, as the EOS's
+  ``ThermoY`` and ``RelaxBotComp``'s do
+  (``snapy/src/eos/ideal_moist.cpp:26``,
+  ``snapy/src/forcing/relax_bot_comp.cpp:63``,
+  ``snapy/src/forcing/relax_bot_comp.cpp:66``). Its owners are the modules
+  that called ``prepare()`` and the graphs that hold it. The table's
+  ``epoch`` is set when it is built and never changes; a rebuild is a new
+  table with a new epoch. A ``NoTableBuild`` scope records every table
+  ``tables_for`` returns (``used()``). X fills ``GraphKey::tables`` with the
+  (digest, epoch) pairs and ``CapturedGraph::tables`` with the pointers of
+  the warm-up's list, and throws if the capture's list differs, so no
+  graph uses a table outside those records (a host-side check). ``prepare`` also runs the lazy shared-memory query of
   ``src/loops.cuh:18-50``.
-- Lifetime: ``std::shared_ptr<const ThermoTables>``. The module holds one;
-  X's ``StageExecutor`` keeps a copy with every graph that replays a kintera
-  op, so a table outlives every graph that references it. The table
+- Lifetime: ``std::shared_ptr<const ThermoTables>``. Each preparing module
+  holds one; X's ``StageExecutor`` keeps a copy with every graph that
+  replays a kintera op, so a table outlives every graph that references
+  it. The table
   generation pair of each held table is a field of X's ``GraphKey``
   (``tables``, ``stage_executor.hpp:54`` and X.rst lines 83-84 at
-  ``bac201d1``), and each graph holds its ``ThermoTablesPtr`` copies in
+  ``66f797a2``), and each graph holds its ``ThermoTablesPtr`` copies in
   ``CapturedGraph`` (``stage_executor.hpp:99-100``); a new pair invalidates
   the graph.
 - Inside a captured segment a missing table throws (no lazy set-up during
@@ -286,9 +302,10 @@ written in place by the kernel and survive across steps. V3 adds
 both ``copy_`` between fixed buffers of the same shape. Snapy calls
 snapshot in ``kStageZero`` (after the ``u0`` backup) and restore in X's
 ``kRollback`` list on a retry and after a graph warm-up, so a retry
-repeats the first attempt from the same active set. Order on a retry
-(X.rst lines 122-126 at ``bac201d1``): ``u0``/``s0``, the radial
-``restore_step``, ``restore_active_set``, R's ``rollback()``; the retry
+repeats the first attempt from the same active set. Order on a retry, the pin's
+(X.rst lines 122-127 at ``66f797a2``): ``u0``, the radial ``restore_step``,
+``restore_active_set``, the cons2prim, ``s0`` and the scalar primitives,
+then R's ``rollback()``; the retry
 then reruns ``kStageZero``, which takes the snapshot again from the
 restored state and calls ``reset_failures``. Today a retry starts from the failed attempt's
 active set (``snapy/src/mesh/meshblock.cpp:969-970``; the rollback does not
@@ -312,7 +329,7 @@ cold-start branch (``src/thermo/thermo_y.cpp:303-312``) runs only in
   chemistry [segment, FP64]: kinetics step -> cell_amount("chem.*", ...)
   last after_combine: count(temp_solve), count(pres_solve)
   step end:     thermo.consume_failures(flags[4]); X's one host read
-  kRollback:    u0/s0; radial restore_step; thermo.restore_active_set(as0); R rollback()
+  kRollback:    u0; radial restore_step; thermo.restore_active_set(as0); cons2prim, s0; R rollback()
 
 3.6 Chemistry step (study item 7)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -386,12 +403,23 @@ kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
     the equilibrium loader builds a local map only to check element
     balance, ``src/equilibrium/equilibrium_options.cpp:54-68``),
     so snapy's ``ChemistrySource`` (S-K4) owns ``E`` and the element
-    names: it reads the same species ``composition`` entries at set-up;
+    names (``element_matrix()``, ``element_names()`` in the skeleton): it
+    reads the same species ``composition`` entries at set-up;
     the species-by-reaction stoichiometry alone does not define element
     rows. Its rows are R's derived rows ``element/<name>`` declared in
     ``RegisterRequest::derived`` and posted with ``derived_amount``
-    (R.rst lines 790-793 at ``4c59162a``); the same adapter posts each
-    row's step total with ``derived_total`` (``flux_register.hpp:75``).
+    (R.rst lines 790-793 at ``4c59162a``). The same adapter supplies the
+    rest of R's derived-row contract (R.rst lines 535-546): the step-end
+    stock ``derived_total("element/<name>", sum over fluid cells of
+    (E conc)_name times cell volume)``, ``conc`` = species density over
+    molar mass, the same cells R uses for ``domain_total``; and each
+    boundary transfer as ``derived_amount("element/<name>.boundary.<dim>",
+    "element/<name>", E applied to the species rows' boundary(dim)
+    amounts over molar mass, w, AmountKind::cell_source)``, inflow
+    positive. Stock change = boundary + ``chem.elements``, which is zero;
+    the saturation adjustment moves mass between vapor and cloud species
+    of equal composition and adds nothing (hypothesis: each condensate
+    is declared with its vapor's composition).
     It must be zero to the solver's
     tolerance; non-zero is a named non-closure.
   - ``chem.energy`` (``cell_source``): zero today (the increment leaves the energy row unchanged); declared so a later
@@ -624,7 +652,9 @@ and the constants are uploaded inside the bodies
 (k9) get the tables from ``tables_for(op, temp)``, declared with
 ``ThermoTables`` in k2 (within its +20, target): it returns the tables
 of ``op`` for the device and dtype of ``temp``, builds them if missing
-outside capture and throws inside (3.3).
+only outside capture and outside a ``NoTableBuild`` scope, throws there,
+and records them for that scope's ``used()`` list (3.3); both are booked
+in k1.
 
 k13. -0 (src/thermo/log_svp.hpp): the device-pointer members read the
 table, line for line.
@@ -672,7 +702,7 @@ default changes.
   would also be bitwise, and cheaper than ``fixed`` because it skips the
   idle passes (hypothesis: same stopping rule, same results). X declines
   it for this round and revisits it with parameterized graphs (X2) (X.rst
-  lines 342-346 at ``bac201d1``), so ``fixed`` is the baseline.
+  lines 363-367 at ``66f797a2``), so ``fixed`` is the baseline.
 
 11. Open questions to other lanes
 ---------------------------------
@@ -688,16 +718,19 @@ EF:
 
 X (same owner as this lane):
 
-- Settled by X rev 3.1 (``bac201d1``): ``GraphKey::tables`` and
+- Settled by X rev 3.2 (``66f797a2``): ``GraphKey::tables`` and
   ``CapturedGraph`` (3.3); ``kStageZero`` = ``u0`` backup,
-  ``snapshot_active_set``, ``reset_failures``; ``kRollback`` = ``u0``/``s0``,
-  radial ``restore_step``, ``restore_active_set``, R's ``rollback()``
+  ``snapshot_active_set``, ``reset_failures``; ``kRollback`` in the pin's
+  order with ``restore_active_set`` after the radial ``restore_step``
   (3.4); slot 4 for row 0 (3.2); K-F2 declined this round; the counter
   and the active set in the warm-up and capture save and restore (X.rst
-  lines 348-350).
+  lines 368-371).
 - Add the chemistry step, an eager FP64 segment after the saturation
-  adjustment (3.6), to the segment list (X.rst lines 277-282 at
-  ``bac201d1``).
+  adjustment (3.6), to the segment list (X.rst lines 294-299 at
+  ``66f797a2``).
+- Fill ``GraphKey::tables`` and ``CapturedGraph::tables`` from
+  ``NoTableBuild::used()``, and add the ``alloc_epoch()`` of each kintera
+  module in the segment to ``GraphKey`` (3.3).
 
 R:
 
@@ -748,7 +781,10 @@ A:
      uploads, 3.3, items k1, k3, k9) is pinned by snapy (EF-8);
      ``RelaxBotComp``'s ``ThermoY`` (``snapy/src/forcing/relax_bot_comp.cpp:66``)
      calls ``prepare()`` at set-up, since a missing table throws inside
-     capture (3.3); and K-G3 passes for the four calls. Its ``ThermoX``
+     capture (3.3); it shares the EOS's table (same options object,
+     ``snapy/src/forcing/relax_bot_comp.cpp:63``), and that table is in
+     the segment's ``GraphKey::tables`` and ``CapturedGraph::tables`` by
+     X's ``used()`` check (3.3); and K-G3 passes for the four calls. Its ``ThermoX``
      (``X->Y`` only) needs no table. Until then ``capturable = false``
      stands.
 
@@ -894,6 +930,29 @@ Lane R's reviewer (notes 1 to 4, on rev 2.1 at ``dde24f2c``):
    opens around warm-up and capture (3.3, skeleton ``tables.hpp``).
 4. Agree: X is cited at ``bac201d1``; questions to X (chemistry segment)
    and R (the two counter names) are above.
+
+Round-2.3 notes
+~~~~~~~~~~~~~~~
+
+Lane R's reviewer (notes 1 to 4, on rev 2.2 at ``9e379097``):
+
+1. Agree: k12 now names ``NoTableBuild`` with ``tables_for`` (section 9).
+2. Agree: the skeleton ``ChemistrySource`` gains ``element_names()``; the
+   element stock for ``derived_total`` and the boundary transfers as
+   ``element/<name>.boundary.<dim>`` amounts follow R.rst lines 535-546
+   (section 4).
+3. Agree: one table per (options digest, device, dtype), shared by
+   modules on one options object (the EOS and ``RelaxBotComp``); a fixed
+   epoch per table; owners are preparing modules and graphs; X fills
+   ``GraphKey::tables`` and ``CapturedGraph::tables`` from
+   ``NoTableBuild::used()`` and throws on a mismatch (3.3, question to X).
+   K-1's condition 4 now requires it. The table epoch and a module's
+   buffer reallocation are now two generations: ``alloc_epoch()`` per
+   module, also in ``GraphKey``; this replaces the single allocation
+   epoch of Round-2 note 6 (3.2, 3.3).
+4. Agree: X is cited at ``66f797a2`` (rev 3.2, rollback order updated in
+   3.4); the chemistry-segment question cites X.rst lines 294-299 and the
+   counter question to R stands.
 12. Skeleton index
 ------------------
 

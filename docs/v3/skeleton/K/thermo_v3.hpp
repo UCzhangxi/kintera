@@ -52,6 +52,9 @@ class ThermoYV3Api {
                     std::vector<torch::Tensor> const& args,
                     torch::Tensor out);
 
+  //! bumped by reset() and by a prepare() that reallocates this module's
+  //! buffers (counter, active set, inv_mu); joins X's GraphKey
+  int64_t alloc_epoch() const;
   //! (3,) int64 device view, fixed after prepare(); never read here
   torch::Tensor const& failures() const;
   //! zero_() in place; capturable (step-reset list, replaces a host read)

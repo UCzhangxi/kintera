@@ -153,7 +153,9 @@ ThermoX equilibrium (``src/thermo/thermo_x.cpp:301``,
     current CUDA stream is capturing and ``eager_exit`` otherwise. EF calls
     ``compute`` inside stages (``snapy/src/eos/moist_mixture.cpp:65``,
     ``snapy/src/eos/moist_mixture.cpp:190``). The two modes are bitwise
-    equal (K-G2), so the mode does not join X's ``GraphKey``.
+    equal (hypothesis, K-G2), so the mode does not join X's ``GraphKey``.
+    Diagnostics differ: ``eager_exit`` warns on the host, ``fixed`` only
+    counts on the device (3.2).
 
 - On non-convergence the pin warns (``src/thermo/thermo_y.cpp:531-532``).
   V3 adds one to the ``temp_solve`` (or ``pres_solve``) row of the failure
@@ -179,8 +181,9 @@ counter is a normal tensor made outside inference mode, so the in-place
 pin avoids ``+=`` for that reason, ``src/thermo/thermo_y.cpp:376``;
 hypothesis, K-G4 runs both). A graph records the addresses of the
 counter and of the active-set buffers (3.4), so ``reset()`` or a new
-``prepare()`` bumps the generation and invalidates every graph that holds
-them; X compares the generation before every replay (3.3).
+``prepare()`` bumps the allocation epoch of the generation pair (3.3)
+and invalidates every graph that holds them; X compares the pair before
+every replay.
 
 .. csv-table::
    :header: "Call", "Effect", "Capturable", "Replaces"
@@ -226,16 +229,19 @@ replaces the three ``get_device_func*`` copies and their
   ``reset()`` is unsupported; ``prepare()`` stores a digest of the options
   and every forward outside capture checks it (debug builds), so a stale
   table throws instead of being used.
-- Key: device index, dtype, and an options generation: a digest of the
-  options content, so an in-place change of the options also changes it.
-  X's pre-replay check recomputes the digest on the host (no device read)
-  and a mismatch throws (cost unmeasured; hypothesis: small next to a
+- Key: device index, dtype, and a generation pair: (options digest,
+  allocation epoch). The digest is of the options content, so an in-place
+  change of the options changes it; the epoch is bumped by every
+  ``reset()`` and ``prepare()`` that reallocates the counter, the
+  active-set buffers or the tables, so a reallocation with unchanged
+  options changes it too. X's pre-replay check recomputes the digest on
+  the host (no device read), compares the pair, and a mismatch throws (cost unmeasured; hypothesis: small next to a
   step). ``tables_`` is a map per (device, dtype), one entry each. ``prepare`` also runs the lazy shared-memory query of
   ``src/loops.cuh:18-50``.
 - Lifetime: ``std::shared_ptr<const ThermoTables>``. The module holds one;
   X's ``StageExecutor`` keeps a copy with every graph that replays a kintera
   op, so a table outlives every graph that references it. The table
-  generation joins X's ``GraphKey``; a new generation invalidates the
+  generation pair joins X's ``GraphKey``; a new pair invalidates the
   graph.
 - Inside a captured segment a missing table throws (no lazy set-up during
   capture).
@@ -468,7 +474,8 @@ builds that tag (gate K-G9); kintera releases; snapy merges. The pin's
 floor is already 2.6.9 (``snapy/CMakeLists.txt:104-105``,
 ``snapy/pyproject.toml:7``), so no raise has to land before EF-8. The
 floor is raised to the V3 release once, by EF-8 (the first snapy PR that
-needs K1 and K3); S-K1 to S-K4 keep it.
+needs K1 and K3); S-K1 to S-K4 need K2 to K4 and merge after EF-8, so
+they keep it.
 
 Merge order (provider first):
 
@@ -613,7 +620,8 @@ EF:
 
 X (same owner as this lane):
 
-- Add the kintera table generation to ``GraphKey`` and hold the table
+- Add the kintera generation pair (options digest, allocation epoch) to
+  ``GraphKey`` and hold the table
   ``shared_ptr`` with each graph (3.3).
 - Add ``reset_failures`` and ``restore_active_set`` to the step-reset
   list in the order of 3.4; ``consume_failures`` writes slot 4 of the
@@ -690,11 +698,13 @@ EF's reviewer (numbered notes 1 to 16, on rev 1 at ``f61d0d80``):
    join ``GraphKey`` (3.1).
 5. Agree: row 0 only; rows 1 and 2 are diagnostics (3.2, skeleton).
 6. Agree, second option: ``reset()`` or ``prepare()`` bumps the
-   generation, which covers the counter and the active-set buffers, and X
-   compares it before every replay (3.2, 3.3; question to X above).
+   allocation epoch, which covers the counter and the active-set buffers,
+   and X compares the generation pair before every replay (3.2, 3.3;
+   question to X above).
 7. Agree. No change.
-8. Agree, first option: the generation is a digest of the options content,
-   checked before every replay; ``tables_`` is a map per (device, dtype)
+8. Agree, first option: the generation pair holds a digest of the options
+   content next to the allocation epoch of note 6, checked before every
+   replay; ``tables_`` is a map per (device, dtype)
    (3.3).
 9. Agree: ``eval_const_cv_pressure_delta`` is listed as kept, header-only,
    same name and formula, through K1 to K5 (section 8).

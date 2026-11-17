@@ -23,11 +23,12 @@ FuncTable make_func_table(std::vector<std::string> const& names, int arity,
                           torch::Device device);
 
 //! everything a kintera thermo op reads per call, built once per
-//! (device, dtype, options generation). Immutable after prepare().
+//! (device, dtype, generation pair). Immutable after prepare().
 struct ThermoTables {
   torch::Device device = torch::kCPU;
   torch::Dtype dtype = torch::kFloat64;  // compute dtype of eval_*
-  int64_t generation = 0;                // bumped by ThermoY::reset()
+  uint64_t options_digest = 0;  // hash of the options content
+  int64_t epoch = 0;  // bumped by every reset()/prepare() that reallocates
 
   // constants now uploaded per call (src/thermo/eval_uhs.cpp:264-265)
   torch::Tensor cref_R, uref_R, sref_R;  // (nspecies,), dtype

@@ -54,11 +54,15 @@ using ThermoTablesPtr = std::shared_ptr<ThermoTables const>;
 ThermoTablesPtr tables_for(std::shared_ptr<struct SpeciesThermoImpl> const& op,
                            torch::Tensor const& like);
 
+//! host hash of buffer addresses, sizes, dtypes (a ThermoY adds its counter
+//! and active set); X keys each kintera module of a segment on it
+int64_t alloc_epoch(torch::nn::Module const& m);
+
 //! X opens one around a segment's warm-up and capture (thread-local)
 struct NoTableBuild {
   NoTableBuild();
   ~NoTableBuild();
-  //! tables tables_for returned in this scope; X keys its graph on them
+  //! tables tables_for returned or a module used in this scope
   std::vector<ThermoTablesPtr> const& used() const;
 };
 

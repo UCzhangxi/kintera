@@ -1,5 +1,5 @@
 #pragma once
-// V3 lane K skeleton: declarations only, in no build. Rev 2.1.
+// V3 lane K skeleton: declarations only, in no build. Rev 2.8.
 // Additions to ThermoYImpl (src/thermo/thermo.hpp:115-276) at kintera
 // 3f5ff938. Precision and graph types are lane X's; none is redefined here.
 #include <array>
@@ -35,9 +35,9 @@ struct ActiveSet {
 // ---- declarations added to class ThermoYImpl ----
 class ThermoYV3Api {
  public:
-  //! outside capture: build or reuse the tables, allocate the counter and
-  //! the active set for `shape`, warm the shared-memory query
-  //! (src/loops.cuh:18-50). Throws if called while capturing.
+  //! outside capture, idempotent: same device, dtype, shape reallocate nothing;
+  //! else build or reuse the tables, allocate counter and active set for
+  //! `shape`, warm the shared-memory query (src/loops.cuh:18-50). Throws if capturing.
   ThermoTablesPtr prepare(torch::Device device, torch::Dtype dtype,
                           torch::IntArrayRef shape);
   ThermoTablesPtr tables() const;  // null before prepare()

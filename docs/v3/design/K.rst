@@ -56,7 +56,7 @@ lane EF waits on both.
    "snapy: saturation adjustment", "snapy/src/mesh/meshblock.cpp:949-982 (warm start snapy/src/mesh/meshblock.cpp:969-970)"
    "snapy: failure drain at step start", "snapy/src/mesh/meshblock.cpp:736 via snapy/src/mesh/meshblock.cpp:1447-1454"
    "snapy: failure drain into the retry flags", "snapy/src/mesh/meshblock.cpp:1538-1547; the one read snapy/src/mesh/meshblock.cpp:1566"
-   "snapy: chemistry step (example driver only)", "snapy/examples/run_hydro.cpp:171-198; Kinetics built but never called in snapy/src/scalar/scalar.cpp:55"
+   "snapy: chemistry step (three callers only)", "snapy/examples/run_hydro.cpp:171-198, snapy/examples/jupiter_evap_precip_1d.cpp:242-261, snapy/tests/test_fp32_jupiter.py:116-129; Kinetics built but never called in snapy/src/scalar/scalar.cpp:55"
    "snapy: version floor", "snapy/CMakeLists.txt:97-105, snapy/pyproject.toml:7"
 
 What blocks capture today, by reading (each "hypothesis" until the G2
@@ -178,7 +178,8 @@ ThermoX equilibrium (``src/thermo/thermo_x.cpp:301``,
 
 One fixed device tensor per ``ThermoY``, int64, shape (3,), rows
 ``saturation``, ``temp_solve``, ``pres_solve``. Allocated by ``prepare()``
-(3.3) and never rebound; ``reset()`` and ``clone()`` drop it, as
+(3.3) and not rebound by a repeat ``prepare()`` with the same device,
+dtype and shape; ``reset()`` and ``clone()`` drop it, as
 ``src/thermo/thermo_y.cpp:172-173`` does today. ``nfail_`` becomes private.
 X calls ``prepare()`` before warm-up (3.3). Outside capture, the first
 call that needs the module's storage (``reset_failures``,
@@ -190,7 +191,7 @@ counter is a normal tensor made outside inference mode, so the in-place
 pin avoids ``+=`` for that reason, ``src/thermo/thermo_y.cpp:376``;
 hypothesis, K-G4 runs both). A graph records the addresses of the
 counter and of the active-set buffers (3.4), so ``reset()`` or a
-reallocating ``prepare()`` changes the module's ``alloc_epoch(m)`` (3.3)
+``prepare()`` with a new device, dtype or shape changes the module's ``alloc_epoch(m)`` (3.3)
 and invalidates every graph that holds them; X compares it before every
 replay.
 
@@ -216,8 +217,8 @@ for it. Rows 1 and 2 are
 not retry causes: both counters, ``thermo.temp_solve`` and
 ``thermo.pres_solve``, are declared in ``RegisterRequest::counters`` and
 posted once per step with ``count(name, failures()[1])`` and
-``count(name, failures()[2])`` in ``after_combine`` of the last stage (the
-names are requested of R rev 2.3, pending; section 11); ``reset_failures()`` clears all three rows
+``count(name, failures()[2])`` in ``after_combine`` of the last stage (listed by
+R rev 2.3 ``2b4c5775``: ``flux_register.hpp:36``, R.rst lines 870-874); ``reset_failures()`` clears all three rows
 at the next attempt's stage 0. Warm-up and capture: the (3,) counter and the
 active-set buffers join X's save and restore of counters and retry flags
 around warm-up and capture (X.rst lines 368-371 at ``66f797a2``), so a warm-up pass
@@ -276,7 +277,10 @@ replaces the three ``get_device_func*`` copies and their
   So every table a graph uses was made by ``prepare()`` before warm-up.
   Who calls it: X, for each kintera module of a segment (the modules it
   keys by ``alloc_epoch``), with the segment's device, dtype and shape,
-  before opening the scope. Not EF's ``reset()``: it runs at
+  before opening the scope. ``prepare()`` is idempotent: a repeat with the
+  same device, dtype and shape reallocates nothing, so the counter, the
+  stage-zero snapshot and ``alloc_epoch(m)`` survive each mid-step warm-up
+  (X rev 3.7 ``b4d18131``, X.rst lines 434-437); hypothesis, gate K-G10. Not EF's ``reset()``: it runs at
   construction (``snapy/src/eos/ideal_moist.cpp:26``,
   ``snapy/src/eos/moist_mixture.cpp:20``), before the cell shape is
   known and before the block moves to its device
@@ -354,13 +358,16 @@ cold-start branch (``src/thermo/thermo_y.cpp:303-312``) runs only in
 3.6 Chemistry step (study item 7)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-At the pin the step after the RK stages exists only in an example driver
-(``snapy/examples/run_hydro.cpp:171-198``): kinetics rates, a Jacobian, one
+At the pin the step after the RK stages exists only in three callers, each
+with its own copy (only the first skips an empty stoichiometry,
+``snapy/examples/run_hydro.cpp:177``): ``snapy/examples/run_hydro.cpp:171-198``,
+``snapy/examples/jupiter_evap_precip_1d.cpp:242-261``,
+``snapy/tests/test_fp32_jupiter.py:116-129``: kinetics rates, a Jacobian, one
 implicit step (``kintera::evolve_implicit``), and the species rows of
 ``hydro_u`` increase by ``del_rho`` (``snapy/examples/run_hydro.cpp:197``);
 the increment does not touch the energy row, so heat of reaction appears
 as a temperature change through the composition. The EOS call before it
-(``snapy/examples/run_hydro.cpp:179``) may apply the conserved limiter,
+(``snapy/examples/run_hydro.cpp:180``) may apply the conserved limiter,
 which can write the density and energy rows; that is EF's limiter, not
 the chemistry increment, and is posted by EF. V3
 makes it a ``ChemistrySource`` op: a snapy type (``namespace snap``,
@@ -518,6 +525,7 @@ Specified, not written and not run.
    "K-G7", "saturation conserves mass and energy", "``thermo.saturation`` row sum and energy, condensing column", "round-off (FP64 sum)"
    "K-G8", "chemistry conserves elements", "``chem.elements`` on a closed box", "solver tolerance"
    "K-G9", "paired revisions", "snapy CI builds against the kintera candidate tag (section 8)", "exact"
+   "K-G10", "``prepare()`` is idempotent", "``prepare()`` twice with the same device, dtype and shape, the stage-zero snapshot and one failing cell between; then a new shape", "same counter and active-set addresses, ``alloc_epoch(m)``, ``tables()`` pointer and table epoch, snapshot and counts (exact); the new shape changes the epoch"
 
 6. FP32 contract
 ----------------
@@ -745,7 +753,7 @@ them):
    "S-K1", "snapy", "counter in X's reset list and retry stack", "bitwise"
    "S-K2", "snapy", "snapshot at step start, restore on retry", "changes retried steps (hypothesis, K-G5): ``FOR CHENG`` K-F1"
    "S-K3", "snapy", "saturation adjustment in the captured segment", "bitwise (graph equals eager)"
-   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage", "bitwise against the example driver's step (``snapy/examples/run_hydro.cpp:171-198``), hypothesis"
+   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage, registered through ``MeshBlock::set_chemistry`` (X rev 3.7) by each of the three pin callers (``snapy/examples/run_hydro.cpp:171-198``, ``snapy/examples/jupiter_evap_precip_1d.cpp:242-261``, ``snapy/tests/test_fp32_jupiter.py:116-129``); the test registers again after its restart rebuild (``snapy/tests/test_fp32_jupiter.py:102-113``); each caller's own step is removed in the commit that registers the source; the executor runs it inside the step, so a caller adds no call", "bitwise against each caller's own step at the pin, one golden per caller, hypothesis"
    "K5", "kintera", "``nfail_`` private", "bitwise"
 
 Removed: per-call function-name resolution on both devices; the dead
@@ -799,17 +807,16 @@ R:
   kinds, element rows as ``element/<name>`` derived rows, the last
   ``after_combine`` for K. K confirms the derived rows and keeps slot 4
   of X's stack, R's default (R's question to K, R.rst lines 1615-1616).
-- Nit: the comment of ``RegisterRequest::derived`` says "hydro only"
-  (``flux_register.hpp:34`` at ``4c59162a``); R.rst lines 790-793 add K's
-  element rows.
+- Settled by R rev 2.3 (``2b4c5775``): ``RegisterRequest::derived`` lists
+  ``element/<name>`` (``flux_register.hpp:34``); ``counters`` lists K's
+  ``thermo.temp_solve`` and ``thermo.pres_solve`` (``flux_register.hpp:36``,
+  R.rst lines 870-874).
 - Confirm that a ``cell_amount`` or ``derived_amount`` posted after the
   last ``end_stage`` (the chemistry segment) joins the step's sums;
   ``flux_register.hpp:85`` folds amounts at ``end_stage`` and only
   ``post_split`` (``flux_register.hpp:79-81``) is stated to work outside a
-  stage.
-- Requested of R rev 2.3, pending: list K's two counters,
-  ``thermo.temp_solve`` and ``thermo.pres_solve`` (``flux_register.hpp:36``);
-  R's published head ``4c59162a`` does not list them yet.
+  stage. R.rst lines 421-423 at ``2b4c5775`` scale an amount posted after
+  ``end_stage(s)`` in ``after_combine`` by the later stages' ``w1`` only.
 
 A:
 
@@ -1094,6 +1101,21 @@ Lane R's reviewer (notes 1 to 4, on rev 2.5 at ``d83150a8``):
    per module (3.3).
 4. Agree: the two counters are requested of R rev 2.3, pending; R's head
    ``4c59162a`` does not list them (section 11, R).
+
+Round-2.8 notes
+~~~~~~~~~~~~~~~
+
+The coordinator's note on rev 2.7: the counters are cited to R rev 2.3
+``2b4c5775`` (``flux_register.hpp:36``, R.rst lines 870-874), in 3.2 and
+section 11, R.
+
+X rev 3.7 (``b4d18131``), note 5: ``prepare()`` is idempotent for an
+unchanged device, dtype and shape (3.3); hypothesis, gate K-G10.
+
+Lane X's reviewer's contract question on S-K4: agree. S-K4 covers the three
+pin callers, each one's own step removed in the commit that registers the
+source, one golden per caller (section 10, 3.6).
+
 12. Skeleton index
 ------------------
 

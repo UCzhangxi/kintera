@@ -381,19 +381,28 @@ Its budget declarations are section 4.
 
 Blocks. The pin runs a mesh's blocks concurrently in a worker pool
 (``snapy/src/mesh/mesh.cpp:284-297``), so each block gets its own
-adapter, built by ``Mesh::set_chemistry`` from one reaction set. Shared:
-the reaction set (kintera's ``KineticsOptions`` and the thermo options,
-host objects) and the species composition ``E`` comes from. The first
-``Kinetics`` built from it normalizes it in place, once
-(``src/kinetics/kinetics.cpp:27-79``, guarded by ``offset_zero``), so
-``Mesh::set_chemistry`` builds the adapters one after another on the
-calling thread, never in the block pool; afterwards the set is read-only.
-Per block: the ``Kinetics`` and ``ThermoX`` modules built from it on the
-block's device (buffers ``src/kinetics/kinetics.cpp:125-127``,
-``src/thermo/thermo_x.cpp:56``), its ``element_matrix()`` on that
-device, its scratch, and its posts to that block's register. No adapter
-writes shared state, so blocks need no lock (hypothesis; X's gate one
-block against two, X.rst line 270 at ``6d39357b``).
+adapter. ``MeshImpl::set_chemistry(kintera::KineticsOptionsImpl
+reactions)`` takes the reaction set by value (X rev 3.12 ``6405a34a``, skeleton
+``stage_executor.hpp:20``), builds one adapter per block and sets each
+block's entry in X's executor (``StageExecutor::set_chemistry(block,
+source)``, ``stage_executor.hpp:82``). A bare ``MeshBlock``, as in the
+three pin callers, takes the same by value in
+``MeshBlock::set_chemistry`` and builds its one adapter into slot 0 of its
+own one-block executor (as X rev 3.13 states). The copy
+is shallow: the thermo vectors the first ``Kinetics`` build rewrites in
+place, once (``src/kinetics/kinetics.cpp:27-79``, guarded by
+``offset_zero``), are copied, so the caller's values stay; the reaction
+sub-options (``src/kinetics/kinetics.hpp:64-72``) are pointers shared with
+the caller (hypothesis: the build does not write them). Adapters are
+built one after another on the calling thread, never in the block pool;
+afterwards the copy is read-only and shared. Per block: the ``Kinetics`` module
+built from the copy and the ``ThermoX`` module built from the block's
+thermo options (``snapy/examples/run_hydro.cpp:64``), on the block's device (buffers
+``src/kinetics/kinetics.cpp:125-127``, ``src/thermo/thermo_x.cpp:56``),
+its ``element_matrix()`` on that device, its scratch, and its posts to
+that block's register. No adapter writes shared state, so blocks need no
+lock (hypothesis; X's gate one block against two, X.rst line 271 at
+``6405a34a``).
 
 3.7 Thermodynamic math snapy repeats (study item 6, with EF)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -639,7 +648,8 @@ floor is already 2.6.9 (``snapy/CMakeLists.txt:104-105``,
 ``snapy/pyproject.toml:7``), so no raise has to land before EF-8. The
 floor is raised to the V3 release once, by EF-8 (the first snapy PR that
 needs K1 and K3); S-K1 to S-K4 need K2 to K4 and merge after EF-8, so
-they keep it.
+they keep it; S-K4 also merges after X4 (global phase for 1 and N
+blocks), with the source run of X's gate (section 10).
 
 Merge order (provider first):
 
@@ -651,7 +661,8 @@ Merge order (provider first):
    the reset list and retry stack), S-K2 (warm-start snapshot; S-K1 and
    S-K2 after EF-2, same block ``snapy/src/mesh/meshblock.cpp:1538-1547``), S-K3 (saturation adjustment inside the segment), S-K4
    (``ChemistrySource``: snapy owns the adapter over kintera's
-   ``Kinetics`` and ``evolve_implicit``; no kintera change). Of EF's
+   ``Kinetics`` and ``evolve_implicit``; no kintera change; after X4 and
+   EF-8, with the gate's source run). Of EF's
    PRs only EF-8 waits for the kintera release.
 4. kintera K5 (``nfail_`` private).
 
@@ -775,7 +786,7 @@ them):
    "S-K1", "snapy", "counter in X's reset list and retry stack", "bitwise"
    "S-K2", "snapy", "snapshot at step start, restore on retry", "changes retried steps (hypothesis, K-G5): ``FOR CHENG`` K-F1"
    "S-K3", "snapy", "saturation adjustment in the captured segment", "bitwise (graph equals eager)"
-   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage, registered through ``MeshBlock::set_chemistry`` (one block; forwards to X's ``StageExecutor::set_chemistry``) or once through ``Mesh::set_chemistry`` (builds one adapter per block from the shared reaction set and forwards each to its block's ``MeshBlock::set_chemistry``, 3.6); S-K4 declares both and their Python bindings (X rev 3.10 ``6d39357b``, X.rst lines 364-369); used by each of the three pin callers (``snapy/examples/run_hydro.cpp:171-198``, ``snapy/examples/jupiter_evap_precip_1d.cpp:242-261``, ``snapy/tests/test_fp32_jupiter.py:116-129``); the test registers again after its restart rebuild (``snapy/tests/test_fp32_jupiter.py:102-113``); each caller's own step is removed in the commit that registers the source; the executor runs it inside the step, so a caller adds no call", "bitwise against each caller's own step at the pin, one golden per caller, hypothesis"
+   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage, registered once through ``MeshImpl::set_chemistry(kintera::KineticsOptionsImpl reactions)``, by value, one adapter per block, or for a bare block through ``MeshBlock::set_chemistry`` with the same argument, into slot 0 of its own executor (3.6); S-K4 declares both and their Python bindings (X rev 3.12 ``6405a34a``, X.rst lines 365-387); merges after X4 and EF-8 with the source run of X's gate one block against two (X.rst line 271); used by each of the three pin callers (``snapy/examples/run_hydro.cpp:171-198``, ``snapy/examples/jupiter_evap_precip_1d.cpp:242-261``, ``snapy/tests/test_fp32_jupiter.py:116-129``); the test registers again after its restart rebuild (``snapy/tests/test_fp32_jupiter.py:102-113``); each caller's own step is removed in the commit that registers the source; the executor runs it inside the step, so a caller adds no call", "bitwise against each caller's own step at the pin, one golden per caller, hypothesis"
    "K5", "kintera", "``nfail_`` private", "bitwise"
 
 Removed: per-call function-name resolution on both devices; the dead
@@ -1159,6 +1170,20 @@ X rev 3.10 ``6d39357b``, review notes on rev 3.9:
    per block from the shared reaction set, built one after another and
    read-only after the first build (3.6, section 10).
    The S-K4 row cites X at ``6d39357b``.
+
+Round-3.1 notes
+~~~~~~~~~~~~~~~
+
+Lane X's reviewer on X rev 3.12 ``6405a34a``:
+
+1. Agree: S-K4 merges after X4 and EF-8 and carries the source run of
+   X's gate one block against two; X4 carries its no-source baseline
+   (section 8, section 10).
+2. Agree: ``MeshImpl::set_chemistry(kintera::KineticsOptionsImpl
+   reactions)`` by value; the copy is shallow (3.6, Blocks).
+3. Agree: a bare ``MeshBlock`` registers through
+   ``MeshBlock::set_chemistry`` with the same argument, into slot 0 of
+   its own executor (X rev 3.13).
 
 12. Skeleton index
 ------------------

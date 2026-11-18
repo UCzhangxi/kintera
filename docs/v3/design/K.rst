@@ -379,6 +379,22 @@ the last stage in its own eager segment (host reads at
 not this lane's) fits the same op: species in, species increments out.
 Its budget declarations are section 4.
 
+Blocks. The pin runs a mesh's blocks concurrently in a worker pool
+(``snapy/src/mesh/mesh.cpp:284-297``), so each block gets its own
+adapter, built by ``Mesh::set_chemistry`` from one reaction set. Shared:
+the reaction set (kintera's ``KineticsOptions`` and the thermo options,
+host objects) and the species composition ``E`` comes from. The first
+``Kinetics`` built from it normalizes it in place, once
+(``src/kinetics/kinetics.cpp:27-79``, guarded by ``offset_zero``), so
+``Mesh::set_chemistry`` builds the adapters one after another on the
+calling thread, never in the block pool; afterwards the set is read-only.
+Per block: the ``Kinetics`` and ``ThermoX`` modules built from it on the
+block's device (buffers ``src/kinetics/kinetics.cpp:125-127``,
+``src/thermo/thermo_x.cpp:56``), its ``element_matrix()`` on that
+device, its scratch, and its posts to that block's register. No adapter
+writes shared state, so blocks need no lock (hypothesis; X's gate one
+block against two, X.rst line 270 at ``6d39357b``).
+
 3.7 Thermodynamic math snapy repeats (study item 6, with EF)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -759,7 +775,7 @@ them):
    "S-K1", "snapy", "counter in X's reset list and retry stack", "bitwise"
    "S-K2", "snapy", "snapshot at step start, restore on retry", "changes retried steps (hypothesis, K-G5): ``FOR CHENG`` K-F1"
    "S-K3", "snapy", "saturation adjustment in the captured segment", "bitwise (graph equals eager)"
-   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage, registered through ``MeshBlock::set_chemistry``, which S-K4 declares with its Python binding and which forwards to X's ``StageExecutor::set_chemistry`` (X rev 3.9 ``00dee910``, X.rst lines 351-355), by each of the three pin callers (``snapy/examples/run_hydro.cpp:171-198``, ``snapy/examples/jupiter_evap_precip_1d.cpp:242-261``, ``snapy/tests/test_fp32_jupiter.py:116-129``); the test registers again after its restart rebuild (``snapy/tests/test_fp32_jupiter.py:102-113``); each caller's own step is removed in the commit that registers the source; the executor runs it inside the step, so a caller adds no call", "bitwise against each caller's own step at the pin, one golden per caller, hypothesis"
+   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage, registered through ``MeshBlock::set_chemistry`` (one block; forwards to X's ``StageExecutor::set_chemistry``) or once through ``Mesh::set_chemistry`` (builds one adapter per block from the shared reaction set and forwards each to its block's ``MeshBlock::set_chemistry``, 3.6); S-K4 declares both and their Python bindings (X rev 3.10 ``6d39357b``, X.rst lines 364-369); used by each of the three pin callers (``snapy/examples/run_hydro.cpp:171-198``, ``snapy/examples/jupiter_evap_precip_1d.cpp:242-261``, ``snapy/tests/test_fp32_jupiter.py:116-129``); the test registers again after its restart rebuild (``snapy/tests/test_fp32_jupiter.py:102-113``); each caller's own step is removed in the commit that registers the source; the executor runs it inside the step, so a caller adds no call", "bitwise against each caller's own step at the pin, one golden per caller, hypothesis"
    "K5", "kintera", "``nfail_`` private", "bitwise"
 
 Removed: per-call function-name resolution on both devices; the dead
@@ -1132,6 +1148,17 @@ X rev 3.9 ``00dee910``, Round-13 notes:
    new order checked one block against two (section 4, Ordering).
 3. Agree: S-K4 declares ``MeshBlock::set_chemistry`` and its Python
    binding (section 10).
+
+Round-3.0 notes
+~~~~~~~~~~~~~~~
+
+X rev 3.10 ``6d39357b``, review notes on rev 3.9:
+
+1. Agree: S-K4 also declares ``Mesh::set_chemistry`` and its Python
+   binding; a multi-block driver calls it once, and it builds one adapter
+   per block from the shared reaction set, built one after another and
+   read-only after the first build (3.6, section 10).
+   The S-K4 row cites X at ``6d39357b``.
 
 12. Skeleton index
 ------------------

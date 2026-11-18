@@ -382,18 +382,18 @@ Its budget declarations are section 4.
 Blocks. The pin runs a mesh's blocks concurrently in a worker pool
 (``snapy/src/mesh/mesh.cpp:284-297``), so each block gets its own
 adapter. ``MeshImpl::set_chemistry(kintera::KineticsOptionsImpl
-reactions)`` takes the reaction set by value (X rev 3.12 ``6405a34a``, skeleton
-``stage_executor.hpp:20``), builds one adapter per block and sets each
+reactions)`` takes the reaction set by value (X rev 3.13 ``54ca5356``, skeleton
+``stage_executor.hpp:18``), builds one adapter per block and sets each
 block's entry in X's executor (``StageExecutor::set_chemistry(block,
-source)``, ``stage_executor.hpp:82``). A bare ``MeshBlock``, as in the
+source)``, ``stage_executor.hpp:81``). A bare ``MeshBlock``, as in the
 three pin callers, takes the same by value in
-``MeshBlock::set_chemistry`` and builds its one adapter into slot 0 of its
+``MeshBlock::set_chemistry`` (``stage_executor.hpp:19``) and builds its one adapter into slot 0 of its
 own one-block executor (as X rev 3.13 states). The copy
 is shallow: the thermo vectors the first ``Kinetics`` build rewrites in
 place, once (``src/kinetics/kinetics.cpp:27-79``, guarded by
 ``offset_zero``), are copied, so the caller's values stay; the reaction
 sub-options (``src/kinetics/kinetics.hpp:64-72``) are pointers shared with
-the caller (hypothesis: the build does not write them). Adapters are
+the caller (read at the pin, not tested: the build does not write them). Adapters are
 built one after another on the calling thread, never in the block pool;
 afterwards the copy is read-only and shared. Per block: the ``Kinetics`` module
 built from the copy and the ``ThermoX`` module built from the block's
@@ -853,23 +853,26 @@ R:
 
 A:
 
-- K-1 (A.rst lines 748-757 and 985-986 at ``9ee83756``), answered by
-  number:
+- K-1 (A.rst lines 748-757 and 985-986 at ``9ee83756``; asked again at
+  A.rst:1487 at ``a0b006d2``), answered by number. Per function: ``Y->X``
+  yes, ``DY->V`` yes, ``X->Y`` yes, ``VT->U`` no at the pin, yes after K1
+  (all by reading; K1 is not written, so its yes is a hypothesis; K-G3
+  runs them):
 
   1. ``ConstGravity`` is snapy code (``snapy/src/forcing/const_gravity.cpp:43``)
      with no kintera call; lane K does not migrate it or its fixer.
   2. Of ``RelaxBotComp``'s four conversions
      (``snapy/src/forcing/relax_bot_comp.cpp:98-111``), three hold no host
      read, no upload and no symbol lookup at the pin: ``Y->X``
-     (``src/thermo/thermo_y.cpp:420-437``), ``DY->V``
-     (``src/thermo/thermo_y.cpp:439-453``) and ``X->Y``
-     (``src/thermo/thermo_x.cpp:263-276``) are tensor ops on the module
+     (``src/thermo/thermo_y.cpp:198``, body 420-437), ``DY->V``
+     (``src/thermo/thermo_y.cpp:214``, body 439-452) and ``X->Y``
+     (``src/thermo/thermo_x.cpp:141``, body 263-276) are tensor ops on the module
      buffers ``inv_mu`` and ``mu`` and host scalars from the options; their
      outputs come from ``torch::empty`` (the caching allocator). They are
      capturable (hypothesis until K-G3 runs them under capture).
-  3. ``VT->U`` is not capturable at the pin. It reaches
-     ``eval_intEng_R`` (``src/thermo/thermo.hpp:234-240``,
-     ``src/thermo/eval_uhs.cpp:245-281``), which calls ``call_func2``
+  3. ``VT->U`` (``src/thermo/thermo_y.cpp:242``) is not capturable at the
+     pin. Through ``_intEng_vol`` (``src/thermo/thermo.hpp:235-241``) it
+     reaches ``eval_intEng_R`` (``src/thermo/eval_uhs.cpp:245-281``), which calls ``call_func2``
      (``call_func2_cuda``, ``src/utils/utils_dispatch.cu:42-46``):
      ``get_device_func2`` does a ``cudaMemcpyFromSymbol``
      (``src/utils/user_funcs.cu:59``), copies a host index vector into a
@@ -882,7 +885,10 @@ A:
      makes three more ``call_func2`` calls
      (``src/thermo/eval_uhs.cpp:82-108``). Each copy is synchronous and each
      ``thrust`` buffer is a ``cudaMalloc``/``cudaFree``, which a capturing
-     stream rejects. K-G3 runs with ``use_h2_cp`` on and off.
+     stream rejects; and the kernel reads the gathered table, freed when
+     the call returns (``src/utils/utils_dispatch.cu:47``), so even a
+     relaxed capture would replay a dangling pointer. K-G3 runs with
+     ``use_h2_cp`` on and off.
   4. Condition for ``capturable = true``: the kintera release with K1
      (``ThermoTables`` and ``FuncTable`` replace these lookups and
      uploads, 3.3, items k1, k3, k9) is pinned by snapy (EF-8);
@@ -1184,6 +1190,20 @@ Lane X's reviewer on X rev 3.12 ``6405a34a``:
 3. Agree: a bare ``MeshBlock`` registers through
    ``MeshBlock::set_chemistry`` with the same argument, into slot 0 of
    its own executor (X rev 3.13).
+
+Round-3.2 notes
+~~~~~~~~~~~~~~~
+
+Decision (Cheng, recorded): the chemistry executor slot is accepted as
+written in X rev 3.14 and K rev 3.1 (3.6, section 4, S-K4). K carries no
+``FOR CHENG`` marker on it; K-F1 and K-F2 are other items.
+
+Lane A, K-1 again (A.rst:1487 at ``a0b006d2``): answered in section 11, A,
+with A's dispatch lines; ``RelaxBotComp`` stays ``capturable = false``
+until item 4 there holds.
+
+X rev 3.13 (``54ca5356``): the shallow copy's sub-options are read at the
+pin, not tested (3.6, Blocks); skeleton lines re-cited.
 
 12. Skeleton index
 ------------------

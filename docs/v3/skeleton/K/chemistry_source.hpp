@@ -1,7 +1,7 @@
 #pragma once
-// V3 lane K skeleton: declarations only, in no build. Rev 2.7.
+// V3 lane K skeleton: declarations only, in no build. Rev 2.9.
 // A snapy type: kintera's API gains none. The step now in
-// snapy/examples/run_hydro.cpp:171-198 as a registered source. FluxRegister
+// the three pin callers (K.rst S-K4) as a registered source. FluxRegister
 // is lane R's (docs/v3/skeleton/R/flux_register.hpp, happysky19/snapy 4c59162a).
 #include <string>
 #include <vector>

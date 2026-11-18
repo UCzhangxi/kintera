@@ -350,7 +350,7 @@ cold-start branch (``src/thermo/thermo_y.cpp:303-312``) runs only in
         failures[0] += count(diag < 0)
         -> species rows written back; cell_amount("thermo.saturation", ...)
   last after_combine: count(temp_solve), count(pres_solve); end_stage
-  chemistry [segment, FP64, pin order after the boundaries]: kinetics step
+  chemistry [segment, FP64, last op of the last stage's forward; under Mesh::forward before its final exchange]: kinetics step
      -> cell_amount("chem.*", ...); element stock and boundary posts
   step end:     thermo.consume_failures(flags[4]); X's one host read
   kRollback:    u0; radial restore_step; thermo.restore_active_set(as0); cons2prim, s0; R rollback()
@@ -415,8 +415,9 @@ kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
   ``after_combine`` after every stage. ``thermo.saturation`` posts in the
   last stage's, where the adjustment runs
   (``snapy/src/mesh/meshblock.cpp:949-982``); the chemistry step keeps the
-  pin order, after the boundaries and before X's step-end read (X rev
-  3.5), and posts there. Nothing is posted on earlier stages:
+  pin order (``MeshBlock::forward``; under ``Mesh::forward`` a new order,
+  Ordering below), after the boundaries and before X's step-end read, and
+  posts there. Nothing is posted on earlier stages:
 
   - ``thermo.saturation`` (``AmountKind::cell_source``): the change of each species row from the
     saturation adjustment (``snapy/src/mesh/meshblock.cpp:972``). Total
@@ -481,10 +482,15 @@ kind)``, ``derived_amount(name, row, value, stage_weight, kind)``,
   and after ``end_stage`` of the last stage; before X's step-end read. The
   chemistry step follows the saturation adjustment, as
   ``snapy/examples/run_hydro.cpp:177-179`` requires.
-- Chemistry has no register phase of its own: it runs in the pin order,
-  after the boundaries and before X's step-end read
-  (``snapy/examples/run_hydro.cpp:171-198``; X rev 3.5), so after the
-  saturation adjustment of the last ``after_combine``.
+- Chemistry has no register phase of its own. The three pin callers step
+  it after ``MeshBlock::forward`` returns, so X's slot is the last op of
+  the last stage's call, after its exchange and stage
+  (``snapy/src/mesh/meshblock.cpp:616-617``): after the saturation
+  adjustment and before X's step-end read, the pin order. Under
+  ``Mesh::forward``, which exchanges last (``snapy/src/mesh/mesh.cpp:359``,
+  ``snapy/src/mesh/mesh.cpp:406``), it runs just before that exchange: a new
+  order without a pin golden, checked one block against two, bitwise (X rev 3.9 ``00dee910``, X.rst lines
+  341-351).
 - Failure counts: row 0 through slot 4 of X's retry stack; rows 1-2
   through R's ``count`` (3.2).
 - Adapter calls (snapy side). ``ThermoY``, created at
@@ -753,7 +759,7 @@ them):
    "S-K1", "snapy", "counter in X's reset list and retry stack", "bitwise"
    "S-K2", "snapy", "snapshot at step start, restore on retry", "changes retried steps (hypothesis, K-G5): ``FOR CHENG`` K-F1"
    "S-K3", "snapy", "saturation adjustment in the captured segment", "bitwise (graph equals eager)"
-   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage, registered through ``MeshBlock::set_chemistry`` (X rev 3.7) by each of the three pin callers (``snapy/examples/run_hydro.cpp:171-198``, ``snapy/examples/jupiter_evap_precip_1d.cpp:242-261``, ``snapy/tests/test_fp32_jupiter.py:116-129``); the test registers again after its restart rebuild (``snapy/tests/test_fp32_jupiter.py:102-113``); each caller's own step is removed in the commit that registers the source; the executor runs it inside the step, so a caller adds no call", "bitwise against each caller's own step at the pin, one golden per caller, hypothesis"
+   "S-K4", "snapy", "``ChemistrySource`` adapter (snapy-owned) over kintera's ``Kinetics``, after the last stage, registered through ``MeshBlock::set_chemistry``, which S-K4 declares with its Python binding and which forwards to X's ``StageExecutor::set_chemistry`` (X rev 3.9 ``00dee910``, X.rst lines 351-355), by each of the three pin callers (``snapy/examples/run_hydro.cpp:171-198``, ``snapy/examples/jupiter_evap_precip_1d.cpp:242-261``, ``snapy/tests/test_fp32_jupiter.py:116-129``); the test registers again after its restart rebuild (``snapy/tests/test_fp32_jupiter.py:102-113``); each caller's own step is removed in the commit that registers the source; the executor runs it inside the step, so a caller adds no call", "bitwise against each caller's own step at the pin, one golden per caller, hypothesis"
    "K5", "kintera", "``nfail_`` private", "bitwise"
 
 Removed: per-call function-name resolution on both devices; the dead
@@ -1115,6 +1121,17 @@ unchanged device, dtype and shape (3.3); hypothesis, gate K-G10.
 Lane X's reviewer's contract question on S-K4: agree. S-K4 covers the three
 pin callers, each one's own step removed in the commit that registers the
 source, one golden per caller (section 10, 3.6).
+
+Round-2.9 notes
+~~~~~~~~~~~~~~~
+
+X rev 3.9 ``00dee910``, Round-13 notes:
+
+1. Agree: the slot ends the last stage's ``MeshBlock::forward`` (pin
+   order); under ``Mesh::forward`` it runs before the final exchange, a
+   new order checked one block against two (section 4, Ordering).
+3. Agree: S-K4 declares ``MeshBlock::set_chemistry`` and its Python
+   binding (section 10).
 
 12. Skeleton index
 ------------------
